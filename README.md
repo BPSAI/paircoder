@@ -36,7 +36,7 @@ python -m pip install --upgrade pip
 python -m pip install -e tools/cli
 ```
 
-> On Debian/Ubuntu with PEP 668 (externally managed), a venv avoids system‑pip errors.
+> On Debian/Ubuntu with PEP 668 (externally managed), a venv avoids system‑pip errors.
 
 ---
 
@@ -234,7 +234,7 @@ scripts/test_cli.sh
 
 ## Troubleshooting
 
-* **PEP 668 / system pip blocked** → create and use a local venv (`python3 -m venv .venv; . .venv/bin/activate`).
+* **PEP 668 / system pip blocked** → create and use a local venv (`python3 -m venv .venv; . .venv/bin/activate`).
 * **`bpsai-pair` not found** → use module form: `PYTHONPATH=. .venv/bin/python -m tools.cli.bpsai_pair --help`.
 * **`Local branch 'main' not found` in tests** → create/track `main` locally (`git fetch; git checkout -b main origin/main`).
 * **Dirty working tree** → commit/stash before running `scripts/test_cli.sh` to keep noise minimal.
@@ -243,13 +243,12 @@ scripts/test_cli.sh
 
 ## Roadmap & versioning
 
-* **v0.1.0** — Ship core package/CLI (+ README & smoke test).
+* **v0.1.0** — Ship core package/CLI.
 * **v0.2.0** — Template var substitution at init; JSON output mode; path‑filtered CI.
 * **v0.3.0** — Public Python API mirroring CLI for integrators (e.g., Trello agent imports instead of shelling out).
 
 Separate repos that *consume* this core:
 
-* **paircoder‑trello‑codex** — Trello cards → feature branches, context sync, PR status back to Trello.
 * **paircoder‑ui** — BYO‑key local web UI wrapping `bpsai-pair`.
 
 ---
