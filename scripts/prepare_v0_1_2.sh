@@ -1,6 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REL="release/v0.1.2"
+NEWVER="0.1.2"
+PKG_DIR="tools/cli"
+PKG_NAME="bpsai_pair"
+BUNDLE_ROOT="$PKG_DIR/$PKG_NAME/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}"
+
+say(){ printf "[v0.1.2] %s\n" "$*"; }
+
+# 0) ensure git root
+[ -d .git ] || { echo "Run from repo root"; exit 1; }
+
+# 1) branch
+if git rev-parse --verify --quiet "$REL" >/dev/null; then
+  git checkout "$REL"
+else
+  git checkout -b "$REL"
+fi
+
+# 2) paths sanity
+[ -d "$BUNDLE_ROOT" ] || { echo "Bundled template not found at $BUNDLE_ROOT"; exit 1; }
+
+# 3) Harden the bundled template
+
+# 3a) Robust new_feature.sh (no-remote friendly, stamps Primary Goal/Phase, no .bak)
+mkdir -p "$BUNDLE_ROOT/scripts"
+cat > "$BUNDLE_ROOT/scripts/new_feature.sh" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
 usage() {
   cat <<USAGE
 [new_feature] Usage:
@@ -102,3 +131,85 @@ git commit -m "feat(context): start ${BR} — Primary Goal: ${PRIMARY} | Phase: 
 
 echo "[new_feature] Branch ready: ${BR}"
 echo "[new_feature] Updated ${DEV} with Primary Goal + Phase + Context Sync."
+SH
+chmod +x "$BUNDLE_ROOT/scripts/new_feature.sh"
+say "Updated bundled scripts/new_feature.sh"
+
+# 3b) Improve template ignores
+# .gitignore
+IGN="$BUNDLE_ROOT/.gitignore"
+mkdir -p "$(dirname "$IGN")"
+grep -qxF ".venv/" "$IGN" 2>/dev/null || echo ".venv/" >> "$IGN"
+grep -qxF "__pycache__/" "$IGN" 2>/dev/null || echo "__pycache__/" >> "$IGN"
+grep -qxF "*.pyc" "$IGN" 2>/dev/null || echo "*.pyc" >> "$IGN"
+grep -qxF "agent_pack.tgz" "$IGN" 2>/dev/null || echo "agent_pack.tgz" >> "$IGN"
+say "Hardened template .gitignore"
+
+# .agentpackignore
+API="$BUNDLE_ROOT/.agentpackignore"
+cat > "$API" <<'EOPI'
+# exclude noisy/large or irrelevant content from agent packs
+.git/
+.venv/
+__pycache__/
+node_modules/
+dist/
+build/
+*.log
+*.tmp
+*.bak
+*.tgz
+*.tar.gz
+*.zip
+# add project-specific excludes below
+EOPI
+say "Refreshed template .agentpackignore"
+
+# 3c) Ensure initial context/development.md does NOT carry raw cookiecutter placeholders
+mkdir -p "$BUNDLE_ROOT/context"
+cat > "$BUNDLE_ROOT/context/development.md" <<'EOD'
+# Development Log
+
+**Phase:** (set by first feature)
+**Primary Goal:** (set by first feature)
+
+## Context Sync (AUTO-UPDATED)
+
+- **Overall goal is:** (set by feature)
+- **Last action was:** (set by feature)
+- **Next action will be:** (set by feature)
+EOD
+say "Template context/development.md initialized without cookiecutter tokens"
+
+# 4) Bump version in pyproject.toml
+PYP="$PKG_DIR/pyproject.toml"
+[ -f "$PYP" ] || { echo "Missing $PYP"; exit 1; }
+# replace version = "x.y.z"
+perl -0777 -i -pe 's/^version\s*=\s*"\d+\.\d+\.\d+"\s*$/version = "'"$NEWVER"'"/m' "$PYP" \
+  || sed -i 's/^version *= *".*"/version = "'"$NEWVER"'"/' "$PYP"
+say "Bumped version to $NEWVER"
+
+# 5) Build fresh
+rm -rf .venv
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel build twine >/dev/null
+pushd "$PKG_DIR" >/dev/null
+python -m build
+popd >/dev/null
+twine check "$PKG_DIR"/dist/*
+
+# 6) Commit/tag
+git add -A
+git commit -m "release: v$NEWVER — hardened new_feature, cleaned template, better ignores"
+git tag "v$NEWVER"
+
+say "Ready. To push: git push origin HEAD:$REL --tags"
+
+# 7) Optional upload to TestPyPI if creds present
+if [ -n "${TWINE_USERNAME:-}" ] && [ -n "${TWINE_PASSWORD:-}" ] && [ -n "${TWINE_REPOSITORY_URL:-}" ]; then
+  say "Uploading to ${TWINE_REPOSITORY_URL}"
+  twine upload "$PKG_DIR"/dist/*
+else
+  say "Skipping upload (set TWINE_* for TestPyPI)."
+fi
