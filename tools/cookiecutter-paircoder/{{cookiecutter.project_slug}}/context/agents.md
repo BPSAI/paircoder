@@ -1,6 +1,6 @@
 # Agents Guide — AI Pair Coding Playbook
 
-**Purpose:** Make GPT-5 / Claude / CodeX effective partners for <PRIMARY GOAL> while improving modularity, maintainability, and testability.
+**Purpose:** Make GPT-5 / Claude / CodeX effective partners for {{ cookiecutter.primary_goal }} while improving modularity, maintainability, and testability.
 
 **Audience:** Engineers, Tech Leads, and AI Agents connected to this repo.
 
@@ -103,7 +103,7 @@
 
 ```
 You are a staff-level engineer embedded in this codebase.
-Objective: Produce a comprehensive plan to improve modularity, maintainability, and achieve <PRIMARY GOAL>.
+Objective: Produce a comprehensive plan to improve modularity, maintainability, and achieve {{ cookiecutter.primary_goal }}.
 Deliverables:
 - Architecture review (current vs. target), explicit trade-offs.
 - Refactoring map (by module), dependency inversion opportunities, interface boundaries.
@@ -154,7 +154,7 @@ Agents **must** persist this block at the end of every session in `/context/deve
 
 ```
 ## Context Sync (AUTO-UPDATED)
-Overall goal is: <PRIMARY GOAL>
+Overall goal is: {{ cookiecutter.primary_goal }}
 Last action was: <what changed and why> (commit SHA if available)
 Next action will be: <smallest valuable step with owner>
 Blockers/Risks: <if any>
