@@ -1,15 +1,25 @@
-
 [project]
+readme = "README.md"
 name = "bpsai-pair"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI for AI pair-coding workflow"
-authors = [{name = "BPS AI Software"}]
 requires-python = ">=3.9"
-dependencies = ["typer>=0.12", "rich>=13.7", "pyyaml>=6.0"]
+dependencies = [ "typer>=0.12", "rich>=13.7", "pyyaml>=6.0",]
+[[project.authors]]
+name = "BPS AI Software"
+
+[build-system]
+requires = [ "setuptools", "wheel",]
+build-backend = "setuptools.build_meta"
+
+[project.license]
+file = "LICENSE"
 
 [project.scripts]
 bpsai-pair = "bpsai_pair.cli:app"
+bpsai-pair-init = "bpsai_pair.init_bundled_cli:main"
+[tool.setuptools]
+include-package-data = true
 
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.setuptools.package-data]
+bpsai_pair = ["data/**"]
