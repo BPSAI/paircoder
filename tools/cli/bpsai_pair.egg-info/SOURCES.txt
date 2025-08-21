@@ -16,6 +16,7 @@ bpsai_pair.egg-info/top_level.txt
 bpsai_pair/data/cookiecutter-paircoder/cookiecutter.json
 bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.agentpackignore
 bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.editorconfig
+bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.gitignore
 bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.gitleaks.toml
 bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.pre-commit-config.yaml
 bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/CODEOWNERS

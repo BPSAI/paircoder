@@ -1,151 +1,104 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# new_feature.sh — scaffold a feature branch + context updates
-# Usage:
-#   scripts/new_feature.sh <feature-name> [--primary "<PRIMARY GOAL>"] [--phase "<PHASE 1 GOAL>"] [--force]
-# Example:
-#   scripts/new_feature.sh auth-di --primary "Decouple auth via DI" --phase "Refactor auth module for DI + tests"
+usage() {
+  cat <<USAGE
+[new_feature] Usage:
+  scripts/new_feature.sh <name> --primary "<Primary Goal>" --phase "<Phase Label>" [--force]
 
-PRIMARY=""
-PHASE=""
-FORCE=false
-
-err() { echo "[new_feature] ERROR: $*" >&2; exit 1; }
-info() { echo "[new_feature] $*"; }
-
-require_git_clean() {
-  if ! $FORCE; then
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-      err "Working tree not clean. Commit or stash changes, or pass --force."
-    fi
-  fi
+Notes:
+  - Creates/switches to branch: feature/<name>
+  - Updates context/development.md (Primary Goal, Phase, Context Sync)
+  - Skips 'git pull' if no upstream is set (works offline)
+USAGE
 }
 
-ensure_repo_root() {
-  [ -d .git ] || err "Run from repo root (where .git exists)."
-}
-
-project_tree() {
-  if command -v tree >/dev/null 2>&1; then
-    tree -a -I "node_modules|.git|.venv|dist|build|.mypy_cache|__pycache__|.pytest_cache|.DS_Store" .
-  else
-    # Fallback using find
-    find . -path ./.git -prune -o -path ./node_modules -prune -o -path ./dist -prune -o -path ./build -prune -o -print | sed 's/^\.\///'
-  fi
-}
-
-FEATURE="${1:-}" || true
-shift || true || true
-
-while [ $# -gt 0 ]; do
+NAME=""; PRIMARY=""; PHASE=""; FORCE=0
+while (( "$#" )); do
   case "$1" in
-    --primary)
-      shift; PRIMARY="${1:-}" || true ;;
-    --phase)
-      shift; PHASE="${1:-}" || true ;;
-    --force)
-      FORCE=true ;;
-    *) err "Unknown arg: $1" ;;
+    --primary) PRIMARY="$2"; shift 2;;
+    --phase)   PHASE="$2";   shift 2;;
+    --force)   FORCE=1;      shift 1;;
+    -h|--help) usage; exit 0;;
+    *) if [[ -z "$NAME" ]]; then NAME="$1"; shift; else echo "Unknown arg: $1"; usage; exit 2; fi;;
   esac
-  shift || true
 done
 
-[ -n "$FEATURE" ] || err "Missing <feature-name>."
+[[ -n "$NAME" && -n "$PRIMARY" && -n "$PHASE" ]] || { echo "[new_feature] ERROR: missing required args"; usage; exit 2; }
 
-ensure_repo_root
-require_git_clean
-
-git fetch --all --prune
-
-# Ensure main exists locally
-if ! git rev-parse --verify main >/dev/null 2>&1; then
-  err "Branch 'main' not found locally."
-fi
-
-# Create branch
-BRANCH="feature/${FEATURE}"
-info "Creating branch: ${BRANCH} from main"
-
-git checkout main
-git pull --ff-only
-
-git checkout -b "$BRANCH"
-
-# Context scaffolding
-mkdir -p context/directory_notes
-
-# Ensure development.md stub exists
-if [ ! -f context/development.md ]; then
-  info "Creating context/development.md"
-  cat > context/development.md <<'EOF'
-# Development Roadmap — <PROJECT NAME>
-
-**Primary Goal:** <PRIMARY GOAL>
-**Owner:** <Tech Lead / DRI>
-**Last Updated:** <YYYY-MM-DD>
-
-## Context Sync (AUTO-UPDATED)
-Overall goal is: <PRIMARY GOAL>
-Last action was: (init)
-Next action will be: (init)
-Blockers/Risks: (none)
-EOF
-fi
-
-# Update PRIMARY GOAL if provided
-if [ -n "$PRIMARY" ]; then
-  info "Stamping PRIMARY GOAL into context/development.md"
-  # Replace first occurrence of placeholder line
-  perl -0777 -pe "s/\*\*Primary Goal:\*\*.*\n/**Primary Goal:** ${PRIMARY}\n/ if $.==0" -i context/development.md || true
-  # Also update Overall goal line in Context Sync
-  perl -0777 -pe "s/Overall goal is:.*\n/Overall goal is: ${PRIMARY}\n/" -i context/development.md || true
-fi
-
-# Ensure agents.md exists (created manually earlier)
-if [ ! -f context/agents.md ]; then
-  info "Creating minimal context/agents.md stub (fill with full playbook)."
-  cat > context/agents.md <<'EOF'
-# Agents Guide — AI Pair Coding Playbook (stub)
-Refer to the canonical version and paste it here.
-EOF
-fi
-
-# Generate project tree snapshot
-TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-mkdir -p context
-info "Refreshing context/project_tree.md"
-{
-  echo "# Project Tree (snapshot)"
-  echo "_Generated: ${TS}_"
-  echo
-  echo '```'
-  project_tree
-  echo '```'
-} > context/project_tree.md
-
-# Append/update Context Sync block
-if ! grep -q "^## Context Sync" context/development.md; then
-  cat >> context/development.md <<'EOF'
-
-## Context Sync (AUTO-UPDATED)
-Overall goal is: <PRIMARY GOAL>
-Last action was: initialized feature branch and context
-Next action will be: <first task>
-Blockers/Risks: <if any>
-EOF
-else
-  perl -0777 -pe "s/Last action was:.*\n/Last action was: initialized feature branch and context\n/" -i context/development.md || true
-  if [ -n "$PHASE" ]; then
-    perl -0777 -pe "s/Next action will be:.*\n/Next action will be: ${PHASE}\n/" -i context/development.md || true
+if [[ $FORCE -ne 1 ]]; then
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "[new_feature] ERROR: Working tree not clean. Commit or stash changes, or pass --force."
+    exit 1
   fi
 fi
 
-# Commit
-info "Creating initial commit for ${BRANCH}"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+cd "$ROOT"
 
-git add context || true
+# Checkout main if present
+if git show-ref --verify --quiet refs/heads/main; then
+  echo "[new_feature] Checking out main"
+  git checkout -q main
+  # Pull only if upstream exists
+  if git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+    echo "[new_feature] Pulling upstream"
+    git pull --ff-only || true
+  else
+    echo "[new_feature] No upstream; skipping pull (local/offline)."
+  fi
+else
+  echo "[new_feature] No local 'main'; using current HEAD."
+fi
 
-git commit -m "chore(context): scaffold ${BRANCH} and refresh project_tree.md"
+BR="feature/${NAME}"
+echo "[new_feature] Creating/switching to: ${BR}"
+if git show-ref --verify --quiet "refs/heads/${BR}"; then
+  git checkout -q "${BR}"
+else
+  git checkout -q -b "${BR}"
+fi
 
-info "Done. Next: connect your agent to the repo and attach files in /context."
+mkdir -p context context/directory_notes
+DEV="context/development.md"
+AGENTS="context/agents.md"
+TREE="context/project_tree.md"
+touch "$DEV" "$AGENTS" "$TREE"
+
+# Replace cookiecutter token if present, else ensure Primary Goal/Phase headings exist
+tmp="$(mktemp)"
+if grep -q '{{cookiecutter.primary_goal}}' "$DEV"; then
+  sed "s/{{cookiecutter.primary_goal}}/${PRIMARY//\//\\/}/g" "$DEV" > "$tmp" && mv "$tmp" "$DEV"
+fi
+
+# Ensure Phase line
+if grep -q '^\*\*Phase:\*\*' "$DEV"; then
+  perl -0777 -i -pe 's/^\*\*Phase:\*\*.*$/**Phase:** '"${PHASE//\//\\/}"'/m' "$DEV" || true
+else
+  awk -v PHASE="$PHASE" 'NR==1{print; print ""; print "**Phase:** " PHASE; print ""; next} {print}' "$DEV" > "$tmp" && mv "$tmp" "$DEV"
+fi
+
+# Ensure Primary Goal line
+if grep -q '^\*\*Primary Goal:\*\*' "$DEV"; then
+  perl -0777 -i -pe 's/^\*\*Primary Goal:\*\*.*$/**Primary Goal:** '"${PRIMARY//\//\\/}"'/m' "$DEV" || true
+else
+  awk -v PG="$PRIMARY" 'NR==1{print; print ""; print "**Primary Goal:** " PG; print ""; next} {print}' "$DEV" > "$tmp" && mv "$tmp" "$DEV"
+fi
+
+# Ensure Context Sync section scaffold
+if ! grep -q '^## Context Sync' "$DEV"; then
+  cat >> "$DEV" <<'EOCS'
+
+## Context Sync (AUTO-UPDATED)
+
+- **Overall goal is:** _(set by feature flow)_
+- **Last action was:** _(set by feature flow)_
+- **Next action will be:** _(set by feature flow)_
+EOCS
+fi
+
+git add "$DEV"
+git commit -m "feat(context): start ${BR} — Primary Goal: ${PRIMARY} | Phase: ${PHASE}" >/dev/null || true
+
+echo "[new_feature] Branch ready: ${BR}"
+echo "[new_feature] Updated ${DEV} with Primary Goal + Phase + Context Sync."

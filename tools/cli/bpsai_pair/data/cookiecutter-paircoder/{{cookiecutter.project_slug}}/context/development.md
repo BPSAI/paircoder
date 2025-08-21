@@ -1,18 +1,10 @@
+# Development Log
 
-# Development Roadmap — {{cookiecutter.project_name}}
-
-**Primary Goal:** {{cookiecutter.primary_goal}}
-**Owner:** @{{cookiecutter.owner_gh_handle}}
-**Last Updated:** <init>
-
-## KPIs & Non-Functional Targets
-- Test Coverage: ≥ {{cookiecutter.coverage_target}}
-
-## Phase 1 — High-Impact, Low-Dependency (Weeks 1–2)
-- [ ] Seed with project-specific objectives/tasks.
+**Phase:** (set by first feature)
+**Primary Goal:** (set by first feature)
 
 ## Context Sync (AUTO-UPDATED)
-Overall goal is: {{cookiecutter.primary_goal}}
-Last action was: (init)
-Next action will be: (init)
-Blockers/Risks: (none)
+
+- **Overall goal is:** (set by feature)
+- **Last action was:** (set by feature)
+- **Next action will be:** (set by feature)
