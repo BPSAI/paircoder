@@ -1,7 +1,9 @@
 
 [project]
+license = { file = "LICENSE" }
+readme = "README.md"
 name = "bpsai-pair"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI for AI pair-coding workflow"
 authors = [{name = "BPS AI Software"}]
 requires-python = ">=3.9"
@@ -13,3 +15,16 @@ bpsai-pair = "bpsai_pair.cli:app"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"bpsai_pair" = ["data/**"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "Topic :: Software Development :: Libraries :: Application Frameworks"
+]
+bpsai-pair-init = "bpsai_pair.init_bundled_cli:main"
