@@ -259,7 +259,7 @@ Add PairCoder to your repo by running `bpsai-pair init`. Commit the introduced f
 Use `context/development.md` to outline your high-level roadmap. Possibly break it into phases. The `prompts/roadmap.yml` can be used with an AI (e.g., ask the AI "Using the roadmap prompt, help me plan the phases for achieving the Primary Goal"). This can yield a structured plan that you then place into `development.md` (under the Primary Goal section or below). Essentially, `development.md` can hold more detail than just the Context Sync; it's your space to plan. Keep it updated as plans change.
 
 ### 3. Starting a Feature (with AI or without)
-When ready to tackle a piece of work, run `bpsai-pair feature <name> ...`. This creates a feature branch and updates context. Push this branch to your remote (so others know you're working on it). At this point, you might engage an AI: you package the context (`bpsai-pair pack`) and send it to the AI with a prompt (perhaps using `prompts/implementation.yml`) like "Here's the current project context, please implement feature X following the guidelines." The AI will produce code changes.
+When ready to tackle a piece of work, run `bpsai-pair feature <name> ...`. This creates a feature branch and updates the context. Push this branch to your remote (so others know you're working on it). At this point, you might engage an AI: you package the context (`bpsai-pair pack`) and send it to the AI with a prompt (perhaps using `prompts/implementation.yml`) like "Here's the current project context, please implement feature X following the guidelines." The AI will produce code changes.
 
 ### 4. AI Contributions & Context Loop
 If the AI suggests code, you would apply those changes in your repo (maybe via a patch file or manually). After any significant change (AI or human), run:
@@ -271,7 +271,7 @@ to log progress. Commit this change to `development.md`. This way, the next time
 You might also update `context/agents.md` if, for example, you realize the AI needs new instructions ("don't use library X" or "prefer Y approach") based on what it did.
 
 ### 5. Testing & Quality
-Run `pre-commit run --all-files` or `scripts/ci_local.sh` to ensure the code meets standards. Fix any lint errors or formatting issues (the AI might not adhere to all style guidelines perfectly, so this is where you correct it, or include style guidance in `agents.md` for next time). Write tests for the new feature if the AI didn't. This is normal dev work, just within the PairCoder framework.
+Run `pre-commit run --all-files` to ensure the code meets standards. Fix any lint errors or formatting issues (the AI might not adhere to all style guidelines perfectly, so this is where you correct it, or include style guidance in `context/agents.md` for next time). Write tests for the new feature if the AI didn't. This is normal dev work, just within the PairCoder framework.
 
 ### 6. Integrate & Repeat
 Once the feature is done, you create a PR (the PR template provided will remind the contributor to ensure context is updated, tests are added, etc.). Codeowners or team leads review it just like a normal PR. Merge it to main. The context (`development.md`) now contains a historical log of that feature's development. If a new cycle starts, you again use `bpsai-pair feature` for the next task.
@@ -280,7 +280,7 @@ Once the feature is done, you create a PR (the PR template provided will remind 
 The daily `project_tree.yml` job will keep updating the project tree snapshot. You should also occasionally refine `agents.md` as the AI's role evolves, and keep governance docs up to date (for example, if you adopt a new coding standard, note it in `CONTRIBUTING.md` and possibly in `agents.md` for the AI). Use ADRs to record big decisions that the AI might not be aware of inherently.
 
 ### 8. Extensibility
-If desired, you can integrate PairCoder with other tools. The README mentions plans for separate repos like `paircoder-trello-codex` and `paircoder-ui`. That hints that one might connect this with project management tools or a UI for the AI. The CLI could be called from such integrations (and a future version plans to expose a Python API for the CLI commands). For now, you primarily interact via CLI.
+If desired, you can integrate PairCoder with other tools. The README mentions plans for separate repos like `paircoder-ui`, a project management tool with a UI for enhanced UX when interacting with the AI. The CLI could be called from such similar integrations (and a future version plans to expose a Python API for the CLI commands). For now, you primarily interact via CLI.
 
 By following this workflow, any developer on the team (and the AI "developer") has a shared understanding of the project's state and next steps. PairCoder essentially provides the scaffolding and guardrails, but it's up to the team to use them consistently. The benefit is a more structured and trackable collaboration with AI, reducing the chaos and improving transparency.
 
@@ -289,9 +289,6 @@ By following this workflow, any developer on the team (and the AI "developer") h
 PairCoder is suitable for any development team looking to incorporate AI assistance into their coding process in a controlled, auditable way. Its combination of a CLI tool and repository scaffolding makes it a comprehensive drop-in framework for AI pair programming. It treats many aspects (context sharing, branch discipline, quality checks, documentation) holistically. Once set up, you can focus on building features – with an AI – while PairCoder quietly maintains the order (updating the context, enforcing rules, etc.).
 
 Always remember that the value of PairCoder grows when the context is well-maintained and practices are followed. The more you document in `development.md`, `agents.md`, and directory notes, the more the AI can help effectively. The more you adhere to updating the Context Sync and using the provided tools, the smoother the collaboration. It's a two-way street: PairCoder provides the tools, and the team (human + AI) uses them to create a virtuous cycle of improvement.
-
-## Legacy Scripts Notice
-The original shell scripts (`new_feature.sh`, `agent_pack.sh`, etc.) are deprecated. They remain in the template for historical purposes but are **not** the recommended interface. Always use the CLI (`bpsai-pair ...`).
 
 ## Windows Support
 From v2.0, PairCoder is OS-agnostic. All features are supported equally on Linux, macOS, and Windows.
