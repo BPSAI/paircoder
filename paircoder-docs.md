@@ -32,7 +32,7 @@ To use PairCoder, you need the following (these are the base requirements from t
 
 - **Optional: Node.js** – If your project includes JavaScript/TypeScript, having Node will allow the provided CI hook (`ci_local.sh` and `ci.yml`) to run linters and tests for that code. If you don't use Node, those steps will simply be skipped (the script checks if `package.json` exists).
 
-- **Optional: Docker** – Not directly used in v0.1.0, but noted for potential future integration tests.
+- **Optional: Docker** – Not directly used in v0.2.0, but noted for potential future integration tests.
 
 - **Gitleaks Binary**: If you plan to use the secret scanning, install the gitleaks CLI tool on your machine (available via package managers or from GitHub). The pre-commit hook and documentation refer to this for scanning secrets.
 
@@ -96,7 +96,7 @@ bpsai-pair feature login-system --primary "Implement login with DI seam" --phase
 
 The `<feature-name>` is a short slug for your feature (it will become part of the branch name). `--primary` is an optional description of the feature's primary goal (if not provided, the context will keep the generic placeholder or previous text), and `--phase` describes the next immediate action or phase. There is also a `--force` flag to bypass the "dirty working tree" check (useful if you have uncommitted changes and still want to branch, but generally it's better to commit or stash before running this).
 
-**What it does**: Internally, this command runs the `scripts/new_feature.sh` script. Key actions:
+**What it does**:
 
 1. Checks you are at the repo root and that there are no uncommitted changes (unless `--force`)
 2. Verifies that a main (or master) branch exists to branch off from
@@ -122,17 +122,17 @@ bpsai-pair pack --extra README.md docs/Architecture.md
 ```
 You can list multiple `--extra` items.
 
-**What it does**: Under the hood, this calls `scripts/agent_pack.sh`, which uses the tar command to archive files. By default it always includes:
+**What it does**: Under the hood, this uses the tar command to archive files. By default, it always includes:
 - `context/development.md` (the roadmap & latest context sync info)
 - `context/agents.md` (the AI playbook/guidelines)
 - `context/project_tree.md` (project structure snapshot)
 - the entire `context/directory_notes/` directory (any per-directory notes you've written)
 
-It then adds any `--extra` paths you provided to that list. Before creating the tar, it checks that all those paths actually exist – so you'll get an error if, say, you typo'd a filename.
+It then adds any `--extra` paths you provided to that list. Before creating the tar, it checks that all those paths actually exist – so you'll get an error if, for example, you typo'd a filename.
 
 The packing process also respects an ignore list for safety: there is a file `.agentpackignore` which functions like a `.gitignore` for packaging. Common large or sensitive patterns (like `.git/**`, `node_modules/`, `dist/`, `__pycache__/`, etc.) are excluded automatically. You can customize `.agentpackignore` to exclude or include other patterns as needed. The tarball will thus contain only the files we want the AI to see. The script prints out what it's doing – e.g., "Packing -> agent_pack.tgz" and confirms creation with the file size.
 
-After running this, you'll have an archive file. How to use it? This archive can be provided to the AI agent. For example, if using an OpenAI ChatGPT with file upload, you'd attach the `agent_pack.tgz`. The AI can open it and read all the context files to understand the project's state before contributing code. 
+After running this, you'll have an archive file. How to use it? This archive can be provided to the AI agent. For example, if using an UX with file upload, you'd attach the `agent_pack.tgz`. The AI can open it and read all the context files to understand the project's state before contributing code. 
 
 **Note**: The agent pack deliberately omits source code (unless you add some in extras), focusing on context and docs. This encourages the AI to generate code without directly copying existing code, and avoids sending potentially sensitive code unnecessarily. If the AI needs to see a particular source file, you can always add it with `--extra` or share it separately.
 
@@ -169,21 +169,21 @@ When PairCoder is initialized in a repo (via init or by starting a new project w
 
 This folder is central to PairCoder. It contains:
 
-**`development.md`** – The "Development Roadmap" Markdown file. This is essentially the journal of the project's progress and plans. It typically starts with a Primary Goal of the project, the project name, owner, last updated date, etc., followed by the Context Sync section. You should treat this as the single source of truth for "what are we doing and why" in the project. At project start, you fill in the Primary Goal (either manually or via the `--primary` flag during feature command). As development proceeds, every time something changes, update the Context Sync (preferably via the CLI). Think of it like a constantly evolving README focused on dynamic progress. This file is also packaged and given to the AI, so it's how the AI knows the overall context and recent history. It's a living document; keep it updated for best results.
+**`development.md`** – The "Development Roadmap" Markdown file. This is essentially the journal of the project's progress and plans. It typically starts with a Primary Goal of the project, the project name, owner, last updated date, etc., followed by the Context Sync section. You should treat this as the single source of truth for "what are we doing and why" in the project. At project start, you fill in the Primary Goal (either manually or via the `--primary` flag during feature command). As development proceeds, every time something changes, update the Context Sync (preferably via the CLI). Think of it as a constantly evolving README focused on dynamic progress. This file is also packaged and given to the AI, so it's how the AI knows the overall context and recent history. It's a living document; keep it updated for the best results.
 
-**`project_tree.md`** – A snapshot of the repository's directory tree structure. This is auto-generated (via the feature command or a daily CI job) and is not meant to be edited by hand. It shows all files and folders (excluding certain ignored patterns) in a tree format, which gives the AI a bird's-eye view of the project's scope. The top of the file includes a timestamp of when it was generated. The CI workflow will update this daily to catch any new files committed outside of the feature scaffolding. As a user, you don't edit this; you just ensure the CI is running or run `bpsai-pair feature` again to refresh it if needed.
+**`project_tree.md`** – A snapshot of the repository's directory tree structure. This is auto-generated (via the feature command or a daily CI job) and is not meant to be edited by hand. It shows all files and folders (excluding certain ignored patterns) in a tree format, which gives the AI a bird's-eye view of the project's scope. The top of the file includes a timestamp of when it was generated. The CI workflow will update this daily to catch any new files committed outside the feature scaffolding. As a user, you don't edit this; you only ensure the CI is running or run `bpsai-pair feature` again to refresh it if needed.
 
-**`agents.md`** – The "Agents Guide – AI Pair Coding Playbook." This is initially a stub file with a note telling you to fill in the canonical version. The intention is that you provide instructions here for AI agents working on your code. For example, you might include coding style guidelines, architectural principles, definitions of done, or any rules the AI should follow (like "don't touch files in /core without approval" or "use Python style X for logging"). Essentially, this is a place to encode your team's best practices and any specific domain knowledge the AI needs. Before you begin using an AI agent, you should replace the stub with a well-thought guide. Once written, this file is always included in context packages, so the AI will refer to it whenever it's working on tasks.
+**`agents.md`** – The "Agents Guide / AI Pair Coding Playbook." This is initially a stub file with a note telling you to fill in the canonical version. The intention is that you provide instructions here for AI agents working on your code. For example, you might include coding style guidelines, architectural principles, definitions of done, or any rules the AI should follow (like "don't touch files in /core without approval" or "use Python style X for logging"). Essentially, this is a place to encode your team's best practices and any specific domain knowledge the AI needs. Before you begin using an AI agent, you should replace the stub with a well-thought guide. Once written, this file is always included in context packages, so the AI will refer to it whenever it's working on tasks.
 
-**`directory_notes/`** – A directory intended to hold Markdown notes for individual directories or components in your repo. It starts with just a `.gitkeep` (an empty file to ensure the folder exists). PairCoder provides a template for directory notes (`templates/directory_note.md`) which you can copy into this folder for any submodule or directory that might need explanation. For instance, if you have a `backend/` directory, you could create `context/directory_notes/backend.md` describing what's in there, important design choices, etc. These notes can then be kept up to date and will be packaged for the AI. They help the AI (and new developers) understand each part of the codebase in context. Maintaining these is optional but recommended for complex projects.
+**`directory_notes/`** – A directory intended to hold Markdown notes for individual directories or components in your repo. It starts with just a `.gitkeep` (an empty file to ensure the folder exists). PairCoder provides a template for directory notes (`templates/directory_note.md`) which you can copy into this folder for any submodule or directory that might need explanation. For instance, if you have a `backend/` directory, you could create `context/directory_notes/backend.md` describing what's in there, important design choices, etc. These notes can then be kept up to date and will be packaged for the AI. They help the AI (and new developers) understand each part of the codebase in context. Maintaining these notes is optional but recommended for complex projects.
 
-(In future or optional usage: context could also include an `architecture.md` or other overview docs if you want to place them here. PairCoder doesn't generate those by default beyond what's mentioned.)
+(For optional usage: context could also include an `architecture.md` or other overview docs if you want to place them here. PairCoder doesn't generate those by default beyond what's mentioned.)
 
 ### `prompts/` – AI Prompt Templates
 
 This directory contains YAML files that define the base prompts or instructions for various phases of the AI's involvement:
 
-- **`roadmap.yml`** – Likely contains a template for prompting the AI to assist in roadmap generation or understanding. For example, it might outline how to ask the AI to break down the Primary Goal into phases or tasks (the "Roadmap" phase of pair programming).
+- **`roadmap.yml`** – Contains a template for prompting the AI to assist in roadmap generation from a proposed plan. It outlines how to ask the AI to break down the Primary Goal into phases or tasks (the "Roadmap" phase of pair programming) and to generate the necessary `/context/development.md` & `/context/agents.md` files based on the accepted plan.
 
 - **`deep_research.yml`** – A template for deep research prompts. Possibly used when you want the AI to do a deep dive (like what we did here: analyzing a repo, summarizing info, answering complex questions – essentially a "deep research" phase prompt).
 
