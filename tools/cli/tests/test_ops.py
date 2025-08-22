@@ -2,6 +2,7 @@
 from pathlib import Path
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
@@ -68,3 +69,29 @@ def test_context_packer_patterns():
     assert ops.ContextPacker.should_exclude(Path(".git"), patterns) == True
     assert ops.ContextPacker.should_exclude(Path("test.log"), patterns) == True
     assert ops.ContextPacker.should_exclude(Path("main.py"), patterns) == False
+
+
+def test_pack_respects_directory_ignore(tmp_path):
+    """Ensure directory patterns exclude contents from pack."""
+    root = tmp_path
+
+    context_dir = root / "context"
+    context_dir.mkdir()
+    (context_dir / "development.md").write_text("dev")
+    (context_dir / "agents.md").write_text("agents")
+    (context_dir / "project_tree.md").write_text("tree")
+
+    private_dir = root / "private"
+    private_dir.mkdir()
+    (private_dir / "secret.txt").write_text("shh")
+
+    (root / ".agentpackignore").write_text("private/\n")
+
+    output = root / "pack.tgz"
+    ops.ContextPacker.pack(root, output, extra_files=["private/secret.txt"])
+
+    with tarfile.open(output, "r:gz") as tar:
+        names = tar.getnames()
+
+    assert "context/development.md" in names
+    assert "private/secret.txt" not in names

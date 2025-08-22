@@ -1,7 +1,16 @@
+# Files
 **/.env
 **/.env.*
 **/*.log
-assets/**
+**/*.pyc
+**/*.bak
+
+# Directories
+.git/
+.venv/
+__pycache__/
+node_modules/
+assets/
 tools/cli/dist/
 tools/cli/build/
 *.egg-info/

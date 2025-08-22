@@ -1,6 +1,8 @@
 # Default agent pack exclusions
 .git/
 .venv/
+venv/
+env/
 __pycache__/
 node_modules/
 dist/
@@ -10,3 +12,8 @@ build/
 *.tgz
 *.tar.gz
 *.zip
+.env
+.env.*
+*.pyc
+.DS_Store
+Thumbs.db
