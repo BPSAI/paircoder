@@ -5,6 +5,21 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-08-22
+
+### Added
+- **Comprehensive user documentation** - Added USER_GUIDE.md to both package distribution and bundled template
+- **Documentation accessibility** - Users now receive full documentation both with the package and in initialized projects
+
+### Changed
+- **Documentation structure** - Copied paircoder-docs.md working file from repo root to accessible locations for end users & renamed USER_GUIDE.md
+- **MANIFEST.in** - Updated to include USER_GUIDE.md in package distribution
+
+### Developer Notes
+- Documentation now ships with the package and gets installed in user projects
+- Sets foundation for future Sphinx/MkDocs HTML documentation
+- Next release (0.3.0) will include proper HTML documentation build
+
 ## [0.2.2] - 2025-08-22
 
 ### Fixed
