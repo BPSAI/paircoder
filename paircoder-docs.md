@@ -191,15 +191,6 @@ This directory contains YAML files that define the base prompts or instructions 
 
 These files come with the framework but are not actively modified by the CLI. They are assets you or the AI agent integration can use. For instance, if you have a script or UI that interacts with an AI model, it might load these prompts to formulate its queries. You can customize them as needed for your project's tone or specificity. By shipping these, PairCoder ensures that all team members and AI agents start with a consistent approach to asking the AI for help at different stages (planning vs. researching vs. coding). As a user, you should review these prompt templates and adjust any placeholders or project-specific info before using them heavily.
 
-### `scripts/` – Automation Scripts
-
-Three shell scripts are added to support the workflow:
-
-- **`new_feature.sh`** – As described above, this script automates setting up a new feature branch and updating context. It is invoked by the `bpsai-pair feature` command. While you typically run it via the CLI, you could also run it directly (e.g., `scripts/new_feature.sh myfeature`) if needed. It's well-documented within (usage and example are in the comments). Users generally won't edit this script, but you might open it to understand exactly what it does, or modify it if you need to adapt the branching strategy (for example, if your main branch is named differently or if you want it to do something extra on branch creation).
-
-- **`agent_pack.sh`** – This bundles context for the AI. It is used by the pack command. You can also run it standalone (`scripts/agent_pack.sh output.tgz --extra X Y Z`). It's essentially a wrapper around the tar command with built-in excludes and include logic. If your project has some custom needs (say you always want to include a specific folder or exclude more patterns), you can tweak `.agentpackignore` or the script accordingly. But out-of-the-box it covers common use cases.
-
-- **`ci_local.sh`** – A convenience script to simulate the CI pipeline locally. It will auto-detect if your repo has Node, Python, or .NET components and run formatting, linting, tests, etc., accordingly. This is useful to catch issues before pushing to GitHub where the real CI runs. For example, running `scripts/ci_local.sh` before committing can ensure your code passes lint and tests. The script is non-destructive; it just prints and runs commands, and it's configured to not fail on missing tools (it will skip gracefully). As a user, you can run this anytime to do a quick sanity check on your repo. It's especially handy if you integrate an AI that writes code, to verify the AI's code meets all checks.
 
 ### Governance & Config Files (repo root)
 
