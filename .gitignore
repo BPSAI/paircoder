@@ -45,6 +45,7 @@ build/
 node_modules/
 package-lock.json
 yarn.lock
+*.egg-info/
 
 # macOS
 .AppleDouble
