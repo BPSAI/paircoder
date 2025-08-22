@@ -1,3 +1,0 @@
-[console_scripts]
-bpsai-pair = bpsai_pair.cli:app
-bpsai-pair-init = bpsai_pair.init_bundled_cli:main
