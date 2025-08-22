@@ -81,3 +81,5 @@ $RECYCLE.BIN/
 *.sqlite
 *.sqlite3
 .venv/
+tools/cli/dist/
+tools/cli/build/
