@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 file = "LICENSE"
 
 [project.scripts]
-bpsai-pair = "bpsai_pair.cli:app"
+bpsai-pair = "bpsai_pair.cli:run"
 bpsai-pair-init = "bpsai_pair.init_bundled_cli:main"
 [tool.setuptools]
 include-package-data = true
