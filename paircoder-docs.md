@@ -185,11 +185,11 @@ This directory contains YAML files that define the base prompts or instructions 
 
 - **`roadmap.yml`** – Contains a template for prompting the AI to assist in roadmap generation from a proposed plan. It outlines how to ask the AI to break down the Primary Goal into phases or tasks (the "Roadmap" phase of pair programming) and to generate the necessary `/context/development.md` & `/context/agents.md` files based on the accepted plan.
 
-- **`deep_research.yml`** – A template for deep research prompts. Possibly used when you want the AI to do a deep dive (like what we did here: analyzing a repo, summarizing info, answering complex questions – essentially a "deep research" phase prompt).
+- **`deep_research.yml`** – A template for a "deep research" phase prompt. This template is used when you want the AI to do a deep dive (analyzing a repo, summarizing info, answering complex questions).
 
 - **`implementation.yml`** – A template prompt for coding or implementing features, guiding the AI on how to produce code within the project's context and constraints.
 
-These files come with the framework but are not actively modified by the CLI. They are assets you or the AI agent integration can use. For instance, if you have a script or UI that interacts with an AI model, it might load these prompts to formulate its queries. You can customize them as needed for your project's tone or specificity. By shipping these, PairCoder ensures that all team members and AI agents start with a consistent approach to asking the AI for help at different stages (planning vs researching vs coding). As a user, you should review these prompt templates and adjust any placeholders or project-specific info before using them heavily.
+These files come with the framework but are not actively modified by the CLI. They are assets you or the AI agent integration can use. For instance, if you have a script or UI that interacts with an AI model, it might load these prompts to formulate its queries. You can customize them as needed for your project's tone or specificity. By shipping these, PairCoder ensures that all team members and AI agents start with a consistent approach to asking the AI for help at different stages (planning vs. researching vs. coding). As a user, you should review these prompt templates and adjust any placeholders or project-specific info before using them heavily.
 
 ### `scripts/` – Automation Scripts
 
