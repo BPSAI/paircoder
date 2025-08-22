@@ -1,1 +1,12 @@
-# Default agent pack exclusions\n.git/\n.venv/\n__pycache__/\nnode_modules/\ndist/\nbuild/\n*.log\n*.bak\n*.tgz\n*.tar.gz\n*.zip\n
+# Default agent pack exclusions
+.git/
+.venv/
+__pycache__/
+node_modules/
+dist/
+build/
+*.log
+*.bak
+*.tgz
+*.tar.gz
+*.zip

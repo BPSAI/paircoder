@@ -1,1 +1,11 @@
-# Development Log\n\n**Phase:** (set by first feature)\n**Primary Goal:** (set by first feature)\n\n## Context Sync (AUTO-UPDATED)\n\n- **Overall goal is:** (set by feature)\n- **Last action was:** (set by feature)\n- **Next action will be:** (set by feature)\n- **Blockers:** (set by feature)\n
+# Development Log
+
+**Phase:** (set by first feature)
+**Primary Goal:** (set by first feature)
+
+## Context Sync (AUTO-UPDATED)
+
+- **Overall goal is:** (set by feature)
+- **Last action was:** (set by feature)
+- **Next action will be:** (set by feature)
+- **Blockers:** (set by feature)

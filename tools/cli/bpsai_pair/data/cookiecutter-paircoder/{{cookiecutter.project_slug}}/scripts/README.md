@@ -1,6 +1,6 @@
 # Scripts directory (intentionally minimal)
 
-This project uses the **PairCoder CLI** (Python) — no Bash scripts required.
+This project uses the **PairCoder CLI** (Python) — Bash scripts have been deprecated.
 Common commands:
 
 ```bash
