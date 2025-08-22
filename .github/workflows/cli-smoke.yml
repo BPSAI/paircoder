@@ -1,43 +1,43 @@
 name: cli-smoke
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   smoke:
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [ '3.10', '3.11', '3.12' ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        py: ['3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Build wheel
-        run: |
-          python -m pip install --upgrade pip build
-          python -m build tools/cli
-
-      - name: Install wheel
-        run: |
-          python -m pip install ${{ github.workspace }}/tools/cli/dist/*.whl
-
-      - name: Run smoke in temp repo
-        run: |
-          set -euo pipefail
-          tmp=$(mktemp -d)
-          cd "$tmp"
-          git init .
-          echo "# Smoke" > README.md
-          git add . && git commit -m "init"
-          python -m venv v && . v/bin/activate
-          python -m pip install --upgrade pip
-          pip install ${{ github.workspace }}/tools/cli/dist/*.whl
-          bpsai-pair-init
-          git add -A && git commit -m "adopt scaffolding"
-          bpsai-pair feature demo --primary "Goal" --phase "Phase 1"
-          bpsai-pair pack --out agent_pack.tgz
-          bpsai-pair context-sync --last "Did A" --next "Do B" --blockers ""
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.py }}
+    - name: Build wheel
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build tools/cli
+    - name: Install & smoke test in temp repo
+      shell: bash
+      run: |
+        set -euxo pipefail
+        tmp=$(mktemp -d)
+        cd "$tmp"
+        git init .
+        echo "# Smoke" > README.md
+        git add . && git commit -m "init"
+        python -m venv v
+        . v/bin/activate || source v/Scripts/activate
+        python -m pip install --upgrade pip
+        pip install "$GITHUB_WORKSPACE"/tools/cli/dist/*.whl
+        bpsai-pair-init
+        git add -A && git commit -m "adopt scaffolding"
+        bpsai-pair feature demo --type refactor --primary "Goal" --phase "Phase 1"
+        bpsai-pair pack --out agent_pack.tgz
+        bpsai-pair context-sync --last "Did A" --next "Do B" --blockers ""
