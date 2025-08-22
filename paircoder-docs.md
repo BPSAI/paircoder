@@ -232,21 +232,21 @@ These templates are for your convenience; the CLI doesn't directly use them (exc
 
 ### Tests (`tests/` directory)
 
-The scaffold includes a `tests/` folder with subfolders like `example_contract` and `example_integration`, each containing a README. These are placeholders indicating where and how to write tests:
+The scaffold includes a `tests/` folder with subfolders like `example_contract` and `example_integration`, each containing a README. These are placeholders indicating to the coding agent where and how to write tests:
 - Example contract tests refer to Consumer Pact tests
 - Example integration tests for external boundaries
 
-The nested READMEs are stubs and are not functional code. They serve as a placeholder for your team. You should replace or revise these once you add real tests. For example, if choosing to keep and revise them, they may be incorporated to signal to the AI where tests go and what frameworks to use, etc.
+**NOTE**: The nested READMEs are stubs and are not functional code. They serve as a placeholder for your team. You should replace or revise these once you add real tests. For example, if choosing to keep and revise them, they may be incorporated to signal to the AI where tests go and what frameworks to use, etc.
 
 ### `services/` and `infra/` directories
 
-These are present as empty folders with `.gitkeep`. They suggest where you might put microservice code or infrastructure-as-code (Terraform, etc.), depending on your project. They're not used by PairCoder's logic directly, but they're part of the scaffold to nudge a clean project structure.
+These are present as empty folders with `.gitkeep`. They indicate where you might put microservice code or infrastructure-as-code (Terraform, etc.), depending on your project. They're not used by PairCoder's logic directly, but they're part of the scaffold to nudge a clean project structure. If used, their purpose should be included in your `context/agents.md` file to allow efficient crawling.
 
 ### Cookiecutter Config (`tools/cookiecutter-paircoder/`)
 
 While not part of the project itself once you've initialized, it's worth noting that PairCoder was developed with a Cookiecutter template. The `cookiecutter.json` file in that directory defines variables like `project_name`, `project_slug`, etc., which are used in the scaffold files. If you start a new project using Cookiecutter (rather than using init on an existing repo), those variables will be substituted. For example, `<PROJECT NAME>` in `development.md` would be replaced with your actual project name. 
 
-When you run `bpsai-pair init` on an existing repo, it doesn't do string substitution (it just copies files with the placeholders as-is, then feature command stamps the Primary Goal). In the future (v0.2.0 on the roadmap), there are plans to integrate template variable substitution into init so that it can ask for your project name and fill it in automatically. For now, just be aware of the placeholders and update them manually (e.g., replace `<PROJECT NAME>` in `development.md` with your repo name after init).
+When you run `bpsai-pair init` on an existing repo, it doesn't do string substitution (it just copies files with the placeholders as-is, then feature command stamps the Primary Goal). In the future (v0.2.x on the roadmap), there are plans to integrate template variable substitution into init so that it can ask for your project name and fill it in automatically. For now, just be aware of the placeholders and update them manually (e.g., replace `<PROJECT NAME>` in `development.md` with your repo name after init).
 
 ## How to Use PairCoder Day-to-Day
 
