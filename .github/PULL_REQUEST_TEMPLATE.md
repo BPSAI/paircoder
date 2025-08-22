@@ -33,7 +33,7 @@ Overall goal is: <...> Last action was: <...> Next action will be: <...> Blocker
 - Data/Schema implications: <if any>
 
 ## Screenshots / Logs (optional)
-<attach>
+<attach></>
 
 ## Checklist
 - [ ] CI green (lint, type, tests, audit)
