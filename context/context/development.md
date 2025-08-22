@@ -1,91 +1,111 @@
-# Development Roadmap — <PROJECT NAME>
+# Development Roadmap — PairCoder
 
-**Primary Goal:** Demonstrate PairCoder as its own reference implementation
-**Owner:** <Tech Lead / DRI>  
-**Last Updated:** <YYYY-MM-DD>
+**Primary Goal:** Develop and maintain the PairCoder AI pair programming framework while serving as its own reference implementation  
+**Owner:** BPS AI Software Team  
+**Last Updated:** 2025-01-24
 
 ---
 
 ## KPIs & Non-Functional Targets
 
-- Modularity: <metric or heuristic, e.g., avg. file deps ↓ 20%>
-- Test Coverage: ≥ <TARGET>% lines / branches
-- Latency/Error Budgets: <SLO/SLA if applicable>
-- Security Baselines: no critical/high vulns in dependency audit
-- Observability: <traces/logs/metrics> for <key flows>
+- **Package Quality:** Zero critical bugs, comprehensive test coverage
+- **Documentation:** Complete user docs, clear API references
+- **Dogfooding:** This repo fully implements PairCoder practices
+- **Cross-platform:** Windows, macOS, Linux compatibility
+- **Test Coverage:** ≥ 80% for core CLI functionality
 
 ---
 
-## Phase 1 — High-Impact, Low-Dependency (Weeks 1–2)
+## Phase 1 — Repository Alignment & Documentation (Current)
 
 **Objectives**
-- <Objective 1>
-- <Objective 2>
+- Align repository structure to properly demonstrate PairCoder principles
+- Separate package development concerns from reference implementation
+- Create clear, non-conflicting agent guidance
 
 **Tasks**
-- [ ] T1: <desc> (owner) — *acceptance:* <criteria>
-- [ ] T2: <desc> (owner) — *acceptance:* <criteria>
+- [x] Identify structural issues and inconsistencies
+- [ ] Create proper root pointer files (AGENTS.md, CLAUDE.md)
+- [ ] Update context files with actual project values
+- [ ] Fix project structure references to use project_tree.md
+- [ ] Clarify package vs. project separation
 
 **Testing Plan**
-- Unit: <areas>
-- Integration: <boundaries>
-- Contract: <providers/consumers>
+- Unit: CLI command tests (pytest)
+- Integration: Full workflow smoke tests
+- Manual: Agent interaction validation
 
 **Risks & Rollback**
-- Risk: <desc> — *mitigation:* <plan> — *rollback:* <steps>
+- Risk: Breaking existing agent workflows — mitigation: test with actual agent before committing
+- Rollback: Git revert to previous working state
 
 **Definition of Done**
-- All acceptance criteria met
-- CI green; coverage ≥ <TARGET>%
-- Context Sync updated (see bottom)
+- Agents can navigate from root to context without confusion
+- No placeholder values in context files
+- Clear separation between package and project concerns
 
 ---
 
-## Phase 2 — Medium-Complexity Refactors (Weeks 3–4)
+## Phase 2 — Package Enhancement & API Development
 
 **Objectives**
-- <…>
+- Add JSON output mode for all commands
+- Implement Python API mirroring CLI
+- Add template variable substitution to init command
+- Enhance pack command with preview/filtering options
 
 **Tasks**
-- [ ] <…>
+- [ ] Add --json flag to all CLI commands
+- [ ] Create Python API in bpsai_pair.api module
+- [ ] Implement cookiecutter variable substitution in init
+- [ ] Add --dry-run and --list to pack command
+- [ ] Write comprehensive API documentation
 
-**Testing Plan / Risks / DoD**
-- <reuse structure from Phase 1>
+**Testing Plan**
+- Unit: API method tests
+- Integration: CLI-to-API parity tests
+- Contract: JSON schema validation
 
 ---
 
-## Phase 3 — Hardening & Optimization (Weeks 5–6)
+## Phase 3 — Advanced Features & Ecosystem
 
 **Objectives**
-- <…>
+- Path-filtered CI workflows
+- Integration with external tools (Trello, Jira)
+- Web UI prototype (separate repo)
 
 **Tasks**
-- [ ] <…>
-
-**Testing Plan / Risks / DoD**
-- <reuse structure from Phase 1>
+- [ ] Implement path filters in CI workflows
+- [ ] Create plugin architecture for integrations
+- [ ] Document extension points and APIs
+- [ ] Prototype paircoder-ui repository
 
 ---
 
 ## Backlog (Deferred / Parking Lot)
 
-- [ ] <item> — *why deferred:* <reason/dep>
+- [ ] GitHub Actions marketplace action — deferred: focus on core CLI first
+- [ ] VSCode extension — deferred: await stable API
+- [ ] Cloud-hosted context storage — deferred: security considerations
 
 ---
 
 ## Runbooks & Commands
 
-- Bootstrap: `<cmd>`
-- Local env: `<cmd>`
-- Migrations: `<cmd>`
-- Seed data: `<cmd>`
+- **Install package (dev):** `pip install -e tools/cli`
+- **Run tests:** `cd tools/cli && pytest`
+- **Build wheel:** `cd tools/cli && python -m build`
+- **Local smoke test:** `./scripts/test_cli.sh`
+- **Update context:** `bpsai-pair context-sync --last "..." --next "..."`
 
 ---
 
 ## Context Sync (AUTO-UPDATED)
-Overall goal is: <PRIMARY GOAL>
-Last action was: <what changed and why> (commit SHA)
-Next action will be: <smallest valuable step with owner>
-Blockers/Risks: <if any>
 
-**Phase:** Phase 1: Documentation & Roadmap Alignment
+**Overall goal is:** Develop and maintain PairCoder while dogfooding our own practices  
+**Last action was:** Repository analysis and structural issues identification  
+**Next action will be:** Implement proper agent guidance files and fix context  
+**Blockers/Risks:** None currently
+
+**Phase:** Phase 1: Repository Alignment & Documentation
