@@ -243,7 +243,7 @@ scripts/test_cli.sh
 
 ## Roadmap & versioning
 
-* **v0.1.0** — Ship core package/CLI.
+* **v0.1.3 — Initial public release (core CLI, hardened UX)* — Ship core package/CLI.
 * **v0.2.0** — Template var substitution at init; JSON output mode; path‑filtered CI.
 * **v0.3.0** — Public Python API mirroring CLI for integrators (e.g., Trello agent imports instead of shelling out).
 
@@ -262,3 +262,35 @@ See **CONTRIBUTING.md**. Use Conventional Commits. Keep diffs small & reversible
 ## Security
 
 See **SECURITY.md**. No secrets in repo or agent packs (`.agentpackignore` covers common paths). Use redacted fixtures/synthetic data.
+
+> Tip: You can also run `bpsai-pair-init` which uses the bundled template.
+### Usage Examples
+
+- Feature (refactor):
+
+```bash
+bpsai-pair feature login-refactor \
+  --type refactor \
+  --primary "Simplify login, prepare DI seam" \
+  --phase "Phase 1: Scaffolding"
+```
+
+- Context Sync (with --next alias and JSON):
+
+```bash
+bpsai-pair context-sync \
+  --last "Scaffolded login module" \
+  --next "Implement password hashing" \
+  --blockers "None" \
+  --json
+```
+
+- Pack preview/list/JSON:
+
+```bash
+bpsai-pair pack --dry-run
+bpsai-pair pack --list
+bpsai-pair pack --json
+```
+
+> Note: Basic JSON output is available for some commands (experimental) and will be expanded in v0.2.x.

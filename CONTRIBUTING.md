@@ -51,3 +51,13 @@ Do not include binaries/media in agent packs. Maintain `.agentpackignore`.
 Use `/templates/adr.md` as a starting point and place completed ADRs under `/docs/adr/ADR-<ID>-<slug>.md`.
 
 ADRs should capture context, decision, alternatives, and consequences.
+
+#### Example: Refactor branch via CLI
+
+```bash
+bpsai-pair feature auth-cleanup --type refactor \
+  --primary "Extract auth adapter seam" \
+  --phase "Phase 1: Scaffolding"
+```
+
+> This repository itself is scaffolded and maintained using PairCoder. Follow the Context Loop (Overall/Last/Next/Blockers) and branch conventions when contributing.

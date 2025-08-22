@@ -1,6 +1,6 @@
 # Development Roadmap — <PROJECT NAME>
 
-**Primary Goal:** <PRIMARY GOAL>  
+**Primary Goal:** Demonstrate PairCoder as its own reference implementation
 **Owner:** <Tech Lead / DRI>  
 **Last Updated:** <YYYY-MM-DD>
 
@@ -88,3 +88,4 @@ Last action was: <what changed and why> (commit SHA)
 Next action will be: <smallest valuable step with owner>
 Blockers/Risks: <if any>
 
+**Phase:** Phase 1: Documentation & Roadmap Alignment
