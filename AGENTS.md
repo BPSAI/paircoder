@@ -24,7 +24,6 @@ Keep these fields current in `context/development.md`:
 ## Typical flows
 ```bash
 # Create/align a feature branch (for package work)
-# (No shell scripts required; CLI uses Python ops)
 bpsai-pair feature ops-json \
   --type refactor \
   --primary "Extend pack --json to include sizes" \
@@ -55,3 +54,6 @@ Start here, then follow pointers:
 2. Read `/context/agents.md` for rules and boundaries.
 3. Do **not** modify cookiecutter sources under `tools/cli/bpsai_pair/data/` unless you are explicitly evolving the template. For product code and docs, update files in repo root (`/src`, `/services`, `/tests`, `/context`, `/templates`).
 4. Prefer minimal, reversible changes; commit small diffs and run `bpsai-pair context-sync` to keep the loop fresh.
+
+## Notes for Agents
+- Always refer to the `/context` directory for live memory and development state.

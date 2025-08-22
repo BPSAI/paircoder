@@ -2,7 +2,7 @@
 
 PairCoder gives teams a **drop‑in, repo‑native toolkit** for pairing with AI coding agents (GPT‑5, Claude, etc.). It standardizes governance, persists project memory in `/context`, and ships a small CLI to orchestrate the workflow (init → roadmap → feature branches → context loop).
 
-> **Scope:** This repo is the **core package/CLI** (Phases 0–2). Any optional UI or external integrations (e.g., Trello Codex) should live in separate repos and *consume* this core.
+> **Scope:** This repo is the **core package/CLI**. Any optional UI or external integrations (e.g., Trello) should live in separate repos and *consume* this core.
 
 ---
 
@@ -84,7 +84,6 @@ bpsai-pair context-sync \
 ```
 context/          # Development roadmap, agents guide, project tree snapshot
 prompts/          # Prompt assets (roadmap, deep_research, implementation)
-scripts/          # Shell helpers (new_feature.sh, agent_pack.sh, etc.)
 tools/cli/        # Typer-based CLI (bpsai-pair)
 tools/cookiecutter-paircoder/   # Cookiecutter template for new repos
 .github/workflows/              # CI & project_tree refresh
@@ -244,7 +243,7 @@ scripts/test_cli.sh
 ## Roadmap & versioning
 
 * **v0.1.3 — Initial public release (core CLI, hardened UX)* — Ship core package/CLI.
-* **v0.2.0** — Template var substitution at init; JSON output mode; path‑filtered CI.
+* **v0.2.0** — Template var substitution at init; JSON output mode; path‑filtered CI. (Current Version)
 * **v0.3.0** — Public Python API mirroring CLI for integrators (e.g., Trello agent imports instead of shelling out).
 
 Separate repos that *consume* this core:
@@ -299,8 +298,8 @@ bpsai-pair pack --json
 
 This repository contains **two concerns**:
 
-1. **Package (root)** – the installable CLI published as `bpsai-pair`.
-2. **Reference project (`reference/`)** – a living example that dogfoods PairCoder.
+1. **Package (`tools/`)** – the installable CLI published as `bpsai-pair`.
+2. **Project (`paircoder`)** – a living example that dogfoods PairCoder to enhance the package repo itself.
 
 > To try the workflow locally:
 >
@@ -371,3 +370,6 @@ The CI workflow builds the wheel, installs it, and runs the golden path:
 
 
 > **Tip (branches):** If your local git defaults to `master`, run `git branch -M main` once after `git init` so CLI commands that expect `main` work out of the box.
+
+---
+This repository is the canonical **live example** of PairCoder. It uses PairCoder to manage its own roadmap, context, and releases.

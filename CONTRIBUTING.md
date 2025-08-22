@@ -61,3 +61,8 @@ bpsai-pair feature auth-cleanup --type refactor \
 ```
 
 > This repository itself is scaffolded and maintained using PairCoder. Follow the Context Loop (Overall/Last/Next/Blockers) and branch conventions when contributing.
+
+## Testing
+This repo includes both smoke tests (GitHub Actions) and pytest-based validation. Contributors should:
+- Run `pytest` locally before opening a PR.
+- Use `bpsai-pair context-sync` after each change to keep the Context Loop updated.

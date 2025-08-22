@@ -2,7 +2,7 @@
 
 ## Purpose and Overview
 
-PairCoder is an AI-augmented pair programming framework that you can drop into any existing code repository to facilitate collaboration between human developers and AI coding agents (such as GPT-4/5, Anthropic Claude, etc.). The core idea is to provide a standard structure and workflow so that AI assistants can integrate into your development process in a governed, transparent, and productive way. PairCoder introduces a set of conventions and tools for maintaining a project "memory," tracking development progress, and enforcing quality and governance standards.
+PairCoder is an AI-augmented pair programming framework that you can drop into any existing code repository to facilitate collaboration between human developers and AI coding agents (such as GPT-5, Codex, Claude, etc.). The core idea is to provide a standard structure and workflow so that AI assistants can integrate into your development process in a governed, transparent, and productive way. PairCoder introduces a set of conventions and tools for maintaining a project "memory," tracking development progress, and enforcing quality and governance standards.
 
 ### Key Features (What You Get)
 
@@ -298,3 +298,9 @@ By following this workflow, any developer on the team (and the AI "developer") h
 PairCoder is suitable for any development team looking to incorporate AI assistance into their coding process in a controlled, auditable way. Its combination of a CLI tool and repository scaffolding makes it a comprehensive drop-in framework for AI pair programming. It treats many aspects (context sharing, branch discipline, quality checks, documentation) holistically. Once set up, you can focus on building features – with an AI – while PairCoder quietly maintains the order (updating the context, enforcing rules, etc.).
 
 Always remember that the value of PairCoder grows when the context is well-maintained and practices are followed. The more you document in `development.md`, `agents.md`, and directory notes, the more the AI can help effectively. The more you adhere to updating the Context Sync and using the provided tools, the smoother the collaboration. It's a two-way street: PairCoder provides the tools, and the team (human + AI) uses them to create a virtuous cycle of improvement.
+
+## Legacy Scripts Notice
+The original shell scripts (`new_feature.sh`, `agent_pack.sh`, etc.) are deprecated. They remain in the template for historical purposes but are **not** the recommended interface. Always use the CLI (`bpsai-pair ...`).
+
+## Windows Support
+From v2.0, PairCoder is OS-agnostic. All features are supported equally on Linux, macOS, and Windows.
