@@ -2,3 +2,6 @@
 **/.env.*
 **/*.log
 assets/**
+tools/cli/dist/
+tools/cli/build/
+*.egg-info/

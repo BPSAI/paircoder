@@ -2,7 +2,7 @@ name: Refresh Project Tree
 
 on:
   schedule:
-    - cron: '17 3 * * *' # daily 03:17 UTC
+    - cron: '17 3 * * *'  # daily at 03:17 UTC
   workflow_dispatch: {}
 
 permissions:
@@ -26,15 +26,17 @@ jobs:
             -path './node_modules' -prune -o \
             -path './dist' -prune -o \
             -path './build' -prune -o \
-            -print | sed 's/^\.\///' >> context/project_tree.md
+            -path './.venv' -prune -o \
+            -path './__pycache__' -prune -o \
+            -print | sed 's/^\.\///' | sort >> context/project_tree.md
           echo '```' >> context/project_tree.md
       - name: Commit changes if any
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add context/project_tree.md || true
           if ! git diff --cached --quiet; then
-            git commit -m "chore(context): refresh project_tree snapshot" && git push;
+            git commit -m "chore(context): refresh project_tree snapshot [skip ci]" && git push;
           else
             echo "No changes to commit.";
           fi
