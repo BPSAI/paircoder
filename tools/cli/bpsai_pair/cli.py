@@ -1,3 +1,4 @@
+from . import init_bundled_cli
 from pathlib import Path
 import shutil
 import typer
@@ -9,11 +10,7 @@ from .adapters import Shell
 app = typer.Typer(add_completion=False, help="bpsai-pair: AI pair-coding workflow CLI")
 
 @app.command()
-def init(
-    template_dir: Path = typer.Argument(..., exists=True, dir_okay=True, file_okay=False,
-                                       help="Path to cookiecutter template root (tools/cookiecutter-paircoder)"),
-    in_place: bool = typer.Option(True, help="Apply scaffolding into current repo (non-destructive)"),
-):
+def init(template: str = typer.Argument(None, help='Path to template (optional, defaults to bundled template)')):
     """Initialize repo with governance, context, prompts, scripts, and workflows."""
     root = repo_root()
     src = template_dir / "{{cookiecutter.project_slug}}"
@@ -90,8 +87,20 @@ def context_sync(
     root = repo_root()
     dev = root / "context" / "development.md"
     if not dev.exists():
-        raise typer.BadParameter("context/development.md not found")
-    text = dev.read_text()
+        dev.parent.mkdir(parents=True, exist_ok=True)
+        dev.write_text('# Development Log
+
+**Phase:** (init)
+**Primary Goal:** (init)
+
+## Context Sync (AUTO-UPDATED)
+
+- **Overall goal is:**
+- **Last action was:**
+- **Next action will be:**
+- **Blockers:**
+')
+text = dev.read_text()
 
     def replace_line(prefix: str, new_value: str) -> str:
         import re
