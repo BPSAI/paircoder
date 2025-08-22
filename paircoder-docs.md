@@ -218,9 +218,9 @@ These files come with the framework but are not actively modified by the CLI. Th
 
 ### CI Workflows (`.github/workflows/`)
 
-- **`ci.yml`** – A GitHub Actions workflow that runs on each push/PR. It will set up appropriate environments and run formatting, linting, typing, and tests for both Node and Python portions of the repo. Essentially, it automates what `ci_local.sh` does. Ensure your repository has any required test commands or configuration so this passes (the template might include a basic placeholder test or none at all, which would result in a passing CI by default). As you develop, maintain your CI to cover your real test suites.
+- **`ci.yml`** – A GitHub Actions workflow that runs on each push/PR. It will set up appropriate environments and run formatting, linting, typing, and tests for both Node and Python portions of the repo. Ensure your repository has any required test commands or configuration so this passes. As you develop, maintain your CI to cover your real test suites.
 
-- **`project_tree.yml`** – A scheduled workflow (likely runs daily or weekly) that executes a small script to regenerate `context/project_tree.md` and commit it if it has changed. This is a "maintenance" workflow to keep the context tree updated without manual intervention. It uses a bot account or GitHub Actions token to push the update. You may need to set the proper permissions (repo write) for this Action. Check that this workflow's schedule (cron) is acceptable (daily might be default). If your repo is private, ensure actions are enabled. This automation ensures that even if no one ran `bpsai-pair feature` recently, your context tree doesn't fall far behind the actual repo structure.
+- **`project_tree.yml`** – A scheduled workflow that executes a small script to regenerate `context/project_tree.md` and commit it if it has changed. This is a "maintenance" workflow to keep the context tree updated without manual intervention. It uses a bot account or GitHub Actions token to push the update. You may need to set the proper permissions (repo write) for this Action. Check that this workflow's schedule (cron) is acceptable (daily might be default). If your repo is private, ensure actions are enabled. This automation ensures that even if no one ran `bpsai-pair feature` recently, your context tree doesn't fall far behind the actual repo structure.
 
 ### Templates (`templates/` directory in repo root)
 
@@ -233,10 +233,10 @@ These templates are for your convenience; the CLI doesn't directly use them (exc
 ### Tests (`tests/` directory)
 
 The scaffold includes a `tests/` folder with subfolders like `example_contract` and `example_integration`, each containing a README. These are placeholders indicating where and how to write tests:
-- Example contract tests might refer to tests for individual components (unit tests)
-- Example integration tests for end-to-end or multi-component scenarios
+- Example contract tests refer to Consumer Pact tests
+- Example integration tests for external boundaries
 
-The READMEs likely outline how to structure tests or use factories, etc. These aren't functional code, but they serve as documentation for your team on writing tests. You should replace or remove these once you add real tests. They also signal the AI that tests are expected – if an AI is tasked with writing code, it knows where tests go and maybe what frameworks to use, etc.
+The nested READMEs are stubs and are not functional code. They serve as a placeholder for your team. You should replace or revise these once you add real tests. For example, they may be incorporated to signal to the AI where tests go and what frameworks to use, etc.
 
 ### `services/` and `infra/` directories
 
