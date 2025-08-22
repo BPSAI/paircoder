@@ -315,3 +315,9 @@ This repository contains **two concerns**:
 >
 > Keep the Context Loop current in `reference/context/development.md`.
 
+
+
+## Agents Entrypoint
+
+Agents should start at `AGENTS.md` in repo root, then follow `context/`.
+This repository mirrors what users receive via `bpsai-pair-init`; there is no `reference/` lane.
