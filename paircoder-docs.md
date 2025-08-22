@@ -210,11 +210,11 @@ These files come with the framework but are not actively modified by the CLI. Th
   
   You should run `pre-commit install` after initializing PairCoder to activate these hooks in your local repo. Then, every commit will trigger them. If the AI introduces code that doesn't pass these, the commit will be blocked until fixed (or you skip the hook). This is excellent for maintaining quality.
 
-- **`.gitleaks.toml`** – Configuration for Gitleaks (secret scanner). It likely contains patterns to detect API keys, credentials, etc., and also a list of allowed patterns or false-positive suppressions. The one provided by PairCoder covers common file paths to ignore (like it doesn't scan `context/` or tests for certain dummy secrets). Keep this updated if you find false positives or need to add custom regexes for your stack. Use it by running `gitleaks detect ...` as per README or let it run in CI.
+- **`.gitleaks.toml`** – Configuration for Gitleaks (secret scanner). It contains patterns to detect API keys, credentials, etc., and also a list of allowed patterns or false-positive suppressions. The one provided by PairCoder covers common file paths to ignore (like it doesn't scan `context/` or tests for certain dummy secrets). Keep this updated if you find false positives or need to add custom regexes for your stack. Use it by running `gitleaks detect ...` as per README or let it run in CI.
 
-- **`.agentpackignore`** – As discussed, this file lists what to exclude from the context tarball. By default, it covers `.git/`, build artifacts, virtualenvs, caches, etc. You can add anything else you never want to send to the AI (for example, you might exclude `**/secrets.env` if you had one with dummy data, just to be extra safe).
+- **`.agentpackignore`** – As discussed, this file lists what to exclude from the context tarball. By default, it covers `.git/`, build artifacts, virtualenvs, caches, etc. You can add anything else you never want to send to the AI (for example, you might exclude `**/secrets.env`).
 
-- **`.gitignore`** – The template likely also provides a baseline `.gitignore` (covering Python, Node, etc.). Check it to ensure it doesn't conflict with your project's needs. This prevents committing of venvs, node_modules, pyc files, etc.
+- **`.gitignore`** – The template provides a baseline `.gitignore` (covering Python, Node, etc.). Check it to ensure it doesn't conflict with your project's needs. This prevents committing of venvs, node_modules, pyc files, etc.
 
 ### CI Workflows (`.github/workflows/`)
 
