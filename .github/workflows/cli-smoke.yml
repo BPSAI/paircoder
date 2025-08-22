@@ -20,6 +20,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Configure Git
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI Bot"
+
       - name: Build wheel
         shell: bash
         run: |
@@ -35,15 +40,14 @@ jobs:
 
       - name: Smoke (entrypoint)
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: 1
         run: |
           set -euxo pipefail
           tmp=$(mktemp -d)
           cd "$tmp"
-
-          # Configure git for CI environment
-          git config --global user.email "ci@example.com"
-          git config --global user.name "CI Bot"
-
           git init .
           # Ensure main exists to match CLI expectations
           git branch -M main
@@ -57,13 +61,14 @@ jobs:
 
       - name: Smoke (python -m fallback)
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: 1
         run: |
           set -euxo pipefail
           tmp=$(mktemp -d)
           cd "$tmp"
-
-          # Git config already set globally in previous step
-
           git init .
           git branch -M main
           echo "# Smoke m" > README.md
