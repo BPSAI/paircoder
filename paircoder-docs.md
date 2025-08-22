@@ -194,19 +194,19 @@ These files come with the framework but are not actively modified by the CLI. Th
 
 ### Governance & Config Files (repo root)
 
-- **`CONTRIBUTING.md`** – Guidelines for contributors. PairCoder provides a template that likely includes instructions to use Conventional Commits for commit messages, to always update context sync, keep diffs small, etc. You should read this and update any project-specific sections (like how to get started, or the PR process if different). Share this with human contributors, and conceptually, you could even parse some of this into the AI's guidelines so it follows the contributing rules.
+- **`CONTRIBUTING.md`** – Guidelines for contributors. PairCoder provides a template that includes instructions to use Conventional Commits for commit messages, to always update context sync, keep diffs small, etc. You should read this and update any project-specific sections (like how to get started, or the PR process if different). Share this with human contributors and parse the relevant pieces into the AI's guidelines so it follows the contributing rules.
 
-- **`SECURITY.md`** – Security policy, e.g., how to report vulnerabilities, and a reminder not to include secrets in the repo or context packs. The one included with PairCoder also notes that `.agentpackignore` is set up to avoid packing secrets and that test data should be redacted or synthetic. This file is mainly informational for your repo's users; it's good to have even internally.
+- **`SECURITY.md`** – Security policy, e.g., how to report vulnerabilities, and a reminder not to include secrets in the repo or context packs. The one included with PairCoder also notes that `.agentpackignore` is set up to avoid packing secrets and that test data should be redacted or synthetic. This file is mainly informational for your repo's users; it's good for both internal use and to provide the agent guidance on your team's security best practices.
 
-- **`CODEOWNERS`** – A file that GitHub uses to auto-assign reviewers. The template might list the repository owners or lead developers who should review incoming PRs. You should edit this to match your team's GitHub usernames and desired code ownership (e.g., you might want all AI-generated PRs to ping a certain lead). This helps enforce that any AI contributions are reviewed by a human.
+- **`CODEOWNERS`** – A file that GitHub uses to auto-assign reviewers. This file should list the repository owners or lead developers who should review incoming PRs. You should edit this to match your team's GitHub usernames and desired code ownership (e.g., you might want all AI-generated PRs to ping a certain lead). This helps enforce that a human reviews any AI contributions.
 
 - **`.editorconfig`** – Standard EditorConfig file to ensure consistent indentation, charset, end-of-line, etc., across different editors. It's a generic one suitable for most projects. With this in place, developers' IDEs will follow the same basic formatting rules, reducing diffs caused by whitespace.
 
 - **`.pre-commit-config.yaml`** – Configuration for pre-commit hooks. PairCoder's config will set up hooks such as:
   - Ruff (Python linter/formatter) to run on Python files
   - Prettier for formatting Markdown, JSON, YAML, etc.
-  - Markdownlint for markdown files
-  - and a hook to call Gitleaks (but possibly as a manual or advisory hook due to performance)
+  - Markdownlint for Markdown files
+  - A hook to call Gitleaks 
   
   You should run `pre-commit install` after initializing PairCoder to activate these hooks in your local repo. Then, every commit will trigger them. If the AI introduces code that doesn't pass these, the commit will be blocked until fixed (or you skip the hook). This is excellent for maintaining quality.
 
