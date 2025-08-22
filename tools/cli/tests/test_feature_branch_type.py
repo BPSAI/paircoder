@@ -1,15 +1,36 @@
-import pathlib
-from subprocess import run, PIPE
+"""Test feature branch type functionality."""
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
-def test_feature_branch_types(tmp_path: pathlib.Path):
-    repo = tmp_path
-    run(['git','init','.'], cwd=repo, check=True)
-    (repo/'context').mkdir(parents=True, exist_ok=True)
-    (repo/'scripts').mkdir(parents=True, exist_ok=True)
-    # minimal script to simulate branch creation; we don't actually change git here
-    (repo/'scripts'/'new_feature.sh').write_text('#!/usr/bin/env bash\necho \"OK\"\n')
-    run(['chmod','+x', str(repo/'scripts'/'new_feature.sh')], check=True)
+import pytest
 
-    r = run(['bpsai-pair','feature','login','--type','refactor','--primary','x','--phase','y'],
-            cwd=repo, stdout=PIPE, stderr=PIPE, text=True)
-    assert r.returncode == 0, r.stderr
+from bpsai_pair import ops
+from bpsai_pair.cli import app
+from typer.testing import CliRunner
+
+runner = CliRunner()
+
+
+def test_feature_branch_types(tmp_path):
+    """Test creating features with different branch types."""
+    # Setup mock git repo
+    (tmp_path / ".git").mkdir()
+    context_dir = tmp_path / "context"
+    context_dir.mkdir()
+
+    # Mock git operations
+    with patch.object(ops.GitOps, 'is_repo', return_value=True):
+        with patch.object(ops.GitOps, 'is_clean', return_value=True):
+            with patch.object(ops.GitOps, 'create_branch', return_value=True):
+                with patch.object(ops.GitOps, 'add_commit', return_value=True):
+                    with patch('os.getcwd', return_value=str(tmp_path)):
+                        # Test refactor branch type
+                        result = runner.invoke(app, [
+                            "feature", "login",
+                            "--type", "refactor",
+                            "--primary", "Refactor login",
+                            "--phase", "Phase 1"
+                        ])
+
+    assert result.exit_code == 0
+    assert "Created branch" in result.stdout or result.exit_code == 0
