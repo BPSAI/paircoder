@@ -26,21 +26,20 @@ jobs:
           python -m build tools/cli
 
       - name: Install wheel
-        run: |
-          pip install tools/cli/dist/*.whl
-
-      - name: Smoke test
         shell: bash
         run: |
-          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install tools/cli/dist/*.whl
+
+      - name: Smoke test (installed CLI)
+        shell: bash
+        run: |
+          set -euo pipefail
           tmp=$(mktemp -d)
           cd "$tmp"
           git init .
           echo "# Smoke" > README.md
           git add . && git commit -m "init"
-
-          # Use entry point first
-          bpsai-pair --help
           bpsai-pair-init
           git add -A && git commit -m "adopt scaffolding"
           bpsai-pair feature demo --type refactor --primary "Goal" --phase "Phase 1"

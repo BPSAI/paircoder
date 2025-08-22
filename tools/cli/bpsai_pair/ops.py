@@ -8,7 +8,7 @@ import os
 import subprocess
 import tarfile
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Set
 import shutil
@@ -27,17 +27,35 @@ class GitOps:
     def is_clean(path: Path) -> bool:
         """Check if working tree is clean."""
         try:
+            # Check for unstaged changes
             result = subprocess.run(
                 ["git", "diff", "--quiet"],
                 cwd=path,
                 capture_output=True
             )
+            if result.returncode != 0:
+                return False
+
+            # Check for staged changes
             staged = subprocess.run(
                 ["git", "diff", "--cached", "--quiet"],
                 cwd=path,
                 capture_output=True
             )
-            return result.returncode == 0 and staged.returncode == 0
+            if staged.returncode != 0:
+                return False
+
+            # Check for untracked files
+            untracked = subprocess.run(
+                ["git", "ls-files", "--other", "--exclude-standard"],
+                cwd=path,
+                capture_output=True,
+                text=True
+            )
+            if untracked.stdout.strip():
+                return False
+
+            return True
         except:
             return False
     
@@ -346,7 +364,7 @@ Run `bpsai-pair pack --out agent_pack.tgz` and upload to your session.
         # Generate project tree
         tree_file = context_dir / "project_tree.md"
         tree_content = f"""# Project Tree (snapshot)
-_Generated: {datetime.utcnow().isoformat()}Z_
+_Generated: {datetime.now(timezone.utc).isoformat()}Z_
 
 ```
 {ProjectTree.generate(root)}
