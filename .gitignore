@@ -83,3 +83,4 @@ $RECYCLE.BIN/
 .venv/
 tools/cli/dist/
 tools/cli/build/
+agent_pack.tgz
