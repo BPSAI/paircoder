@@ -79,15 +79,19 @@ bpsai-pair context-sync \
 
 ---
 
-## Repository layout
+## Repository Layout
 
-```
-context/          # Development roadmap, agents guide, project tree snapshot
-prompts/          # Prompt assets (roadmap, deep_research, implementation)
-tools/cli/        # Typer-based CLI (bpsai-pair)
-tools/cookiecutter-paircoder/   # Cookiecutter template for new repos
-.github/workflows/              # CI & project_tree refresh
-```
+For the current, authoritative project structure, see `/context/project_tree.md` (auto-updated daily).
+
+**Key directories:**
+- `tools/cli/` — The bpsai-pair Python package source
+- `context/` — Project memory: roadmap, agent guides, structure snapshot  
+- `.github/workflows/` — CI workflows (package tests + project maintenance)
+- Root level — Reference implementation demonstrating PairCoder practices
+
+This repository serves two purposes:
+1. **Package development** — The installable `bpsai-pair` CLI tool
+2. **Living example** — Demonstrating how to use PairCoder effectively
 
 ---
 
