@@ -1,3 +1,5 @@
+from . import pyutils
+from . import jsonio
 from . import init_bundled_cli
 from pathlib import Path
 import shutil
@@ -42,9 +44,15 @@ def feature(
     primary: str = typer.Option("", help="Primary goal to stamp into context"),
     phase: str = typer.Option("", help="Phase goal for Next action"),
     force: bool = typer.Option(False, help="Bypass dirty-tree check (not recommended)"),
-):
+, type: str = typer.Option('feature', '--type', help='Branch type: feature|fix|refactor', case_sensitive=False)):
     """Create feature branch and scaffold context via scripts/new_feature.sh if present."""
-    root = repo_root()
+    
+    # normalize branch type
+    t = (type or 'feature').lower()
+    if t not in {'feature','fix','refactor'}:
+        raise typer.BadParameter("--type must be one of: feature, fix, refactor")
+    # adjust first argument (name) into typed branch later in script invocation
+root = repo_root()
     script = root / "scripts" / "new_feature.sh"
     if not script.exists():
         raise typer.Exit(code=1)
@@ -63,9 +71,29 @@ def feature(
 def pack(
     out: str = typer.Option("agent_pack.tgz", help="Output archive name"),
     extra: list[str] = typer.Option(None, help="Additional paths to include", rich_help_panel="Options"),
-):
+, dry_run: bool = typer.Option(False, '--dry-run', help='Preview files; do not write archive'), list_only: bool = typer.Option(False, '--list', help='List files included in pack'), json_out: bool = typer.Option(False, '--json', help='Emit JSON result')):
     """Create agent context package via scripts/agent_pack.sh."""
-    root = repo_root()
+    
+    pack_preview_mode = dry_run or list_only
+    # Try to discover excludes from .agentpackignore in project root
+    excludes = []
+    ignore = root / '.agentpackignore'
+    if ignore.exists():
+        excludes = [ln.strip() for ln in ignore.read_text().splitlines() if ln.strip()]
+    files = []
+    if pack_preview_mode:
+        files = [str(p) for p in pyutils.project_files(root, excludes=excludes) if str(p).startswith('context/')]
+        # we intentionally keep preview scope narrow (context/*) to avoid heavy scans
+        if json_out:
+            print(jsonio.dump({'dry_run': dry_run, 'list': list_only, 'files': files}))
+            return
+        if list_only:
+            print('\n'.join(files))
+            return
+        # dry-run default: print count
+        print(f"Would pack {len(files)} files")
+        return
+root = repo_root()
     script = root / "scripts" / "agent_pack.sh"
     if not script.exists():
         raise typer.Exit(code=1)
