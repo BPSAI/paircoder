@@ -41,3 +41,17 @@ bpsai-pair context-sync --last "Added ops.json details" --next "Wire CLI flag" -
 ## Large trees & exclusions
 Heavy or irrelevant trees must be excluded via `.agentpackignore` (root).
 Agents should assume excluded assets exist; avoid suggestions that remove or rename them.
+
+
+# Agents Guide (entrypoint)
+
+Start here, then follow pointers:
+
+1. Read `/context/development.md` – maintain the **Context Loop** after each meaningful change:
+   - **Overall goal is:** …
+   - **Last action was:** …
+   - **Next action will be:** …
+   - **Blockers:** …
+2. Read `/context/agents.md` for rules and boundaries.
+3. Do **not** modify cookiecutter sources under `tools/cli/bpsai_pair/data/` unless you are explicitly evolving the template. For product code and docs, update files in repo root (`/src`, `/services`, `/tests`, `/context`, `/templates`).
+4. Prefer minimal, reversible changes; commit small diffs and run `bpsai-pair context-sync` to keep the loop fresh.

@@ -347,3 +347,27 @@ If the entry point is not on PATH for some reason, use the module form:
 ```powershell
 python -m bpsai_pair.cli --help
 ```
+
+
+
+### Branch types
+You can create feature, fix, or refactor branches via:
+```bash
+bpsai-pair feature <name> --type feature   # default
+bpsai-pair feature <name> --type fix
+bpsai-pair feature <name> --type refactor
+```
+
+
+
+### What the smoke test proves
+The CI workflow builds the wheel, installs it, and runs the golden path:
+
+1. `bpsai-pair-init` – adopt scaffolding (non-destructive)
+2. `bpsai-pair feature demo --type refactor` – create a working branch and update context
+3. `bpsai-pair pack --out agent_pack.tgz` – produce a context pack for agents
+4. `bpsai-pair context-sync --last … --next …` – update the Context Loop and commit
+
+
+
+> **Tip (branches):** If your local git defaults to `master`, run `git branch -M main` once after `git init` so CLI commands that expect `main` work out of the box.
