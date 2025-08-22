@@ -294,3 +294,24 @@ bpsai-pair pack --json
 ```
 
 > Note: Basic JSON output is available for some commands (experimental) and will be expanded in v0.2.x.
+
+## Reference Project
+
+This repository contains **two concerns**:
+
+1. **Package (root)** – the installable CLI published as `bpsai-pair`.
+2. **Reference project (`reference/`)** – a living example that dogfoods PairCoder.
+
+> To try the workflow locally:
+>
+> ```bash
+> cd reference
+> bpsai-pair feature demo --type refactor \
+>   --primary "Demonstrate flow" \
+>   --phase "Phase 1: Scaffolding"
+> bpsai-pair pack --out agent_pack.tgz
+> bpsai-pair context-sync --last "Did A" --next "Do B" --blockers ""
+> ```
+>
+> Keep the Context Loop current in `reference/context/development.md`.
+
