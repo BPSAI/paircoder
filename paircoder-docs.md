@@ -236,7 +236,7 @@ The scaffold includes a `tests/` folder with subfolders like `example_contract` 
 - Example contract tests refer to Consumer Pact tests
 - Example integration tests for external boundaries
 
-The nested READMEs are stubs and are not functional code. They serve as a placeholder for your team. You should replace or revise these once you add real tests. For example, they may be incorporated to signal to the AI where tests go and what frameworks to use, etc.
+The nested READMEs are stubs and are not functional code. They serve as a placeholder for your team. You should replace or revise these once you add real tests. For example, if choosing to keep and revise them, they may be incorporated to signal to the AI where tests go and what frameworks to use, etc.
 
 ### `services/` and `infra/` directories
 
