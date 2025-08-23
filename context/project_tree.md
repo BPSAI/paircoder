@@ -1,5 +1,5 @@
 # Project Tree (snapshot)
-_Generated: 2025-08-22T18:31:42Z_
+_Generated: 2025-08-23T03:45:11Z_
 
 ```
 .agentpackignore
@@ -60,6 +60,7 @@ tools/cli
 tools/cli/.coverage
 tools/cli/MANIFEST.in
 tools/cli/README.md
+tools/cli/USER_GUIDE.md
 tools/cli/bpsai_pair
 tools/cli/bpsai_pair/__init__.py
 tools/cli/bpsai_pair/__main__.py
@@ -100,6 +101,8 @@ tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/c
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/context/directory_notes
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/context/directory_notes/.gitkeep
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/context/project_tree.md
+tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/docs
+tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/docs/USER_GUIDE.md
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/prompts
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/prompts/deep_research.yml
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/prompts/implementation.yml
@@ -121,6 +124,9 @@ tools/cli/bpsai_pair/jsonio.py
 tools/cli/bpsai_pair/ops.py
 tools/cli/bpsai_pair/pyutils.py
 tools/cli/bpsai_pair/utils.py
+tools/cli/docs
+tools/cli/docs/conf.py
+tools/cli/docs/index.rst
 tools/cli/pyproject.toml
 tools/cli/run_tests.py
 tools/cli/tests
