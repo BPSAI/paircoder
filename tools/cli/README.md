@@ -16,6 +16,37 @@ cd tools/cli
 pip install -e .
 bpsai-pair --help
 ```
+## Windows & Cross-Platform
+
+PairCoder CLI is fully Python-backed (no Bash required). On Windows use:
+
+```powershell
+# Create venv
+python -m venv .venv
+
+# If activation is blocked...
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# Activate venv
+.\.venv\Scripts\Activate.ps1
+# (Or use .venv\Scripts\activate.bat in CMD)
+
+# Install package
+pip install bpsai-pair
+# or: pip install .\dist\bpsai_pair-*.whl
+
+# Use the CLI
+bpsai-pair --help
+bpsai-pair-init
+bpsai-pair feature demo --type refactor --primary "Goal" --phase "Phase 1"
+bpsai-pair pack --out agent_pack.tgz
+bpsai-pair context-sync --last "A" --next "B" --blockers ""
+```
+If the entry point is not on PATH, use:
+
+```powershell
+python -m bpsai_pair.cli --help
+```
 
 ## Usage
 

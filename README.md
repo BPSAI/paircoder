@@ -324,18 +324,26 @@ This repository contains **two concerns**:
 
 Agents should start at `AGENTS.md` in repo root, then follow `context/`.
 This repository mirrors what users receive via `bpsai-pair-init`; there is no `reference/` lane.
-## Windows & Cross‑Platform
 
-PairCoder CLI is fully Python‑backed (no Bash required). On Windows use:
+## Windows & Cross-Platform
+
+PairCoder CLI is fully Python-backed (no Bash required). On Windows use:
 
 ```powershell
-# Create venv (optional)
+# Create venv
 python -m venv .venv
+
+# If activation is blocked by policy in this PowerShell session, temporarily allow scripts:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# Activate the venv (PowerShell):
 .\.venv\Scripts\Activate.ps1
+# (If using Command Prompt instead of PowerShell, use:)
+# .venv\Scripts\activate.bat
 
 # Install the package (from PyPI or local wheel)
 pip install bpsai-pair
-# or: pip install path	o\distpsai_pair-*.whl
+# or: pip install .\dist\bpsai_pair-*.whl
 
 # Use the CLI
 bpsai-pair --help
@@ -344,6 +352,7 @@ bpsai-pair feature demo --type refactor --primary "Goal" --phase "Phase 1"
 bpsai-pair pack --out agent_pack.tgz
 bpsai-pair context-sync --last "A" --next "B" --blockers ""
 ```
+
 
 If the entry point is not on PATH for some reason, use the module form:
 

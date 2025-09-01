@@ -38,7 +38,7 @@ To use PairCoder, you need the following (these are the base requirements from t
 
 ### Installation Steps
 
-Once published on PyPI, you can install PairCoder with pip. For example:
+You can install PairCoder with pip. For example:
 
 ```bash
 pip install bpsai-pair
