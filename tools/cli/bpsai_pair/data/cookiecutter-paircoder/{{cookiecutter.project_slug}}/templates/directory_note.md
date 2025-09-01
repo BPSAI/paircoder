@@ -11,7 +11,7 @@
 - Don’t: <pitfall>
 
 ## Gotchas
-- <common issues>
+- Common Issues: <issues>
 
 ## Glossary
 - <term>: <definition>
