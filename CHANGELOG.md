@@ -5,6 +5,26 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2025-09-01
+
+### Added
+- **Windows & Cross-Platform quickstart** — Clear, copy-pasteable PowerShell setup (venv, ExecutionPolicy, activation) added to README and USER_GUIDE
+- **CLI fallback note** — Explicit `python -m bpsai_pair.cli --help` guidance when PATH entry point isn’t available
+
+### Changed
+- **Package README** — Expanded Quick Start with Windows-specific instructions directly below install steps
+- **README/USER_GUIDE parity** — Aligned wording and examples so all three docs (repo README, package README, USER_GUIDE) present consistent Windows initialization
+- **Local wheel path** — Corrected example to `.\dist\bpsai_pair-*.whl` in Windows snippets
+
+### Fixed
+- **Minor typos** — Corrected activation comments (`activate.bat`) and ensured fenced code blocks render cleanly across docs
+
+### Developer Notes
+- This is a **documentation-only** release; no API or behavior changes
+- Build/publish flow: bump to `0.2.4`, tag (`v0.2.4`), `python -m build`, `twine upload`
+- If a stray tag (e.g., `2.0.0`) reappears, remove any GitHub Release/workflow that recreates it and restrict release jobs to **tag events** only
+
+
 ## [0.2.3] - 2025-08-22
 
 ### Added
