@@ -75,21 +75,24 @@ A provider-agnostic runtime that routes requests to the best model.
                           ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   Task Classifier                        │
-│  (complexity: trivial/moderate/complex/research)        │
+│  (daily_coding | architecture | long_refactor |         │
+│   windows_dotnet | frontend_ui | quick_triage)          │
 └─────────────────────────┬───────────────────────────────┘
                           ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    Model Router                          │
-│  - User-defined provider priority                        │
-│  - Cost/capability matrix per model                      │
-│  - Token budget enforcement                              │
+│  - Task → provider/model mapping                         │
+│  - Effort/thinking_level per task type                   │
+│  - Cost tracking + token budget enforcement              │
 └─────────────────────────┬───────────────────────────────┘
                           ▼
-┌──────────┬──────────────┬──────────────┬───────────────┐
-│ OpenAI   │  Anthropic   │   Google     │   (future)    │
-│ gpt-4o   │  claude-4    │   gemini-2   │               │
-│ o1       │  claude-3.5  │   gemini-1.5 │               │
-└──────────┴──────────────┴──────────────┴───────────────┘
+┌──────────────────┬──────────────────┬───────────────────┐
+│    Anthropic     │     OpenAI       │      Google       │
+│  Opus 4.5        │  Codex-Max       │   Gemini 3 Pro    │
+│  Sonnet 4.5      │  Codex           │   Deep Think      │
+│  Haiku 4.5       │  Codex-Mini      │                   │
+│  (effort param)  │  (compaction)    │  (thinking_level) │
+└──────────────────┴──────────────────┴───────────────────┘
 ```
 
 - **Location:** `tools/cli/bpsai_pair/orchestrator/` (new module)
@@ -98,10 +101,23 @@ A provider-agnostic runtime that routes requests to the best model.
 
 #### 3. Provider Extensibility
 
-Initial providers (v2.0):
-- **OpenAI:** GPT-4o, GPT-4-turbo, o1-preview, o1-mini
-- **Anthropic:** Claude 4 Opus, Claude 4 Sonnet, Claude 3.5 Sonnet
-- **Google:** Gemini 2.0, Gemini 1.5 Pro
+Initial providers (v2.0) with current models and pricing:
+
+| Provider | Models | Input/Output (per MTok) | Key Features |
+|----------|--------|------------------------|--------------|
+| **Anthropic** | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 | Opus: $5/$25, Sonnet: $3/$15, Haiku: $1/$5 | `effort` parameter (low/medium/high), 200k context, 64k output |
+| **OpenAI** | GPT-5.1-Codex-Max, GPT-5.1-Codex, GPT-5.1-Codex-Mini | Max: $1.25/$10 | Compaction (millions of tokens), Windows native, 24+ hour tasks |
+| **Google** | Gemini 3 Pro, Gemini 3 Deep Think | Pro: $2/$12 | `thinking_level` parameter, 1M context, best multimodal |
+
+**Recommended use cases:**
+
+| Use Case | Recommended Model | Rationale |
+|----------|-------------------|-----------|
+| Daily development workhorse | Claude Sonnet 4.5 | Best cost/performance balance, SWE-bench leader |
+| Complex architecture decisions | Claude Opus 4.5 (effort: high) | Deepest reasoning, 48% fewer tokens than Sonnet at high effort |
+| Long autonomous refactoring | GPT-5.1-Codex-Max | Compaction for project-scale tasks, Windows/.NET support |
+| Frontend/UI prototyping | Gemini 3 Pro | Best multimodal understanding, vision reasoning |
+| Quick classification/triage | Claude Haiku 4.5 | Fastest, lowest cost |
 
 Extension mechanism:
 ```python
@@ -111,6 +127,8 @@ class Provider(ABC):
     def complete(self, messages, **kwargs) -> Response: ...
     @abstractmethod
     def capabilities(self) -> ProviderCaps: ...
+    @abstractmethod
+    def pricing(self) -> PricingInfo: ...  # For cost-aware routing
 ```
 
 #### 4. Efficiency Features
@@ -118,9 +136,12 @@ class Provider(ABC):
 | Feature | Description | Config |
 |---------|-------------|--------|
 | Token budgeting | Per-flow and per-session limits | `orchestrator.budget.max_tokens` |
-| Prompt caching | Hash-based cache for repeated prompts | `orchestrator.cache.enabled` |
-| Cost tracking | Log estimated costs per request | `orchestrator.cost.log_path` |
-| Model routing | Complexity → model mapping rules | `orchestrator.routing.rules` |
+| Prompt caching | Hash-based cache for repeated prompts (up to 90% savings with Anthropic) | `orchestrator.cache.enabled` |
+| Cost tracking | Log estimated costs per request using live pricing | `orchestrator.cost.log_path` |
+| Model routing | Task complexity → model mapping with effort/thinking controls | `orchestrator.routing.rules` |
+| Effort control | Anthropic's `effort` parameter (low/medium/high) for cost/quality tradeoff | `orchestrator.defaults.effort` |
+| Thinking level | Google's `thinking_level` parameter (low/high) for reasoning depth | `orchestrator.defaults.thinking_level` |
+| Compaction awareness | Route long tasks to GPT-5.1-Codex-Max for multi-context coherence | `orchestrator.routing.long_task_threshold` |
 
 ### What's Explicitly NOT Included
 
@@ -192,27 +213,57 @@ context:
 # v2 additions
 orchestrator:
   default_provider: anthropic
+
   providers:
     anthropic:
-      models: [claude-sonnet-4-5-20250929, claude-3-5-sonnet-20241022]
+      models:
+        - claude-opus-4-5      # Complex reasoning, architecture
+        - claude-sonnet-4-5    # Daily workhorse
+        - claude-haiku-4-5     # Fast triage
+      default_effort: medium   # low|medium|high
       priority: 1
     openai:
-      models: [gpt-4o, gpt-4-turbo]
+      models:
+        - gpt-5.1-codex-max    # Long autonomous tasks, Windows
+        - gpt-5.1-codex        # Standard agentic coding
+        - gpt-5.1-codex-mini   # Lighter tasks
       priority: 2
     google:
-      models: [gemini-2.0-flash]
+      models:
+        - gemini-3-pro         # Multimodal, frontend
+        - gemini-3-deep-think  # Deep reasoning
+      default_thinking_level: low  # low|high
       priority: 3
+
+  # Task-based routing (classifier determines task type)
   routing:
-    trivial: openai/gpt-4o-mini
-    moderate: anthropic/claude-3-5-sonnet-20241022
-    complex: anthropic/claude-sonnet-4-5-20250929
-    research: anthropic/claude-sonnet-4-5-20250929
+    daily_coding: anthropic/claude-sonnet-4-5
+    architecture: anthropic/claude-opus-4-5
+    long_refactor: openai/gpt-5.1-codex-max      # 24+ hour tasks
+    windows_dotnet: openai/gpt-5.1-codex-max     # Windows native
+    frontend_ui: google/gemini-3-pro             # Vision/multimodal
+    quick_triage: anthropic/claude-haiku-4-5
+
+  # Effort/thinking overrides per task type
+  task_params:
+    architecture:
+      effort: high           # Deep reasoning for complex decisions
+    daily_coding:
+      effort: medium         # Balance speed and quality
+    quick_triage:
+      effort: low            # Fast responses
+    frontend_ui:
+      thinking_level: high   # Better visual reasoning
+
   budget:
-    max_tokens_per_session: 100000
+    max_tokens_per_session: 500000
+    max_cost_per_session_usd: 10.00
     warn_at_percent: 80
+
   cache:
     enabled: true
     ttl_hours: 24
+    # Anthropic prompt caching: up to 90% cost savings
 
 flows:
   dir: flows
@@ -261,6 +312,14 @@ flows:
 
 ## References
 
+### Internal
 - ADR 0001: Context Loop design
 - `/context/agents.md`: Development workflow
 - `/tools/cli/README.md`: Current CLI documentation
+
+### Model Documentation (December 2025)
+- [Claude Opus 4.5](https://www.anthropic.com/claude/opus) — Anthropic's flagship with effort parameter
+- [Claude Sonnet 4.5](https://www.anthropic.com/claude/sonnet) — SWE-bench leader for daily coding
+- [GPT-5.1-Codex-Max](https://openai.com/index/gpt-5-1-codex-max/) — OpenAI's long-running agentic model with compaction
+- [Gemini 3 Pro](https://deepmind.google/models/gemini/) — Google's multimodal reasoning model
+- [Gemini 3 for Developers](https://blog.google/technology/developers/gemini-3-developers/) — Agentic capabilities and thinking_level
