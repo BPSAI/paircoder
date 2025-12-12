@@ -39,13 +39,25 @@ yarn-error.log*
 .temp/
 .cache/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
 # Build output (if you add build tools later)
 dist/
 build/
 node_modules/
 package-lock.json
 yarn.lock
-*.egg-info/
+
+# UV
+uv.lock
 
 # macOS
 .AppleDouble
