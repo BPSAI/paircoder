@@ -1,18 +1,22 @@
 """Flow format loader for Paircoder-native skills.
 
-Flows are markdown files with YAML front-matter that define reusable
-workflows/skills that can be invoked during AI pair-coding sessions.
+Flows can be defined in two formats:
+  1. Markdown with YAML front-matter (*.md) - simple skills with body content
+  2. Pure YAML (*.yaml, *.yml) - step-based flows with actions
 
 Flow files are discovered from:
-  1. .paircoder/flows/**/*.md (primary location)
-  2. flows/**/*.md (fallback location)
+  1. .paircoder/flows/**/* (primary location)
+  2. flows/**/* (fallback location)
 """
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import yaml
+
+if TYPE_CHECKING:
+    from .flows import Flow as YAMLFlow
 
 
 @dataclass
@@ -91,13 +95,40 @@ def parse_flow(path: Path) -> Flow:
     )
 
 
+def _parse_yaml_flow(path: Path) -> Optional[Flow]:
+    """Parse a YAML flow file and convert to unified Flow format.
+
+    Args:
+        path: Path to the YAML flow file.
+
+    Returns:
+        Flow object or None if parsing fails.
+    """
+    try:
+        from .flows import FlowParser
+        parser = FlowParser(path.parent)
+        yaml_flow = parser.parse_file(path)
+        # Convert YAML Flow to unified Flow format
+        return Flow(
+            name=yaml_flow.name,
+            description=yaml_flow.description,
+            body="",  # YAML flows don't have markdown body
+            path=path,
+            tags=[],  # YAML flows use metadata instead
+            version=yaml_flow.version,
+        )
+    except Exception:
+        return None
+
+
 def discover_flows(root: Path) -> list[Flow]:
     """Discover and parse all flow files in the repository.
 
     Searches for flow files in order of priority:
-      1. .paircoder/flows/**/*.md
-      2. flows/**/*.md (fallback)
+      1. .paircoder/flows/**/*.md and *.yaml/*.yml
+      2. flows/**/*.md and *.yaml/*.yml (fallback)
 
+    Supports both markdown (with YAML front-matter) and pure YAML formats.
     If both directories exist, both are searched and flows are merged.
     Duplicate flow names are resolved by preferring .paircoder/flows/.
 
@@ -119,6 +150,7 @@ def discover_flows(root: Path) -> list[Flow]:
         if not base_path.exists():
             continue
 
+        # Discover markdown flows
         for flow_path in base_path.rglob("*.md"):
             if not flow_path.is_file():
                 continue
@@ -128,8 +160,17 @@ def discover_flows(root: Path) -> list[Flow]:
                 flows[flow.name] = flow
             except (ValueError, FileNotFoundError):
                 # Skip invalid flow files silently during discovery
-                # Users can use flow show to get detailed errors
                 continue
+
+        # Discover YAML flows
+        for pattern in ["*.yaml", "*.yml"]:
+            for flow_path in base_path.rglob(pattern):
+                if not flow_path.is_file():
+                    continue
+
+                flow = _parse_yaml_flow(flow_path)
+                if flow:
+                    flows[flow.name] = flow
 
     # Return sorted by name for deterministic output
     return sorted(flows.values(), key=lambda f: f.name)

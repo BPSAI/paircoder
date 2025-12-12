@@ -22,7 +22,7 @@ try:
     from . import __version__
     from . import init_bundled_cli
     from . import ops
-    from . import flows
+    from . import flow_loader
     from .config import Config
     from .flows import FlowParser, FlowValidationError
 except ImportError:
@@ -32,7 +32,7 @@ except ImportError:
     from bpsai_pair import __version__
     from bpsai_pair import init_bundled_cli
     from bpsai_pair import ops
-    from bpsai_pair import flows
+    from bpsai_pair import flow_loader
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
 
@@ -42,6 +42,7 @@ console = Console()
 # Environment variable support
 MAIN_BRANCH = os.getenv("PAIRCODER_MAIN_BRANCH", "main")
 CONTEXT_DIR = os.getenv("PAIRCODER_CONTEXT_DIR", "context")
+FLOWS_DIR = os.getenv("PAIRCODER_FLOWS_DIR", ".paircoder/flows")
 
 app = typer.Typer(
     add_completion=False,
@@ -64,7 +65,7 @@ def flow_list(
     """List all available flows."""
     root = Path.cwd()
 
-    discovered_flows = flows.discover_flows(root)
+    discovered_flows = flow_loader.discover_flows(root)
 
     if json_out:
         result = {
@@ -111,11 +112,11 @@ def flow_show(
     """Show details of a specific flow."""
     root = Path.cwd()
 
-    flow = flows.get_flow(root, name)
+    flow = flow_loader.get_flow(root, name)
 
     if flow is None:
         console.print(f"[red]Flow not found: {name}[/red]")
-        available = flows.list_flow_names(root)
+        available = flow_loader.list_flow_names(root)
         if available:
             console.print("\n[dim]Available flows:[/dim]")
             for n in available:
@@ -603,51 +604,32 @@ def ci(
 
 
 # ============================================================================
-# Flow commands (v2)
+# Flow commands (v2) - YAML-based flows with steps
 # ============================================================================
 
 
-@flow_app.command("list")
-def flow_list(
-    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
-):
-    """List available flows."""
-    root = repo_root()
-    flows_dir = root / FLOWS_DIR
+def _find_yaml_flow(root: Path, name: str) -> Optional[Path]:
+    """Find a YAML flow by name in both FLOWS_DIR and fallback locations."""
+    # Search paths in order of priority
+    search_paths = [
+        root / FLOWS_DIR,  # Primary location
+        root / "flows",     # Fallback location
+    ]
 
-    parser = FlowParser(flows_dir)
-    flows = parser.list_flows()
+    for flows_dir in search_paths:
+        if not flows_dir.exists():
+            continue
+        parser = FlowParser(flows_dir)
+        flow_path = parser.find_flow(name)
+        if flow_path:
+            return flow_path
 
-    if json_out:
-        result = {
-            "flows_dir": str(flows_dir),
-            "flows": flows,
-            "count": len(flows),
-        }
-        print(json.dumps(result, indent=2))
-    else:
-        if not flows:
-            console.print(f"[dim]No flows found in {FLOWS_DIR}/[/dim]")
-            console.print(f"[dim]Create YAML flow files in {FLOWS_DIR}/ to get started[/dim]")
-            return
+    # Try as direct path
+    direct_path = root / name
+    if direct_path.exists():
+        return direct_path
 
-        table = Table(title="Available Flows")
-        table.add_column("Name", style="cyan")
-        table.add_column("Description", style="white")
-        table.add_column("Steps", style="green", justify="right")
-        table.add_column("File", style="dim")
-
-        for flow in flows:
-            status = "[red]invalid[/red]" if flow.get("error") else ""
-            desc = flow["description"] if not flow.get("error") else status
-            table.add_row(
-                flow["name"],
-                desc,
-                str(flow["steps"]) if not flow.get("error") else "-",
-                flow["file"],
-            )
-
-        console.print(table)
+    return None
 
 
 @flow_app.command("run")
@@ -660,21 +642,15 @@ def flow_run(
 ):
     """Run a flow and output as checklist (no LLM calls - renders steps only)."""
     root = repo_root()
-    flows_dir = root / FLOWS_DIR
 
-    parser = FlowParser(flows_dir)
-
-    # Find the flow
-    flow_path = parser.find_flow(name)
+    # Find the flow in multiple locations
+    flow_path = _find_yaml_flow(root, name)
     if not flow_path:
-        # Try as direct path
-        direct_path = root / name
-        if direct_path.exists():
-            flow_path = direct_path
-        else:
-            console.print(f"[red]✗ Flow not found: {name}[/red]")
-            console.print(f"[dim]Available flows: bpsai-pair flow list[/dim]")
-            raise typer.Exit(1)
+        console.print(f"[red]✗ Flow not found: {name}[/red]")
+        console.print(f"[dim]Available flows: bpsai-pair flow list[/dim]")
+        raise typer.Exit(1)
+
+    parser = FlowParser(flow_path.parent)
 
     try:
         flow = parser.parse_file(flow_path)
@@ -722,23 +698,17 @@ def flow_validate(
 ):
     """Validate a flow definition."""
     root = repo_root()
-    flows_dir = root / FLOWS_DIR
 
-    parser = FlowParser(flows_dir)
-
-    # Find the flow
-    flow_path = parser.find_flow(name)
+    # Find the flow in multiple locations
+    flow_path = _find_yaml_flow(root, name)
     if not flow_path:
-        # Try as direct path
-        direct_path = root / name
-        if direct_path.exists():
-            flow_path = direct_path
+        if json_out:
+            print(json.dumps({"valid": False, "error": f"Flow not found: {name}"}))
         else:
-            if json_out:
-                print(json.dumps({"valid": False, "error": f"Flow not found: {name}"}))
-            else:
-                console.print(f"[red]✗ Flow not found: {name}[/red]")
-            raise typer.Exit(1)
+            console.print(f"[red]✗ Flow not found: {name}[/red]")
+        raise typer.Exit(1)
+
+    parser = FlowParser(flow_path.parent)
 
     try:
         flow = parser.parse_file(flow_path)
