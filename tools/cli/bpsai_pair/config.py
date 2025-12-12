@@ -39,12 +39,39 @@ class Config:
     node_formatter: str = "prettier"
 
     @classmethod
+    def find_config_file(cls, root: Path) -> Optional[Path]:
+        """Find the config file, preferring v2 .paircoder/ folder over legacy .paircoder.yml."""
+        # v2 config: .paircoder/config.yaml (preferred)
+        v2_config = root / ".paircoder" / "config.yaml"
+        if v2_config.exists():
+            return v2_config
+
+        # Also check .yml extension for v2
+        v2_config_yml = root / ".paircoder" / "config.yml"
+        if v2_config_yml.exists():
+            return v2_config_yml
+
+        # Legacy: .paircoder.yml (fallback)
+        legacy_config = root / ".paircoder.yml"
+        if legacy_config.exists():
+            return legacy_config
+
+        return None
+
+    @classmethod
     def load(cls, root: Path) -> "Config":
-        """Load configuration from .paircoder.yml or environment."""
-        config_file = root / ".paircoder.yml"
+        """Load configuration from .paircoder/config.yaml, .paircoder.yml, or environment.
+
+        Config resolution order:
+        1. .paircoder/config.yaml (v2 preferred)
+        2. .paircoder/config.yml (v2 alternate)
+        3. .paircoder.yml (legacy fallback)
+        4. Environment variables (override all)
+        """
+        config_file = cls.find_config_file(root)
 
         data = {}
-        if config_file.exists():
+        if config_file and config_file.exists():
             with open(config_file) as f:
                 yaml_data = yaml.safe_load(f) or {}
 
@@ -91,12 +118,33 @@ class Config:
         # Create config with collected data
         return cls(**{k: v for k, v in data.items() if k in cls.__annotations__})
 
-    def save(self, root: Path) -> None:
-        """Save configuration to .paircoder.yml."""
-        config_file = root / ".paircoder.yml"
+    def save(self, root: Path, use_v2: bool = False, legacy: bool = False) -> Path:
+        """Save configuration to config file.
+
+        Args:
+            root: Project root directory
+            use_v2: If True, save to .paircoder/config.yaml (v2 format)
+            legacy: If True, force save to .paircoder.yml (legacy format)
+
+        Returns:
+            Path to the saved config file
+
+        Priority:
+        1. If legacy=True, use .paircoder.yml
+        2. If use_v2=True or .paircoder/ exists, use .paircoder/config.yaml
+        3. Otherwise use .paircoder.yml (legacy default for compatibility)
+        """
+        if legacy:
+            config_file = root / ".paircoder.yml"
+        elif use_v2 or (root / ".paircoder").exists():
+            config_dir = root / ".paircoder"
+            config_dir.mkdir(exist_ok=True)
+            config_file = config_dir / "config.yaml"
+        else:
+            config_file = root / ".paircoder.yml"
 
         data = {
-            "version": "0.1.3",
+            "version": "2" if use_v2 or config_file.parent.name == ".paircoder" else "0.1.3",
             "project": {
                 "name": self.project_name,
                 "primary_goal": self.primary_goal,
@@ -119,6 +167,8 @@ class Config:
 
         with open(config_file, 'w') as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+
+        return config_file
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
