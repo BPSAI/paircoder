@@ -39,6 +39,18 @@ yarn-error.log*
 .temp/
 .cache/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
 # Build output (if you add build tools later)
 dist/
 build/
