@@ -10,7 +10,6 @@ import yaml
 import json
 from dataclasses import dataclass, asdict, field
 
-
 @dataclass
 class Config:
     """PairCoder configuration."""
@@ -247,10 +246,12 @@ class ContextTemplate:
 ```
 .
 ├── {config.context_dir}/          # Project context and memory
-├── src/                            # Source code
-├── tests/                          # Test suites
-├── docs/                           # Documentation
-└── .paircoder.yml                  # Configuration
+├── .paircoder/                    # Paircoder configuration + workflows
+│   └── config.yaml                # Configuration (v2)
+├── src/                           # Source code
+├── tests/                         # Test suites
+└── docs/                          # Documentation
+
 ```
 
 ## Workflow
@@ -307,6 +308,8 @@ The following are excluded from agent packs (see `.agentpackignore`):
         """Generate .gitignore template."""
         return """# PairCoder
 .paircoder.yml.local
+.paircoder/config.local.yaml
+.paircoder/config.local.yml
 agent_pack*.tgz
 *.bak
 

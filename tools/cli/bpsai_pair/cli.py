@@ -1,11 +1,7 @@
-"""
-Enhanced bpsai-pair CLI with cross-platform support and improved UX.
-"""
 from __future__ import annotations
 
 import os
 import json
-import sys
 import subprocess
 from pathlib import Path
 from typing import List, Optional
@@ -22,7 +18,6 @@ try:
     from . import __version__
     from . import init_bundled_cli
     from . import ops
-    from . import flow_loader
     from .config import Config
     from .flows import FlowParser, FlowValidationError
 except ImportError:
@@ -32,7 +27,6 @@ except ImportError:
     from bpsai_pair import __version__
     from bpsai_pair import init_bundled_cli
     from bpsai_pair import ops
-    from bpsai_pair import flow_loader
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
 
@@ -57,92 +51,65 @@ flow_app = typer.Typer(
 )
 app.add_typer(flow_app, name="flow")
 
+def _flows_root(root: Path) -> Path:
+    return root / ".paircoder" / "flows"
 
 @flow_app.command("list")
 def flow_list(
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
-    """List all available flows."""
-    root = Path.cwd()
+    root = repo_root()
+    flows_dir = _flows_root(root)
 
-    discovered_flows = flow_loader.discover_flows(root)
+    if not flows_dir.exists():
+        console.print("[dim]No flows directory found at .paircoder/flows[/dim]")
+        raise typer.Exit(0)
+
+    parser = FlowParser(flows_dir)
+    flows = parser.list_flows()
 
     if json_out:
-        result = {
-            "flows": [
-                {
-                    "name": f.name,
-                    "description": f.description,
-                    "tags": f.tags,
-                    "version": f.version,
-                    "path": str(f.path.relative_to(root)),
-                }
-                for f in discovered_flows
-            ],
-            "count": len(discovered_flows),
-        }
-        sys.stdout.write(json.dumps(result, indent=2) + "\n")
-    elif discovered_flows:
+        print(json.dumps({
+            "flows": flows,
+            "count": len(flows),
+            "path": str(flows_dir),
+        }, indent=2))
+    else:
         table = Table(title="Available Flows")
-        table.add_column("Name", style="cyan", no_wrap=True)
-        table.add_column("Description", style="white")
-        table.add_column("Tags", style="dim")
+        table.add_column("Name", style="cyan")
+        table.add_column("Description")
+        table.add_column("Steps", justify="right")
 
-        for f in discovered_flows:
-            tags_str = ", ".join(f.tags) if f.tags else ""
-            table.add_row(f.name, f.description, tags_str)
+        for f in flows:
+            table.add_row(
+                f["name"],
+                f["description"],
+                str(f["steps"]),
+            )
 
         console.print(table)
-    else:
-        console.print("[dim]No flows found.[/dim]")
-        console.print(
-            "\n[dim]Create flows in .paircoder/flows/ or flows/ directories.[/dim]"
-        )
-        console.print(
-            "[dim]Each flow is a markdown file with YAML front-matter.[/dim]"
-        )
-
 
 @flow_app.command("show")
 def flow_show(
-    name: str = typer.Argument(..., help="Name of the flow to show"),
-    body_only: bool = typer.Option(False, "--body", "-b", help="Show only the flow body"),
-    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+    name: str = typer.Argument(..., help="Flow name"),
+    json_out: bool = typer.Option(False, "--json"),
 ):
-    """Show details of a specific flow."""
-    root = Path.cwd()
+    root = repo_root()
+    flows_dir = _flows_root(root)
 
-    flow = flow_loader.get_flow(root, name)
+    parser = FlowParser(flows_dir)
+    path = parser.find_flow(name)
 
-    if flow is None:
+    if not path:
         console.print(f"[red]Flow not found: {name}[/red]")
-        available = flow_loader.list_flow_names(root)
-        if available:
-            console.print("\n[dim]Available flows:[/dim]")
-            for n in available:
-                console.print(f"  • {n}")
         raise typer.Exit(1)
 
+    flow = parser.parse_file(path)
+
     if json_out:
-        result = {
-            "name": flow.name,
-            "description": flow.description,
-            "tags": flow.tags,
-            "version": flow.version,
-            "path": str(flow.path.relative_to(root)),
-            "body": flow.body,
-        }
-        sys.stdout.write(json.dumps(result, indent=2) + "\n")
-    elif body_only:
-        console.print(flow.body)
+        print(flow.to_json())
     else:
-        console.print(f"[bold cyan]{flow.name}[/bold cyan]")
-        console.print(f"[dim]{flow.description}[/dim]\n")
-        if flow.tags:
-            console.print(f"[dim]Tags: {', '.join(flow.tags)}[/dim]")
-        console.print(f"[dim]Version: {flow.version}[/dim]")
-        console.print(f"[dim]Path: {flow.path.relative_to(root)}[/dim]\n")
-        console.print(flow.body)
+        console.print(flow.to_checklist())
 
 
 def version_callback(value: bool):
@@ -178,6 +145,20 @@ def repo_root() -> Path:
         raise typer.Exit(1)
     return p
 
+def ensure_v2_config(root: Path) -> Path:
+    """Ensure v2 config exists at .paircoder/config.yaml.
+
+    - If only legacy .paircoder.yml exists, it will be read and re-saved into v2 format.
+    - If nothing exists, a default config will be written in v2 format.
+    """
+    v2_path = root / ".paircoder" / "config.yaml"
+    if v2_path.exists():
+        return v2_path
+
+    # Load from legacy/env/defaults and persist in v2 location
+    cfg = Config.load(root)
+    cfg.save(root, use_v2=True)
+    return v2_path
 
 @app.command()
 def init(
@@ -191,6 +172,8 @@ def init(
     """Initialize repo with governance, context, prompts, scripts, and workflows."""
     root = repo_root()
 
+    preexisting_config = Config.find_config_file(root)
+
     if interactive:
         # Interactive mode to gather project information
         project_name = typer.prompt("Project name", default="My Project")
@@ -203,7 +186,7 @@ def init(
             primary_goal=primary_goal,
             coverage_target=int(coverage)
         )
-        config.save(root)
+        config.save(root, use_v2=True)
 
     # Use bundled template if none provided
     if template is None:
@@ -217,10 +200,23 @@ def init(
             progress.update(task, completed=True)
 
         console.print("[green]✓[/green] Initialized repo with pair-coding scaffolding")
+        # Ensure v2 configuration exists (canonical: .paircoder/config.yaml)
+        ensure_v2_config(root)
         console.print("[dim]Review diffs and commit changes[/dim]")
     else:
         # Use provided template (simplified for now)
         console.print(f"[yellow]Using template: {template}[/yellow]")
+        # Ensure v2 configuration exists (canonical: .paircoder/config.yaml)
+        ensure_v2_config(root)
+        # If this repo had no config before init ran, ensure we have a canonical v2 config file.
+        # This keeps v1 repos stable (no surprise migrations) while making new scaffolds v2-native.
+        if preexisting_config is None:
+            v2_config = root / ".paircoder" / "config.yaml"
+            v2_config_yml = root / ".paircoder" / "config.yml"
+            if not v2_config.exists() and not v2_config_yml.exists():
+                # Use defaults/env (or the legacy config that the template may have created)
+                # and persist them to the canonical v2 location.
+                Config.load(root).save(root, use_v2=True)
 
 
 @app.command()
@@ -466,7 +462,7 @@ def status(
             console.print("\n[yellow]⚠ Working tree has uncommitted changes[/yellow]")
             console.print("[dim]Consider committing or stashing before creating a pack[/dim]")
 
-        if not latest_pack or (latest_pack and age_hours and age_hours > 24):
+        if not latest_pack or (latest_pack and age_hours is not None and age_hours > 24):
             console.print("\n[dim]Tip: Run 'bpsai-pair pack' to create a fresh context pack[/dim]")
 
 

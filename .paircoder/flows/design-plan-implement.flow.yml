@@ -1,0 +1,18 @@
+version: 1
+name: design-plan-implement
+description: "Clarify goal, design, plan tasks, implement with TDD, review."
+variables:
+  feature: ""
+steps:
+  - id: clarify
+    action: navigator
+    description: "Clarify goal, constraints, and non-goals."
+  - id: plan
+    action: navigator
+    description: "Produce 5–15 small tasks (2–10 min each)."
+  - id: implement
+    action: driver
+    description: "Implement tasks using red→green→refactor."
+  - id: review
+    action: reviewer
+    description: "Run tests/lint, review diff, finalize."
