@@ -1,0 +1,325 @@
+# ADR 0002 — Paircoder v2 Architecture
+
+**Status:** Accepted
+**Date:** 2025-12-12
+**Authors:** BPS AI Software Team
+
+---
+
+## Context
+
+Paircoder v1 established a disciplined workflow for AI pair programming: context loops, agent packs, feature branching, and validation tooling. As AI capabilities advance, users need:
+
+1. **Native workflow orchestration** — Human-readable "flows" that agents can execute step-by-step
+2. **Multi-provider support** — Freedom to use OpenAI, Anthropic, Google, or other providers
+3. **Smart routing** — Automatic model selection based on task complexity and cost constraints
+4. **Efficiency controls** — Token budgets, prompt caching, and cost awareness
+
+This ADR locks the design constraints and compatibility rules for v2.
+
+---
+
+## Decision
+
+### What Stays Stable (v1 Compatibility)
+
+The following **MUST NOT** change behavior or break existing workflows:
+
+| Component | Location | Guarantee |
+|-----------|----------|-----------|
+| CLI commands | `bpsai-pair init/feature/pack/context-sync/status/validate/ci` | Same flags, same output semantics |
+| Context Loop | `context/development.md` with Overall/Last/Next/Blockers fields | Format unchanged |
+| Agent Pack | `.tgz` respecting `.agentpackignore`, includes `context/`, `prompts/`, directory notes | Same archive structure |
+| Template layout | `tools/cli/bpsai_pair/data/cookiecutter-paircoder/` | Existing files preserved |
+| Cross-platform | Pure Python, no bash-only dependencies | Windows/macOS/Linux parity |
+| Configuration | `paircoder.yaml` or `pyproject.toml` sections | Backward-compatible schema |
+
+**Migration policy:** No dedicated migration command. v2 features are opt-in additions; v1 repos continue working unchanged.
+
+### What's New (v2 Additions)
+
+#### 1. Flows System
+
+A declarative workflow engine for multi-step agent tasks.
+
+```yaml
+# flows/code-review.yaml
+name: code-review
+description: Review PR for correctness, style, and security
+steps:
+  - id: gather
+    action: read-files
+    inputs: { patterns: ["src/**/*.py", "tests/**/*.py"] }
+  - id: analyze
+    action: llm-call
+    model: auto  # Router decides
+    prompt: prompts/review.md
+    context: { files: "{{ steps.gather.output }}" }
+  - id: report
+    action: write-file
+    path: reviews/{{ pr_id }}.md
+```
+
+- **Location:** `flows/` directory (new)
+- **Format:** YAML with Jinja2 templating
+- **Execution:** `bpsai-pair flow run <name>` (new command)
+
+#### 2. Orchestration Layer
+
+A provider-agnostic runtime that routes requests to the best model.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    User Request                         │
+└─────────────────────────┬───────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Task Classifier                        │
+│  (daily_coding | architecture | long_refactor |         │
+│   windows_dotnet | frontend_ui | quick_triage)          │
+└─────────────────────────┬───────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Model Router                          │
+│  - Task → provider/model mapping                         │
+│  - Effort/thinking_level per task type                   │
+│  - Cost tracking + token budget enforcement              │
+└─────────────────────────┬───────────────────────────────┘
+                          ▼
+┌──────────────────┬──────────────────┬───────────────────┐
+│    Anthropic     │     OpenAI       │      Google       │
+│  Opus 4.5        │  Codex-Max       │   Gemini 3 Pro    │
+│  Sonnet 4.5      │  Codex           │   Deep Think      │
+│  Haiku 4.5       │  Codex-Mini      │                   │
+│  (effort param)  │  (compaction)    │  (thinking_level) │
+└──────────────────┴──────────────────┴───────────────────┘
+```
+
+- **Location:** `tools/cli/bpsai_pair/orchestrator/` (new module)
+- **Config:** `paircoder.yaml` → `orchestrator:` section
+- **API keys:** Environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`)
+
+#### 3. Provider Extensibility
+
+Initial providers (v2.0) with current models and pricing:
+
+| Provider | Models | Input/Output (per MTok) | Key Features |
+|----------|--------|------------------------|--------------|
+| **Anthropic** | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 | Opus: $5/$25, Sonnet: $3/$15, Haiku: $1/$5 | `effort` parameter (low/medium/high), 200k context, 64k output |
+| **OpenAI** | GPT-5.1-Codex-Max, GPT-5.1-Codex, GPT-5.1-Codex-Mini | Max: $1.25/$10 | Compaction (millions of tokens), Windows native, 24+ hour tasks |
+| **Google** | Gemini 3 Pro, Gemini 3 Deep Think | Pro: $2/$12 | `thinking_level` parameter, 1M context, best multimodal |
+
+**Recommended use cases:**
+
+| Use Case | Recommended Model | Rationale |
+|----------|-------------------|-----------|
+| Daily development workhorse | Claude Sonnet 4.5 | Best cost/performance balance, SWE-bench leader |
+| Complex architecture decisions | Claude Opus 4.5 (effort: high) | Deepest reasoning, 48% fewer tokens than Sonnet at high effort |
+| Long autonomous refactoring | GPT-5.1-Codex-Max | Compaction for project-scale tasks, Windows/.NET support |
+| Frontend/UI prototyping | Gemini 3 Pro | Best multimodal understanding, vision reasoning |
+| Quick classification/triage | Claude Haiku 4.5 | Fastest, lowest cost |
+
+Extension mechanism:
+```python
+# bpsai_pair/providers/base.py
+class Provider(ABC):
+    @abstractmethod
+    def complete(self, messages, **kwargs) -> Response: ...
+    @abstractmethod
+    def capabilities(self) -> ProviderCaps: ...
+    @abstractmethod
+    def pricing(self) -> PricingInfo: ...  # For cost-aware routing
+```
+
+#### 4. Efficiency Features
+
+| Feature | Description | Config |
+|---------|-------------|--------|
+| Token budgeting | Per-flow and per-session limits | `orchestrator.budget.max_tokens` |
+| Prompt caching | Hash-based cache for repeated prompts (up to 90% savings with Anthropic) | `orchestrator.cache.enabled` |
+| Cost tracking | Log estimated costs per request using live pricing | `orchestrator.cost.log_path` |
+| Model routing | Task complexity → model mapping with effort/thinking controls | `orchestrator.routing.rules` |
+| Effort control | Anthropic's `effort` parameter (low/medium/high) for cost/quality tradeoff | `orchestrator.defaults.effort` |
+| Thinking level | Google's `thinking_level` parameter (low/high) for reasoning depth | `orchestrator.defaults.thinking_level` |
+| Compaction awareness | Route long tasks to GPT-5.1-Codex-Max for multi-context coherence | `orchestrator.routing.long_task_threshold` |
+
+### What's Explicitly NOT Included
+
+These features are **out of scope** for v2 to avoid bloat:
+
+| Exclusion | Rationale |
+|-----------|-----------|
+| Planning OS / task hierarchy | Adds complexity without clear value; use external tools |
+| Project memory graphs | Speculative; context loop is sufficient |
+| Auto-commit or git automation | Too opinionated; users control git |
+| GUI or web interface | Out of scope for CLI tool |
+| Migration command | v1 → v2 is additive; no migration needed |
+| Plugin marketplace | Premature; start with built-in providers |
+| Persistent agent state | Flows are stateless; state lives in files |
+
+---
+
+## Architecture Constraints
+
+### Module Structure (v2)
+
+```
+tools/cli/bpsai_pair/
+├── cli.py                 # Existing CLI (stable)
+├── ops.py                 # Existing operations (stable)
+├── config.py              # Extended for v2 config
+├── orchestrator/          # NEW: routing + runtime
+│   ├── __init__.py
+│   ├── router.py          # Model selection logic
+│   ├── classifier.py      # Task complexity detection
+│   └── budget.py          # Token/cost tracking
+├── providers/             # NEW: provider adapters
+│   ├── __init__.py
+│   ├── base.py            # Abstract provider
+│   ├── openai.py
+│   ├── anthropic.py
+│   └── google.py
+└── flows/                 # NEW: flow engine
+    ├── __init__.py
+    ├── parser.py          # YAML flow parsing
+    ├── executor.py        # Step execution
+    └── actions.py         # Built-in actions
+```
+
+### New CLI Commands (v2)
+
+```bash
+# Flow execution
+bpsai-pair flow list                    # List available flows
+bpsai-pair flow run <name> [--var k=v]  # Execute a flow
+bpsai-pair flow validate <name>         # Validate flow syntax
+
+# Orchestration
+bpsai-pair provider list                # Show configured providers
+bpsai-pair provider test [name]         # Test provider connectivity
+bpsai-pair budget status                # Show token/cost usage
+```
+
+### Configuration Schema (v2 additions)
+
+```yaml
+# paircoder.yaml
+version: 2
+
+# v1 sections remain unchanged
+context:
+  dir: context
+
+# v2 additions
+orchestrator:
+  default_provider: anthropic
+
+  providers:
+    anthropic:
+      models:
+        - claude-opus-4-5      # Complex reasoning, architecture
+        - claude-sonnet-4-5    # Daily workhorse
+        - claude-haiku-4-5     # Fast triage
+      default_effort: medium   # low|medium|high
+      priority: 1
+    openai:
+      models:
+        - gpt-5.1-codex-max    # Long autonomous tasks, Windows
+        - gpt-5.1-codex        # Standard agentic coding
+        - gpt-5.1-codex-mini   # Lighter tasks
+      priority: 2
+    google:
+      models:
+        - gemini-3-pro         # Multimodal, frontend
+        - gemini-3-deep-think  # Deep reasoning
+      default_thinking_level: low  # low|high
+      priority: 3
+
+  # Task-based routing (classifier determines task type)
+  routing:
+    daily_coding: anthropic/claude-sonnet-4-5
+    architecture: anthropic/claude-opus-4-5
+    long_refactor: openai/gpt-5.1-codex-max      # 24+ hour tasks
+    windows_dotnet: openai/gpt-5.1-codex-max     # Windows native
+    frontend_ui: google/gemini-3-pro             # Vision/multimodal
+    quick_triage: anthropic/claude-haiku-4-5
+
+  # Effort/thinking overrides per task type
+  task_params:
+    architecture:
+      effort: high           # Deep reasoning for complex decisions
+    daily_coding:
+      effort: medium         # Balance speed and quality
+    quick_triage:
+      effort: low            # Fast responses
+    frontend_ui:
+      thinking_level: high   # Better visual reasoning
+
+  budget:
+    max_tokens_per_session: 500000
+    max_cost_per_session_usd: 10.00
+    warn_at_percent: 80
+
+  cache:
+    enabled: true
+    ttl_hours: 24
+    # Anthropic prompt caching: up to 90% cost savings
+
+flows:
+  dir: flows
+  variables:
+    default_reviewer: "team"
+```
+
+---
+
+## Consequences
+
+### Positive
+
+1. **Backward compatible** — Existing v1 users unaffected
+2. **Progressive adoption** — Teams enable v2 features as needed
+3. **Provider freedom** — No vendor lock-in
+4. **Cost control** — Budgets prevent runaway spending
+5. **Reproducible workflows** — Flows are version-controlled YAML
+
+### Negative
+
+1. **Increased surface area** — More code to maintain
+2. **API key management** — Users must secure credentials
+3. **Testing complexity** — Must mock multiple providers
+
+### Mitigations
+
+- Comprehensive test suite with provider mocks
+- Clear documentation for credential management
+- Feature flags to disable unused v2 components
+
+---
+
+## Implementation Phases
+
+| Phase | Scope | Deliverable |
+|-------|-------|-------------|
+| 0 | This ADR | Design locked |
+| 1 | Provider abstraction | `providers/` module with OpenAI/Anthropic/Google |
+| 2 | Orchestrator core | Router + classifier + budget tracking |
+| 3 | Flows MVP | Parser + executor + basic actions |
+| 4 | CLI integration | New commands wired up |
+| 5 | Documentation | User guide + examples |
+
+---
+
+## References
+
+### Internal
+- ADR 0001: Context Loop design
+- `/context/agents.md`: Development workflow
+- `/tools/cli/README.md`: Current CLI documentation
+
+### Model Documentation (December 2025)
+- [Claude Opus 4.5](https://www.anthropic.com/claude/opus) — Anthropic's flagship with effort parameter
+- [Claude Sonnet 4.5](https://www.anthropic.com/claude/sonnet) — SWE-bench leader for daily coding
+- [GPT-5.1-Codex-Max](https://openai.com/index/gpt-5-1-codex-max/) — OpenAI's long-running agentic model with compaction
+- [Gemini 3 Pro](https://deepmind.google/models/gemini/) — Google's multimodal reasoning model
+- [Gemini 3 for Developers](https://blog.google/technology/developers/gemini-3-developers/) — Agentic capabilities and thinking_level
