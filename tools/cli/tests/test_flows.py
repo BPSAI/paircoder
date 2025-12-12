@@ -237,6 +237,44 @@ steps:
         with pytest.raises(FlowValidationError):
             parser.parse_string("name: no-steps\ndescription: test")
 
+    def test_parse_null_depends_on(self):
+        """Test parsing with null depends_on doesn't crash (regression test)."""
+        yaml_content = """
+name: null-depends
+description: Flow with null depends_on
+steps:
+  - id: s1
+    action: a1
+    depends_on: null
+  - id: s2
+    action: a2
+    depends_on:
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.name == "null-depends"
+        assert len(flow.steps) == 2
+        assert flow.steps[0].depends_on == []
+        assert flow.steps[1].depends_on == []
+
+    def test_parse_string_depends_on(self):
+        """Test parsing with string depends_on normalizes to list."""
+        yaml_content = """
+name: string-depends
+description: Flow with string depends_on
+steps:
+  - id: s1
+    action: a1
+  - id: s2
+    action: a2
+    depends_on: s1
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.steps[1].depends_on == ["s1"]
+
     def test_parse_file(self, tmp_path):
         """Test parsing from file."""
         flow_file = tmp_path / "test.yaml"

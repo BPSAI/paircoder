@@ -106,11 +106,15 @@ class FlowParser:
         prompt = data.get("prompt")
         context = data.get("context", {})
         path = data.get("path")
-        depends_on = data.get("depends_on", [])
+        depends_on = data.get("depends_on")
 
-        # Normalize depends_on to list
-        if isinstance(depends_on, str):
+        # Normalize depends_on to list (handle null, string, or invalid types)
+        if depends_on is None:
+            depends_on = []
+        elif isinstance(depends_on, str):
             depends_on = [depends_on]
+        elif not isinstance(depends_on, list):
+            depends_on = []  # Coerce invalid types to empty list
 
         return Step(
             id=step_id,
