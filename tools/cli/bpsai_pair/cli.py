@@ -22,6 +22,7 @@ try:
     from . import __version__
     from . import init_bundled_cli
     from . import ops
+    from . import flows
     from .config import Config
     from .flows import FlowParser, FlowValidationError
 except ImportError:
@@ -31,6 +32,7 @@ except ImportError:
     from bpsai_pair import __version__
     from bpsai_pair import init_bundled_cli
     from bpsai_pair import ops
+    from bpsai_pair import flows
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
 
@@ -47,15 +49,99 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 
-# Flow subcommand app
+# Flow sub-app for managing flows (Paircoder-native skills)
 flow_app = typer.Typer(
-    help="Manage and run flows (v2 workflows)",
+    help="Manage flows (Paircoder-native skills)",
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 app.add_typer(flow_app, name="flow")
 
-# Default flows directory
-FLOWS_DIR = os.getenv("PAIRCODER_FLOWS_DIR", "flows")
+
+@flow_app.command("list")
+def flow_list(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """List all available flows."""
+    root = Path.cwd()
+
+    discovered_flows = flows.discover_flows(root)
+
+    if json_out:
+        result = {
+            "flows": [
+                {
+                    "name": f.name,
+                    "description": f.description,
+                    "tags": f.tags,
+                    "version": f.version,
+                    "path": str(f.path.relative_to(root)),
+                }
+                for f in discovered_flows
+            ],
+            "count": len(discovered_flows),
+        }
+        sys.stdout.write(json.dumps(result, indent=2) + "\n")
+    elif discovered_flows:
+        table = Table(title="Available Flows")
+        table.add_column("Name", style="cyan", no_wrap=True)
+        table.add_column("Description", style="white")
+        table.add_column("Tags", style="dim")
+
+        for f in discovered_flows:
+            tags_str = ", ".join(f.tags) if f.tags else ""
+            table.add_row(f.name, f.description, tags_str)
+
+        console.print(table)
+    else:
+        console.print("[dim]No flows found.[/dim]")
+        console.print(
+            "\n[dim]Create flows in .paircoder/flows/ or flows/ directories.[/dim]"
+        )
+        console.print(
+            "[dim]Each flow is a markdown file with YAML front-matter.[/dim]"
+        )
+
+
+@flow_app.command("show")
+def flow_show(
+    name: str = typer.Argument(..., help="Name of the flow to show"),
+    body_only: bool = typer.Option(False, "--body", "-b", help="Show only the flow body"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show details of a specific flow."""
+    root = Path.cwd()
+
+    flow = flows.get_flow(root, name)
+
+    if flow is None:
+        console.print(f"[red]Flow not found: {name}[/red]")
+        available = flows.list_flow_names(root)
+        if available:
+            console.print("\n[dim]Available flows:[/dim]")
+            for n in available:
+                console.print(f"  • {n}")
+        raise typer.Exit(1)
+
+    if json_out:
+        result = {
+            "name": flow.name,
+            "description": flow.description,
+            "tags": flow.tags,
+            "version": flow.version,
+            "path": str(flow.path.relative_to(root)),
+            "body": flow.body,
+        }
+        sys.stdout.write(json.dumps(result, indent=2) + "\n")
+    elif body_only:
+        console.print(flow.body)
+    else:
+        console.print(f"[bold cyan]{flow.name}[/bold cyan]")
+        console.print(f"[dim]{flow.description}[/dim]\n")
+        if flow.tags:
+            console.print(f"[dim]Tags: {', '.join(flow.tags)}[/dim]")
+        console.print(f"[dim]Version: {flow.version}[/dim]")
+        console.print(f"[dim]Path: {flow.path.relative_to(root)}[/dim]\n")
+        console.print(flow.body)
 
 
 def version_callback(value: bool):
