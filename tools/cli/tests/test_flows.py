@@ -1,366 +1,558 @@
-"""Tests for the flows module."""
+"""
+Tests for the flows module (PCV2-012).
 
+Tests JSON structure stability for flow run --json output.
+"""
+import json
 import pytest
 from pathlib import Path
+from typer.testing import CliRunner
 
-from bpsai_pair import flows
+from bpsai_pair.flows import Flow, Step, FlowParser, FlowValidationError
+from bpsai_pair.flows.models import StepStatus
+from bpsai_pair.cli import app
+
+runner = CliRunner()
 
 
-class TestParseFlow:
-    """Tests for parse_flow function."""
+# ============================================================================
+# Model Tests
+# ============================================================================
 
-    def test_parse_valid_flow(self, tmp_path):
-        """Parse a valid flow file with all fields."""
-        flow_file = tmp_path / "test-flow.md"
-        flow_file.write_text("""---
-name: test-flow
-description: A test flow for unit testing
-tags: [testing, demo]
-version: "2.0"
----
 
-# Test Flow
+class TestStep:
+    """Test Step model."""
 
-This is the body of the test flow.
+    def test_step_creation(self):
+        """Test basic step creation."""
+        step = Step(id="test", action="read-files")
+        assert step.id == "test"
+        assert step.action == "read-files"
+        assert step.status == StepStatus.PENDING
 
-## Steps
+    def test_step_to_dict(self):
+        """Test step serialization."""
+        step = Step(
+            id="gather",
+            action="read-files",
+            description="Gather source files",
+            inputs={"patterns": ["*.py"]},
+        )
+        d = step.to_dict()
 
-1. Do something
-2. Do something else
+        assert d["id"] == "gather"
+        assert d["action"] == "read-files"
+        assert d["description"] == "Gather source files"
+        assert d["inputs"] == {"patterns": ["*.py"]}
+        assert d["status"] == "pending"
+
+    def test_step_to_checklist_item(self):
+        """Test step renders as checklist item."""
+        step = Step(id="test", action="run", description="Run tests")
+        item = step.to_checklist_item(1)
+
+        assert "1." in item
+        assert "[ ]" in item
+        assert "**test**" in item
+        assert "Run tests" in item
+
+
+class TestFlow:
+    """Test Flow model."""
+
+    def test_flow_creation(self):
+        """Test basic flow creation."""
+        steps = [Step(id="s1", action="a1")]
+        flow = Flow(name="test", description="Test flow", steps=steps)
+
+        assert flow.name == "test"
+        assert flow.description == "Test flow"
+        assert len(flow.steps) == 1
+
+    def test_flow_to_dict_structure(self):
+        """Test flow JSON structure stability - critical for API consumers."""
+        steps = [
+            Step(id="gather", action="read-files", description="Read files"),
+            Step(id="process", action="llm-call", description="Process"),
+        ]
+        flow = Flow(
+            name="code-review",
+            description="Review code",
+            steps=steps,
+            variables={"reviewer": "team"},
+            version="1",
+        )
+        d = flow.to_dict()
+
+        # Required top-level keys (API contract)
+        assert "name" in d
+        assert "description" in d
+        assert "version" in d
+        assert "steps" in d
+        assert "step_count" in d
+        assert "variables" in d
+
+        # Values match
+        assert d["name"] == "code-review"
+        assert d["description"] == "Review code"
+        assert d["step_count"] == 2
+        assert d["variables"] == {"reviewer": "team"}
+
+        # Steps structure
+        assert len(d["steps"]) == 2
+        assert d["steps"][0]["id"] == "gather"
+        assert d["steps"][0]["action"] == "read-files"
+
+    def test_flow_to_json(self):
+        """Test flow JSON serialization is valid JSON."""
+        steps = [Step(id="s1", action="a1")]
+        flow = Flow(name="test", description="Test", steps=steps)
+        j = flow.to_json()
+
+        # Should be valid JSON
+        parsed = json.loads(j)
+        assert parsed["name"] == "test"
+
+    def test_flow_to_checklist(self):
+        """Test flow markdown checklist rendering."""
+        steps = [
+            Step(id="s1", action="a1", description="Step 1"),
+            Step(id="s2", action="a2", description="Step 2"),
+        ]
+        flow = Flow(name="test", description="Test flow", steps=steps)
+        md = flow.to_checklist()
+
+        assert "# Flow: test" in md
+        assert "> Test flow" in md
+        assert "## Steps" in md
+        assert "1. [ ]" in md
+        assert "2. [ ]" in md
+
+    def test_flow_validation_empty_name(self):
+        """Test validation catches empty name."""
+        flow = Flow(name="", description="", steps=[Step(id="s1", action="a1")])
+        errors = flow.validate()
+        assert any("name" in e.lower() for e in errors)
+
+    def test_flow_validation_no_steps(self):
+        """Test validation catches empty steps."""
+        flow = Flow(name="test", description="", steps=[])
+        errors = flow.validate()
+        assert any("step" in e.lower() for e in errors)
+
+    def test_flow_validation_duplicate_ids(self):
+        """Test validation catches duplicate step IDs."""
+        steps = [
+            Step(id="same", action="a1"),
+            Step(id="same", action="a2"),
+        ]
+        flow = Flow(name="test", description="", steps=steps)
+        errors = flow.validate()
+        assert any("duplicate" in e.lower() for e in errors)
+
+    def test_flow_validation_invalid_dependency(self):
+        """Test validation catches invalid dependencies."""
+        steps = [
+            Step(id="s1", action="a1", depends_on=["nonexistent"]),
+        ]
+        flow = Flow(name="test", description="", steps=steps)
+        errors = flow.validate()
+        assert any("unknown" in e.lower() for e in errors)
+
+
+# ============================================================================
+# Parser Tests
+# ============================================================================
+
+
+class TestFlowParser:
+    """Test FlowParser."""
+
+    def test_parse_string_simple(self):
+        """Test parsing simple YAML string."""
+        yaml_content = """
+name: simple
+description: A simple flow
+steps:
+  - id: step1
+    action: read-files
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.name == "simple"
+        assert len(flow.steps) == 1
+        assert flow.steps[0].id == "step1"
+
+    def test_parse_string_with_inputs(self):
+        """Test parsing with step inputs."""
+        yaml_content = """
+name: with-inputs
+description: Flow with inputs
+steps:
+  - id: gather
+    action: read-files
+    inputs:
+      patterns:
+        - "*.py"
+        - "*.js"
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.steps[0].inputs == {"patterns": ["*.py", "*.js"]}
+
+    def test_parse_string_with_variables(self):
+        """Test parsing with flow variables."""
+        yaml_content = """
+name: with-vars
+description: Flow with variables
+variables:
+  reviewer: team
+  threshold: 80
+steps:
+  - id: s1
+    action: a1
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.variables == {"reviewer": "team", "threshold": 80}
+
+    def test_parse_invalid_yaml(self):
+        """Test parsing invalid YAML raises error."""
+        parser = FlowParser()
+        with pytest.raises(FlowValidationError):
+            parser.parse_string("invalid: yaml: content: [")
+
+    def test_parse_missing_name(self):
+        """Test parsing without name raises error."""
+        parser = FlowParser()
+        with pytest.raises(FlowValidationError):
+            parser.parse_string("description: no name\nsteps:\n  - id: s1\n    action: a1")
+
+    def test_parse_missing_steps(self):
+        """Test parsing without steps raises error."""
+        parser = FlowParser()
+        with pytest.raises(FlowValidationError):
+            parser.parse_string("name: no-steps\ndescription: test")
+
+    def test_parse_null_depends_on(self):
+        """Test parsing with null depends_on doesn't crash (regression test)."""
+        yaml_content = """
+name: null-depends
+description: Flow with null depends_on
+steps:
+  - id: s1
+    action: a1
+    depends_on: null
+  - id: s2
+    action: a2
+    depends_on:
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.name == "null-depends"
+        assert len(flow.steps) == 2
+        assert flow.steps[0].depends_on == []
+        assert flow.steps[1].depends_on == []
+
+    def test_parse_string_depends_on(self):
+        """Test parsing with string depends_on normalizes to list."""
+        yaml_content = """
+name: string-depends
+description: Flow with string depends_on
+steps:
+  - id: s1
+    action: a1
+  - id: s2
+    action: a2
+    depends_on: s1
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+
+        assert flow.steps[1].depends_on == ["s1"]
+
+    def test_parse_file(self, tmp_path):
+        """Test parsing from file."""
+        flow_file = tmp_path / "test.yaml"
+        flow_file.write_text("""
+name: file-test
+description: Test from file
+steps:
+  - id: s1
+    action: a1
 """)
+        parser = FlowParser()
+        flow = parser.parse_file(flow_file)
 
-        flow = flows.parse_flow(flow_file)
+        assert flow.name == "file-test"
+        assert flow.source_file == str(flow_file)
 
-        assert flow.name == "test-flow"
-        assert flow.description == "A test flow for unit testing"
-        assert flow.tags == ["testing", "demo"]
-        assert flow.version == "2.0"
-        assert flow.path == flow_file
-        assert "# Test Flow" in flow.body
-        assert "1. Do something" in flow.body
-
-    def test_parse_minimal_flow(self, tmp_path):
-        """Parse a flow with only required fields."""
-        flow_file = tmp_path / "minimal.md"
-        flow_file.write_text("""---
-name: minimal
-description: Minimal flow
----
-
-Simple body.
-""")
-
-        flow = flows.parse_flow(flow_file)
-
-        assert flow.name == "minimal"
-        assert flow.description == "Minimal flow"
-        assert flow.tags == []
-        assert flow.version == "1.0"  # default
-        assert flow.body == "Simple body.\n"
-
-    def test_parse_flow_missing_front_matter(self, tmp_path):
-        """Raise error when front-matter is missing."""
-        flow_file = tmp_path / "no-front-matter.md"
-        flow_file.write_text("# Just markdown\n\nNo front matter here.")
-
-        with pytest.raises(ValueError, match="must start with '---'"):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_missing_closing_delimiter(self, tmp_path):
-        """Raise error when closing delimiter is missing."""
-        flow_file = tmp_path / "unclosed.md"
-        flow_file.write_text("""---
-name: unclosed
-description: Missing close
-
-Body without closing delimiter.
-""")
-
-        with pytest.raises(ValueError, match="missing closing '---'"):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_missing_name(self, tmp_path):
-        """Raise error when name field is missing."""
-        flow_file = tmp_path / "no-name.md"
-        flow_file.write_text("""---
-description: Flow without name
----
-
-Body.
-""")
-
-        with pytest.raises(ValueError, match="missing required 'name'"):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_missing_description(self, tmp_path):
-        """Raise error when description field is missing."""
-        flow_file = tmp_path / "no-desc.md"
-        flow_file.write_text("""---
-name: no-desc
----
-
-Body.
-""")
-
-        with pytest.raises(ValueError, match="missing required 'description'"):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_invalid_yaml(self, tmp_path):
-        """Raise error when YAML is invalid."""
-        flow_file = tmp_path / "bad-yaml.md"
-        flow_file.write_text("""---
-name: bad
-description: [invalid yaml
----
-
-Body.
-""")
-
-        with pytest.raises(ValueError, match="Invalid YAML"):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_file_not_found(self, tmp_path):
-        """Raise error when file doesn't exist."""
-        flow_file = tmp_path / "nonexistent.md"
-
-        with pytest.raises(FileNotFoundError):
-            flows.parse_flow(flow_file)
-
-    def test_parse_flow_numeric_version(self, tmp_path):
-        """Handle numeric version by converting to string."""
-        flow_file = tmp_path / "numeric-version.md"
-        flow_file.write_text("""---
-name: numeric
-description: Numeric version
-version: 1.5
----
-
-Body.
-""")
-
-        flow = flows.parse_flow(flow_file)
-        assert flow.version == "1.5"
-
-    def test_parse_flow_empty_body(self, tmp_path):
-        """Parse flow with empty body."""
-        flow_file = tmp_path / "empty-body.md"
-        flow_file.write_text("""---
-name: empty
-description: Empty body flow
----
-""")
-
-        flow = flows.parse_flow(flow_file)
-        assert flow.body == ""
-
-
-class TestDiscoverFlows:
-    """Tests for discover_flows function."""
-
-    def test_discover_from_paircoder_flows(self, tmp_path):
-        """Discover flows from .paircoder/flows/ directory."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        (flows_dir / "flow-a.md").write_text("""---
-name: flow-a
-description: Flow A
----
-
-Body A.
-""")
-        (flows_dir / "flow-b.md").write_text("""---
-name: flow-b
-description: Flow B
----
-
-Body B.
-""")
-
-        discovered = flows.discover_flows(tmp_path)
-
-        assert len(discovered) == 2
-        assert discovered[0].name == "flow-a"
-        assert discovered[1].name == "flow-b"
-
-    def test_discover_from_fallback_flows(self, tmp_path):
-        """Discover flows from flows/ fallback directory."""
+    def test_list_flows(self, tmp_path):
+        """Test listing flows in directory."""
         flows_dir = tmp_path / "flows"
         flows_dir.mkdir()
 
-        (flows_dir / "fallback.md").write_text("""---
-name: fallback
-description: Fallback flow
----
-
-Body.
+        # Create valid flow
+        (flows_dir / "valid.yaml").write_text("""
+name: valid-flow
+description: A valid flow
+steps:
+  - id: s1
+    action: a1
 """)
 
-        discovered = flows.discover_flows(tmp_path)
+        # Create invalid flow
+        (flows_dir / "invalid.yaml").write_text("invalid content")
 
-        assert len(discovered) == 1
-        assert discovered[0].name == "fallback"
+        parser = FlowParser(flows_dir)
+        flows = parser.list_flows()
 
-    def test_discover_nested_flows(self, tmp_path):
-        """Discover flows in nested subdirectories."""
-        nested_dir = tmp_path / ".paircoder" / "flows" / "category" / "subcategory"
-        nested_dir.mkdir(parents=True)
+        assert len(flows) == 2
+        valid = next(f for f in flows if f["name"] == "valid-flow")
+        assert valid["steps"] == 1
+        assert not valid.get("error")
 
-        (nested_dir / "nested.md").write_text("""---
-name: nested
-description: Nested flow
----
+        invalid = next(f for f in flows if f["name"] == "invalid")
+        assert invalid.get("error")
 
-Body.
+
+# ============================================================================
+# JSON Structure Stability Tests (Critical for API)
+# ============================================================================
+
+
+class TestJSONStructureStability:
+    """
+    Test JSON output structure stability.
+
+    These tests ensure the JSON API contract is maintained.
+    Breaking changes here would affect downstream consumers.
+    """
+
+    def test_flow_run_json_structure(self):
+        """Test flow run --json has stable structure."""
+        yaml_content = """
+name: test-flow
+description: Test flow for JSON structure
+variables:
+  var1: value1
+steps:
+  - id: step1
+    action: read-files
+    description: First step
+  - id: step2
+    action: llm-call
+    description: Second step
+    model: auto
+"""
+        parser = FlowParser()
+        flow = parser.parse_string(yaml_content)
+        result = flow.to_dict()
+
+        # Required top-level keys
+        required_keys = {"name", "description", "version", "steps", "step_count", "variables"}
+        assert required_keys.issubset(set(result.keys()))
+
+        # Step structure
+        for step in result["steps"]:
+            step_required = {"id", "action", "status"}
+            assert step_required.issubset(set(step.keys()))
+
+    def test_checklist_json_structure(self):
+        """Test checklist JSON structure matches expected format."""
+        steps = [
+            Step(id="s1", action="a1", description="Step 1"),
+            Step(id="s2", action="a2", description="Step 2"),
+        ]
+        flow = Flow(name="test", description="Test", steps=steps)
+        result = flow.to_dict()
+
+        # Build checklist structure as CLI does
+        checklist = [
+            {
+                "step": i + 1,
+                "id": step.id,
+                "action": step.action,
+                "description": step.description or f"{step.action}: {step.id}",
+                "status": step.status.value,
+            }
+            for i, step in enumerate(flow.steps)
+        ]
+
+        # Verify structure
+        assert len(checklist) == 2
+        assert checklist[0]["step"] == 1
+        assert checklist[0]["id"] == "s1"
+        assert checklist[0]["status"] == "pending"
+        assert checklist[1]["step"] == 2
+
+    def test_json_is_valid_json(self):
+        """Test all JSON output is valid parseable JSON."""
+        steps = [Step(id="s1", action="a1")]
+        flow = Flow(name="test", description="Test", steps=steps, variables={"k": "v"})
+
+        # to_json should produce valid JSON
+        j = flow.to_json()
+        parsed = json.loads(j)
+        assert isinstance(parsed, dict)
+
+        # to_dict should be JSON-serializable
+        d = flow.to_dict()
+        j2 = json.dumps(d)
+        parsed2 = json.loads(j2)
+        assert parsed == parsed2
+
+
+# ============================================================================
+# CLI Integration Tests
+# ============================================================================
+
+
+class TestFlowCLI:
+    """Test flow CLI commands."""
+
+    def test_flow_list_empty(self, tmp_path, monkeypatch):
+        """Test flow list with no flows."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()  # Make it a git repo
+        (tmp_path / "flows").mkdir()
+
+        result = runner.invoke(app, ["flow", "list"])
+        assert result.exit_code == 0
+        assert "No flows found" in result.stdout
+
+    def test_flow_list_json(self, tmp_path, monkeypatch):
+        """Test flow list --json output."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        flows_dir = tmp_path / "flows"
+        flows_dir.mkdir()
+        (flows_dir / "test.yaml").write_text("""
+name: test-flow
+description: Test
+steps:
+  - id: s1
+    action: a1
 """)
 
-        discovered = flows.discover_flows(tmp_path)
+        result = runner.invoke(app, ["flow", "list", "--json"])
+        assert result.exit_code == 0
 
-        assert len(discovered) == 1
-        assert discovered[0].name == "nested"
+        data = json.loads(result.stdout)
+        assert "flows" in data
+        assert "count" in data
+        assert data["count"] == 1
 
-    def test_discover_priority_paircoder_over_fallback(self, tmp_path):
-        """Prefer .paircoder/flows/ over flows/ for duplicate names."""
-        paircoder_dir = tmp_path / ".paircoder" / "flows"
-        paircoder_dir.mkdir(parents=True)
-        fallback_dir = tmp_path / "flows"
-        fallback_dir.mkdir()
-
-        (paircoder_dir / "duplicate.md").write_text("""---
-name: duplicate
-description: From .paircoder
----
-
-Body from .paircoder.
+    def test_flow_run_json(self, tmp_path, monkeypatch):
+        """Test flow run --json output structure."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        flows_dir = tmp_path / "flows"
+        flows_dir.mkdir()
+        (flows_dir / "review.yaml").write_text("""
+name: code-review
+description: Review code changes
+steps:
+  - id: gather
+    action: read-files
+    description: Gather source files
+  - id: analyze
+    action: llm-call
+    description: Analyze code
 """)
-        (fallback_dir / "duplicate.md").write_text("""---
-name: duplicate
-description: From fallback
----
 
-Body from fallback.
+        result = runner.invoke(app, ["flow", "run", "code-review", "--json"])
+        assert result.exit_code == 0
+
+        data = json.loads(result.stdout)
+
+        # Verify structure
+        assert data["name"] == "code-review"
+        assert "steps" in data
+        assert "checklist" in data
+        assert len(data["checklist"]) == 2
+
+        # Checklist structure
+        assert data["checklist"][0]["step"] == 1
+        assert data["checklist"][0]["id"] == "gather"
+        assert data["checklist"][0]["status"] == "pending"
+
+    def test_flow_run_with_vars(self, tmp_path, monkeypatch):
+        """Test flow run with variables."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        flows_dir = tmp_path / "flows"
+        flows_dir.mkdir()
+        (flows_dir / "test.yaml").write_text("""
+name: test
+description: Test
+variables:
+  default_val: original
+steps:
+  - id: s1
+    action: a1
 """)
 
-        discovered = flows.discover_flows(tmp_path)
+        result = runner.invoke(
+            app, ["flow", "run", "test", "--var", "custom=value", "--json"]
+        )
+        assert result.exit_code == 0
 
-        assert len(discovered) == 1
-        assert discovered[0].description == "From .paircoder"
+        data = json.loads(result.stdout)
+        assert data["variables"]["default_val"] == "original"
+        assert data["variables"]["custom"] == "value"
 
-    def test_discover_skips_invalid_flows(self, tmp_path):
-        """Skip invalid flow files during discovery."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        # Valid flow
-        (flows_dir / "valid.md").write_text("""---
+    def test_flow_validate_valid(self, tmp_path, monkeypatch):
+        """Test flow validate with valid flow."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        flows_dir = tmp_path / "flows"
+        flows_dir.mkdir()
+        (flows_dir / "valid.yaml").write_text("""
 name: valid
 description: Valid flow
----
-
-Body.
-""")
-        # Invalid flow (no front matter)
-        (flows_dir / "invalid.md").write_text("Just markdown, no front matter.")
-
-        discovered = flows.discover_flows(tmp_path)
-
-        assert len(discovered) == 1
-        assert discovered[0].name == "valid"
-
-    def test_discover_empty_directory(self, tmp_path):
-        """Return empty list when no flows exist."""
-        discovered = flows.discover_flows(tmp_path)
-        assert discovered == []
-
-    def test_discover_sorted_by_name(self, tmp_path):
-        """Return flows sorted alphabetically by name."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        # Create in non-alphabetical order
-        for name in ["zebra", "apple", "mango"]:
-            (flows_dir / f"{name}.md").write_text(f"""---
-name: {name}
-description: {name.title()} flow
----
-
-Body.
+steps:
+  - id: s1
+    action: a1
 """)
 
-        discovered = flows.discover_flows(tmp_path)
+        result = runner.invoke(app, ["flow", "validate", "valid"])
+        assert result.exit_code == 0
+        assert "valid" in result.stdout.lower()
 
-        assert [f.name for f in discovered] == ["apple", "mango", "zebra"]
-
-    def test_discover_ignores_non_md_files(self, tmp_path):
-        """Ignore non-markdown files."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        (flows_dir / "flow.md").write_text("""---
-name: flow
-description: Flow
----
-
-Body.
-""")
-        (flows_dir / "notes.txt").write_text("Just a text file.")
-        (flows_dir / "config.yaml").write_text("key: value")
-
-        discovered = flows.discover_flows(tmp_path)
-
-        assert len(discovered) == 1
-        assert discovered[0].name == "flow"
-
-
-class TestGetFlow:
-    """Tests for get_flow function."""
-
-    def test_get_existing_flow(self, tmp_path):
-        """Get an existing flow by name."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        (flows_dir / "my-flow.md").write_text("""---
-name: my-flow
-description: My flow
----
-
-Body.
+    def test_flow_validate_json(self, tmp_path, monkeypatch):
+        """Test flow validate --json output."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        flows_dir = tmp_path / "flows"
+        flows_dir.mkdir()
+        (flows_dir / "test.yaml").write_text("""
+name: test
+description: Test
+steps:
+  - id: s1
+    action: a1
 """)
 
-        flow = flows.get_flow(tmp_path, "my-flow")
+        result = runner.invoke(app, ["flow", "validate", "test", "--json"])
+        assert result.exit_code == 0
 
-        assert flow is not None
-        assert flow.name == "my-flow"
+        data = json.loads(result.stdout)
+        assert data["valid"] is True
+        assert data["flow"] == "test"
+        assert "errors" in data
+        assert data["errors"] == []
 
-    def test_get_nonexistent_flow(self, tmp_path):
-        """Return None for non-existent flow."""
-        flow = flows.get_flow(tmp_path, "nonexistent")
-        assert flow is None
+    def test_flow_not_found(self, tmp_path, monkeypatch):
+        """Test flow run with non-existent flow."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / ".git").mkdir()
+        (tmp_path / "flows").mkdir()
 
-
-class TestListFlowNames:
-    """Tests for list_flow_names function."""
-
-    def test_list_names(self, tmp_path):
-        """List all flow names."""
-        flows_dir = tmp_path / ".paircoder" / "flows"
-        flows_dir.mkdir(parents=True)
-
-        for name in ["alpha", "beta", "gamma"]:
-            (flows_dir / f"{name}.md").write_text(f"""---
-name: {name}
-description: {name.title()}
----
-
-Body.
-""")
-
-        names = flows.list_flow_names(tmp_path)
-
-        assert names == ["alpha", "beta", "gamma"]
-
-    def test_list_empty(self, tmp_path):
-        """Return empty list when no flows."""
-        names = flows.list_flow_names(tmp_path)
-        assert names == []
+        result = runner.invoke(app, ["flow", "run", "nonexistent"])
+        assert result.exit_code == 1
+        assert "not found" in result.stdout.lower()
