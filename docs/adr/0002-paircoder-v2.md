@@ -1,19 +1,34 @@
-# ADR 0002 — Paircoder v2 Architecture
+# ADR 0002 — Paircoder v2 Architecture (Revised)
 
-**Status:** Accepted
-**Date:** 2025-12-12
+**Status:** Accepted (Revised 2025-12-15)
+**Date:** 2025-12-12 (Original), 2025-12-15 (Revised)
 **Authors:** BPS AI Software Team
+
+---
+
+## Revision Notes
+
+This ADR was revised to correct a critical omission: the planning system (Goals → Tasks → Sprints) 
+was incorrectly listed under "What's Explicitly NOT Included". The planning system IS a core 
+component of v2 and is now properly documented.
+
+Additionally, the LLM Capability Manifest has been added as a key component to enable
+Claude Code, Codex CLI, and similar tools to understand and use PairCoder without
+requiring users to know CLI commands.
 
 ---
 
 ## Context
 
-Paircoder v1 established a disciplined workflow for AI pair programming: context loops, agent packs, feature branching, and validation tooling. As AI capabilities advance, users need:
+Paircoder v1 established a disciplined workflow for AI pair programming: context loops, agent packs, 
+feature branching, and validation tooling. As AI capabilities advance, users need:
 
 1. **Native workflow orchestration** — Human-readable "flows" that agents can execute step-by-step
 2. **Multi-provider support** — Freedom to use OpenAI, Anthropic, Google, or other providers
 3. **Smart routing** — Automatic model selection based on task complexity and cost constraints
 4. **Efficiency controls** — Token budgets, prompt caching, and cost awareness
+5. **Planning system** — Goals decomposed into tasks organized into sprints (**NEW in revision**)
+6. **LLM discoverability** — Capability manifest so LLMs know what they can do (**NEW in revision**)
 
 This ADR locks the design constraints and compatibility rules for v2.
 
@@ -28,134 +43,247 @@ The following **MUST NOT** change behavior or break existing workflows:
 | Component | Location | Guarantee |
 |-----------|----------|-----------|
 | CLI commands | `bpsai-pair init/feature/pack/context-sync/status/validate/ci` | Same flags, same output semantics |
-| Context Loop | `context/development.md` with Overall/Last/Next/Blockers fields | Format unchanged |
-| Agent Pack | `.tgz` respecting `.agentpackignore`, includes `context/`, `prompts/`, directory notes | Same archive structure |
-| Template layout | `tools/cli/bpsai_pair/data/cookiecutter-paircoder/` | Existing files preserved |
+| Context Loop | `context/development.md` with Overall/Last/Next/Blockers fields | **DEPRECATED** — migrated to `.paircoder/context/state.md` |
+| Agent Pack | `.tgz` respecting `.agentpackignore`, includes context, prompts | Same archive structure |
 | Cross-platform | Pure Python, no bash-only dependencies | Windows/macOS/Linux parity |
-| Configuration | `paircoder.yaml` or `pyproject.toml` sections | Backward-compatible schema |
 
 **Migration policy:** No dedicated migration command. v2 features are opt-in additions; v1 repos continue working unchanged.
 
 ### What's New (v2 Additions)
 
-#### 1. Flows System
+#### 1. Directory Consolidation
 
-A declarative workflow engine for multi-step agent tasks.
+All PairCoder system files move under `.paircoder/`:
+
+```
+.paircoder/
+├── config.yaml                    # Project configuration (v2)
+├── capabilities.yaml              # LLM capability manifest (NEW)
+├── context/
+│   ├── project.md                 # High-level project constraints & goals
+│   ├── workflow.md                # How we work here (branches, tests, review)
+│   └── state.md                   # Current plan/task state (replaces Context Sync)
+├── flows/
+│   ├── design-plan-implement.flow.md
+│   ├── tdd-implement.flow.md
+│   ├── review.flow.md
+│   └── finish-branch.flow.md
+├── plans/
+│   └── plan-YYYY-MM-<slug>.plan.yaml
+├── tasks/
+│   └── <plan-slug>/
+│       └── TASK-NNN.task.md
+└── history/
+    ├── metrics.jsonl
+    └── log.md
+```
+
+Root-level files (minimal):
+- `AGENTS.md` — Pointer to `.paircoder/context/`
+- `CLAUDE.md` — Pointer to `.paircoder/context/`
+
+#### 2. Planning System (Goals → Tasks → Sprints)
+
+**Plan Schema** (`.paircoder/plans/<id>.plan.yaml`):
 
 ```yaml
-# flows/code-review.yaml
-name: code-review
-description: Review PR for correctness, style, and security
-steps:
-  - id: gather
-    action: read-files
-    inputs: { patterns: ["src/**/*.py", "tests/**/*.py"] }
-  - id: analyze
-    action: llm-call
-    model: auto  # Router decides
-    prompt: prompts/review.md
-    context: { files: "{{ steps.gather.output }}" }
-  - id: report
-    action: write-file
-    path: reviews/{{ pr_id }}.md
+id: plan-2025-01-workspace-filter
+title: Workspace filter feature
+type: feature            # feature | bugfix | refactor | chore
+owner: david
+created_at: 2025-01-10T12:00:00Z
+flows:
+  - design-plan-implement
+status: in_progress      # planned | in_progress | complete | archived
+
+goals:
+  - Allow users to filter workspaces by owner and status
+  - Maintain API compatibility for existing clients
+
+sprints:
+  - id: sprint-1
+    title: "Design & Backend"
+    tasks: [TASK-001, TASK-002]
+  - id: sprint-2
+    title: "Frontend & Polish"
+    tasks: [TASK-003]
+
+tasks:
+  - id: TASK-001
+    title: Design API shape and UI flows
+    priority: P0
+    complexity: 40
+    status: done
+  - id: TASK-002
+    title: Implement backend filter endpoints
+    priority: P0
+    complexity: 60
+    status: in_progress
 ```
 
-- **Location:** `flows/` directory (new)
-- **Format:** YAML with Jinja2 templating
-- **Execution:** `bpsai-pair flow run <name>` (new command)
+**Task Schema** (`.paircoder/tasks/<plan-slug>/TASK-NNN.task.md`):
 
-#### 2. Orchestration Layer
+```yaml
+---
+id: TASK-001
+plan: plan-2025-01-workspace-filter
+title: Design API shape and UI flows
+type: design
+priority: P0
+complexity: 40
+status: done
+tags: [frontend, api, design]
+---
 
-A provider-agnostic runtime that routes requests to the best model.
+# Objective
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    User Request                         │
-└─────────────────────────┬───────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                   Task Classifier                        │
-│  (daily_coding | architecture | long_refactor |         │
-│   windows_dotnet | frontend_ui | quick_triage)          │
-└─────────────────────────┬───────────────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                    Model Router                          │
-│  - Task → provider/model mapping                         │
-│  - Effort/thinking_level per task type                   │
-│  - Cost tracking + token budget enforcement              │
-└─────────────────────────┬───────────────────────────────┘
-                          ▼
-┌──────────────────┬──────────────────┬───────────────────┐
-│    Anthropic     │     OpenAI       │      Google       │
-│  Opus 4.5        │  Codex-Max       │   Gemini 3 Pro    │
-│  Sonnet 4.5      │  Codex           │   Deep Think      │
-│  Haiku 4.5       │  Codex-Mini      │                   │
-│  (effort param)  │  (compaction)    │  (thinking_level) │
-└──────────────────┴──────────────────┴───────────────────┘
-```
+Define the API endpoints and user flows needed...
 
-- **Location:** `tools/cli/bpsai_pair/orchestrator/` (new module)
-- **Config:** `paircoder.yaml` → `orchestrator:` section
-- **API keys:** Environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`)
+# Implementation Plan
 
-#### 3. Provider Extensibility
+- Review current implementation
+- Propose 2–3 designs with tradeoffs
+- Select one design
 
-Initial providers (v2.0) with current models and pricing:
+# Acceptance Criteria
 
-| Provider | Models | Input/Output (per MTok) | Key Features |
-|----------|--------|------------------------|--------------|
-| **Anthropic** | Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5 | Opus: $5/$25, Sonnet: $3/$15, Haiku: $1/$5 | `effort` parameter (low/medium/high), 200k context, 64k output |
-| **OpenAI** | GPT-5.1-Codex-Max, GPT-5.1-Codex, GPT-5.1-Codex-Mini | Max: $1.25/$10 | Compaction (millions of tokens), Windows native, 24+ hour tasks |
-| **Google** | Gemini 3 Pro, Gemini 3 Deep Think | Pro: $2/$12 | `thinking_level` parameter, 1M context, best multimodal |
+- Design covers: query parameters, pagination
+- UI states for all scenarios
 
-**Recommended use cases:**
+# Verification
 
-| Use Case | Recommended Model | Rationale |
-|----------|-------------------|-----------|
-| Daily development workhorse | Claude Sonnet 4.5 | Best cost/performance balance, SWE-bench leader |
-| Complex architecture decisions | Claude Opus 4.5 (effort: high) | Deepest reasoning, 48% fewer tokens than Sonnet at high effort |
-| Long autonomous refactoring | GPT-5.1-Codex-Max | Compaction for project-scale tasks, Windows/.NET support |
-| Frontend/UI prototyping | Gemini 3 Pro | Best multimodal understanding, vision reasoning |
-| Quick classification/triage | Claude Haiku 4.5 | Fastest, lowest cost |
-
-Extension mechanism:
-```python
-# bpsai_pair/providers/base.py
-class Provider(ABC):
-    @abstractmethod
-    def complete(self, messages, **kwargs) -> Response: ...
-    @abstractmethod
-    def capabilities(self) -> ProviderCaps: ...
-    @abstractmethod
-    def pricing(self) -> PricingInfo: ...  # For cost-aware routing
+- Design doc exists and is checked in
+- Owner has approved
 ```
 
-#### 4. Efficiency Features
+#### 3. Flows System (YAML Frontmatter + Markdown)
 
-| Feature | Description | Config |
-|---------|-------------|--------|
-| Token budgeting | Per-flow and per-session limits | `orchestrator.budget.max_tokens` |
-| Prompt caching | Hash-based cache for repeated prompts (up to 90% savings with Anthropic) | `orchestrator.cache.enabled` |
-| Cost tracking | Log estimated costs per request using live pricing | `orchestrator.cost.log_path` |
-| Model routing | Task complexity → model mapping with effort/thinking controls | `orchestrator.routing.rules` |
-| Effort control | Anthropic's `effort` parameter (low/medium/high) for cost/quality tradeoff | `orchestrator.defaults.effort` |
-| Thinking level | Google's `thinking_level` parameter (low/high) for reasoning depth | `orchestrator.defaults.thinking_level` |
-| Compaction awareness | Route long tasks to GPT-5.1-Codex-Max for multi-context coherence | `orchestrator.routing.long_task_threshold` |
+Flows use a hybrid format: YAML frontmatter for metadata, Markdown body for instructions.
+
+```markdown
+---
+name: design-plan-implement
+version: 1
+description: >
+  Turn a feature request into a validated design, a concrete implementation plan,
+  and a sequence of TDD-anchored tasks.
+when_to_use:
+  - feature_request
+  - large_refactor
+roles:
+  navigator: { primary: true }
+  driver: { primary: true }
+triggers:
+  - on: user_describes_feature
+requires:
+  tools: [git, test_runner]
+  context:
+    - .paircoder/context/project.md
+    - .paircoder/context/workflow.md
+tags: [design, planning, implementation]
+---
+
+# Design → Plan → Implement Flow
+
+## Phase 1 — Design (Navigator-led)
+
+1. Navigator reads `project.md` and relevant code
+2. Navigator runs brainstorming sub-flow
+3. Navigator writes design doc
+
+## Phase 2 — Plan (Navigator-led)
+
+1. Decompose design into 5–20 tasks
+2. Save plan to `.paircoder/plans/`
+3. Generate task files
+
+## Phase 3 — Implement (Driver-led)
+
+1. For each task, run `tdd-implement` flow
+2. Run tests, lint, typecheck
+3. Run `review` flow
+```
+
+#### 4. LLM Capability Manifest
+
+New file `.paircoder/capabilities.yaml` that tells LLMs:
+- What capabilities are available
+- When to use each one
+- How to invoke them (CLI or programmatic)
+- Which flows to suggest based on user intent
+
+This enables Claude Code, Codex CLI, and similar tools to use PairCoder 
+without requiring users to memorize CLI commands.
+
+#### 5. Extended CLI Commands
+
+**New commands:**
+
+```bash
+# Planning
+bpsai-pair plan new <slug> --type <type> [--flow <flow>]
+bpsai-pair plan list
+bpsai-pair plan show <id>
+bpsai-pair plan tasks <id>
+bpsai-pair plan add-task <id>
+bpsai-pair plan complete-task <id> <task-id>
+
+# Tasks
+bpsai-pair task list [--plan <id>]
+bpsai-pair task show <id>
+bpsai-pair task update <id> --status <status>
+
+# Models
+bpsai-pair models test
+bpsai-pair models routes
+bpsai-pair models explain --task-id <id>
+```
+
+**Enhanced existing commands:**
+
+```bash
+bpsai-pair feature <slug> --flow <flow> --plan <plan>
+bpsai-pair pack --scope <plan|branch>
+```
+
+#### 6. Orchestration Layer
+
+Provider-agnostic runtime that routes requests to the best model:
+
+| Provider | Models | Key Features |
+|----------|--------|--------------|
+| **Anthropic** | Claude Opus 4.5, Sonnet 4.5, Haiku 4.5 | `effort` parameter, 200k context |
+| **OpenAI** | GPT-5.1-Codex variants | Compaction, Windows native |
+| **Google** | Gemini 3 Pro, Deep Think | `thinking_level`, 1M context |
+
+Configuration in `.paircoder/config.yaml`:
+
+```yaml
+models:
+  navigator: claude-sonnet-4-5
+  driver: gpt-5.1-codex
+  reviewer: claude-sonnet-4-5
+
+routing:
+  by_complexity:
+    trivial: claude-haiku-4-5
+    simple: claude-haiku-4-5
+    moderate: claude-sonnet-4-5
+    complex: claude-opus-4-5
+    epic: claude-opus-4-5
+```
 
 ### What's Explicitly NOT Included
 
-These features are **out of scope** for v2 to avoid bloat:
+These features are **out of scope** for v2:
 
 | Exclusion | Rationale |
 |-----------|-----------|
-| Planning OS / task hierarchy | Adds complexity without clear value; use external tools |
-| Project memory graphs | Speculative; context loop is sufficient |
+| Project memory graphs | Speculative; file-based state is sufficient |
 | Auto-commit or git automation | Too opinionated; users control git |
 | GUI or web interface | Out of scope for CLI tool |
 | Migration command | v1 → v2 is additive; no migration needed |
 | Plugin marketplace | Premature; start with built-in providers |
-| Persistent agent state | Flows are stateless; state lives in files |
 
 ---
 
@@ -165,135 +293,27 @@ These features are **out of scope** for v2 to avoid bloat:
 
 ```
 tools/cli/bpsai_pair/
-├── cli.py                 # Existing CLI (stable)
+├── cli.py                 # Existing CLI (extended)
 ├── ops.py                 # Existing operations (stable)
 ├── config.py              # Extended for v2 config
-├── orchestrator/          # NEW: routing + runtime
-│   ├── __init__.py
-│   ├── router.py          # Model selection logic
-│   ├── classifier.py      # Task complexity detection
-│   └── budget.py          # Token/cost tracking
-├── providers/             # NEW: provider adapters
-│   ├── __init__.py
-│   ├── base.py            # Abstract provider
+├── orchestrator/          # Model routing + runtime
+│   ├── router.py
+│   ├── classifier.py
+│   └── budget.py
+├── providers/             # Provider adapters
+│   ├── base.py
 │   ├── openai.py
 │   ├── anthropic.py
 │   └── google.py
-└── flows/                 # NEW: flow engine
-    ├── __init__.py
-    ├── parser.py          # YAML flow parsing
-    ├── executor.py        # Step execution
-    └── actions.py         # Built-in actions
+├── flows/                 # Flow engine (extended)
+│   ├── parser.py          # YAML frontmatter + MD
+│   ├── models.py
+│   └── executor.py
+└── planning/              # NEW: Planning system
+    ├── models.py          # Plan, Task, Sprint
+    ├── parser.py          # YAML/MD parsing
+    └── state.py           # State management
 ```
-
-### New CLI Commands (v2)
-
-```bash
-# Flow execution
-bpsai-pair flow list                    # List available flows
-bpsai-pair flow run <name> [--var k=v]  # Execute a flow
-bpsai-pair flow validate <name>         # Validate flow syntax
-
-# Orchestration
-bpsai-pair provider list                # Show configured providers
-bpsai-pair provider test [name]         # Test provider connectivity
-bpsai-pair budget status                # Show token/cost usage
-```
-
-### Configuration Schema (v2 additions)
-
-```yaml
-# paircoder.yaml
-version: 2
-
-# v1 sections remain unchanged
-context:
-  dir: context
-
-# v2 additions
-orchestrator:
-  default_provider: anthropic
-
-  providers:
-    anthropic:
-      models:
-        - claude-opus-4-5      # Complex reasoning, architecture
-        - claude-sonnet-4-5    # Daily workhorse
-        - claude-haiku-4-5     # Fast triage
-      default_effort: medium   # low|medium|high
-      priority: 1
-    openai:
-      models:
-        - gpt-5.1-codex-max    # Long autonomous tasks, Windows
-        - gpt-5.1-codex        # Standard agentic coding
-        - gpt-5.1-codex-mini   # Lighter tasks
-      priority: 2
-    google:
-      models:
-        - gemini-3-pro         # Multimodal, frontend
-        - gemini-3-deep-think  # Deep reasoning
-      default_thinking_level: low  # low|high
-      priority: 3
-
-  # Task-based routing (classifier determines task type)
-  routing:
-    daily_coding: anthropic/claude-sonnet-4-5
-    architecture: anthropic/claude-opus-4-5
-    long_refactor: openai/gpt-5.1-codex-max      # 24+ hour tasks
-    windows_dotnet: openai/gpt-5.1-codex-max     # Windows native
-    frontend_ui: google/gemini-3-pro             # Vision/multimodal
-    quick_triage: anthropic/claude-haiku-4-5
-
-  # Effort/thinking overrides per task type
-  task_params:
-    architecture:
-      effort: high           # Deep reasoning for complex decisions
-    daily_coding:
-      effort: medium         # Balance speed and quality
-    quick_triage:
-      effort: low            # Fast responses
-    frontend_ui:
-      thinking_level: high   # Better visual reasoning
-
-  budget:
-    max_tokens_per_session: 500000
-    max_cost_per_session_usd: 10.00
-    warn_at_percent: 80
-
-  cache:
-    enabled: true
-    ttl_hours: 24
-    # Anthropic prompt caching: up to 90% cost savings
-
-flows:
-  dir: flows
-  variables:
-    default_reviewer: "team"
-```
-
----
-
-## Consequences
-
-### Positive
-
-1. **Backward compatible** — Existing v1 users unaffected
-2. **Progressive adoption** — Teams enable v2 features as needed
-3. **Provider freedom** — No vendor lock-in
-4. **Cost control** — Budgets prevent runaway spending
-5. **Reproducible workflows** — Flows are version-controlled YAML
-
-### Negative
-
-1. **Increased surface area** — More code to maintain
-2. **API key management** — Users must secure credentials
-3. **Testing complexity** — Must mock multiple providers
-
-### Mitigations
-
-- Comprehensive test suite with provider mocks
-- Clear documentation for credential management
-- Feature flags to disable unused v2 components
 
 ---
 
@@ -301,12 +321,11 @@ flows:
 
 | Phase | Scope | Deliverable |
 |-------|-------|-------------|
-| 0 | This ADR | Design locked |
-| 1 | Provider abstraction | `providers/` module with OpenAI/Anthropic/Google |
-| 2 | Orchestrator core | Router + classifier + budget tracking |
-| 3 | Flows MVP | Parser + executor + basic actions |
-| 4 | CLI integration | New commands wired up |
-| 5 | Documentation | User guide + examples |
+| 1 | Foundation | Directory structure, capability manifest, state.md |
+| 2 | Planning System | Plan/task parsing, CLI commands |
+| 3 | Flows & CLI | Core flows, extended CLI |
+| 4 | Template & Docs | Updated cookiecutter, documentation |
+| 5 | Orchestration | Provider routing (optional for MVP) |
 
 ---
 
@@ -317,9 +336,7 @@ flows:
 - `/context/agents.md`: Development workflow
 - `/tools/cli/README.md`: Current CLI documentation
 
-### Model Documentation (December 2025)
-- [Claude Opus 4.5](https://www.anthropic.com/claude/opus) — Anthropic's flagship with effort parameter
-- [Claude Sonnet 4.5](https://www.anthropic.com/claude/sonnet) — SWE-bench leader for daily coding
-- [GPT-5.1-Codex-Max](https://openai.com/index/gpt-5-1-codex-max/) — OpenAI's long-running agentic model with compaction
-- [Gemini 3 Pro](https://deepmind.google/models/gemini/) — Google's multimodal reasoning model
-- [Gemini 3 for Developers](https://blog.google/technology/developers/gemini-3-developers/) — Agentic capabilities and thinking_level
+### External
+- [obra/superpowers](https://github.com/obra/superpowers) — Skill/flow patterns
+- Anthropic Claude documentation — Prompt caching, effort parameter
+- OpenAI Codex documentation — Compaction, long-running tasks

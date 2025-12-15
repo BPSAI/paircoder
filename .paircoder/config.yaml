@@ -2,14 +2,17 @@ version: "2.0"
 
 project:
   name: "paircoder"
-  primary_goal: "Ship Paircoder v2: repo-aware AI pairing with YAML flows + orchestration"
-  coverage_target: 85
+  description: "AI-augmented pair programming framework"
+  primary_goal: "Ship Paircoder v2: planning system, flows, LLM integration"
+  coverage_target: 80
 
 workflow:
   default_branch_type: "feature"
   main_branch: "main"
-  context_dir: "context"
-  default_flow: "design-plan-implement"
+  context_dir: ".paircoder/context"
+  flows_dir: ".paircoder/flows"
+  plans_dir: ".paircoder/plans"
+  tasks_dir: ".paircoder/tasks"
 
 pack:
   default_name: "agent_pack.tgz"
@@ -22,51 +25,60 @@ pack:
     - "build"
     - "*.log"
     - "*.bak"
-
-ci:
-  python_formatter: "ruff"
-  node_formatter: "prettier"
+    - "tools/cli/dist"
+    - "tools/cli/build"
+    - "*.egg-info"
 
 models:
-  default_route: "balanced"
+  # Role-based model assignment
+  navigator: claude-sonnet-4-5
+  driver: claude-sonnet-4-5
+  reviewer: claude-sonnet-4-5
+
+  # Provider configuration
   providers:
-    openai:
-      type: "openai"
-      base_url: "https://api.openai.com/v1"
-      model_ids:
-        fast: "gpt-5.1-medium"
-        balanced: "gpt-5.2"
-        deep: "gpt-5.2-high"
     anthropic:
-      type: "anthropic"
-      model_ids:
-        fast: "claude-opus-4-1-20250805"
-        balanced: "claude-opus-4-5-20251101"
-        deep: "claude-opus-4-5-20251101-thinking-32k"
+      models:
+        - claude-opus-4-5
+        - claude-sonnet-4-5
+        - claude-haiku-4-5
+      default_effort: medium
+    openai:
+      models:
+        - gpt-5.1-codex-max
+        - gpt-5.1-codex
+        - gpt-5.1-codex-mini
     google:
-      type: "gemini"
-      model_ids:
-        fast: "gemini-2.5-pro"
-        balanced: "gemini-3-pro"
+      models:
+        - gemini-3-pro
+        - gemini-3-deep-think
 
 routing:
-  rules:
-    - name: "low-complexity-fast"
-      when:
-        max_complexity: 30
-        allowed_kinds: ["bugfix", "refactor"]
-      use:
-        provider: "openai"
-        tier: "fast"
-    - name: "default-balanced"
-      when:
-        max_complexity: 70
-      use:
-        provider: "anthropic"
-        tier: "balanced"
-    - name: "high-complexity-deep"
-      when:
-        min_complexity: 70
-      use:
-        provider: "anthropic"
-        tier: "deep"
+  by_complexity:
+    trivial:   { max_score: 20,  model: claude-haiku-4-5 }
+    simple:    { max_score: 40,  model: claude-haiku-4-5 }
+    moderate:  { max_score: 60,  model: claude-sonnet-4-5 }
+    complex:   { max_score: 80,  model: claude-opus-4-5 }
+    epic:      { max_score: 100, model: claude-opus-4-5 }
+  overrides:
+    security: claude-opus-4-5
+    architecture: claude-opus-4-5
+
+flows:
+  enabled:
+    - design-plan-implement
+    - tdd-implement
+    - review
+    - finish-branch
+  triggers:
+    feature_request:
+      - design-plan-implement
+    bugfix:
+      - tdd-implement
+    pre_merge:
+      - review
+      - finish-branch
+
+metrics:
+  enabled: true
+  store_path: .paircoder/history/metrics.jsonl
