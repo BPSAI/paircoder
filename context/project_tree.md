@@ -1,5 +1,5 @@
 # Project Tree (snapshot)
-_Generated: 2025-12-12T03:43:47Z_
+_Generated: 2025-12-15T03:49:55Z_
 
 ```
 .agentpackignore
@@ -12,6 +12,10 @@ _Generated: 2025-12-12T03:43:47Z_
 .github/workflows/project_tree.yml
 .gitignore
 .gitleaks.toml
+.paircoder
+.paircoder/config.yaml
+.paircoder/flows
+.paircoder/flows/design-plan-implement.flow.yml
 .pre-commit-config.yaml
 AGENTS.md
 CHANGELOG.md
@@ -27,11 +31,13 @@ context/development.md
 context/directory_notes
 context/directory_notes/.gitkeep
 context/directory_notes/tools-cli.md
+context/directory_notes/v2-upgrade.md
 context/project_tree.md
 docs
 docs/adr
 docs/adr/.gitkeep
 docs/adr/0001-context-loop.md
+docs/adr/0002-paircoder-v2.md
 infra
 infra/.gitkeep
 paircoder-docs.md
@@ -119,6 +125,10 @@ tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/t
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/tests/example_contract/README.md
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/tests/example_integration
 tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/tests/example_integration/README.md
+tools/cli/bpsai_pair/flows
+tools/cli/bpsai_pair/flows/__init__.py
+tools/cli/bpsai_pair/flows/models.py
+tools/cli/bpsai_pair/flows/parser.py
 tools/cli/bpsai_pair/init_bundled_cli.py
 tools/cli/bpsai_pair/jsonio.py
 tools/cli/bpsai_pair/ops.py
@@ -142,8 +152,11 @@ tools/cli/tests/__pycache__/test_pack_preview.cpython-312-pytest-8.4.1.pyc
 tools/cli/tests/conftest.py
 tools/cli/tests/test_cli.py
 tools/cli/tests/test_config.py
+tools/cli/tests/test_config_v2.py
 tools/cli/tests/test_context_sync.py
 tools/cli/tests/test_feature_branch_type.py
+tools/cli/tests/test_flow_cli.py
+tools/cli/tests/test_flows.py
 tools/cli/tests/test_ops.py
 tools/cli/tests/test_pack_preview.py
 ```
