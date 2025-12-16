@@ -3,15 +3,22 @@ from __future__ import annotations
 import os
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
 import typer
-from rich import print
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+
+def print_json(data: dict) -> None:
+    """Print JSON to stdout without Rich formatting."""
+    sys.stdout.write(json.dumps(data, indent=2))
+    sys.stdout.write("\n")
+    sys.stdout.flush()
 
 # Try relative imports first, fall back to absolute
 try:
@@ -20,6 +27,8 @@ try:
     from . import ops
     from .config import Config
     from .flows import FlowParser, FlowValidationError
+    from .flows.parser_v2 import FlowParser as FlowParserV2
+    from .planning.cli_commands import plan_app, task_app
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -29,6 +38,8 @@ except ImportError:
     from bpsai_pair import ops
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
+    from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
+    from bpsai_pair.planning.cli_commands import plan_app, task_app
 
 # Initialize Rich console
 console = Console()
@@ -51,6 +62,10 @@ flow_app = typer.Typer(
 )
 app.add_typer(flow_app, name="flow")
 
+# Plan and Task sub-apps for v2 planning system
+app.add_typer(plan_app, name="plan")
+app.add_typer(task_app, name="task")
+
 def _flows_root(root: Path) -> Path:
     return root / ".paircoder" / "flows"
 
@@ -62,29 +77,43 @@ def flow_list(
     flows_dir = _flows_root(root)
 
     if not flows_dir.exists():
-        console.print("[dim]No flows directory found at .paircoder/flows[/dim]")
+        if json_out:
+            print_json({
+                "flows": [],
+                "count": 0,
+                "path": str(flows_dir),
+            })
+        else:
+            console.print("[dim]No flows directory found at .paircoder/flows[/dim]")
         raise typer.Exit(0)
 
-    parser = FlowParser(flows_dir)
-    flows = parser.list_flows()
+    # Use v2 parser which supports both .flow.yml and .flow.md
+    parser = FlowParserV2(flows_dir)
+    flows = parser.parse_all()
 
     if json_out:
-        print(json.dumps({
-            "flows": flows,
+        print_json({
+            "flows": [f.to_dict() for f in flows],
             "count": len(flows),
             "path": str(flows_dir),
-        }, indent=2))
+        })
     else:
         table = Table(title="Available Flows")
         table.add_column("Name", style="cyan")
         table.add_column("Description")
-        table.add_column("Steps", justify="right")
+        table.add_column("Format")
+        table.add_column("Triggers")
 
         for f in flows:
+            # Truncate description to fit table
+            desc = f.description[:50] + "..." if len(f.description) > 50 else f.description
+            desc = desc.replace("\n", " ").strip()
+            triggers = ", ".join(f.triggers[:3]) if f.triggers else "-"
             table.add_row(
-                f["name"],
-                f["description"],
-                str(f["steps"]),
+                f.name,
+                desc,
+                f.format.upper(),
+                triggers,
             )
 
         console.print(table)
@@ -97,19 +126,48 @@ def flow_show(
     root = repo_root()
     flows_dir = _flows_root(root)
 
-    parser = FlowParser(flows_dir)
-    path = parser.find_flow(name)
+    # Use v2 parser which supports both .flow.yml and .flow.md
+    parser = FlowParserV2(flows_dir)
+    flow = parser.get_flow_by_name(name)
 
-    if not path:
+    if not flow:
         console.print(f"[red]Flow not found: {name}[/red]")
         raise typer.Exit(1)
 
-    flow = parser.parse_file(path)
-
     if json_out:
-        print(flow.to_json())
+        print_json(flow.to_dict())
     else:
-        console.print(flow.to_checklist())
+        # Display flow details
+        console.print(f"[bold cyan]{flow.name}[/bold cyan]")
+        console.print(f"[dim]Format: {flow.format.upper()} | Version: {flow.version}[/dim]")
+        console.print()
+
+        if flow.description:
+            console.print(f"[bold]Description:[/bold]")
+            console.print(f"  {flow.description.strip()}")
+            console.print()
+
+        if flow.when_to_use:
+            console.print(f"[bold]When to use:[/bold]")
+            for item in flow.when_to_use:
+                console.print(f"  - {item}")
+            console.print()
+
+        if flow.roles:
+            console.print(f"[bold]Roles:[/bold]")
+            for role in flow.roles:
+                primary = " (primary)" if role.primary else ""
+                console.print(f"  - {role.name}{primary}")
+            console.print()
+
+        if flow.triggers:
+            console.print(f"[bold]Triggers:[/bold] {', '.join(flow.triggers)}")
+            console.print()
+
+        if flow.body:
+            console.print(f"[bold]Flow Body:[/bold]")
+            console.print("-" * 60)
+            console.print(flow.body)
 
 
 def version_callback(value: bool):
@@ -304,7 +362,7 @@ def pack(
         if not (dry_run or list_only):
             result["output"] = str(output)
             result["size"] = output_path.stat().st_size if output_path.exists() else 0
-        print(json.dumps(result, indent=2))
+        print_json(result)
     elif list_only:
         for f in files:
             console.print(str(f.relative_to(root)))
@@ -366,7 +424,7 @@ def context_sync(
                 "blockers": blockers
             }
         }
-        print(json.dumps(result, indent=2))
+        print_json(result)
     else:
         console.print("[green]✓[/green] Context Sync updated")
         console.print(f"  [dim]Last: {last}[/dim]")
@@ -429,7 +487,7 @@ def status(
             "latest_pack": str(latest_pack.name) if latest_pack else None,
             "pack_age": age_hours
         }
-        print(json.dumps(result, indent=2))
+        print_json(result)
     else:
         # Create a nice table
         table = Table(title="PairCoder Status", show_header=False)
@@ -538,7 +596,7 @@ def validate(
             "issues": issues,
             "fixes_applied": fixes if fix else []
         }
-        print(json.dumps(result, indent=2))
+        print_json(result)
     else:
         if issues:
             console.print("[red]✗ Validation failed[/red]")
@@ -575,7 +633,7 @@ def ci(
         progress.update(task, completed=True)
 
     if json_out:
-        print(json.dumps(results, indent=2))
+        print_json(results)
     else:
         console.print("[bold]Local CI Results[/bold]\n")
 
@@ -604,26 +662,21 @@ def ci(
 # ============================================================================
 
 
-def _find_yaml_flow(root: Path, name: str) -> Optional[Path]:
-    """Find a YAML flow by name in both FLOWS_DIR and fallback locations."""
+def _find_flow_v2(root: Path, name: str):
+    """Find a flow by name using the v2 parser."""
     # Search paths in order of priority
     search_paths = [
-        root / FLOWS_DIR,  # Primary location
+        root / FLOWS_DIR,  # Primary location (.paircoder/flows)
         root / "flows",     # Fallback location
     ]
 
     for flows_dir in search_paths:
         if not flows_dir.exists():
             continue
-        parser = FlowParser(flows_dir)
-        flow_path = parser.find_flow(name)
-        if flow_path:
-            return flow_path
-
-    # Try as direct path
-    direct_path = root / name
-    if direct_path.exists():
-        return direct_path
+        parser = FlowParserV2(flows_dir)
+        flow = parser.get_flow_by_name(name)
+        if flow:
+            return flow
 
     return None
 
@@ -639,27 +692,19 @@ def flow_run(
     """Run a flow and output as checklist (no LLM calls - renders steps only)."""
     root = repo_root()
 
-    # Find the flow in multiple locations
-    flow_path = _find_yaml_flow(root, name)
-    if not flow_path:
-        console.print(f"[red]✗ Flow not found: {name}[/red]")
+    # Find the flow using v2 parser
+    flow = _find_flow_v2(root, name)
+    if not flow:
+        console.print(f"[red]Flow not found: {name}[/red]")
         console.print(f"[dim]Available flows: bpsai-pair flow list[/dim]")
         raise typer.Exit(1)
 
-    parser = FlowParser(flow_path.parent)
-
-    try:
-        flow = parser.parse_file(flow_path)
-    except FlowValidationError as e:
-        console.print(f"[red]✗ Invalid flow: {e}[/red]")
-        raise typer.Exit(1)
-
-    # Parse variables
-    variables = dict(flow.variables)  # Start with flow defaults
+    # Parse variables (v2 flows may not have variables, use empty dict as default)
+    variables = {}
     if var:
         for v in var:
             if "=" not in v:
-                console.print(f"[red]✗ Invalid variable format: {v}[/red]")
+                console.print(f"[red]Invalid variable format: {v}[/red]")
                 console.print("[dim]Use: --var key=value[/dim]")
                 raise typer.Exit(1)
             key, value = v.split("=", 1)
@@ -668,19 +713,31 @@ def flow_run(
     if json_out:
         result = flow.to_dict()
         result["variables"] = variables
-        result["checklist"] = [
-            {
-                "step": i + 1,
-                "id": step.id,
-                "action": step.action,
-                "description": step.description or f"{step.action}: {step.id}",
-                "status": step.status.value,
-            }
-            for i, step in enumerate(flow.steps)
-        ]
-        print(json.dumps(result, indent=2))
+        print_json(result)
     else:
-        console.print(flow.to_checklist())
+        # Display flow with steps/body
+        console.print(f"[bold cyan]{flow.name}[/bold cyan]")
+        console.print(f"[dim]Format: {flow.format.upper()}[/dim]")
+        console.print()
+
+        if flow.description:
+            console.print(f"{flow.description.strip()}")
+            console.print()
+
+        if flow.steps:
+            console.print("[bold]Steps:[/bold]")
+            for i, step in enumerate(flow.steps, 1):
+                console.print(f"  {i}. [{step.role}] {step.summary}")
+                if step.checklist:
+                    for item in step.checklist:
+                        console.print(f"       - {item}")
+            console.print()
+
+        if flow.body:
+            console.print("[bold]Instructions:[/bold]")
+            console.print("-" * 60)
+            console.print(flow.body)
+
         if variables:
             console.print("\n[dim]Variables:[/dim]")
             for k, v in variables.items():
@@ -695,46 +752,44 @@ def flow_validate(
     """Validate a flow definition."""
     root = repo_root()
 
-    # Find the flow in multiple locations
-    flow_path = _find_yaml_flow(root, name)
-    if not flow_path:
+    # Find the flow using v2 parser
+    flow = _find_flow_v2(root, name)
+    if not flow:
         if json_out:
-            print(json.dumps({"valid": False, "error": f"Flow not found: {name}"}))
+            print_json({"valid": False, "error": f"Flow not found: {name}"})
         else:
-            console.print(f"[red]✗ Flow not found: {name}[/red]")
+            console.print(f"[red]Flow not found: {name}[/red]")
         raise typer.Exit(1)
 
-    parser = FlowParser(flow_path.parent)
+    # Basic validation for v2 flows
+    errors = []
+    if not flow.name:
+        errors.append("Flow name is required")
+    if not flow.description:
+        errors.append("Flow description is recommended")
 
-    try:
-        flow = parser.parse_file(flow_path)
-        errors = flow.validate()
-
-        if json_out:
-            print(json.dumps({
-                "valid": len(errors) == 0,
-                "flow": flow.name,
-                "file": str(flow_path),
-                "errors": errors,
-                "step_count": len(flow.steps),
-            }, indent=2))
+    if json_out:
+        print_json({
+            "valid": len(errors) == 0,
+            "flow": flow.name,
+            "format": flow.format,
+            "file": str(flow.source_path) if flow.source_path else None,
+            "errors": errors,
+            "step_count": len(flow.steps),
+            "has_body": bool(flow.body),
+        })
+    else:
+        if errors:
+            console.print(f"[red]Flow '{flow.name}' has validation errors:[/red]")
+            for error in errors:
+                console.print(f"  - {error}")
+            raise typer.Exit(1)
         else:
-            if errors:
-                console.print(f"[red]✗ Flow '{flow.name}' has validation errors:[/red]")
-                for error in errors:
-                    console.print(f"  • {error}")
-                raise typer.Exit(1)
-            else:
-                console.print(f"[green]✓ Flow '{flow.name}' is valid[/green]")
-                console.print(f"  Steps: {len(flow.steps)}")
-                console.print(f"  File: {flow_path}")
-
-    except FlowValidationError as e:
-        if json_out:
-            print(json.dumps({"valid": False, "error": str(e)}, indent=2))
-        else:
-            console.print(f"[red]✗ {e}[/red]")
-        raise typer.Exit(1)
+            console.print(f"[green]Flow '{flow.name}' is valid[/green]")
+            console.print(f"  Format: {flow.format.upper()}")
+            console.print(f"  Steps: {len(flow.steps)}")
+            if flow.source_path:
+                console.print(f"  File: {flow.source_path}")
 
 
 # Export for entry point

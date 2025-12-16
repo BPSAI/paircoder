@@ -32,5 +32,7 @@ def test_ensure_v2_config_writes_config_if_missing(tmp_path: Path):
 
 def test_agents_template_references_v2_config_path():
     md = ContextTemplate.agents_md(Config())
-    assert ".paircoder/config.yaml" in md
+    # Template shows .paircoder/ directory with config.yaml inside
+    assert ".paircoder/" in md
+    assert "config.yaml" in md
     assert ".paircoder.yml" not in md

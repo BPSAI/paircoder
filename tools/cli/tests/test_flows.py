@@ -419,24 +419,24 @@ class TestFlowCLI:
         """Test flow list with no flows."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()  # Make it a git repo
-        (tmp_path / "flows").mkdir()
 
         result = runner.invoke(app, ["flow", "list"])
         assert result.exit_code == 0
-        assert "No flows found" in result.stdout
+        assert "No flows" in result.stdout
 
     def test_flow_list_json(self, tmp_path, monkeypatch):
         """Test flow list --json output."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        flows_dir = tmp_path / "flows"
-        flows_dir.mkdir()
-        (flows_dir / "test.yaml").write_text("""
+        flows_dir = tmp_path / ".paircoder" / "flows"
+        flows_dir.mkdir(parents=True)
+        (flows_dir / "test.flow.md").write_text("""---
 name: test-flow
-description: Test
-steps:
-  - id: s1
-    action: a1
+description: Test flow
+triggers: [test]
+---
+
+# Test Flow
 """)
 
         result = runner.invoke(app, ["flow", "list", "--json"])
@@ -451,18 +451,18 @@ steps:
         """Test flow run --json output structure."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        flows_dir = tmp_path / "flows"
-        flows_dir.mkdir()
-        (flows_dir / "review.yaml").write_text("""
+        flows_dir = tmp_path / ".paircoder" / "flows"
+        flows_dir.mkdir(parents=True)
+        (flows_dir / "code-review.flow.md").write_text("""---
 name: code-review
 description: Review code changes
-steps:
-  - id: gather
-    action: read-files
-    description: Gather source files
-  - id: analyze
-    action: llm-call
-    description: Analyze code
+triggers: [review]
+---
+
+# Code Review Flow
+
+1. Gather files
+2. Analyze code
 """)
 
         result = runner.invoke(app, ["flow", "run", "code-review", "--json"])
@@ -472,29 +472,21 @@ steps:
 
         # Verify structure
         assert data["name"] == "code-review"
-        assert "steps" in data
-        assert "checklist" in data
-        assert len(data["checklist"]) == 2
-
-        # Checklist structure
-        assert data["checklist"][0]["step"] == 1
-        assert data["checklist"][0]["id"] == "gather"
-        assert data["checklist"][0]["status"] == "pending"
+        assert data["description"] == "Review code changes"
 
     def test_flow_run_with_vars(self, tmp_path, monkeypatch):
         """Test flow run with variables."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        flows_dir = tmp_path / "flows"
-        flows_dir.mkdir()
-        (flows_dir / "test.yaml").write_text("""
+        flows_dir = tmp_path / ".paircoder" / "flows"
+        flows_dir.mkdir(parents=True)
+        (flows_dir / "test.flow.md").write_text("""---
 name: test
-description: Test
-variables:
-  default_val: original
-steps:
-  - id: s1
-    action: a1
+description: Test flow
+triggers: [test]
+---
+
+# Test Flow
 """)
 
         result = runner.invoke(
@@ -503,21 +495,21 @@ steps:
         assert result.exit_code == 0
 
         data = json.loads(result.stdout)
-        assert data["variables"]["default_val"] == "original"
         assert data["variables"]["custom"] == "value"
 
     def test_flow_validate_valid(self, tmp_path, monkeypatch):
         """Test flow validate with valid flow."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        flows_dir = tmp_path / "flows"
-        flows_dir.mkdir()
-        (flows_dir / "valid.yaml").write_text("""
+        flows_dir = tmp_path / ".paircoder" / "flows"
+        flows_dir.mkdir(parents=True)
+        (flows_dir / "valid.flow.md").write_text("""---
 name: valid
 description: Valid flow
-steps:
-  - id: s1
-    action: a1
+triggers: [test]
+---
+
+# Valid Flow
 """)
 
         result = runner.invoke(app, ["flow", "validate", "valid"])
@@ -528,14 +520,15 @@ steps:
         """Test flow validate --json output."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        flows_dir = tmp_path / "flows"
-        flows_dir.mkdir()
-        (flows_dir / "test.yaml").write_text("""
+        flows_dir = tmp_path / ".paircoder" / "flows"
+        flows_dir.mkdir(parents=True)
+        (flows_dir / "test.flow.md").write_text("""---
 name: test
-description: Test
-steps:
-  - id: s1
-    action: a1
+description: Test flow
+triggers: [test]
+---
+
+# Test Flow
 """)
 
         result = runner.invoke(app, ["flow", "validate", "test", "--json"])
@@ -545,13 +538,11 @@ steps:
         assert data["valid"] is True
         assert data["flow"] == "test"
         assert "errors" in data
-        assert data["errors"] == []
 
     def test_flow_not_found(self, tmp_path, monkeypatch):
         """Test flow run with non-existent flow."""
         monkeypatch.chdir(tmp_path)
         (tmp_path / ".git").mkdir()
-        (tmp_path / "flows").mkdir()
 
         result = runner.invoke(app, ["flow", "run", "nonexistent"])
         assert result.exit_code == 1

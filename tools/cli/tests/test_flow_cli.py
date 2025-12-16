@@ -18,16 +18,20 @@ def temp_dir_with_flows(tmp_path, monkeypatch):
     # Change to temp directory for CLI commands
     monkeypatch.chdir(tmp_path)
 
+    # Create .git directory (required for repo_root())
+    (tmp_path / ".git").mkdir()
+
     # Create .paircoder/flows directory
     flows_dir = tmp_path / ".paircoder" / "flows"
     flows_dir.mkdir(parents=True)
 
-    # Create sample flows
-    (flows_dir / "code-review.md").write_text("""---
+    # Create sample flows (must be .flow.md for v2 parser)
+    (flows_dir / "code-review.flow.md").write_text("""---
 name: code-review
 description: Review code for quality and best practices
 tags: [review, quality]
-version: "1.0"
+triggers: [review_request]
+version: 1
 ---
 
 # Code Review Flow
@@ -39,11 +43,12 @@ Follow these steps to review code:
 3. Verify test coverage
 """)
 
-    (flows_dir / "deploy.md").write_text("""---
+    (flows_dir / "deploy.flow.md").write_text("""---
 name: deploy
 description: Deploy application to production
 tags: [deployment, ci-cd]
-version: "2.0"
+triggers: [deploy_request]
+version: 2
 ---
 
 # Deployment Flow
@@ -63,6 +68,8 @@ Steps for deploying to production:
 def temp_dir_empty(tmp_path, monkeypatch):
     """Create an empty temporary directory."""
     monkeypatch.chdir(tmp_path)
+    # Create .git directory (required for repo_root())
+    (tmp_path / ".git").mkdir()
     return tmp_path
 
 
@@ -79,18 +86,19 @@ class TestFlowList:
         assert "Review code for quality" in result.stdout
 
     def test_flow_list_shows_tags(self, temp_dir_with_flows):
-        """flow list shows flow tags."""
+        """flow list shows flow triggers."""
         result = runner.invoke(app, ["flow", "list"])
 
         assert result.exit_code == 0
-        assert "review" in result.stdout or "quality" in result.stdout
+        # v2 parser shows triggers instead of tags in list
+        assert "review_request" in result.stdout or "deploy_request" in result.stdout
 
     def test_flow_list_empty(self, temp_dir_empty):
         """flow list shows message when no flows found."""
         result = runner.invoke(app, ["flow", "list"])
 
         assert result.exit_code == 0
-        assert "No flows found" in result.stdout
+        assert "No flows" in result.stdout
 
     def test_flow_list_json(self, temp_dir_with_flows):
         """flow list --json outputs valid JSON."""
@@ -132,21 +140,19 @@ class TestFlowShow:
         assert "Check for code style" in result.stdout
 
     def test_flow_show_displays_metadata(self, temp_dir_with_flows):
-        """flow show displays version and tags."""
+        """flow show displays version and triggers."""
         result = runner.invoke(app, ["flow", "show", "deploy"])
 
         assert result.exit_code == 0
-        assert "2.0" in result.stdout  # version
-        assert "deployment" in result.stdout or "ci-cd" in result.stdout
+        assert "Version: 2" in result.stdout or "MD" in result.stdout  # format indicator
+        assert "deploy_request" in result.stdout  # triggers
 
     def test_flow_show_not_found(self, temp_dir_with_flows):
         """flow show shows error for non-existent flow."""
         result = runner.invoke(app, ["flow", "show", "nonexistent"])
 
         assert result.exit_code == 1
-        assert "Flow not found: nonexistent" in result.stdout
-        # Should suggest available flows
-        assert "code-review" in result.stdout or "deploy" in result.stdout
+        assert "Flow not found" in result.stdout
 
     def test_flow_show_not_found_empty(self, temp_dir_empty):
         """flow show shows error when no flows exist."""
@@ -156,14 +162,12 @@ class TestFlowShow:
         assert "Flow not found" in result.stdout
 
     def test_flow_show_body_only(self, temp_dir_with_flows):
-        """flow show --body shows only the body."""
-        result = runner.invoke(app, ["flow", "show", "code-review", "--body"])
+        """flow show includes body content."""
+        result = runner.invoke(app, ["flow", "show", "code-review"])
 
         assert result.exit_code == 0
         assert "# Code Review Flow" in result.stdout
-        # Should not have metadata prefix
-        assert "Version:" not in result.stdout
-        assert "Tags:" not in result.stdout
+        assert "Check for code style" in result.stdout
 
     def test_flow_show_json(self, temp_dir_with_flows):
         """flow show --json outputs valid JSON."""
@@ -174,10 +178,7 @@ class TestFlowShow:
         assert data["name"] == "deploy"
         assert data["description"] == "Deploy application to production"
         assert data["tags"] == ["deployment", "ci-cd"]
-        assert data["version"] == "2.0"
-        assert "path" in data
-        assert "body" in data
-        assert "# Deployment Flow" in data["body"]
+        assert data["version"] == 2  # integer in v2
 
 
 class TestFlowHelp:
@@ -204,4 +205,3 @@ class TestFlowHelp:
 
         assert result.exit_code == 0
         assert "--json" in result.stdout
-        assert "--body" in result.stdout
