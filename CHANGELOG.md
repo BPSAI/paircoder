@@ -5,6 +5,60 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.4.0] - 2025-12-16
+
+### Added
+- **MCP Server Integration** - Claude and MCP-compatible agents can now call PairCoder tools directly
+  - `bpsai-pair mcp serve` - Start MCP server (stdio transport)
+  - `bpsai-pair mcp tools` - List all 13 available tools
+  - `bpsai-pair mcp test <tool>` - Test tools locally without MCP client
+  - Tools: task management (4), planning (2), context (1), orchestration (2), metrics (2), Trello (2)
+- **Auto-Hooks System** - Automatic actions triggered on task state changes
+  - Configurable hooks in `.paircoder/config.yaml`
+  - Built-in hooks: start_timer, stop_timer, record_metrics, sync_trello, update_state, check_unblocked
+  - Events: on_task_start, on_task_complete, on_task_block
+- **Plan-to-Trello Sync** - `bpsai-pair plan sync-trello <plan-id>` creates Trello cards from plan tasks
+- **Enhanced Plan Status** - `bpsai-pair plan status` shows comprehensive progress with sprint breakdown
+- **Skills "Recording Your Work"** - All 6 skills now include CLI/MCP commands for tracking work
+- **29 new tests** for MCP server, tools, and hooks (245 total tests)
+
+### Fixed
+- Task list discovery now properly finds all tasks in `.paircoder/tasks/` directories
+- Plan status correctly counts tasks by filtering on plan_id field in frontmatter
+- Added missing `get_tasks_for_plan()` method to TaskParser
+
+### Changed
+- All skills updated with explicit "Recording Your Work" sections
+- Config schema extended with comprehensive hooks configuration
+- Version bumped across all files (pyproject.toml, __init__.py, config.yaml)
+
+## [v2.3.0] - 2025-12-15
+
+### Added
+- **Trello Integration** - Full Trello board and card management
+  - `bpsai-pair trello connect` - Store API credentials securely
+  - `bpsai-pair trello status` - Check connection status
+  - `bpsai-pair trello boards` - List available boards
+  - `bpsai-pair trello use-board` - Set active board for project
+  - `bpsai-pair trello lists` - Show lists on active board
+  - `bpsai-pair trello config` - View/modify Trello settings
+- **Trello Task Commands** - Work with Trello cards as tasks
+  - `bpsai-pair ttask list` - List tasks from board
+  - `bpsai-pair ttask show` - View task details
+  - `bpsai-pair ttask start` - Claim and start task
+  - `bpsai-pair ttask done` - Complete task with summary
+  - `bpsai-pair ttask block` - Mark task as blocked
+  - `bpsai-pair ttask comment` - Add progress comment
+  - `bpsai-pair ttask move` - Move task to different list
+- **Trello Skills** - New skills for Trello-based workflows
+  - `trello-task-workflow` - Work on tasks from Trello board
+  - `trello-aware-planning` - Create plans synced to Trello
+- **21 new tests** for Trello integration (216 total tests)
+
+### Changed
+- Config schema updated with Trello list mapping and custom field settings
+- CLAUDE.md and capabilities.yaml updated with Trello integration
+
 ## [v2.2.0] - 2025-12-15
 
 ### Added

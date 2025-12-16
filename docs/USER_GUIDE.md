@@ -1,156 +1,392 @@
-# PairCoder User Guide
+# PairCoder v2.4 User Guide
 
-## Overview
+> Complete documentation for the AI-augmented pair programming framework
 
-PairCoder is an AI-augmented pair programming framework that provides structure and workflow for collaboration between developers and AI coding agents (Claude, GPT, Codex, etc.). It introduces conventions for maintaining project memory, tracking development progress, and ensuring quality through defined workflows.
+## Table of Contents
 
-### What's New in v2
+1. [Introduction](#introduction)
+2. [Installation](#installation)
+3. [Getting Started](#getting-started)
+4. [Core Concepts](#core-concepts)
+5. [Project Structure](#project-structure)
+6. [Planning System](#planning-system)
+7. [Flows & Skills](#flows--skills)
+8. [Orchestration](#orchestration)
+9. [Metrics & Analytics](#metrics--analytics)
+10. [Time Tracking](#time-tracking)
+11. [Benchmarking](#benchmarking)
+12. [Caching](#caching)
+13. [Trello Integration](#trello-integration)
+14. [MCP Server](#mcp-server)
+15. [Auto-Hooks](#auto-hooks)
+16. [CLI Reference](#cli-reference)
+17. [Configuration Reference](#configuration-reference)
+18. [Troubleshooting](#troubleshooting)
 
-- **`.paircoder/` directory** - Centralized configuration, context, and workflows
-- **Planning system** - Plans with goals, tasks, and sprints
-- **Flows** - Defined workflows for common development patterns
-- **LLM capability manifest** - Tells AI agents what they can do and when
-- **Enhanced CLI** - New `plan`, `task`, and `flow` commands
+---
 
-### Key Features
+## Introduction
 
-| Feature | Description |
-|---------|-------------|
-| **Planning System** | Create plans with goals, break into tasks, track progress |
-| **Flows** | Structured workflows (TDD, design-plan-implement, review) |
-| **Context Management** | Project state, what was done, what's next |
-| **LLM Integration** | Capability manifest tells AI what it can do |
-| **Quality Gates** | Pre-commit hooks, linting, secret scanning |
-| **CLI Tool** | `bpsai-pair` for all operations |
+### What is PairCoder?
+
+PairCoder is a repo-native toolkit for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It provides:
+
+- **Structured context** — Project memory in `.paircoder/` that AI agents can read and update
+- **Planning workflows** — Plans, sprints, and tasks with YAML+Markdown format
+- **Skills & flows** — Reusable workflow templates for common patterns
+- **Multi-agent orchestration** — Route tasks to the right AI based on complexity
+- **Analytics** — Token tracking, cost estimation, time tracking
+- **Integrations** — Trello for visual task boards, MCP for Claude Desktop
+
+### Philosophy
+
+PairCoder treats AI as a **pair programming partner**:
+- The AI navigates (plans, designs, reviews)
+- You drive (approve, implement, test)
+- Context is shared via standardized files
+
+### v2 vs v1
+
+| Aspect | v1 | v2 |
+|--------|----|----|
+| Structure | Scattered files | `.paircoder/` directory |
+| Planning | None | Full planning system |
+| Skills | None | Claude Code native skills |
+| Orchestration | Manual | Automatic routing |
+| Analytics | None | Token/cost/time tracking |
+
+---
 
 ## Installation
 
-### Requirements
-
-- **Python 3.9+**
-- **Git** (for branch management)
-- **Virtual Environment** (recommended)
-
-### Install from PyPI
+### Basic Install
 
 ```bash
 pip install bpsai-pair
+bpsai-pair --version  # Should show 2.4.0
+```
+
+### With MCP Support
+
+```bash
+pip install 'bpsai-pair[mcp]'
 ```
 
 ### Development Install
 
 ```bash
-git clone https://github.com/bps-ai/paircoder.git
-cd paircoder
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e tools/cli
+git clone https://github.com/yourusername/paircoder.git
+cd paircoder/tools/cli
+pip install -e .
+pytest -v  # 245 tests
 ```
 
 ### Verify Installation
 
 ```bash
-bpsai-pair --version
 bpsai-pair --help
+bpsai-pair status
 ```
 
-## Directory Structure
+---
 
-### v2 Structure (`.paircoder/`)
+## Getting Started
 
-```
-your-project/
-├── .paircoder/                    # PairCoder configuration
-│   ├── config.yaml                # Project configuration
-│   ├── capabilities.yaml          # LLM capability manifest
-│   ├── context/
-│   │   ├── project.md             # Project overview & constraints
-│   │   ├── workflow.md            # Development workflow
-│   │   └── state.md               # Current state & progress
-│   ├── flows/
-│   │   ├── tdd-implement.flow.md  # TDD workflow
-│   │   ├── design-plan-implement.flow.md
-│   │   ├── review.flow.md
-│   │   └── finish-branch.flow.md
-│   ├── plans/                     # Plan files
-│   │   └── plan-YYYY-MM-slug.plan.yaml
-│   └── tasks/                     # Task files by plan
-│       └── plan-slug/
-│           └── TASK-001.task.md
-├── AGENTS.md                      # Root pointer for AI agents
-├── CLAUDE.md                      # Root pointer for Claude Code
+### Initialize a New Project
+
+```bash
+bpsai-pair init my-project
+cd my-project
 ```
 
-### Key Files Explained
+### Initialize an Existing Project
+
+```bash
+cd your-project
+bpsai-pair init .
+```
+
+### Your First Workflow
+
+1. **Create a plan**
+   ```bash
+   bpsai-pair plan new my-feature --type feature --title "My Feature"
+   ```
+
+2. **Add tasks**
+   ```bash
+   bpsai-pair plan add-task plan-2025-12-my-feature \
+     --id TASK-001 --title "Implement core logic"
+   ```
+
+3. **Check status**
+   ```bash
+   bpsai-pair plan status
+   ```
+
+4. **Work on tasks**
+   ```bash
+   bpsai-pair task next
+   bpsai-pair task update TASK-001 --status in_progress
+   # ... do the work ...
+   bpsai-pair task update TASK-001 --status done
+   ```
+
+5. **Archive completed work**
+   ```bash
+   bpsai-pair task archive --completed
+   ```
+
+---
+
+## Core Concepts
+
+### Context Loop
+
+The context loop is how PairCoder maintains project understanding:
+
+1. **Read** — AI reads `project.md`, `workflow.md`, `state.md`
+2. **Work** — AI performs tasks, writes code
+3. **Update** — AI updates `state.md` with progress
+4. **Persist** — Changes are committed to repo
+
+### Plans & Tasks
+
+**Plans** are high-level goals:
+```yaml
+# .paircoder/plans/plan-2025-12-feature.plan.yaml
+id: plan-2025-12-feature
+title: Add new feature
+type: feature
+status: in_progress
+goals:
+  - Implement core functionality
+  - Add tests
+  - Update documentation
+sprints:
+  - id: sprint-1
+    title: Core Implementation
+    task_ids: [TASK-001, TASK-002]
+```
+
+**Tasks** are specific work items:
+```yaml
+# .paircoder/tasks/feature/TASK-001.task.md
+---
+id: TASK-001
+plan: plan-2025-12-feature
+title: Implement core logic
+status: pending
+priority: P0
+complexity: 50
+sprint: sprint-1
+---
+
+# Objective
+Implement the core business logic for the feature.
+
+# Implementation Plan
+- Create service class
+- Add database models
+- Write unit tests
+
+# Verification
+- [ ] Tests pass
+- [ ] Code reviewed
+```
+
+### Flows
+
+Flows are workflow templates in `.paircoder/flows/`:
+```markdown
+# .paircoder/flows/tdd-implement.flow.md
+---
+name: tdd-implement
+description: Test-driven implementation
+triggers: ["fix", "bug", "test"]
+---
+
+## Steps
+1. Write failing test
+2. Implement minimum code
+3. Refactor
+4. Verify all tests pass
+```
+
+### Skills
+
+Skills are Claude Code native workflows in `.claude/skills/`:
+```markdown
+# .claude/skills/tdd-implement/SKILL.md
+---
+name: TDD Implementation
+triggers: ["fix", "bug", "test"]
+---
+
+## When to Use
+Use this skill when fixing bugs or implementing features with tests.
+
+## Steps
+1. Understand the requirement
+2. Write failing test
+3. Implement solution
+4. Verify tests pass
+
+## Recording Your Work
+After completing work:
+- CLI: `bpsai-pair task update TASK-XXX --status done`
+- MCP: Call `paircoder_task_complete` tool
+```
+
+---
+
+## Project Structure
+
+### .paircoder/ Directory
+
+```
+.paircoder/
+├── config.yaml           # Project configuration
+├── capabilities.yaml     # LLM capability manifest
+├── context/
+│   ├── project.md       # Project overview, goals, constraints
+│   ├── workflow.md      # How work is done here
+│   └── state.md         # Current state, active tasks
+├── flows/               # Workflow definitions (.flow.md)
+├── plans/               # Plan files (.plan.yaml)
+├── tasks/               # Task files (.task.md)
+│   └── <plan-slug>/     # Tasks grouped by plan
+└── history/             # Archives, metrics
+    ├── archives/        # Archived task files
+    ├── metrics.jsonl    # Token/cost tracking
+    └── manifest.json    # Archive manifest
+```
+
+### .claude/ Directory
+
+```
+.claude/
+├── skills/              # Claude Code skills
+│   ├── design-plan-implement/SKILL.md
+│   ├── tdd-implement/SKILL.md
+│   ├── code-review/SKILL.md
+│   ├── finish-branch/SKILL.md
+│   ├── trello-task-workflow/SKILL.md
+│   └── trello-aware-planning/SKILL.md
+├── agents/              # Custom subagents
+│   ├── planner.md      # Planning specialist
+│   └── reviewer.md     # Code review specialist
+└── settings.json        # Claude Code settings
+```
+
+### Root Files
 
 | File | Purpose |
 |------|---------|
-| `config.yaml` | Project settings, model routing, enabled flows |
-| `capabilities.yaml` | Tells LLMs what they can do and when |
-| `context/project.md` | Project overview, tech stack, constraints |
-| `context/workflow.md` | Development process, standards, gates |
-| `context/state.md` | Current plan, tasks, what's next |
-| `AGENTS.md` | Entry point for any AI agent |
-| `CLAUDE.md` | Entry point for Claude Code specifically |
+| `AGENTS.md` | Universal AI entry point - works with any agent |
+| `CLAUDE.md` | Claude Code specific pointer |
 
-## CLI Commands
+---
 
-### Status & Info
+## Planning System
+
+### Creating Plans
 
 ```bash
-# Show overall status
-bpsai-pair status
-
-# Validate project structure
-bpsai-pair validate
-
-# Show version
-bpsai-pair --version
-```
-
-### Planning Commands
-
-```bash
-# Create a new plan
+# Create a feature plan
 bpsai-pair plan new my-feature --type feature --title "My Feature"
 
+# Create a bugfix plan
+bpsai-pair plan new fix-issue-123 --type bugfix --title "Fix login bug"
+
+# With goals
+bpsai-pair plan new my-feature \
+  --goal "Implement core logic" \
+  --goal "Add comprehensive tests"
+```
+
+### Managing Plans
+
+```bash
 # List all plans
 bpsai-pair plan list
 
 # Show plan details
-bpsai-pair plan show plan-2025-01-my-feature
+bpsai-pair plan show plan-2025-12-my-feature
 
-# List tasks for a plan
-bpsai-pair plan tasks plan-2025-01-my-feature
+# Show plan with tasks
+bpsai-pair plan tasks plan-2025-12-my-feature
 
-# Add a task to a plan
-bpsai-pair plan add-task plan-2025-01-my-feature \
-    --id TASK-001 \
-    --title "Implement login form" \
-    --priority P1 \
-    --complexity 50
+# Show plan status with progress
+bpsai-pair plan status plan-2025-12-my-feature
+# or for active plan:
+bpsai-pair plan status
 ```
 
-### Task Commands
+### Adding Tasks
 
 ```bash
-# List all tasks
-bpsai-pair task list
-
-# List tasks for a specific plan
-bpsai-pair task list --plan plan-2025-01-my-feature
-
-# Show task details
-bpsai-pair task show TASK-001
-
-# Update task status
-bpsai-pair task update TASK-001 --status in_progress
-bpsai-pair task update TASK-001 --status done
-
-# Get next task to work on
-bpsai-pair task next
+bpsai-pair plan add-task plan-2025-12-my-feature \
+  --id TASK-001 \
+  --title "Implement core logic" \
+  --type feature \
+  --priority P0 \
+  --complexity 50 \
+  --sprint sprint-1
 ```
 
-### Flow Commands
+### Task Lifecycle
+
+```
+pending → in_progress → done
+                     ↘ blocked → pending (when unblocked)
+                     ↘ cancelled
+```
+
+```bash
+# Get next recommended task
+bpsai-pair task next
+
+# Start working
+bpsai-pair task update TASK-001 --status in_progress
+
+# Mark complete
+bpsai-pair task update TASK-001 --status done
+
+# Mark blocked
+bpsai-pair task update TASK-001 --status blocked
+```
+
+### Archiving Tasks
+
+```bash
+# Archive specific task
+bpsai-pair task archive TASK-001
+
+# Archive all completed
+bpsai-pair task archive --completed
+
+# Archive by sprint
+bpsai-pair task archive --sprint sprint-1
+
+# Restore from archive
+bpsai-pair task restore TASK-001
+
+# List archived
+bpsai-pair task list-archived
+
+# Preview changelog
+bpsai-pair task changelog-preview --sprint sprint-1 --version v1.0.0
+
+# Clean old archives (90 days default)
+bpsai-pair task cleanup --retention 90
+```
+
+---
+
+## Flows & Skills
+
+### Using Flows
 
 ```bash
 # List available flows
@@ -159,317 +395,389 @@ bpsai-pair flow list
 # Show flow details
 bpsai-pair flow show tdd-implement
 
-# Run a flow (display steps)
+# Run a flow (renders steps)
 bpsai-pair flow run tdd-implement
 
-# Validate a flow
+# Validate flow syntax
 bpsai-pair flow validate tdd-implement
 ```
 
-### Context Commands
+### Available Skills
 
-```bash
-# Update context sync
-bpsai-pair context-sync \
-    --last "Implemented login form" \
-    --next "Add validation" \
-    --blockers "None"
+| Skill | Triggers | Purpose |
+|-------|----------|---------|
+| `design-plan-implement` | "design", "plan", "feature" | Feature development |
+| `tdd-implement` | "fix", "bug", "test" | Test-driven implementation |
+| `code-review` | "review", "check", "PR" | Code review workflow |
+| `finish-branch` | "finish", "merge", "complete" | Branch completion |
+| `trello-task-workflow` | "work on task", "TRELLO-" | Trello task execution |
+| `trello-aware-planning` | "plan feature", "create tasks" | Planning with Trello |
 
-# Package context for AI handoff
-bpsai-pair pack
+---
 
-# Package with extra files
-bpsai-pair pack --extra README.md docs/API.md
-```
+## Orchestration
 
-### Feature Branch Commands
+### Model Routing
 
-```bash
-# Create a feature branch
-bpsai-pair feature login-system \
-    --primary "Implement user authentication" \
-    --phase "Phase 1: Basic login flow"
-
-# Branch types: feature, fix, refactor, chore
-bpsai-pair feature --type fix bug-123 --primary "Fix null pointer"
-```
-
-### Initialization
-
-```bash
-# Initialize in existing repo
-bpsai-pair init
-
-# Initialize with custom template path
-bpsai-pair init path/to/template
-```
-
-## Planning System
-
-### Creating a Plan
-
-Plans organize work into goals and tasks:
-
-```bash
-bpsai-pair plan new user-auth --type feature --title "User Authentication"
-```
-
-This creates `.paircoder/plans/plan-YYYY-MM-user-auth.plan.yaml`.
-
-### Plan Structure
+PairCoder routes tasks to appropriate models based on complexity:
 
 ```yaml
-id: plan-2025-01-user-auth
-title: User Authentication
-type: feature
-status: planned
-created_at: 2025-01-15
-owner: developer
-
-goals:
-  - Implement secure login flow
-  - Add session management
-  - Support OAuth providers
-
-sprints:
-  - id: sprint-1
-    title: Basic Auth
-    goal: Implement username/password login
-    task_ids: [TASK-001, TASK-002, TASK-003]
-
-tasks:
-  - id: TASK-001
-    title: Create login form
-    priority: P0
-    complexity: 30
-    type: feature
+# In config.yaml
+routing:
+  by_complexity:
+    trivial:   { max_score: 20,  model: claude-haiku-4-5 }
+    simple:    { max_score: 40,  model: claude-haiku-4-5 }
+    moderate:  { max_score: 60,  model: claude-sonnet-4-5 }
+    complex:   { max_score: 80,  model: claude-opus-4-5 }
+    epic:      { max_score: 100, model: claude-opus-4-5 }
 ```
 
-### Task Files
+### Orchestration Commands
 
-Each task can have a detailed file in `.paircoder/tasks/<plan-slug>/TASK-XXX.task.md`:
-
-```markdown
----
-id: TASK-001
-title: Create login form
-plan_id: plan-2025-01-user-auth
-type: feature
-priority: P0
-complexity: 30
-status: pending
-sprint: sprint-1
-tags: [ui, auth]
----
-
-# TASK-001: Create login form
-
-## Objective
-Create a responsive login form with username and password fields.
-
-## Acceptance Criteria
-- [ ] Form validates input
-- [ ] Shows error messages
-- [ ] Submits to auth endpoint
-
-## Technical Notes
-- Use React Hook Form
-- Follow existing form patterns
-```
-
-### Task Status Flow
-
-```
-pending → in_progress → done
-                ↓
-            blocked → cancelled
-```
-
-Update status:
 ```bash
-bpsai-pair task update TASK-001 --status in_progress
-# ... do the work ...
-bpsai-pair task update TASK-001 --status done
+# Route a task to best agent
+bpsai-pair orchestrate task TASK-001
+
+# Analyze without executing
+bpsai-pair orchestrate analyze TASK-001
+
+# Create handoff package for another agent
+bpsai-pair orchestrate handoff TASK-001 \
+  --from claude-code --to codex \
+  --progress "Completed step 1 and 2"
 ```
 
-## Flows (Workflows)
+---
 
-Flows are structured workflows for common development patterns.
+## Metrics & Analytics
 
-### Available Flows
+### Token Tracking
 
-| Flow | When to Use |
+```bash
+# Session/daily summary
+bpsai-pair metrics summary
+
+# Task-specific metrics
+bpsai-pair metrics task TASK-001
+
+# Breakdown by dimension
+bpsai-pair metrics breakdown --by agent
+bpsai-pair metrics breakdown --by model
+bpsai-pair metrics breakdown --by task
+```
+
+### Budget Management
+
+```bash
+# Check budget status
+bpsai-pair metrics budget
+
+# Export metrics
+bpsai-pair metrics export --format csv --output metrics.csv
+```
+
+### Metrics Storage
+
+Metrics are stored in `.paircoder/history/metrics.jsonl`:
+```json
+{"timestamp": "2025-12-16T10:00:00", "agent": "claude-code", "model": "claude-sonnet-4-5", "input_tokens": 1500, "output_tokens": 800, "cost_usd": 0.0115}
+```
+
+---
+
+## Time Tracking
+
+### Built-in Timer
+
+```bash
+# Start timer for a task
+bpsai-pair timer start TASK-001
+
+# Check current timer
+bpsai-pair timer status
+
+# Stop timer
+bpsai-pair timer stop
+
+# View time entries for a task
+bpsai-pair timer show TASK-001
+
+# Summary across tasks
+bpsai-pair timer summary --plan plan-2025-12-feature
+```
+
+### Toggl Integration
+
+Configure in `config.yaml`:
+```yaml
+time_tracking:
+  provider: toggl
+  api_token: ${TOGGL_API_TOKEN}
+  workspace_id: 12345
+```
+
+---
+
+## Benchmarking
+
+### Running Benchmarks
+
+```bash
+# Run default benchmark suite
+bpsai-pair benchmark run --suite default
+
+# View latest results
+bpsai-pair benchmark results --latest
+
+# Compare two agents
+bpsai-pair benchmark compare claude-code codex
+
+# List available benchmarks
+bpsai-pair benchmark list
+```
+
+### Benchmark Suite Format
+
+```yaml
+# .paircoder/benchmarks/default.yaml
+name: default
+description: Standard benchmark suite
+benchmarks:
+  - id: simple-function
+    description: Write a simple function
+    prompt: "Write a function that adds two numbers"
+    validation:
+      - type: exists
+        path: solution.py
+      - type: contains
+        path: solution.py
+        pattern: "def add"
+```
+
+---
+
+## Caching
+
+### Context Cache
+
+PairCoder caches context files for efficiency:
+
+```bash
+# View cache statistics
+bpsai-pair cache stats
+
+# Clear entire cache
+bpsai-pair cache clear
+
+# Invalidate specific file
+bpsai-pair cache invalidate .paircoder/context/state.md
+```
+
+### Lite Pack for Codex
+
+```bash
+# Create minimal pack for 32KB context limit
+bpsai-pair pack --lite
+```
+
+---
+
+## Trello Integration
+
+### Setup
+
+1. Get API key from https://trello.com/app-key
+2. Generate token from the API key page
+3. Connect PairCoder:
+
+```bash
+bpsai-pair trello connect
+# Enter API key and token when prompted
+```
+
+### Board Management
+
+```bash
+# Check connection
+bpsai-pair trello status
+
+# List boards
+bpsai-pair trello boards
+
+# Set active board
+bpsai-pair trello use-board <board-id>
+
+# View board lists
+bpsai-pair trello lists
+
+# View/modify config
+bpsai-pair trello config --show
+```
+
+### Working with Trello Tasks
+
+```bash
+# List tasks from board
+bpsai-pair ttask list
+
+# Show task details
+bpsai-pair ttask show <card-id>
+
+# Start working (moves to In Progress)
+bpsai-pair ttask start <card-id>
+
+# Complete task (moves to Done)
+bpsai-pair ttask done <card-id> --summary "Implemented feature X"
+
+# Mark blocked
+bpsai-pair ttask block <card-id> --reason "Waiting for API"
+
+# Add comment
+bpsai-pair ttask comment <card-id> --message "50% complete"
+
+# Move to different list
+bpsai-pair ttask move <card-id> --list "In Review"
+```
+
+### Plan-to-Trello Sync
+
+```bash
+# Preview sync
+bpsai-pair plan sync-trello plan-2025-12-feature --dry-run
+
+# Sync tasks to Trello
+bpsai-pair plan sync-trello plan-2025-12-feature --board <board-id>
+```
+
+---
+
+## MCP Server
+
+### What is MCP?
+
+MCP (Model Context Protocol) allows AI agents to call PairCoder tools directly. Claude Desktop and other MCP-compatible clients can use PairCoder autonomously.
+
+### Installation
+
+```bash
+pip install 'bpsai-pair[mcp]'
+```
+
+### Starting the Server
+
+```bash
+# Start server (stdio transport)
+bpsai-pair mcp serve
+
+# List available tools
+bpsai-pair mcp tools
+
+# Test a tool locally
+bpsai-pair mcp test paircoder_task_list
+```
+
+### Available Tools (13)
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `paircoder_task_list` | List tasks with filters | status, plan, sprint |
+| `paircoder_task_next` | Get next recommended task | - |
+| `paircoder_task_start` | Start a task | task_id, agent |
+| `paircoder_task_complete` | Complete a task | task_id, summary |
+| `paircoder_context_read` | Read context files | file (state/project/workflow/config/capabilities) |
+| `paircoder_plan_status` | Get plan progress | plan_id |
+| `paircoder_plan_list` | List available plans | - |
+| `paircoder_orchestrate_analyze` | Analyze task complexity | task_id, context, prefer_agent |
+| `paircoder_orchestrate_handoff` | Create handoff package | task_id, from_agent, to_agent, progress_summary |
+| `paircoder_metrics_record` | Record token usage | task_id, agent, model, input_tokens, output_tokens |
+| `paircoder_metrics_summary` | Get metrics summary | scope, scope_id |
+| `paircoder_trello_sync_plan` | Sync plan to Trello | plan_id, board_id, create_lists, link_cards |
+| `paircoder_trello_update_card` | Update Trello card | task_id, action, comment |
+
+### Claude Desktop Setup
+
+See [MCP Setup Guide](MCP_SETUP.md) for detailed configuration.
+
+---
+
+## Auto-Hooks
+
+### Configuration
+
+Configure hooks in `.paircoder/config.yaml`:
+
+```yaml
+hooks:
+  enabled: true
+  on_task_start:
+    - start_timer      # Start time tracking
+    - sync_trello      # Update Trello card
+    - update_state     # Refresh state.md
+  on_task_complete:
+    - stop_timer       # Stop time tracking
+    - record_metrics   # Record token usage
+    - sync_trello      # Update Trello card
+    - update_state     # Refresh state.md
+    - check_unblocked  # Find newly unblocked tasks
+  on_task_block:
+    - sync_trello      # Update Trello card
+    - update_state     # Refresh state.md
+```
+
+### Available Hooks
+
+| Hook | Description |
 |------|-------------|
-| `design-plan-implement` | New features requiring design |
-| `tdd-implement` | Bug fixes, implementing tasks |
-| `review` | Code review before merge |
-| `finish-branch` | Complete work, prepare PR |
+| `start_timer` | Start time tracking for task |
+| `stop_timer` | Stop time tracking, calculate duration |
+| `record_metrics` | Record token usage from context.extra |
+| `sync_trello` | Update Trello card status |
+| `update_state` | Reload and refresh state.md |
+| `check_unblocked` | Find tasks unblocked by completion |
 
-### Flow Structure
-
-Flows use YAML frontmatter + Markdown body (`.flow.md`):
-
-```markdown
----
-name: tdd-implement
-version: 1
-description: Test-Driven Development workflow
-triggers: [bugfix, implement_task]
-roles:
-  driver: { primary: true }
----
-
-# TDD Implementation Flow
-
-## Phase 1 - Red (Write Failing Test)
-1. Identify what to test
-2. Write the test
-3. Run and confirm failure
-
-## Phase 2 - Green (Make Test Pass)
-1. Write minimal code
-2. Run test
-3. Confirm pass
-
-## Phase 3 - Refactor
-1. Improve code
-2. Keep tests green
-```
-
-### Running Flows
-
-```bash
-# View flow steps
-bpsai-pair flow run tdd-implement
-
-# With variables
-bpsai-pair flow run tdd-implement --var task=TASK-001
-```
-
-## LLM Integration
-
-### Capability Manifest
-
-The `.paircoder/capabilities.yaml` file tells AI agents what they can do:
+### Disabling Hooks
 
 ```yaml
-version: "2.0"
-name: my-project
-
-context_files:
-  project: .paircoder/context/project.md
-  workflow: .paircoder/context/workflow.md
-  state: .paircoder/context/state.md
-
-capabilities:
-  - id: create_plan
-    name: "Create a new plan"
-    when_to_use:
-      - User describes a feature
-      - User says "let's plan"
-    how_to_invoke:
-      cli: "bpsai-pair plan new <slug>"
-    flow_to_run: design-plan-implement
-
-flow_triggers:
-  - trigger: "user_describes_feature"
-    patterns: ["build a", "create a", "add a"]
-    suggested_flow: design-plan-implement
+hooks:
+  enabled: false
 ```
 
-### Root Pointer Files
+---
 
-`AGENTS.md` and `CLAUDE.md` at repo root guide AI agents to read:
-1. `.paircoder/capabilities.yaml` - what they can do
-2. `.paircoder/context/state.md` - current status
-3. Check if a flow applies to the request
+## CLI Reference
 
-### Roles
+### All Commands (64 total)
 
-AI agents can operate in different roles:
+| Group | Commands | Count |
+|-------|----------|-------|
+| Core | init, feature, pack, context-sync, status, validate, ci | 7 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task | 7 |
+| Tasks | task list/show/update/next/archive/restore/list-archived/cleanup/changelog-preview | 9 |
+| Flows | flow list/show/run/validate | 4 |
+| Orchestration | orchestrate task/analyze/handoff | 3 |
+| Metrics | metrics summary/task/breakdown/budget/export | 5 |
+| Timer | timer start/stop/status/show/summary | 5 |
+| Benchmark | benchmark run/results/compare/list | 4 |
+| Cache | cache stats/clear/invalidate | 3 |
+| Trello | trello connect/status/disconnect/boards/use-board/lists/config | 7 |
+| Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
+| MCP | mcp serve/tools/test | 3 |
 
-| Role | Purpose |
-|------|---------|
-| **Navigator** | Planning, design, asking clarifying questions |
-| **Driver** | Writing code, implementing tasks, running tests |
-| **Reviewer** | Code review, quality checks, verification |
+See [README.md](../README.md) for complete command details.
 
-## Day-to-Day Workflow
+---
 
-### 1. Starting a New Feature
+## Configuration Reference
 
-```bash
-# Create a plan
-bpsai-pair plan new user-profile --type feature --title "User Profile Page"
-
-# Add tasks
-bpsai-pair plan add-task plan-2025-01-user-profile \
-    --id TASK-001 --title "Design profile layout" --priority P0
-
-# Create feature branch
-bpsai-pair feature user-profile --primary "Implement user profile page"
-
-# Check what's next
-bpsai-pair task next
-```
-
-### 2. Working on a Task
-
-```bash
-# Start the task
-bpsai-pair task update TASK-001 --status in_progress
-
-# Use TDD flow
-bpsai-pair flow run tdd-implement
-
-# ... implement with tests ...
-
-# Mark done
-bpsai-pair task update TASK-001 --status done
-
-# Update context
-bpsai-pair context-sync \
-    --last "Implemented profile layout" \
-    --next "Add profile editing"
-```
-
-### 3. Working with AI
-
-```bash
-# Package context for AI
-bpsai-pair pack
-
-# Share with AI agent, or use Claude Code with CLAUDE.md
-# AI reads .paircoder/capabilities.yaml to understand what it can do
-# AI reads .paircoder/context/state.md to see current status
-```
-
-### 4. Finishing Work
-
-```bash
-# Run review flow
-bpsai-pair flow run review
-
-# Finish branch
-bpsai-pair flow run finish-branch
-
-# Update final status
-bpsai-pair context-sync \
-    --last "Completed user profile feature" \
-    --next "Create PR and merge"
-```
-
-## Configuration
-
-### config.yaml
+### Full config.yaml Schema
 
 ```yaml
-version: "2.0"
+version: "2.4"
 
 project:
   name: "my-project"
-  description: "My awesome project"
-  primary_goal: "Build the thing"
+  description: "Project description"
+  primary_goal: "Main objective"
   coverage_target: 80
 
 workflow:
@@ -477,18 +785,37 @@ workflow:
   main_branch: "main"
   context_dir: ".paircoder/context"
   flows_dir: ".paircoder/flows"
+  plans_dir: ".paircoder/plans"
+  tasks_dir: ".paircoder/tasks"
+
+pack:
+  default_name: "agent_pack.tgz"
+  excludes:
+    - ".git"
+    - ".venv"
+    - "__pycache__"
+    - "node_modules"
 
 models:
-  navigator: claude-sonnet-4-5
+  navigator: claude-opus-4-5
   driver: claude-sonnet-4-5
   reviewer: claude-sonnet-4-5
+  providers:
+    anthropic:
+      models: [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5]
+    openai:
+      models: [gpt-5.1-codex-max, gpt-5.1-codex]
 
 routing:
   by_complexity:
-    trivial: { max_score: 20, model: claude-haiku-4-5 }
-    simple: { max_score: 40, model: claude-haiku-4-5 }
-    moderate: { max_score: 60, model: claude-sonnet-4-5 }
-    complex: { max_score: 80, model: claude-opus-4-5 }
+    trivial:   { max_score: 20,  model: claude-haiku-4-5 }
+    simple:    { max_score: 40,  model: claude-haiku-4-5 }
+    moderate:  { max_score: 60,  model: claude-sonnet-4-5 }
+    complex:   { max_score: 80,  model: claude-opus-4-5 }
+    epic:      { max_score: 100, model: claude-opus-4-5 }
+  overrides:
+    security: claude-opus-4-5
+    architecture: claude-opus-4-5
 
 flows:
   enabled:
@@ -496,88 +823,94 @@ flows:
     - tdd-implement
     - review
     - finish-branch
+  triggers:
+    feature_request: [design-plan-implement]
+    bugfix: [tdd-implement]
+    pre_merge: [review, finish-branch]
+
+metrics:
+  enabled: true
+  store_path: .paircoder/history/metrics.jsonl
+
+hooks:
+  enabled: true
+  on_task_start: [start_timer, sync_trello, update_state]
+  on_task_complete: [stop_timer, record_metrics, sync_trello, update_state, check_unblocked]
+  on_task_block: [sync_trello, update_state]
+
+trello:
+  board_id: null  # Set with `trello use-board`
+  lists:
+    backlog: "Backlog"
+    in_progress: "In Progress"
+    review: "In Review"
+    done: "Done"
 ```
 
-### Environment Variables
-
-```bash
-# Override project name
-export PAIRCODER_PROJECT_NAME="my-project"
-
-# Override primary goal
-export PAIRCODER_PRIMARY_GOAL="Ship v2"
-```
-
-## Quality Gates
-
-### Pre-commit Hooks
-
-PairCoder includes `.pre-commit-config.yaml` for:
-- Ruff (Python linting/formatting)
-- Prettier (Markdown, JSON, YAML)
-- Gitleaks (secret scanning)
-
-```bash
-# Install hooks
-pre-commit install
-
-# Run manually
-pre-commit run --all-files
-```
-
-### CI/CD
-
-GitHub Actions workflows included:
-- `ci.yml` - Run tests, linting on push/PR
-- `project_tree.yml` - Auto-update project tree snapshot
-
-## Migration from v1
-
-If you have an existing v1 PairCoder project:
-
-1. The old `context/` directory is still supported
-2. Run `bpsai-pair init` to add `.paircoder/` structure
-3. Migrate content from `context/development.md` to `.paircoder/context/state.md`
-4. Update `AGENTS.md` and `CLAUDE.md` to point to `.paircoder/`
+---
 
 ## Troubleshooting
 
-### Command Not Found
+### Common Issues
 
+**Command not found**
 ```bash
-# Use module invocation
+# If bpsai-pair not on PATH:
 python -m bpsai_pair.cli --help
 ```
 
-### No .paircoder Directory
-
+**No .paircoder directory**
 ```bash
-# Initialize first
-bpsai-pair init
+# Initialize the project
+bpsai-pair init .
 ```
 
-### Plan/Task Not Found
+**Task not found**
+```bash
+# List all tasks to find ID
+bpsai-pair task list
+```
+
+**MCP server won't start**
+```bash
+# Verify MCP extra installed
+pip show mcp
+
+# Test locally
+bpsai-pair mcp test paircoder_task_list
+```
+
+**Trello not connected**
+```bash
+# Check status
+bpsai-pair trello status
+
+# Reconnect
+bpsai-pair trello connect
+```
+
+### Debug Commands
 
 ```bash
-# List available plans
+# Validate repo structure
+bpsai-pair validate
+
+# Show current state
+bpsai-pair status
+
+# List all plans
 bpsai-pair plan list
 
-# Check task with plan context
-bpsai-pair task show TASK-001 --plan plan-2025-01-my-feature
+# Show cache state
+bpsai-pair cache stats
 ```
 
-## Platform Support
+### Getting Help
 
-PairCoder v2 is fully supported on:
-- Linux
-- macOS
-- Windows
+- GitHub Issues: https://github.com/anthropics/paircoder/issues
+- Documentation: This guide and README.md
+- MCP Setup: docs/MCP_SETUP.md
 
-All features work identically across platforms.
+---
 
-## Getting Help
-
-- Run `bpsai-pair --help` for command list
-- Run `bpsai-pair <command> --help` for command options
-- Check `.paircoder/capabilities.yaml` for what AI can do
-- Report issues: https://github.com/bps-ai/paircoder/issues
+*PairCoder v2.4.0 - MIT License*
