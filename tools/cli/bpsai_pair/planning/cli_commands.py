@@ -565,7 +565,7 @@ def plan_sync_trello(
 
                     # Card description
                     desc = f"""## Objective
-{task.objective or task.title}
+{getattr(task, 'objective', None) or task.title}
 
 ## Details
 - **Priority:** {task.priority}

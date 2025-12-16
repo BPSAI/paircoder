@@ -1,100 +1,256 @@
-version: "2.4"
-
+version: '2.4'
 project:
-  name: "paircoder"
-  description: "AI-augmented pair programming framework"
-  primary_goal: "Ship Paircoder v2: planning system, flows, LLM integration"
+  name: paircoder
+  description: AI-augmented pair programming framework
+  primary_goal: 'Ship Paircoder v2: planning system, flows, LLM integration'
   coverage_target: 80
-
 workflow:
-  default_branch_type: "feature"
-  main_branch: "main"
-  context_dir: ".paircoder/context"
-  flows_dir: ".paircoder/flows"
-  plans_dir: ".paircoder/plans"
-  tasks_dir: ".paircoder/tasks"
-
+  default_branch_type: feature
+  main_branch: main
+  context_dir: .paircoder/context
+  flows_dir: .paircoder/flows
+  plans_dir: .paircoder/plans
+  tasks_dir: .paircoder/tasks
 pack:
-  default_name: "agent_pack.tgz"
+  default_name: agent_pack.tgz
   excludes:
-    - ".git"
-    - ".venv"
-    - "__pycache__"
-    - "node_modules"
-    - "dist"
-    - "build"
-    - "*.log"
-    - "*.bak"
-    - "tools/cli/dist"
-    - "tools/cli/build"
-    - "*.egg-info"
-
+  - .git
+  - .venv
+  - __pycache__
+  - node_modules
+  - dist
+  - build
+  - '*.log'
+  - '*.bak'
+  - tools/cli/dist
+  - tools/cli/build
+  - '*.egg-info'
 models:
-  # Role-based model assignment
   navigator: claude-opus-4-5
   driver: claude-sonnet-4-5
   reviewer: claude-sonnet-4-5
-
-  # Provider configuration
   providers:
     anthropic:
       models:
-        - claude-opus-4-5
-        - claude-sonnet-4-5
-        - claude-haiku-4-5
+      - claude-opus-4-5
+      - claude-sonnet-4-5
+      - claude-haiku-4-5
       default_effort: medium
     openai:
       models:
-        - gpt-5.1-codex-max
-        - gpt-5.1-codex
-        - gpt-5.1-codex-mini
+      - gpt-5.1-codex-max
+      - gpt-5.1-codex
+      - gpt-5.1-codex-mini
     google:
       models:
-        - gemini-3-pro
-        - gemini-3-deep-think
-
+      - gemini-3-pro
+      - gemini-3-deep-think
 routing:
   by_complexity:
-    trivial:   { max_score: 20,  model: claude-haiku-4-5 }
-    simple:    { max_score: 40,  model: claude-haiku-4-5 }
-    moderate:  { max_score: 60,  model: claude-sonnet-4-5 }
-    complex:   { max_score: 80,  model: claude-opus-4-5 }
-    epic:      { max_score: 100, model: claude-opus-4-5 }
+    trivial:
+      max_score: 20
+      model: claude-haiku-4-5
+    simple:
+      max_score: 40
+      model: claude-haiku-4-5
+    moderate:
+      max_score: 60
+      model: claude-sonnet-4-5
+    complex:
+      max_score: 80
+      model: claude-opus-4-5
+    epic:
+      max_score: 100
+      model: claude-opus-4-5
   overrides:
     security: claude-opus-4-5
     architecture: claude-opus-4-5
-
 flows:
   enabled:
-    - design-plan-implement
-    - tdd-implement
-    - review
-    - finish-branch
+  - design-plan-implement
+  - tdd-implement
+  - review
+  - finish-branch
   triggers:
     feature_request:
-      - design-plan-implement
+    - design-plan-implement
     bugfix:
-      - tdd-implement
+    - tdd-implement
     pre_merge:
-      - review
-      - finish-branch
-
+    - review
+    - finish-branch
 metrics:
   enabled: true
   store_path: .paircoder/history/metrics.jsonl
-
 hooks:
   enabled: true
   on_task_start:
-    - start_timer
-    - sync_trello
-    - update_state
+  - start_timer
+  - sync_trello
+  - update_state
   on_task_complete:
-    - stop_timer
-    - record_metrics
-    - sync_trello
-    - update_state
-    - check_unblocked
+  - stop_timer
+  - record_metrics
+  - sync_trello
+  - update_state
+  - check_unblocked
   on_task_block:
-    - sync_trello
-    - update_state
+  - sync_trello
+  - update_state
+trello:
+  board_structure:
+    lists:
+    - name: Intake / Backlog
+      maps_to_status:
+      - pending
+      - backlog
+      description: New ideas, bugs, or tickets
+    - name: Planned / Ready
+      maps_to_status:
+      - ready
+      - planned
+      description: Tasks selected for upcoming work (1-2 weeks)
+    - name: In Progress
+      maps_to_status:
+      - in_progress
+      description: Active development tasks
+    - name: Review / Testing
+      maps_to_status:
+      - review
+      - testing
+      description: Tasks under review or verification
+    - name: Deployed / Done
+      maps_to_status:
+      - done
+      - deployed
+      description: Completed and live work
+    - name: Issues / Tech Debt
+      maps_to_status:
+      - blocked
+      - issue
+      description: Bugs, regressions, or improvements
+    - name: Notes / Ops Log
+      maps_to_status:
+      - log
+      description: Deployment notes, decisions, operational logs
+  card_format:
+    title_template: '[{stack}] {title}'
+    custom_fields:
+    - name: Project
+      type: text
+      maps_to: plan.title
+    - name: Stack
+      type: dropdown
+      options:
+      - CLI
+      - Flask
+      - React
+      - Worker
+      - Infra
+      - Docs
+    - name: Status
+      type: dropdown
+      options:
+      - Pending
+      - In Progress
+      - Review
+      - Done
+      - Blocked
+    - name: Effort
+      type: dropdown
+      options:
+      - S
+      - M
+      - L
+      maps_to: complexity
+      mapping:
+        S:
+        - 0
+        - 25
+        M:
+        - 26
+        - 50
+        L:
+        - 51
+        - 100
+    - name: Deployment Tag
+      type: text
+      optional: true
+  labels:
+  - name: Frontend
+    color: green
+    matches:
+    - react
+    - ui
+    - frontend
+    - css
+  - name: Backend
+    color: blue
+    matches:
+    - flask
+    - api
+    - backend
+    - python
+  - name: Worker / Function
+    color: purple
+    matches:
+    - worker
+    - function
+    - background
+    - async
+  - name: Deployment
+    color: red
+    matches:
+    - deploy
+    - ci
+    - cd
+    - infra
+    - config
+  - name: Bug / Issue
+    color: orange
+    matches:
+    - bug
+    - fix
+    - issue
+    - error
+  - name: Security / Admin
+    color: yellow
+    matches:
+    - security
+    - auth
+    - mfa
+    - compliance
+  - name: Documentation
+    color: brown
+    matches:
+    - docs
+    - documentation
+    - readme
+    - guide
+  - name: AI / ML Integration
+    color: black
+    matches:
+    - ai
+    - ml
+    - model
+    - llm
+    - mcp
+  automation:
+    on_task_start:
+      move_to_list: In Progress
+      add_comment: "\U0001F916 Started by {agent}"
+    on_task_complete:
+      move_to_list: Deployed / Done
+      add_comment: "\u2705 Completed: {summary}"
+    on_task_block:
+      move_to_list: Issues / Tech Debt
+      add_label: Bug / Issue
+      add_comment: "\u2298 Blocked: {reason}"
+  weekly_workflow:
+    track_throughput: true
+    summary_card_template: "Week {week_number} ({date_range})\n\u2705 {completed_count}\
+      \ Completed\n\u2699\uFE0F {in_progress_count} In Progress\n\U0001F41E {issues_count}\
+      \ Issues\n"
+  board_id: 694176ebf4b9d27c6e7a0e73
+  board_name: PairCoder
+  enabled: true

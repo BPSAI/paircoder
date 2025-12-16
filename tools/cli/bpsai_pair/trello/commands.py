@@ -257,3 +257,8 @@ def trello_config(
     if updates_made:
         config["trello"] = trello
         _save_config(config)
+
+
+# Register webhook subcommands
+from .webhook_commands import app as webhook_app
+app.add_typer(webhook_app, name="webhook")
