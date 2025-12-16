@@ -84,8 +84,14 @@ metrics:
   store_path: .paircoder/history/metrics.jsonl
 hooks:
   enabled: true
+  on_task_ready:
+  - sync_trello
+  - update_state
   on_task_start:
   - start_timer
+  - sync_trello
+  - update_state
+  on_task_review:
   - sync_trello
   - update_state
   on_task_complete:
@@ -236,9 +242,15 @@ trello:
     - llm
     - mcp
   automation:
+    on_task_ready:
+      move_to_list: Planned / Ready
+      add_comment: "\U0001F4CB Task planned and ready for work"
     on_task_start:
       move_to_list: In Progress
       add_comment: "\U0001F916 Started by {agent}"
+    on_task_review:
+      move_to_list: Review / Testing
+      add_comment: "\U0001F50D Under review: {summary}"
     on_task_complete:
       move_to_list: Deployed / Done
       add_comment: "\u2705 Completed: {summary}"

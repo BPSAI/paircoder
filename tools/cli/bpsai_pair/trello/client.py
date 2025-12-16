@@ -152,3 +152,46 @@ class TrelloService:
                     str(card.short_id) == card_id):
                     return card, lst
         return None, None
+
+    def find_card_with_prefix(self, prefix: str) -> tuple[Optional[Any], Optional[Any]]:
+        """Find a card by prefix in title (e.g., '[TASK-001]').
+
+        Args:
+            prefix: Prefix to search for in card title
+
+        Returns:
+            Tuple of (card, list) or (None, None) if not found
+        """
+        if not self.board:
+            return None, None
+
+        # Format prefix with brackets if not already
+        search_prefix = prefix if prefix.startswith("[") else f"[{prefix}]"
+
+        for lst in self.board.all_lists():
+            for card in lst.list_cards():
+                if search_prefix in card.name:
+                    return card, lst
+        return None, None
+
+    def move_card_by_task_id(self, task_id: str, target_list: str, comment: Optional[str] = None) -> bool:
+        """Move a card by task ID to a target list.
+
+        Args:
+            task_id: Task ID (e.g., 'TASK-001')
+            target_list: Name of target list
+            comment: Optional comment to add
+
+        Returns:
+            True if card was found and moved
+        """
+        card, _ = self.find_card_with_prefix(task_id)
+        if not card:
+            return False
+
+        self.move_card(card, target_list)
+
+        if comment:
+            self.add_comment(card, comment)
+
+        return True

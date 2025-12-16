@@ -842,14 +842,32 @@ def task_update(
 
 
 @task_app.command("next")
-def task_next():
-    """Show the next task to work on."""
+def task_next(
+    start: bool = typer.Option(False, "--start", "-s", help="Automatically start the next task"),
+):
+    """Show the next task to work on.
+
+    Use --start to automatically set the task to in_progress.
+    """
     state_manager = get_state_manager()
     task = state_manager.get_next_task()
 
     if not task:
         console.print("[dim]No tasks available. Create a plan first![/dim]")
         return
+
+    # If --start flag, auto-assign the task
+    if start and task.status != TaskStatus.IN_PROGRESS:
+        from .auto_assign import auto_assign_next
+
+        paircoder_dir = find_paircoder_dir()
+        task = auto_assign_next(paircoder_dir, plan_id=task.plan_id)
+
+        if task:
+            console.print(f"[green]✓ Auto-started task:[/green] {task.id}")
+        else:
+            console.print("[red]Failed to auto-start task[/red]")
+            return
 
     console.print(f"[bold]Next task:[/bold] {task.status_emoji} {task.id}")
     console.print(f"[cyan]Title:[/cyan] {task.title}")
@@ -863,7 +881,40 @@ def task_next():
         if len(lines) > 10:
             console.print(f"\n[dim]... ({len(lines) - 10} more lines)[/dim]")
 
-    console.print(f"\n[dim]To start: bpsai-pair task update {task.id} --status in_progress[/dim]")
+    if task.status != TaskStatus.IN_PROGRESS:
+        console.print(f"\n[dim]To start: bpsai-pair task next --start[/dim]")
+        console.print(f"[dim]Or: bpsai-pair task update {task.id} --status in_progress[/dim]")
+
+
+@task_app.command("auto-next")
+def task_auto_next(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to filter tasks"),
+):
+    """Automatically assign and start the next pending task.
+
+    This command finds the highest-priority pending task and sets it to in_progress.
+    Tasks are prioritized by: priority (P0 > P1 > P2), then complexity (lower first).
+
+    Example:
+        # Auto-start next task from any plan
+        bpsai-pair task auto-next
+
+        # Auto-start next task from specific plan
+        bpsai-pair task auto-next --plan plan-2025-12-sprint-13-autonomy
+    """
+    from .auto_assign import auto_assign_next
+
+    paircoder_dir = find_paircoder_dir()
+    task = auto_assign_next(paircoder_dir, plan_id=plan_id)
+
+    if not task:
+        console.print("[yellow]No pending tasks available[/yellow]")
+        return
+
+    console.print(f"[green]✓ Auto-assigned:[/green] {task.id}")
+    console.print(f"[cyan]Title:[/cyan] {task.title}")
+    console.print(f"[cyan]Priority:[/cyan] {task.priority} | Complexity: {task.complexity}")
+    console.print(f"[cyan]Status:[/cyan] {task.status_emoji} {task.status.value}")
 
 
 @task_app.command("archive")
@@ -1154,6 +1205,100 @@ def task_changelog_preview(
 
     console.print("[bold]Changelog Preview:[/bold]\n")
     console.print(preview)
+
+
+# ============================================================================
+# INTENT DETECTION COMMANDS
+# ============================================================================
+
+intent_app = typer.Typer(
+    help="Intent detection and planning mode commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@intent_app.command("detect")
+def intent_detect(
+    text: str = typer.Argument(..., help="Text to analyze for intent"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Detect work intent from text."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    matches = detector.detect_all(text)
+
+    if json_out:
+        import json as json_module
+        output = [{
+            "intent": m.intent.value,
+            "confidence": m.confidence,
+            "suggested_flow": m.suggested_flow,
+            "triggers": m.triggers,
+        } for m in matches]
+        console.print(json_module.dumps(output, indent=2))
+        return
+
+    if not matches:
+        console.print("[dim]No clear intent detected[/dim]")
+        return
+
+    console.print("[bold]Detected Intents:[/bold]\n")
+    for match in matches:
+        confidence_color = "green" if match.confidence >= 0.8 else "yellow" if match.confidence >= 0.6 else "dim"
+        console.print(f"[{confidence_color}]{match.intent.value}[/{confidence_color}] ({match.confidence:.0%})")
+        if match.suggested_flow:
+            console.print(f"  Suggested flow: {match.suggested_flow}")
+        if match.triggers:
+            console.print(f"  Triggers: {', '.join(match.triggers[:3])}")
+        console.print()
+
+
+@intent_app.command("should-plan")
+def intent_should_plan(
+    text: str = typer.Argument(..., help="Text to analyze"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Check if text should trigger planning mode."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    should_plan, match = detector.should_enter_planning_mode(text)
+
+    if json_out:
+        import json as json_module
+        output = {
+            "should_plan": should_plan,
+            "intent": match.intent.value if match else None,
+            "confidence": match.confidence if match else 0,
+            "suggested_flow": match.suggested_flow if match else None,
+        }
+        console.print(json_module.dumps(output, indent=2))
+        return
+
+    if should_plan and match:
+        console.print(f"[green]YES - Planning mode recommended[/green]")
+        console.print(f"  Intent: {match.intent.value} ({match.confidence:.0%})")
+        console.print(f"  Suggested flow: {match.suggested_flow}")
+    else:
+        console.print("[dim]No - Direct action is fine[/dim]")
+
+
+@intent_app.command("suggest-flow")
+def intent_suggest_flow(
+    text: str = typer.Argument(..., help="Text to analyze"),
+):
+    """Suggest appropriate flow for text."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    flow = detector.get_flow_suggestion(text)
+
+    if flow:
+        console.print(f"[green]Suggested flow: {flow}[/green]")
+        console.print(f"\n[dim]Run: bpsai-pair flow run {flow}[/dim]")
+    else:
+        console.print("[dim]No specific flow suggested for this request.[/dim]")
 
 
 # ============================================================================
