@@ -29,6 +29,7 @@ try:
     from .flows import FlowParser, FlowValidationError
     from .flows.parser_v2 import FlowParser as FlowParserV2
     from .planning.cli_commands import plan_app, task_app
+    from .orchestration import Orchestrator, HeadlessSession, HandoffManager
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -40,6 +41,7 @@ except ImportError:
     from bpsai_pair.flows import FlowParser, FlowValidationError
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
     from bpsai_pair.planning.cli_commands import plan_app, task_app
+    from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
 
 # Initialize Rich console
 console = Console()
@@ -66,8 +68,113 @@ app.add_typer(flow_app, name="flow")
 app.add_typer(plan_app, name="plan")
 app.add_typer(task_app, name="task")
 
+# Orchestration sub-app for multi-agent coordination
+orchestrate_app = typer.Typer(
+    help="Multi-agent orchestration commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(orchestrate_app, name="orchestrate")
+
 def _flows_root(root: Path) -> Path:
     return root / ".paircoder" / "flows"
+
+
+# --- Orchestration Commands ---
+
+@orchestrate_app.command("task")
+def orchestrate_task(
+    task_id: str = typer.Argument(..., help="Task ID to orchestrate"),
+    prefer: Optional[str] = typer.Option(None, "--prefer", help="Preferred agent"),
+    max_cost: Optional[float] = typer.Option(None, "--max-cost", help="Maximum cost in USD"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show decision without executing"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Orchestrate a task to the best agent."""
+    root = repo_root()
+    orchestrator = Orchestrator(project_root=root)
+
+    constraints = {}
+    if prefer:
+        constraints["prefer"] = prefer
+    if max_cost:
+        constraints["max_cost"] = max_cost
+
+    assignment = orchestrator.assign_task(task_id, constraints)
+
+    if not dry_run:
+        assignment = orchestrator.execute(assignment, dry_run=False)
+
+    if json_out:
+        print_json({
+            "task_id": assignment.task_id,
+            "agent": assignment.agent,
+            "status": assignment.status,
+            "score": assignment.score,
+            "reasoning": assignment.reasoning,
+        })
+    else:
+        console.print(f"[bold]Task:[/bold] {assignment.task_id}")
+        console.print(f"[bold]Agent:[/bold] {assignment.agent}")
+        console.print(f"[bold]Score:[/bold] {assignment.score:.2f}")
+        console.print(f"[bold]Status:[/bold] {assignment.status}")
+        if assignment.reasoning:
+            console.print(f"[bold]Reasoning:[/bold] {assignment.reasoning}")
+
+
+@orchestrate_app.command("analyze")
+def orchestrate_analyze(
+    task_id: str = typer.Argument(..., help="Task ID to analyze"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Analyze a task and show routing decision."""
+    root = repo_root()
+    orchestrator = Orchestrator(project_root=root)
+
+    task = orchestrator.analyze_task(task_id)
+    decision = orchestrator.select_agent(task)
+
+    if json_out:
+        print_json({
+            "task_id": task.task_id,
+            "type": task.task_type.value,
+            "complexity": task.complexity.value,
+            "recommended_agent": decision.agent,
+            "score": decision.score,
+            "reasoning": decision.reasoning,
+        })
+    else:
+        console.print(f"[bold]Task:[/bold] {task.task_id}")
+        console.print(f"[bold]Type:[/bold] {task.task_type.value}")
+        console.print(f"[bold]Complexity:[/bold] {task.complexity.value}")
+        console.print(f"[bold]Recommended Agent:[/bold] {decision.agent}")
+        console.print(f"[bold]Score:[/bold] {decision.score:.2f}")
+        if decision.reasoning:
+            console.print(f"[bold]Reasoning:[/bold]")
+            for reason in decision.reasoning:
+                console.print(f"  • {reason}")
+
+
+@orchestrate_app.command("handoff")
+def orchestrate_handoff(
+    task_id: str = typer.Argument(..., help="Task ID for handoff"),
+    target: str = typer.Option("codex", "--to", help="Target agent"),
+    summary: str = typer.Option("", "--summary", help="Conversation summary"),
+    output: Optional[str] = typer.Option(None, "--out", help="Output file path"),
+):
+    """Create a handoff package for another agent."""
+    root = repo_root()
+    manager = HandoffManager(project_root=root)
+
+    output_path = Path(output) if output else None
+    package_path = manager.pack(
+        task_id=task_id,
+        target_agent=target,
+        conversation_summary=summary,
+        output_path=output_path,
+    )
+
+    console.print(f"[green]✓[/green] Created handoff package: {package_path}")
+
 
 @flow_app.command("list")
 def flow_list(

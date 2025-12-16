@@ -6,12 +6,12 @@
 
 **Plan:** `plan-2025-01-paircoder-v2-upgrade`
 **Status:** in_progress
-**Current Sprint:** sprint-5 (Claude Code Alignment) ✅
+**Current Sprint:** sprint-6 (Multi-Agent Orchestration) ✅
 
 ## Current Focus
 
-Sprint 5 complete! Multi-agent architecture integrated with Claude Code skills,
-custom subagents, and automatic hooks.
+Sprint 6 complete! Multi-agent orchestration system implemented with headless
+mode, agent handoffs, Codex CLI adapter, and intelligent task routing.
 
 ## Task Status
 
@@ -65,18 +65,48 @@ custom subagents, and automatic hooks.
 | TASK-021 | Create CLAUDE.md pointer file | ✅ done | P0 |
 | TASK-024 | Implement hooks for auto context-sync | ✅ done | P1 |
 
+### Sprint 6: Multi-Agent Orchestration ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-025 | Headless Mode Integration | ✅ done | P0 |
+| TASK-026 | Agent Handoff Protocol | ✅ done | P1 |
+| TASK-027 | Codex CLI Adapter | ✅ done | P1 |
+| TASK-028 | Orchestrator Service | ✅ done | P2 |
+
 ## What Was Just Done
 
-### Sprint 5 Complete - Multi-Agent Architecture
+### Sprint 6 Complete - Multi-Agent Orchestration
 
-All Sprint 5 tasks completed:
+All Sprint 6 tasks completed:
 
-1. **TASK-022**: Created 4 Claude Code skills from flows
-   - design-plan-implement, tdd-implement, code-review, finish-branch
-2. **TASK-020**: Universal AGENTS.md template (4.7KB, under 32KB limit)
-3. **TASK-023**: Custom subagents (planner, reviewer)
-4. **TASK-021**: CLAUDE.md pointer file with skills reference
-5. **TASK-024**: Hooks in settings.json (PostToolUse, Stop)
+1. **TASK-025**: Headless Mode Integration
+   - HeadlessSession class for Claude Code invocation
+   - JSON response parsing with token/cost tracking
+   - Session continuation via session_id
+2. **TASK-026**: Agent Handoff Protocol
+   - HandoffPackage creation (.tgz bundles)
+   - Agent-specific formatting (claude, codex, cursor, generic)
+   - HANDOFF.md templates with context
+3. **TASK-027**: Codex CLI Adapter
+   - Flow parser for .flow.md files
+   - CodexAdapter for flow execution
+   - Support for all approval modes
+4. **TASK-028**: Orchestrator Service
+   - Task-to-agent matching algorithm
+   - Multi-agent routing decision tree
+   - Dry-run mode for testing
+
+### New Orchestration Module
+
+```
+tools/cli/bpsai_pair/orchestration/
+├── __init__.py
+├── headless.py    # Claude Code wrapper
+├── handoff.py     # Context packaging
+├── codex.py       # Codex CLI adapter
+└── orchestrator.py # Task routing
+```
 
 ### New Directory Structure
 
@@ -110,9 +140,16 @@ All new files added to `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`:
 
 ## What's Next
 
-**v2.1.0 ready for release!**
+**v2.2.0 ready for release!**
 
-Features to document/release:
+New in v2.2.0:
+- Multi-agent orchestration system
+- Headless Claude Code invocation
+- Agent handoff protocol
+- Codex CLI adapter
+- Intelligent task routing
+
+Previous releases included:
 - Skills (model-invoked workflows)
 - Custom subagents (planner, reviewer)
 - Automatic hooks (change logging, context sync)
@@ -142,6 +179,11 @@ bpsai-pair task next
 bpsai-pair flow list        # Shows .flow.md files
 bpsai-pair flow show <name>
 bpsai-pair flow run <name>
+
+# Orchestration (v2.2)
+bpsai-pair orchestrate task <task-id>    # Route task to best agent
+bpsai-pair orchestrate analyze <task-id> # Show routing decision
+bpsai-pair orchestrate handoff <task-id> # Create handoff package
 ```
 
 ## Claude Code Skills Available
