@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .paircoder/history && echo \"$(date -Iseconds) $CLAUDE_TOOL_INPUT_FILE_PATH\" >> .paircoder/history/changes.log"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bpsai-pair context-sync --auto 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
