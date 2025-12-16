@@ -1432,35 +1432,78 @@ def context_sync(
     blockers: str = typer.Option("", "--blockers", "-b", help="Blockers/Risks"),
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
-    """Update the Context Loop in /context/development.md."""
+    """Update the Context Loop in /context/state.md (or legacy development.md)."""
     root = repo_root()
     context_dir = root / CONTEXT_DIR
+
+    # Check for state.md (v2) first, then fallback to development.md (legacy)
+    state_file = context_dir / "state.md"
     dev_file = context_dir / "development.md"
 
-    if not dev_file.exists():
+    if state_file.exists():
+        context_file = state_file
+        is_v2 = True
+    elif dev_file.exists():
+        context_file = dev_file
+        is_v2 = False
+    else:
         console.print(
-            f"[red]✗ {dev_file} not found[/red]\n"
+            f"[red]✗ No context file found[/red]\n"
             "Run 'bpsai-pair init' first to set up the project structure"
         )
         raise typer.Exit(1)
 
     # Update context
-    content = dev_file.read_text()
+    content = context_file.read_text()
     import re
 
-    if overall:
-        content = re.sub(r'Overall goal is:.*', f'Overall goal is: {overall}', content)
-    content = re.sub(r'Last action was:.*', f'Last action was: {last}', content)
-    content = re.sub(r'Next action will be:.*', f'Next action will be: {next}', content)
-    if blockers:
-        content = re.sub(r'Blockers(/Risks)?:.*', f'Blockers/Risks: {blockers}', content)
+    if is_v2:
+        # v2 state.md format - update sections
+        # Update "What Was Just Done" section
+        content = re.sub(
+            r'(## What Was Just Done\n\n).*?(?=\n## |\Z)',
+            f'\\1- {last}\n\n',
+            content,
+            flags=re.DOTALL
+        )
+        # Update "What's Next" section
+        content = re.sub(
+            r"(## What's Next\n\n).*?(?=\n## |\Z)",
+            f'\\g<1>1. {next}\n\n',
+            content,
+            flags=re.DOTALL
+        )
+        # Update "Blockers" section if provided
+        if blockers:
+            content = re.sub(
+                r'(## Blockers\n\n).*?(?=\n## |\Z)',
+                f'\\1{blockers if blockers else "None"}\n\n',
+                content,
+                flags=re.DOTALL
+            )
+        # Update "Active Plan" if overall provided
+        if overall:
+            content = re.sub(
+                r'(\*\*Plan:\*\*) .*',
+                f'\\1 {overall}',
+                content
+            )
+    else:
+        # Legacy development.md format
+        if overall:
+            content = re.sub(r'Overall goal is:.*', f'Overall goal is: {overall}', content)
+        content = re.sub(r'Last action was:.*', f'Last action was: {last}', content)
+        content = re.sub(r'Next action will be:.*', f'Next action will be: {next}', content)
+        if blockers:
+            content = re.sub(r'Blockers(/Risks)?:.*', f'Blockers/Risks: {blockers}', content)
 
-    dev_file.write_text(content)
+    context_file.write_text(content)
 
     if json_out:
         result = {
             "updated": True,
-            "file": str(dev_file.relative_to(root)),
+            "file": str(context_file.relative_to(root)),
+            "format": "v2" if is_v2 else "legacy",
             "context": {
                 "overall": overall,
                 "last": last,
@@ -1486,19 +1529,58 @@ def status(
     """Show current context loop status and recent changes."""
     root = repo_root()
     context_dir = root / CONTEXT_DIR
+
+    # Check for state.md (v2) first, then fallback to development.md (legacy)
+    state_file = context_dir / "state.md"
     dev_file = context_dir / "development.md"
 
     # Get current branch
     current_branch = ops.GitOps.current_branch(root)
     is_clean = ops.GitOps.is_clean(root)
 
-    # Parse context sync
+    # Parse context sync - check v2 format first
     context_data = {}
-    if dev_file.exists():
-        content = dev_file.read_text()
-        import re
+    import re
 
-        # Extract context sync fields
+    if state_file.exists():
+        content = state_file.read_text()
+
+        # v2 state.md format
+        plan_match = re.search(r'\*\*Plan:\*\*\s*(.*)', content)
+        status_match = re.search(r'\*\*Status:\*\*\s*(.*)', content)
+        # Get first bullet from "What Was Just Done"
+        last_section = re.search(r'## What Was Just Done\n\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
+        # Get first item from "What's Next"
+        next_section = re.search(r"## What's Next\n\n(.*?)(?=\n## |\Z)", content, re.DOTALL)
+        blockers_section = re.search(r'## Blockers\n\n(.*?)(?=\n## |\Z)', content, re.DOTALL)
+
+        last_text = "Not set"
+        if last_section:
+            lines = [l.strip() for l in last_section.group(1).strip().split('\n') if l.strip()]
+            if lines:
+                last_text = lines[0].lstrip('- ')
+
+        next_text = "Not set"
+        if next_section:
+            lines = [l.strip() for l in next_section.group(1).strip().split('\n') if l.strip()]
+            if lines:
+                next_text = lines[0].lstrip('0123456789. ')
+
+        blockers_text = "None"
+        if blockers_section:
+            blockers_text = blockers_section.group(1).strip() or "None"
+
+        context_data = {
+            "phase": status_match.group(1) if status_match else "Not set",
+            "overall": plan_match.group(1) if plan_match else "Not set",
+            "last": last_text,
+            "next": next_text,
+            "blockers": blockers_text
+        }
+    elif dev_file.exists():
+        content = dev_file.read_text()
+
+        # Legacy development.md format
         overall_match = re.search(r'Overall goal is:\s*(.*)', content)
         last_match = re.search(r'Last action was:\s*(.*)', content)
         next_match = re.search(r'Next action will be:\s*(.*)', content)
