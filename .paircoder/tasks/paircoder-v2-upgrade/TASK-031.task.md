@@ -6,7 +6,7 @@
 - **Sprint**: sprint-7
 - **Priority**: P2
 - **Complexity**: 35
-- **Status**: pending
+- **Status**: done
 - **Created**: 2025-01-16
 - **Tags**: time-tracking, toggl, clockify, integration
 

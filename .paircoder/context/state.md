@@ -6,12 +6,12 @@
 
 **Plan:** `plan-2025-01-paircoder-v2-upgrade`
 **Status:** in_progress
-**Current Sprint:** sprint-6 (Multi-Agent Orchestration) ✅
+**Current Sprint:** sprint-7 (Lifecycle & Analytics) ✅
 
 ## Current Focus
 
-Sprint 6 complete! Multi-agent orchestration system implemented with headless
-mode, agent handoffs, Codex CLI adapter, and intelligent task routing.
+Sprint 7 complete! Task lifecycle management, token tracking, time tracking,
+and benchmarking framework implemented.
 
 ## Task Status
 
@@ -74,38 +74,67 @@ mode, agent handoffs, Codex CLI adapter, and intelligent task routing.
 | TASK-027 | Codex CLI Adapter | ✅ done | P1 |
 | TASK-028 | Orchestrator Service | ✅ done | P2 |
 
+### Sprint 7: Lifecycle & Analytics ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-029 | Task Lifecycle Management | ✅ done | P1 |
+| TASK-030 | Token Tracking and Cost Estimation | ✅ done | P1 |
+| TASK-031 | Time Tracking Integration | ✅ done | P2 |
+| TASK-032 | Benchmarking Framework | ✅ done | P2 |
+
 ## What Was Just Done
 
-### Sprint 6 Complete - Multi-Agent Orchestration
+### Sprint 7 Complete - Lifecycle & Analytics
 
-All Sprint 6 tasks completed:
+All Sprint 7 tasks completed:
 
-1. **TASK-025**: Headless Mode Integration
-   - HeadlessSession class for Claude Code invocation
-   - JSON response parsing with token/cost tracking
-   - Session continuation via session_id
-2. **TASK-026**: Agent Handoff Protocol
-   - HandoffPackage creation (.tgz bundles)
-   - Agent-specific formatting (claude, codex, cursor, generic)
-   - HANDOFF.md templates with context
-3. **TASK-027**: Codex CLI Adapter
-   - Flow parser for .flow.md files
-   - CodexAdapter for flow execution
-   - Support for all approval modes
-4. **TASK-028**: Orchestrator Service
-   - Task-to-agent matching algorithm
-   - Multi-agent routing decision tree
-   - Dry-run mode for testing
+1. **TASK-029**: Task Lifecycle Management
+   - Task archival with compression (.gz)
+   - Retention policies and cleanup
+   - Changelog generation from archived tasks
+   - Archive manifest tracking
+2. **TASK-030**: Token Tracking and Cost Estimation
+   - MetricsCollector for token usage
+   - Cost calculation per model pricing
+   - Budget enforcement and alerts
+   - JSONL metrics log with rollover
+3. **TASK-031**: Time Tracking Integration
+   - Toggl API provider
+   - Local time cache for offline
+   - Auto-start/stop with task state
+   - CLI timer commands
+4. **TASK-032**: Benchmarking Framework
+   - YAML benchmark suite definition
+   - Multi-agent benchmark runner
+   - Validation checks (exists, contains, test)
+   - Comparison reports
 
-### New Orchestration Module
+### New Modules Created
 
 ```
-tools/cli/bpsai_pair/orchestration/
+tools/cli/bpsai_pair/tasks/
 ├── __init__.py
-├── headless.py    # Claude Code wrapper
-├── handoff.py     # Context packaging
-├── codex.py       # Codex CLI adapter
-└── orchestrator.py # Task routing
+├── lifecycle.py    # State transitions
+├── archiver.py     # Archive/restore
+└── changelog.py    # Changelog generation
+
+tools/cli/bpsai_pair/metrics/
+├── __init__.py
+├── collector.py    # Token tracking
+├── budget.py       # Budget enforcement
+└── reports.py      # Analytics
+
+tools/cli/bpsai_pair/integrations/
+├── __init__.py
+├── time_tracking.py # Provider interface
+└── toggl.py        # Toggl API
+
+tools/cli/bpsai_pair/benchmarks/
+├── __init__.py
+├── runner.py       # Benchmark execution
+├── validation.py   # Result validation
+└── reports.py      # Comparison reports
 ```
 
 ### New Directory Structure
@@ -184,6 +213,34 @@ bpsai-pair flow run <name>
 bpsai-pair orchestrate task <task-id>    # Route task to best agent
 bpsai-pair orchestrate analyze <task-id> # Show routing decision
 bpsai-pair orchestrate handoff <task-id> # Create handoff package
+
+# Task Lifecycle (v2.2)
+bpsai-pair task archive TASK-XXX         # Archive completed task
+bpsai-pair task archive --completed      # Archive all completed
+bpsai-pair task restore TASK-XXX         # Restore from archive
+bpsai-pair task list-archived            # List archived tasks
+bpsai-pair task cleanup --dry-run        # Preview retention cleanup
+bpsai-pair task changelog-preview        # Preview changelog entry
+
+# Metrics (v2.2)
+bpsai-pair metrics summary               # Session/daily/weekly/monthly
+bpsai-pair metrics task TASK-XXX         # Task-specific metrics
+bpsai-pair metrics breakdown --by agent  # By agent/task/model
+bpsai-pair metrics budget                # Check budget status
+bpsai-pair metrics export --format csv   # Export to CSV
+
+# Time Tracking (v2.2)
+bpsai-pair timer start TASK-XXX          # Start timer
+bpsai-pair timer stop                    # Stop active timer
+bpsai-pair timer status                  # Show current timer
+bpsai-pair timer show TASK-XXX           # Task time entries
+bpsai-pair timer summary --plan <id>     # Plan/sprint totals
+
+# Benchmarks (v2.2)
+bpsai-pair benchmark run --suite default # Run benchmark suite
+bpsai-pair benchmark results --latest    # View latest results
+bpsai-pair benchmark compare             # Compare agents
+bpsai-pair benchmark list                # List available benchmarks
 ```
 
 ## Claude Code Skills Available
