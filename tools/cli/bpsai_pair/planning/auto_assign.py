@@ -121,7 +121,7 @@ def create_completion_handler(
 
         # Get plan ID from completed task
         task_parser = TaskParser(paircoder_dir / "tasks")
-        completed_task = task_parser.get(completed_task_id)
+        completed_task = task_parser.get_task_by_id(completed_task_id)
         plan_id = completed_task.plan_id if completed_task else None
 
         # Create Trello callback if credentials available
@@ -208,7 +208,7 @@ class AutoAssigner:
         Returns:
             Next assigned task or None
         """
-        task = self.task_parser.get(task_id)
+        task = self.task_parser.get_task_by_id(task_id)
         plan_id = task.plan_id if task else None
 
         return self.assign_next(plan_id)

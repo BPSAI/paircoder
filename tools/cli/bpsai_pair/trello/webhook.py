@@ -188,7 +188,7 @@ def create_task_updater(paircoder_dir: Path) -> Callable[[CardMoveEvent], None]:
         # Load and update task
         try:
             parser = TaskParser(paircoder_dir / "tasks")
-            task = parser.get(task_id)
+            task = parser.get_task_by_id(task_id)
 
             if not task:
                 logger.warning(f"Task not found: {task_id}")
@@ -354,7 +354,7 @@ def create_agent_assigner(
                                 from ..planning.models import TaskStatus
 
                                 parser = TaskParser(paircoder_dir / "tasks")
-                                task = parser.get(task_id)
+                                task = parser.get_task_by_id(task_id)
                                 if task:
                                     task.status = TaskStatus.IN_PROGRESS
                                     parser.save(task)

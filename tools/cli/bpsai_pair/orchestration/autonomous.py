@@ -223,7 +223,7 @@ class AutonomousWorkflow:
         self.state.record_event(WorkflowEvent.PLANNING_STARTED)
 
         # Get task content
-        task = self.task_parser.get(self.state.current_task_id)
+        task = self.task_parser.get_task_by_id(self.state.current_task_id)
         if not task:
             logger.error(f"Task not found: {self.state.current_task_id}")
             return None
@@ -262,7 +262,7 @@ class AutonomousWorkflow:
 
         # Update task status to in_progress
         from ..planning.models import TaskStatus
-        task = self.task_parser.get(self.state.current_task_id)
+        task = self.task_parser.get_task_by_id(self.state.current_task_id)
         if task:
             task.status = TaskStatus.IN_PROGRESS
             self.task_parser.save(task)
@@ -371,7 +371,7 @@ class AutonomousWorkflow:
 
         self.state.phase = WorkflowPhase.CREATING_PR
 
-        task = self.task_parser.get(self.state.current_task_id)
+        task = self.task_parser.get_task_by_id(self.state.current_task_id)
         if not task:
             return None
 
@@ -409,7 +409,7 @@ class AutonomousWorkflow:
 
         # Update task status to done
         from ..planning.models import TaskStatus
-        task = self.task_parser.get(self.state.current_task_id)
+        task = self.task_parser.get_task_by_id(self.state.current_task_id)
         if task:
             task.status = TaskStatus.DONE
             self.task_parser.save(task)
