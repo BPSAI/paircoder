@@ -120,16 +120,21 @@ class TaskLifecycle:
         in_metadata = False
 
         for line in content.split("\n"):
-            line = line.strip()
-            if line.startswith("## Metadata"):
+            line_stripped = line.strip()
+            # Extract title from H1 heading: "# TASK-XXX: Title"
+            if line_stripped.startswith("# TASK-") and ": " in line_stripped:
+                title_parts = line_stripped.split(": ", 1)
+                if len(title_parts) == 2:
+                    metadata["title"] = title_parts[1]
+            if line_stripped.startswith("## Metadata"):
                 in_metadata = True
                 continue
             if in_metadata:
-                if line.startswith("## "):
+                if line_stripped.startswith("## "):
                     break
-                if line.startswith("- **"):
+                if line_stripped.startswith("- **"):
                     # Parse "- **Key**: Value"
-                    parts = line[4:].split("**:", 1)
+                    parts = line_stripped[4:].split("**:", 1)
                     if len(parts) == 2:
                         key = parts[0].strip()
                         value = parts[1].strip()

@@ -119,14 +119,14 @@ class ChangelogGenerator:
 
         # Ensure proper header
         if existing.startswith("# Changelog"):
-            # Find end of header section
-            header_end = existing.find("\n\n")
-            if header_end == -1:
-                header_end = len(existing)
+            # Find first version entry (## [)
+            first_version = existing.find("\n## [")
+            if first_version != -1:
+                # Insert before first version entry
+                updated = existing[:first_version + 1] + new_section + existing[first_version + 1:]
             else:
-                header_end += 2
-
-            updated = existing[:header_end] + new_section + "\n" + existing[header_end:]
+                # No existing versions, append after entire content
+                updated = existing.rstrip() + "\n\n" + new_section
         else:
             header = "# Changelog\n\nAll notable changes to this project are documented in this file.\n\n"
             updated = header + new_section + "\n" + existing

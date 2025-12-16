@@ -5,6 +5,18 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.0] - 2025-12-15
+
+### Added
+- Headless Mode Integration for Orchestration (TASK-025)
+- Agent Handoff Protocol (TASK-026)
+- Codex CLI Adapter (TASK-027)
+- Orchestrator Service (TASK-028)
+- Task Lifecycle Management (TASK-029)
+- Token Tracking and Cost Estimation (TASK-030)
+- Time Tracking Integration (TASK-031)
+- Benchmarking Framework (TASK-032)
+
 ## [0.2.5] - 2025-09-01
 
 ### Changed
