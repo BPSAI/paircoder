@@ -236,22 +236,30 @@ class ContextTemplate:
 
 ## Ground Rules
 
-1. **Context is King**: Always refer to `/context/development.md` for current state
+1. **Context is King**: Always refer to `.paircoder/context/state.md` for current state
 2. **Test First**: Write tests before implementation
 3. **Small Changes**: Keep PRs under 200 lines when possible
 4. **Update Loop**: Run `bpsai-pair context-sync` after every significant change
 
-## Project Structure
+## Project Structure (v2.1)
 
 ```
 .
-├── {config.context_dir}/          # Project context and memory
-├── .paircoder/                    # Paircoder configuration + workflows
-│   └── config.yaml                # Configuration (v2)
+├── .paircoder/                    # All PairCoder configuration
+│   ├── config.yaml               # Configuration
+│   ├── context/                  # Project context (moved from root)
+│   │   ├── state.md              # Current state
+│   │   ├── project.md            # Project overview
+│   │   └── workflow.md           # Development workflow
+│   ├── flows/                    # Workflow definitions
+│   ├── plans/                    # Plan files
+│   └── tasks/                    # Task files
+├── .claude/                       # Claude Code native (if used)
+├── AGENTS.md                      # Universal entry point
+├── CLAUDE.md                      # Claude Code pointer
 ├── src/                           # Source code
 ├── tests/                         # Test suites
 └── docs/                          # Documentation
-
 ```
 
 ## Workflow

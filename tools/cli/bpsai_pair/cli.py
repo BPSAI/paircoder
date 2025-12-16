@@ -46,7 +46,7 @@ console = Console()
 
 # Environment variable support
 MAIN_BRANCH = os.getenv("PAIRCODER_MAIN_BRANCH", "main")
-CONTEXT_DIR = os.getenv("PAIRCODER_CONTEXT_DIR", "context")
+CONTEXT_DIR = os.getenv("PAIRCODER_CONTEXT_DIR", ".paircoder/context")
 FLOWS_DIR = os.getenv("PAIRCODER_FLOWS_DIR", ".paircoder/flows")
 
 app = typer.Typer(
@@ -534,36 +534,58 @@ def validate(
     issues = []
     fixes = []
 
-    # Check required files
-    required_files = [
-        Path(CONTEXT_DIR) / "development.md",
-        Path(CONTEXT_DIR) / "agents.md",
-        Path(".agentpackignore"),
-        Path(".editorconfig"),
-        Path("CONTRIBUTING.md"),
+    # Check required files (v2.1 paths with legacy fallback)
+    required_files_v2 = [
+        (Path(".paircoder/context/state.md"), Path("context/development.md")),
+        (Path(".paircoder/config.yaml"), None),
+        (Path("AGENTS.md"), Path("context/agents.md")),
+        (Path("CLAUDE.md"), None),
+        (Path(".agentpackignore"), None),
     ]
 
-    for file_path in required_files:
-        full_path = root / file_path
-        if not full_path.exists():
-            issues.append(f"Missing required file: {file_path}")
-            if fix:
-                # Create with minimal content
-                full_path.parent.mkdir(parents=True, exist_ok=True)
-                if file_path.name == "development.md":
-                    full_path.write_text("# Development Log\n\n## Context Sync (AUTO-UPDATED)\n")
-                elif file_path.name == "agents.md":
-                    full_path.write_text("# Agents Guide\n")
-                elif file_path.name == ".agentpackignore":
-                    full_path.write_text(".git/\n.venv/\n__pycache__/\nnode_modules/\n")
-                else:
-                    full_path.touch()
-                fixes.append(f"Created {file_path}")
+    for v2_path, legacy_path in required_files_v2:
+        full_v2 = root / v2_path
+        full_legacy = root / legacy_path if legacy_path else None
 
-    # Check context sync format
+        # Check v2 path first, then legacy
+        if full_v2.exists():
+            continue  # v2 path exists, all good
+        elif full_legacy and full_legacy.exists():
+            issues.append(f"Using legacy path {legacy_path}, migrate to {v2_path}")
+            continue  # Legacy exists, warn but don't block
+        else:
+            issues.append(f"Missing required file: {v2_path}")
+            if fix:
+                # Create with minimal content at v2 path
+                full_v2.parent.mkdir(parents=True, exist_ok=True)
+                if v2_path.name == "state.md":
+                    full_v2.write_text("# Current State\n\n## Active Plan\n\nNo active plan.\n")
+                elif v2_path.name == "config.yaml":
+                    full_v2.write_text("version: 2.1\nproject_name: unnamed\n")
+                elif v2_path.name == "AGENTS.md":
+                    full_v2.write_text("# AGENTS.md\n\nSee `.paircoder/` for project context.\n")
+                elif v2_path.name == "CLAUDE.md":
+                    full_v2.write_text("# CLAUDE.md\n\nSee `.paircoder/context/state.md` for current state.\n")
+                elif v2_path.name == ".agentpackignore":
+                    full_v2.write_text(".git/\n.venv/\n__pycache__/\nnode_modules/\n")
+                else:
+                    full_v2.touch()
+                fixes.append(f"Created {v2_path}")
+
+    # Check context sync format (v2.1 state.md or legacy development.md)
+    state_file = root / ".paircoder" / "context" / "state.md"
     dev_file = root / CONTEXT_DIR / "development.md"
-    if dev_file.exists():
+
+    if state_file.exists():
+        content = state_file.read_text()
+        # v2.1 state.md uses different sections
+        required_sections = ["## Active Plan", "## Current Focus"]
+        for section in required_sections:
+            if section not in content:
+                issues.append(f"Missing state section: {section}")
+    elif dev_file.exists():
         content = dev_file.read_text()
+        # Legacy development.md sections
         required_sections = [
             "Overall goal is:",
             "Last action was:",
@@ -579,16 +601,21 @@ def validate(
 
     # Check for uncommitted context changes
     if not ops.GitOps.is_clean(root):
-        context_files = ["context/development.md", "context/agents.md"]
+        context_files = [
+            ".paircoder/context/state.md",
+            "context/development.md",
+            "AGENTS.md",
+        ]
         for cf in context_files:
-            result = subprocess.run(
-                ["git", "diff", "--name-only", cf],
-                cwd=root,
-                capture_output=True,
-                text=True
-            )
-            if result.stdout.strip():
-                issues.append(f"Uncommitted changes in {cf}")
+            if (root / cf).exists():
+                result = subprocess.run(
+                    ["git", "diff", "--name-only", cf],
+                    cwd=root,
+                    capture_output=True,
+                    text=True
+                )
+                if result.stdout.strip():
+                    issues.append(f"Uncommitted changes in {cf}")
 
     if json_out:
         result = {

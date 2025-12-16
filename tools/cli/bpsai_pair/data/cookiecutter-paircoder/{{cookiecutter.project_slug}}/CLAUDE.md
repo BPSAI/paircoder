@@ -31,11 +31,16 @@ Claude Code will auto-discover and use these skills in `.claude/skills/`:
 
 **Skills are model-invoked**: You don't need to explicitly call them. Describe what you want and the appropriate skill activates.
 
-## Slash Commands
+## CLI Commands
 
-- `/plan` - View or create development plans
-- `/task` - View task details or get next task
-- `/status` - Show current project state
+Use the `bpsai-pair` CLI for planning and task management:
+
+```bash
+bpsai-pair status          # Show current state
+bpsai-pair task next       # Get next priority task
+bpsai-pair task show XXX   # View task details
+bpsai-pair plan list       # List all plans
+```
 
 ## Custom Agents
 
@@ -84,21 +89,13 @@ Additional context for implementation
 ```
 .claude/                      # Claude Code native
 ├── skills/                   # Model-invoked skills
-│   ├── design-plan-implement/
-│   │   └── SKILL.md
-│   ├── tdd-implement/
-│   │   └── SKILL.md
-│   ├── code-review/
-│   │   └── SKILL.md
-│   └── finish-branch/
-│       └── SKILL.md
+│   ├── design-plan-implement/SKILL.md
+│   ├── tdd-implement/SKILL.md
+│   ├── code-review/SKILL.md
+│   └── finish-branch/SKILL.md
 ├── agents/                   # Custom subagents
 │   ├── planner.md
 │   └── reviewer.md
-├── commands/                 # Slash commands
-│   ├── plan.md
-│   ├── task.md
-│   └── status.md
 └── settings.json             # Hooks configuration
 
 .paircoder/                   # Cross-agent content
@@ -118,7 +115,7 @@ This project also supports other AGENTS.md-compatible agents:
 ## Quick Start Checklist
 
 - [ ] Read `.paircoder/context/state.md`
-- [ ] Identify current task from state or use `/task next`
+- [ ] Identify current task from state or run `bpsai-pair task next`
 - [ ] Set task status to `in_progress`
 - [ ] Follow appropriate workflow (skill auto-activates)
 - [ ] Update task status to `done` when complete

@@ -14,9 +14,9 @@ runner = CliRunner()
 
 def test_context_sync_updates(tmp_path):
     """Test that context sync updates the development.md file."""
-    # Setup
-    context_dir = tmp_path / "context"
-    context_dir.mkdir()
+    # Setup - use v2.1 path
+    context_dir = tmp_path / ".paircoder" / "context"
+    context_dir.mkdir(parents=True)
     dev_file = context_dir / "development.md"
 
     dev_content = """# Development Log

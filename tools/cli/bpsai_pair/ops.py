@@ -276,34 +276,38 @@ class FeatureOps:
         if not GitOps.create_branch(root, branch_name):
             raise ValueError(f"Failed to create branch {branch_name}")
 
-        # Ensure context directory structure
-        context_dir = root / "context"
-        context_dir.mkdir(exist_ok=True)
-        (context_dir / "directory_notes").mkdir(exist_ok=True)
+        # Ensure context directory structure (v2.1 path)
+        context_dir = root / ".paircoder" / "context"
+        context_dir.mkdir(parents=True, exist_ok=True)
 
-        # Update or create development.md
-        dev_file = context_dir / "development.md"
-        if not dev_file.exists():
-            dev_content = f"""# Development Log
+        # Update or create state.md (v2.1) or development.md (legacy)
+        state_file = context_dir / "state.md"
+        legacy_dev_file = root / "context" / "development.md"
 
-**Phase:** {phase or 'Phase 1'}
-**Primary Goal:** {primary_goal or 'To be defined'}
+        if state_file.exists():
+            # Update v2.1 state.md
+            import re
+            content = state_file.read_text()
 
-## Context Sync (AUTO-UPDATED)
+            # Update Current Focus section
+            if primary_goal or phase:
+                focus_text = f"Working on: {primary_goal or 'To be defined'}"
+                if phase:
+                    focus_text += f"\nPhase: {phase}"
+                content = re.sub(
+                    r'## Current Focus\n\n.*?(?=\n## |\Z)',
+                    f'## Current Focus\n\n{focus_text}\n\n',
+                    content,
+                    flags=re.DOTALL
+                )
+            state_file.write_text(content)
 
-- **Overall goal is:** {primary_goal or 'To be defined'}
-- **Last action was:** Created feature branch {branch_name}
-- **Next action will be:** {phase or 'Define first task'}
-- **Blockers:** None
-"""
-            dev_file.write_text(dev_content)
-        else:
-            # Update existing file
-            content = dev_file.read_text()
+        elif legacy_dev_file.exists():
+            # Update legacy development.md
+            import re
+            content = legacy_dev_file.read_text()
 
-            # Update Primary Goal
             if primary_goal:
-                import re
                 content = re.sub(
                     r'\*\*Primary Goal:\*\*.*',
                     f'**Primary Goal:** {primary_goal}',
@@ -315,7 +319,6 @@ class FeatureOps:
                     content
                 )
 
-            # Update Phase
             if phase:
                 content = re.sub(
                     r'\*\*Phase:\*\*.*',
@@ -328,35 +331,78 @@ class FeatureOps:
                     content
                 )
 
-            # Update Last action
             content = re.sub(
                 r'Last action was:.*',
                 f'Last action was: Created feature branch {branch_name}',
                 content
             )
+            legacy_dev_file.write_text(content)
 
-            dev_file.write_text(content)
+        else:
+            # Create new v2.1 state.md
+            state_content = f"""# Current State
 
-        # Create agents.md if missing
-        agents_file = context_dir / "agents.md"
+> Last updated: {__import__('datetime').datetime.now().strftime('%Y-%m-%d')}
+
+## Active Plan
+
+**Branch:** `{branch_name}`
+**Type:** {branch_type}
+
+## Current Focus
+
+Working on: {primary_goal or 'To be defined'}
+Phase: {phase or 'Phase 1'}
+
+## What Was Just Done
+
+Created feature branch `{branch_name}`.
+
+## What's Next
+
+{phase or 'Define first task'}
+
+## Blockers
+
+None
+"""
+            state_file.write_text(state_content)
+
+        # Create AGENTS.md at root if missing (v2.1)
+        agents_file = root / "AGENTS.md"
         if not agents_file.exists():
-            agents_content = """# Agents Guide
+            agents_content = """# AGENTS.md
 
-This project uses a **Context Loop**. Always keep these fields current:
+## Project Overview
 
-- **Overall goal is:** Single-sentence mission
-- **Last action was:** What just completed
-- **Next action will be:** The very next step
-- **Blockers:** Known issues or decisions needed
+This project uses **PairCoder v2** for structured development workflows.
 
-### Working Rules for Agents
-- Do not modify or examine ignored directories (see `.agentpackignore`). Assume large assets exist even if excluded.
-- Prefer minimal, reversible changes.
-- After committing code, run `bpsai-pair context-sync` to update the loop.
-- Request a new context pack when the tree or docs change significantly.
+## Quick Setup
 
-### Context Pack
-Run `bpsai-pair pack --out agent_pack.tgz` and upload to your session.
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+## PairCoder Integration
+
+Read these files to understand the project:
+- `.paircoder/context/state.md` - Current state and active tasks
+- `.paircoder/context/project.md` - Project overview
+- `.paircoder/context/workflow.md` - Development workflow
+
+## Workflow Quick Reference
+
+1. Check state: Read `.paircoder/context/state.md`
+2. Find task: Look in `.paircoder/tasks/`
+3. Set task status to `in_progress`
+4. Do the work
+5. Set task status to `done`
+6. Run `bpsai-pair context-sync`
+
+## Context Pack
+
+Run `bpsai-pair pack --out agent_pack.tgz` to create context package.
 """
             agents_file.write_text(agents_content)
 
@@ -372,9 +418,14 @@ _Generated: {datetime.now(timezone.utc).isoformat()}Z_
         tree_file.write_text(tree_content)
 
         # Commit changes
+        files_to_commit = [agents_file, tree_file]
+        if state_file.exists():
+            files_to_commit.append(state_file)
+        if legacy_dev_file.exists():
+            files_to_commit.append(legacy_dev_file)
         GitOps.add_commit(
             root,
-            [dev_file, agents_file, tree_file],
+            files_to_commit,
             f"feat(context): start {branch_name} — Primary Goal: {primary_goal or 'TBD'}"
         )
 

@@ -40,9 +40,10 @@ def temp_repo(tmp_path):
 
 @pytest.fixture
 def initialized_repo(temp_repo):
-    """Create a repo with PairCoder initialized."""
-    context_dir = temp_repo / "context"
-    context_dir.mkdir()
+    """Create a repo with PairCoder initialized (v2.1 structure)."""
+    # Create v2.1 structure
+    context_dir = temp_repo / ".paircoder" / "context"
+    context_dir.mkdir(parents=True)
     (context_dir / "development.md").write_text("""# Development Log
 
 **Phase:** Phase 1
@@ -55,8 +56,20 @@ Last action was: Init
 Next action will be: Test
 Blockers: None
 """)
-    (context_dir / "agents.md").write_text("# Agents Guide\n")
-    (context_dir / "project_tree.md").write_text("# Project Tree\n```\n.\n```")
+    (context_dir / "state.md").write_text("""# Current State
+
+## Active Plan
+
+No active plan.
+
+## Current Focus
+
+Testing.
+""")
+    # Create AGENTS.md at root (v2.1)
+    (temp_repo / "AGENTS.md").write_text("# AGENTS.md\n\nSee `.paircoder/` for context.\n")
+    (temp_repo / "CLAUDE.md").write_text("# CLAUDE.md\n\nSee `.paircoder/context/state.md`.\n")
+    (temp_repo / ".paircoder" / "config.yaml").write_text("version: 2.1\n")
     (temp_repo / ".agentpackignore").write_text(".git/\n.venv/\n")
 
     return temp_repo
@@ -98,8 +111,8 @@ def test_context_sync(initialized_repo, monkeypatch):
     assert result.exit_code == 0
     assert "Context Sync updated" in result.stdout
 
-    # Check file was updated
-    content = (initialized_repo / "context" / "development.md").read_text()
+    # Check file was updated (v2.1 path)
+    content = (initialized_repo / ".paircoder" / "context" / "development.md").read_text()
     assert "Last action was: Did something" in content
 
 
