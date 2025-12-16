@@ -1,7 +1,7 @@
 # PairCoder Capability Manifest
 # This file tells LLMs (Claude Code, Codex CLI, etc.) what they can do and when
 
-version: "2.0"
+version: "2.2"
 name: paircoder
 description: |
   AI pair programming framework with planning, flows, and context management.
@@ -10,7 +10,7 @@ description: |
 # ============================================================================
 # QUICK START FOR LLMs
 # ============================================================================
-# 
+#
 # 1. Read .paircoder/context/project.md to understand this project
 # 2. Read .paircoder/context/state.md to see current plan/task status
 # 3. Check if any flows apply to the user's request
@@ -23,7 +23,7 @@ context_files:
   project: .paircoder/context/project.md      # Project constraints and goals
   workflow: .paircoder/context/workflow.md    # How we work here
   state: .paircoder/context/state.md          # Current plan/task status
-  
+
 # Where to find other resources
 directories:
   flows: .paircoder/flows/          # Workflow definitions
@@ -39,7 +39,7 @@ capabilities:
   # --------------------------------------------------------------------------
   # PLANNING CAPABILITIES
   # --------------------------------------------------------------------------
-  
+
   - id: create_plan
     name: "Create a new plan"
     description: |
@@ -124,7 +124,7 @@ capabilities:
       programmatic: "Read .paircoder/flows/*.flow.md"
 
   # --------------------------------------------------------------------------
-  # CONTEXT CAPABILITIES  
+  # CONTEXT CAPABILITIES
   # --------------------------------------------------------------------------
 
   - id: sync_context
@@ -211,7 +211,7 @@ flow_triggers:
       - "implement"
       - "new feature"
     suggested_flow: design-plan-implement
-    
+
   - trigger: "user_reports_bug"
     patterns:
       - "bug"
@@ -220,7 +220,7 @@ flow_triggers:
       - "error"
       - "fix"
     suggested_flow: tdd-implement
-    
+
   - trigger: "user_wants_review"
     patterns:
       - "review"
@@ -228,7 +228,7 @@ flow_triggers:
       - "look at"
       - "is this right"
     suggested_flow: review
-    
+
   - trigger: "user_finishing_work"
     patterns:
       - "done"
@@ -251,7 +251,7 @@ roles:
       - During design-plan-implement flow (phases 1-2)
       - When creating or modifying plans
       - When user needs guidance on approach
-      
+
   driver:
     description: |
       Implementation, writing code, running tests.
@@ -260,7 +260,7 @@ roles:
       - During tdd-implement flow
       - When implementing specific tasks
       - When user says "let's code" or "implement this"
-      
+
   reviewer:
     description: |
       Code review, quality checks, final verification.
