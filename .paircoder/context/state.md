@@ -38,66 +38,55 @@ Ready to begin Sprint 4: Template updates and documentation.
 
 ### Sprint 3: CLI Extensions & Flows ✅
 
-| Task | Title | Status | Notes |
-|------|-------|--------|-------|
+| Task     | Title | Status | Notes |
+|----------|-------|--------|-------|
 | TASK-011 | Create design-plan-implement.flow.md | ✅ done | Created in Sprint 1 |
 | TASK-012 | Create tdd-implement.flow.md | ✅ done | Created in Sprint 1 |
 | TASK-013 | Create review.flow.md | ✅ done | Created in Sprint 1 |
 | TASK-014 | Create finish-branch.flow.md | ✅ done | Created in Sprint 1 |
-| — | Integrate planning module into CLI | ✅ done | Claude Code completed |
+| Task-015 | Integrate planning module into CLI | ✅ done | Claude Code completed |
 
-### Sprint 4: Template & Documentation ⏳
+### Sprint 4: Template & Documentation ✅
 
 | Task | Title | Status | Priority |
 |------|-------|--------|----------|
 | TASK-016 | Update cookiecutter template for v2 | ✅ done | P1 |
 | TASK-017 | Update USER_GUIDE.md | ✅ done | P2 |
-| TASK-018 | Update README.md | ⏳ pending | P2 |
-| TASK-019 | Bump version and prepare release | ⏳ pending | P2 |
+| TASK-018 | Update README.md | ✅ done | P2 |
+| TASK-019 | Bump version and prepare release | ✅ done | P2 |
 
 ## What Was Just Done
 
-### TASK-016: Cookiecutter Template Update
+### Sprint 4 Complete - v2.0.0 Release Ready
 
-Updated the cookiecutter template to use v2 `.paircoder/` structure:
+All Sprint 4 tasks completed:
 
-1. **Created `.paircoder/config.yaml`** - v2 configuration with models, routing, flows
-2. **Created `.paircoder/capabilities.yaml`** - LLM capability manifest
-3. **Created `.paircoder/context/`** - project.md, workflow.md, state.md
-4. **Created `.paircoder/flows/`** - tdd-implement.flow.md starter flow
-5. **Updated AGENTS.md & CLAUDE.md** - Point to new `.paircoder/` structure
+1. **TASK-016**: Updated cookiecutter template with `.paircoder/` structure
+2. **TASK-017**: Rewrote USER_GUIDE.md for v2 (planning, flows, LLM integration)
+3. **TASK-018**: Updated README.md with v2 features and command reference
+4. **TASK-019**: Bumped version to 2.0.0, created CHANGELOG.md
 
-### Key Files Added to Template
+### Version 2.0.0 Highlights
 
-```
-.paircoder/
-├── config.yaml
-├── capabilities.yaml
-├── context/
-│   ├── project.md
-│   ├── workflow.md
-│   └── state.md
-├── flows/
-│   └── tdd-implement.flow.md
-├── plans/.gitkeep
-└── tasks/.gitkeep
-```
+- Planning system (plan, task commands)
+- Flows with `.flow.md` format
+- LLM capability manifest
+- `.paircoder/` directory structure
+- Updated documentation
 
 ## What's Next
 
-1. **TASK-017**: Update USER_GUIDE.md
-   - Document planning system
-   - Document new CLI commands
-   - Add LLM integration section
+**v2.0.0 is ready for release!**
 
-2. **TASK-018**: Update README.md
-   - Highlight v2 features
-   - Update command overview
+To publish:
+```bash
+cd tools/cli
+python -m build
+pip install twine
+twine upload dist/*
+```
 
-3. **TASK-019**: Version bump and release
-   - Decide on 2.0.0 vs 0.3.0
-   - Update CHANGELOG
-   - Create release
+Or create a GitHub release to trigger automated publishing.
 
 ## Blockers
 

@@ -2,7 +2,7 @@
 bpsai_pair package
 """
 
-__version__ = "0.2.3"
+__version__ = "2.0.0"
 
 # Make modules available at package level
 from . import cli
