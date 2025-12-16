@@ -1,4 +1,4 @@
-# PairCoder v2.4 User Guide
+# PairCoder v2.5 User Guide
 
 > Complete documentation for the AI-augmented pair programming framework
 
@@ -9,19 +9,24 @@
 3. [Getting Started](#getting-started)
 4. [Core Concepts](#core-concepts)
 5. [Project Structure](#project-structure)
-6. [Planning System](#planning-system)
-7. [Flows & Skills](#flows--skills)
-8. [Orchestration](#orchestration)
-9. [Metrics & Analytics](#metrics--analytics)
-10. [Time Tracking](#time-tracking)
-11. [Benchmarking](#benchmarking)
-12. [Caching](#caching)
-13. [Trello Integration](#trello-integration)
-14. [MCP Server](#mcp-server)
-15. [Auto-Hooks](#auto-hooks)
-16. [CLI Reference](#cli-reference)
-17. [Configuration Reference](#configuration-reference)
-18. [Troubleshooting](#troubleshooting)
+6. [Presets](#presets)
+7. [Planning System](#planning-system)
+8. [Flows & Skills](#flows--skills)
+9. [Orchestration](#orchestration)
+10. [Autonomous Workflow](#autonomous-workflow)
+11. [Intent Detection](#intent-detection)
+12. [GitHub Integration](#github-integration)
+13. [Metrics & Analytics](#metrics--analytics)
+14. [Time Tracking](#time-tracking)
+15. [Benchmarking](#benchmarking)
+16. [Caching](#caching)
+17. [Trello Integration](#trello-integration)
+18. [Standup Summaries](#standup-summaries)
+19. [MCP Server](#mcp-server)
+20. [Auto-Hooks](#auto-hooks)
+21. [CLI Reference](#cli-reference)
+22. [Configuration Reference](#configuration-reference)
+23. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -63,7 +68,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.4.0
+bpsai-pair --version  # Should show 2.5.0
 ```
 
 ### With MCP Support
@@ -78,7 +83,7 @@ pip install 'bpsai-pair[mcp]'
 git clone https://github.com/yourusername/paircoder.git
 cd paircoder/tools/cli
 pip install -e .
-pytest -v  # 245 tests
+pytest -v  # 412 tests
 ```
 
 ### Verify Installation
@@ -288,6 +293,64 @@ After completing work:
 
 ---
 
+## Presets
+
+Presets provide pre-configured project setups for common use cases.
+
+### Available Presets
+
+| Preset | Description |
+|--------|-------------|
+| `python-cli` | Python CLI application with Click/Typer |
+| `python-api` | Python REST API with Flask/FastAPI |
+| `react` | React/Next.js frontend application |
+| `fullstack` | Full-stack (Python backend + React frontend) |
+| `library` | Python library/package for distribution |
+| `minimal` | Minimal configuration with essential defaults |
+| `autonomous` | Full autonomy with Trello integration |
+| `bps` | BPS AI Software preset with 7-list Trello workflow |
+
+### Using Presets
+
+```bash
+# List available presets
+bpsai-pair preset list
+
+# Show preset details
+bpsai-pair preset show bps
+
+# Preview generated config
+bpsai-pair preset preview bps
+
+# Initialize project with preset
+bpsai-pair init my-project --preset bps
+```
+
+### BPS Preset
+
+The `bps` preset configures a full BPS AI Software workflow:
+
+**Trello 7-List Structure:**
+- Intake / Backlog
+- Planned / Ready
+- In Progress
+- Review / Testing
+- Deployed / Done
+- Issues / Tech Debt
+- Notes / Ops Log
+
+**Label Colors:**
+- Backend (green), Frontend (yellow), Database (orange)
+- DevOps (purple), Testing (blue), Documentation (sky)
+- Architecture (pink), Security (red)
+
+**Automation:**
+- Task start → moves card to "In Progress"
+- Task complete → moves card to "Deployed / Done"
+- Task blocked → moves card to "Issues / Tech Debt"
+
+---
+
 ## Planning System
 
 ### Creating Plans
@@ -446,6 +509,133 @@ bpsai-pair orchestrate handoff TASK-001 \
   --from claude-code --to codex \
   --progress "Completed step 1 and 2"
 ```
+
+---
+
+## Autonomous Workflow
+
+PairCoder provides an autonomous workflow framework for hands-off task execution.
+
+### Auto-Session
+
+```bash
+# Run autonomous session (executes tasks until complete)
+bpsai-pair orchestrate auto-session
+
+# Run single task workflow
+bpsai-pair orchestrate auto-run --task TASK-001
+
+# Check workflow status
+bpsai-pair orchestrate workflow-status
+```
+
+### Auto-Task Assignment
+
+```bash
+# Get next recommended task
+bpsai-pair task next
+
+# Auto-start next task
+bpsai-pair task next --start
+
+# Full auto-assignment with Trello
+bpsai-pair task auto-next
+```
+
+### Workflow States
+
+The autonomous workflow uses a state machine:
+
+```
+IDLE → SELECTING_TASK → PREPARING → EXECUTING → REVIEWING → COMPLETING → IDLE
+                                                         ↘ BLOCKED
+```
+
+---
+
+## Intent Detection
+
+PairCoder can detect work intent from natural language to suggest appropriate workflows.
+
+### Commands
+
+```bash
+# Detect intent from text
+bpsai-pair intent detect "fix the login bug"
+# Output: bugfix
+
+bpsai-pair intent detect "add user authentication"
+# Output: feature
+
+# Check if planning is needed
+bpsai-pair intent should-plan "refactor the database layer"
+# Output: true (complex task needs planning)
+
+# Suggest appropriate flow
+bpsai-pair intent suggest-flow "review the PR for security issues"
+# Output: code-review
+```
+
+### Intent Types
+
+| Intent | Triggers | Suggested Flow |
+|--------|----------|----------------|
+| `feature` | "add", "create", "implement" | design-plan-implement |
+| `bugfix` | "fix", "bug", "broken", "error" | tdd-implement |
+| `refactor` | "refactor", "clean up", "improve" | design-plan-implement |
+| `review` | "review", "check", "look at" | code-review |
+| `documentation` | "document", "docs", "README" | - |
+
+---
+
+## GitHub Integration
+
+PairCoder integrates with GitHub for automated PR workflows.
+
+### Commands
+
+```bash
+# Check GitHub connection
+bpsai-pair github status
+
+# Create PR for a task
+bpsai-pair github create --task TASK-001
+
+# Auto-create PR from branch name (detects TASK-xxx)
+bpsai-pair github auto-pr
+bpsai-pair github auto-pr --no-draft  # Create as ready PR
+
+# List pull requests
+bpsai-pair github list
+
+# Merge PR and update task
+bpsai-pair github merge 123
+
+# Link task to existing PR
+bpsai-pair github link TASK-001 --pr 123
+
+# Archive task when its PR merges
+bpsai-pair github archive-merged 123
+
+# Scan and archive all merged PRs
+bpsai-pair github archive-merged --all
+```
+
+### Branch Naming
+
+Auto-PR detects task IDs from branch names:
+
+- `feature/TASK-001-add-auth` → TASK-001
+- `TASK-001/add-auth` → TASK-001
+- `TASK-001-add-auth` → TASK-001
+
+### Workflow
+
+1. Create feature branch: `git checkout -b feature/TASK-001-add-auth`
+2. Make changes and commit
+3. Push branch: `git push -u origin feature/TASK-001-add-auth`
+4. Auto-create PR: `bpsai-pair github auto-pr`
+5. When PR merges: `bpsai-pair github archive-merged --all`
 
 ---
 
@@ -649,6 +839,99 @@ bpsai-pair plan sync-trello plan-2025-12-feature --dry-run
 bpsai-pair plan sync-trello plan-2025-12-feature --board <board-id>
 ```
 
+### Progress Comments
+
+Report progress directly on Trello cards:
+
+```bash
+# Post a progress update
+bpsai-pair trello progress TASK-001 "Completed database schema"
+
+# Report task started
+bpsai-pair trello progress TASK-001 --started
+
+# Report blocked with reason
+bpsai-pair trello progress TASK-001 --blocked "Waiting for API docs"
+
+# Report step completed
+bpsai-pair trello progress TASK-001 --step "Database migration complete"
+
+# Report task completion
+bpsai-pair trello progress TASK-001 --completed "Feature fully implemented"
+
+# Request review
+bpsai-pair trello progress TASK-001 --review
+```
+
+### Webhook Server
+
+Listen for Trello card movements:
+
+```bash
+# Start webhook server
+bpsai-pair trello webhook serve --port 8080
+
+# Check webhook status
+bpsai-pair trello webhook status
+```
+
+The webhook server:
+- Receives Trello card movement events
+- Auto-assigns agents when cards move to "Ready" column
+- Updates local task status to match card position
+
+---
+
+## Standup Summaries
+
+Generate daily standup summaries from task data.
+
+### Commands
+
+```bash
+# Generate markdown summary
+bpsai-pair standup generate
+
+# Generate in different formats
+bpsai-pair standup generate --format markdown  # default
+bpsai-pair standup generate --format slack     # Slack-formatted
+bpsai-pair standup generate --format trello    # Trello comment format
+
+# Custom lookback period (hours)
+bpsai-pair standup generate --since 48  # Last 48 hours
+
+# Filter by plan
+bpsai-pair standup generate --plan plan-2025-12-feature
+
+# Output to file
+bpsai-pair standup generate -o standup.md
+
+# Post summary to Trello Notes list
+bpsai-pair standup post
+```
+
+### Output Format
+
+The markdown format includes:
+
+```markdown
+# Daily Standup - 2025-12-16
+
+## Completed Yesterday
+- [TASK-001] Implement login API
+- [TASK-002] Add form validation
+
+## In Progress
+- [TASK-003] User dashboard (50% complete)
+
+## Blocked
+- [TASK-004] Payment integration - Waiting for Stripe keys
+
+## Ready to Start
+- [TASK-005] Email notifications
+- [TASK-006] User preferences
+```
+
 ---
 
 ## MCP Server
@@ -746,20 +1029,24 @@ hooks:
 
 ## CLI Reference
 
-### All Commands (64 total)
+### All Commands (80+ total)
 
 | Group | Commands | Count |
 |-------|----------|-------|
 | Core | init, feature, pack, context-sync, status, validate, ci | 7 |
+| Presets | preset list/show/preview, init --preset | 4 |
 | Planning | plan new/list/show/tasks/status/sync-trello/add-task | 7 |
-| Tasks | task list/show/update/next/archive/restore/list-archived/cleanup/changelog-preview | 9 |
+| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
 | Flows | flow list/show/run/validate | 4 |
-| Orchestration | orchestrate task/analyze/handoff | 3 |
+| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
+| Intent | intent detect/should-plan/suggest-flow | 3 |
+| GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
+| Standup | standup generate/post | 2 |
 | Metrics | metrics summary/task/breakdown/budget/export | 5 |
 | Timer | timer start/stop/status/show/summary | 5 |
 | Benchmark | benchmark run/results/compare/list | 4 |
 | Cache | cache stats/clear/invalidate | 3 |
-| Trello | trello connect/status/disconnect/boards/use-board/lists/config | 7 |
+| Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
 
@@ -772,7 +1059,7 @@ See [README.md](../README.md) for complete command details.
 ### Full config.yaml Schema
 
 ```yaml
-version: "2.4"
+version: "2.5"
 
 project:
   name: "my-project"
@@ -913,4 +1200,4 @@ bpsai-pair cache stats
 
 ---
 
-*PairCoder v2.4.0 - MIT License*
+*PairCoder v2.5.0 - MIT License*

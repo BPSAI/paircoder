@@ -1,8 +1,8 @@
-# PairCoder v2.4 — AI-Augmented Pair Programming Framework
+# PairCoder v2.5 — AI-Augmented Pair Programming Framework
 
-PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via flows and skills, and ships a CLI with **64 commands** to orchestrate the entire development lifecycle.
+PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via flows and skills, and ships a CLI with **80+ commands** to orchestrate the entire development lifecycle.
 
-> **v2.4.0** — MCP server integration, auto-hooks, Trello sync, and 13 callable tools
+> **v2.5.0** — Full autonomy: presets, GitHub PR automation, progress tracking, standup summaries
 
 ## Key Features
 
@@ -12,11 +12,15 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 | **Flow Engine** | Workflow definitions (.flow.md) |
 | **Skills** | Claude Code native skills (.claude/skills/) |
 | **Orchestration** | Multi-agent coordination, model routing by complexity |
+| **Autonomous Workflow** | Auto-session for hands-off task execution |
+| **Presets** | 8 built-in presets (python-cli, bps, autonomous, etc.) |
+| **GitHub Integration** | Auto-PR creation, task-linked PRs, archive on merge |
+| **Trello Integration** | Board/card management, progress comments, webhooks |
+| **Standup Generation** | Daily summaries in markdown/slack/trello formats |
 | **Metrics** | Token tracking, cost estimation, budget enforcement |
 | **Time Tracking** | Built-in timer with Toggl integration |
-| **Trello Integration** | Board/card management for visual workflows |
 | **MCP Server** | 13 tools for autonomous agent operation |
-| **Auto-Hooks** | Automatic state sync on task changes |
+| **Auto-Hooks** | Automatic Trello sync and state updates on task changes |
 
 ## Quick Start
 
@@ -24,15 +28,21 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.4.0
+bpsai-pair --version  # Should show 2.5.0
 ```
 
 ### Initialize a Project
 
 ```bash
-# New project
-bpsai-pair init my-project
+# New project with preset
+bpsai-pair init my-project --preset python-cli
 cd my-project
+
+# List available presets
+bpsai-pair preset list
+
+# Initialize with BPS Trello workflow
+bpsai-pair init my-project --preset bps
 
 # Existing project
 cd your-project
@@ -77,19 +87,30 @@ my-project/
 └── docs/                          # Documentation
 ```
 
-## CLI Command Reference (64 commands)
+## CLI Command Reference (80+ commands)
 
 ### Core Commands
 
 | Command | Description |
 |---------|-------------|
-| `init [path]` | Initialize repo with PairCoder structure |
+| `init [path] [--preset]` | Initialize repo with PairCoder structure |
 | `feature <name>` | Create feature branch with context |
 | `pack [--lite]` | Package context for AI agents |
 | `context-sync` | Update the context loop |
 | `status` | Show current context and recent changes |
 | `validate` | Check repo structure and consistency |
 | `ci` | Run local CI checks |
+
+### Presets (4 commands)
+
+| Command | Description |
+|---------|-------------|
+| `preset list` | List available presets |
+| `preset show <name>` | Show preset details |
+| `preset preview <name>` | Preview generated config |
+| `init --preset <name>` | Initialize with preset |
+
+**Available Presets:** python-cli, python-api, react, fullstack, library, minimal, autonomous, bps
 
 ### Planning (7 commands)
 
@@ -103,14 +124,16 @@ my-project/
 | `plan sync-trello <id>` | Sync tasks to Trello board |
 | `plan add-task <id>` | Add a task to a plan |
 
-### Tasks (9 commands)
+### Tasks (11 commands)
 
 | Command | Description |
 |---------|-------------|
 | `task list` | List all tasks |
 | `task show <id>` | Show task details |
-| `task update <id> --status` | Update task status |
+| `task update <id> --status` | Update task status (fires hooks) |
 | `task next` | Get next recommended task |
+| `task next --start` | Auto-start next task |
+| `task auto-next` | Full auto-assignment with Trello |
 | `task archive` | Archive completed tasks |
 | `task restore <id>` | Restore from archive |
 | `task list-archived` | List archived tasks |
@@ -126,13 +149,43 @@ my-project/
 | `flow run <name>` | Run a flow |
 | `flow validate <name>` | Validate flow definition |
 
-### Orchestration (3 commands)
+### Orchestration (6 commands)
 
 | Command | Description |
 |---------|-------------|
 | `orchestrate task <id>` | Route task to best agent |
 | `orchestrate analyze <id>` | Show routing decision |
 | `orchestrate handoff <id>` | Create handoff package |
+| `orchestrate auto-run --task <id>` | Run single task workflow |
+| `orchestrate auto-session` | Run autonomous session |
+| `orchestrate workflow-status` | Show current workflow state |
+
+### Intent Detection (3 commands)
+
+| Command | Description |
+|---------|-------------|
+| `intent detect <text>` | Detect work intent from text |
+| `intent should-plan <text>` | Check if planning needed |
+| `intent suggest-flow <text>` | Suggest appropriate flow |
+
+### GitHub Integration (7 commands)
+
+| Command | Description |
+|---------|-------------|
+| `github status` | Check GitHub connection |
+| `github create --task <id>` | Create PR for task |
+| `github list` | List pull requests |
+| `github merge <pr>` | Merge PR and update task |
+| `github link <task>` | Link task to PR |
+| `github auto-pr` | Auto-create PR from branch |
+| `github archive-merged` | Archive tasks for merged PRs |
+
+### Standup (2 commands)
+
+| Command | Description |
+|---------|-------------|
+| `standup generate` | Generate daily summary |
+| `standup post` | Post summary to Trello |
 
 ### Metrics (5 commands)
 
@@ -171,7 +224,7 @@ my-project/
 | `cache clear` | Clear context cache |
 | `cache invalidate` | Invalidate specific file |
 
-### Trello (7 commands)
+### Trello (10 commands)
 
 | Command | Description |
 |---------|-------------|
@@ -182,6 +235,9 @@ my-project/
 | `trello use-board <id>` | Set active board |
 | `trello lists` | Show board lists |
 | `trello config` | View/modify config |
+| `trello progress <task>` | Post progress comment |
+| `trello webhook serve` | Start webhook server |
+| `trello webhook status` | Check webhook status |
 
 ### Trello Tasks (7 commands)
 
@@ -266,7 +322,7 @@ bpsai-pair --help
 ```bash
 cd tools/cli
 pip install -e .
-pytest -v  # 245 tests
+pytest -v  # 412 tests
 ```
 
 ## Documentation
