@@ -275,6 +275,15 @@ class StateManager:
             plan_slug
         )
     
+    def get_active_plan_id(self) -> Optional[str]:
+        """
+        Get the active plan ID from state.
+
+        Returns:
+            Plan ID or None if no active plan
+        """
+        return self.state.active_plan_id
+
     def set_active_plan(self, plan_id: str) -> bool:
         """
         Set the active plan and update state.md.

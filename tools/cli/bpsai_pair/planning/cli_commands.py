@@ -282,6 +282,162 @@ def plan_tasks(
     console.print(table)
 
 
+@plan_app.command("status")
+def plan_status(
+    plan_id: str = typer.Argument("current", help="Plan ID or 'current' for active plan"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show individual task list"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show plan status with sprint/task breakdown."""
+    paircoder_dir = find_paircoder_dir()
+    state_manager = get_state_manager()
+    plan_parser = PlanParser(paircoder_dir / "plans")
+    task_parser = TaskParser(paircoder_dir / "tasks")
+
+    # If "current", get from state
+    if plan_id == "current":
+        plan_id = state_manager.get_active_plan_id()
+        if not plan_id:
+            console.print("[yellow]No active plan. Specify a plan ID.[/yellow]")
+            console.print("[dim]List plans: bpsai-pair plan list[/dim]")
+            raise typer.Exit(1)
+
+    # Load plan
+    plan = plan_parser.get_plan_by_id(plan_id)
+    if not plan:
+        console.print(f"[red]Plan not found: {plan_id}[/red]")
+        raise typer.Exit(1)
+
+    # Load tasks
+    tasks = task_parser.parse_all(plan.slug)
+
+    # Calculate task counts
+    task_counts = {"pending": 0, "in_progress": 0, "done": 0, "blocked": 0, "cancelled": 0}
+    for task in tasks:
+        status_key = task.status.value
+        if status_key in task_counts:
+            task_counts[status_key] += 1
+
+    total_tasks = len(tasks)
+    done_count = task_counts["done"]
+    progress_pct = int((done_count / total_tasks) * 100) if total_tasks > 0 else 0
+
+    # Group tasks by sprint
+    sprints_tasks = {}
+    no_sprint = []
+    for task in tasks:
+        if task.sprint:
+            if task.sprint not in sprints_tasks:
+                sprints_tasks[task.sprint] = []
+            sprints_tasks[task.sprint].append(task)
+        else:
+            no_sprint.append(task)
+
+    # Find blockers with reasons
+    blockers = []
+    for task in tasks:
+        if task.status == TaskStatus.BLOCKED:
+            if task.depends_on:
+                reason = f"depends on {', '.join(task.depends_on)}"
+            else:
+                reason = "blocked"
+            blockers.append((task.id, task.title, reason))
+
+    # JSON output
+    if json_out:
+        data = {
+            "plan_id": plan.id,
+            "title": plan.title,
+            "status": plan.status.value,
+            "type": plan.type.value,
+            "goals": plan.goals,
+            "progress_percent": progress_pct,
+            "task_counts": task_counts,
+            "total_tasks": total_tasks,
+            "sprints": {
+                sprint_id: {
+                    "tasks": len(tasks_list),
+                    "done": sum(1 for t in tasks_list if t.status == TaskStatus.DONE),
+                }
+                for sprint_id, tasks_list in sprints_tasks.items()
+            },
+            "blockers": [{"id": b[0], "title": b[1], "reason": b[2]} for b in blockers],
+        }
+        console.print(json.dumps(data, indent=2))
+        return
+
+    # Rich output
+    console.print(f"\n[bold]Plan:[/bold] {plan.id}")
+    console.print(f"[bold]Title:[/bold] {plan.title}")
+    console.print(f"[bold]Status:[/bold] {plan.status_emoji} {plan.status.value}")
+    console.print(f"[bold]Type:[/bold] {plan.type.value}")
+
+    # Goals
+    if plan.goals:
+        console.print("\n[bold]Goals:[/bold]")
+        for goal in plan.goals:
+            check = "✓" if "complete" in goal.lower() or "done" in goal.lower() else "○"
+            console.print(f"  {check} {goal}")
+
+    # Sprint progress
+    if sprints_tasks:
+        console.print("\n[bold]Sprint Progress:[/bold]")
+        for sprint_id in sorted(sprints_tasks.keys()):
+            sprint_tasks = sprints_tasks[sprint_id]
+            sprint_total = len(sprint_tasks)
+            sprint_done = sum(1 for t in sprint_tasks if t.status == TaskStatus.DONE)
+            sprint_pct = int((sprint_done / sprint_total) * 100) if sprint_total > 0 else 0
+
+            # Progress bar (16 chars)
+            filled = int(sprint_pct / 6.25)  # 16 blocks = 100%
+            bar = "█" * filled + "░" * (16 - filled)
+            console.print(f"  {sprint_id} [{bar}] {sprint_pct:3d}%  ({sprint_done}/{sprint_total} tasks)")
+
+    # Overall task status
+    console.print("\n[bold]Task Status:[/bold]")
+    console.print(f"  ✓ Done:        {task_counts['done']}")
+    console.print(f"  ● In Progress: {task_counts['in_progress']}")
+    console.print(f"  ○ Pending:     {task_counts['pending']}")
+    console.print(f"  ⊘ Blocked:     {task_counts['blocked']}")
+    if task_counts['cancelled'] > 0:
+        console.print(f"  ✗ Cancelled:   {task_counts['cancelled']}")
+
+    # Overall progress
+    filled = int(progress_pct / 6.25)
+    bar = "█" * filled + "░" * (16 - filled)
+    console.print(f"\n[bold]Overall:[/bold] [{bar}] {progress_pct}% ({done_count}/{total_tasks} tasks)")
+
+    # Blockers
+    if blockers:
+        console.print("\n[bold]Blockers:[/bold]")
+        for task_id, title, reason in blockers:
+            console.print(f"  [red]⊘[/red] {task_id}: {title}")
+            console.print(f"    [dim]→ {reason}[/dim]")
+
+    # Verbose: show all tasks
+    if verbose:
+        console.print("\n[bold]All Tasks:[/bold]")
+        table = Table(show_header=True)
+        table.add_column("Status", width=3)
+        table.add_column("ID", style="cyan")
+        table.add_column("Title")
+        table.add_column("Sprint")
+        table.add_column("Priority")
+
+        for task in sorted(tasks, key=lambda t: (t.sprint or "", t.priority, t.id)):
+            table.add_row(
+                task.status_emoji,
+                task.id,
+                task.title[:40] + "..." if len(task.title) > 40 else task.title,
+                task.sprint or "-",
+                task.priority,
+            )
+
+        console.print(table)
+
+    console.print("")
+
+
 @plan_app.command("add-task")
 def plan_add_task(
     plan_id: str = typer.Argument(..., help="Plan ID"),
