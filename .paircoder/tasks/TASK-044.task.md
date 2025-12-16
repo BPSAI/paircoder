@@ -5,7 +5,7 @@ plan: plan-2025-01-paircoder-v2-upgrade
 type: test
 priority: P2
 complexity: 40
-status: pending
+status: done
 sprint: sprint-6
 tags:
   - trello

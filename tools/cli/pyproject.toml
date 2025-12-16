@@ -25,6 +25,9 @@ include-package-data = true
 bpsai_pair = ["data/**/*"]
 
 [project.optional-dependencies]
+trello = [
+    "py-trello>=0.19.0",
+]
 docs = [
     "sphinx>=7.0",
     "sphinx-rtd-theme>=2.0",

@@ -28,6 +28,8 @@ Claude Code will auto-discover and use these skills in `.claude/skills/`:
 | `tdd-implement` | "fix", "bug", "test", "implement" | Test-driven development |
 | `code-review` | "review", "check", "PR" | Code review workflow |
 | `finish-branch` | "finish", "merge", "complete", "ship" | Branch completion |
+| `trello-task-workflow` | "work on task", "TRELLO-", "next task" | Trello task management |
+| `trello-aware-planning` | "plan feature", "create tasks", "sprint" | Trello-integrated planning |
 
 **Skills are model-invoked**: You don't need to explicitly call them. Describe what you want and the appropriate skill activates.
 
@@ -92,7 +94,9 @@ Additional context for implementation
 │   ├── design-plan-implement/SKILL.md
 │   ├── tdd-implement/SKILL.md
 │   ├── code-review/SKILL.md
-│   └── finish-branch/SKILL.md
+│   ├── finish-branch/SKILL.md
+│   ├── trello-task-workflow/SKILL.md
+│   └── trello-aware-planning/SKILL.md
 ├── agents/                   # Custom subagents
 │   ├── planner.md
 │   └── reviewer.md
@@ -103,6 +107,25 @@ Additional context for implementation
 ├── flows/                    # Workflow definitions
 ├── plans/                    # Plan files
 └── tasks/                    # Task files
+```
+
+## Trello Integration (Optional)
+
+If this project uses Trello for task management:
+
+1. Connect: `bpsai-pair trello connect`
+2. Set board: `bpsai-pair trello use-board <board-id>`
+3. Use skills:
+   - `trello-task-workflow` - Work on tasks from the board
+   - `trello-aware-planning` - Create tasks during planning
+
+### Trello Commands
+
+```bash
+bpsai-pair trello status           # Check connection
+bpsai-pair ttask list --agent      # Show AI-ready tasks
+bpsai-pair ttask start TRELLO-123  # Claim a task
+bpsai-pair ttask done TRELLO-123 -s "Done"  # Complete task
 ```
 
 ## Integration with Other Agents

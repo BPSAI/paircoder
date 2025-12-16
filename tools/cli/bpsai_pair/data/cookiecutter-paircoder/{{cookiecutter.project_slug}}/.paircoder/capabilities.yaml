@@ -93,6 +93,38 @@ capabilities:
     how_to_invoke:
       cli: "bpsai-pair status"
 
+  # Trello Integration (optional - requires trello connection)
+  - id: trello_work_task
+    name: "Work on Trello task"
+    description: "Start, update, or complete tasks from Trello board."
+    when_to_use:
+      - User mentions a Trello card (TRELLO-123)
+      - User asks for next task from Trello
+      - User says "work on task" or "finish task"
+    how_to_invoke:
+      cli: "bpsai-pair ttask start TRELLO-XXX"
+    skill_to_use: trello-task-workflow
+    requires: trello_connected
+
+  - id: trello_plan_tasks
+    name: "Plan with Trello"
+    description: "Create and organize tasks in Trello during planning."
+    when_to_use:
+      - User wants to break down work into Trello cards
+      - User asks to organize the sprint
+      - User says "create tasks" or "plan feature"
+    how_to_invoke:
+      cli: "bpsai-pair trello lists"
+    skill_to_use: trello-aware-planning
+    requires: trello_connected
+
+# ============================================================================
+# FEATURE FLAGS
+# ============================================================================
+
+feature_flags:
+  trello_connected: false  # Set true after: bpsai-pair trello connect
+
 # ============================================================================
 # FLOW TRIGGERS
 # ============================================================================
@@ -109,6 +141,16 @@ flow_triggers:
   - trigger: "user_wants_review"
     patterns: ["review", "check my", "look at"]
     suggested_flow: review
+
+  - trigger: "user_works_trello_task"
+    patterns: ["TRELLO-", "work on task", "next task", "finish task"]
+    suggested_skill: trello-task-workflow
+    requires: trello_connected
+
+  - trigger: "user_plans_with_trello"
+    patterns: ["create tasks", "organize sprint", "break down"]
+    suggested_skill: trello-aware-planning
+    requires: trello_connected
 
 # ============================================================================
 # ROLES

@@ -4,13 +4,13 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-01-paircoder-v2.2-features`
-**Status:** completed
-**Current Sprint:** sprint-9 (Prompt Caching & Release) ✅
+**Plan:** `plan-2025-01-paircoder-v2.3-trello`
+**Status:** in_progress
+**Current Sprint:** sprint-10 (Trello Integration) ✅
 
 ## Current Focus
 
-Sprint 9 complete! v2.2.0 ready for release with prompt caching and Codex optimizations.
+Sprint 10 complete! Trello integration added for task management across AI agents.
 
 ## Task Status
 
@@ -99,7 +99,52 @@ Sprint 9 complete! v2.2.0 ready for release with prompt caching and Codex optimi
 | TASK-038 | Codex optimization pass | ✅ done | P2 |
 | TASK-039 | Prepare v2.2.0 release | ✅ done | P0 |
 
+### Sprint 10: Trello Integration ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-040 | Add Trello CLI commands | ✅ done | P0 |
+| TASK-041 | Add Trello task commands | ✅ done | P0 |
+| TASK-042 | Update config for Trello | ✅ done | P1 |
+| TASK-043 | Add Trello skills to template | ✅ done | P1 |
+| TASK-044 | Add Trello integration tests | ✅ done | P2 |
+
 ## What Was Just Done
+
+### Sprint 10 Complete - Trello Integration
+
+All Sprint 10 tasks completed:
+
+1. **TASK-040**: Add Trello CLI commands
+   - `bpsai-pair trello connect` - OAuth token storage
+   - `bpsai-pair trello status` - Connection check
+   - `bpsai-pair trello boards` - List available boards
+   - `bpsai-pair trello use-board` - Set active board
+   - `bpsai-pair trello config` - View/edit config
+
+2. **TASK-041**: Add Trello task commands
+   - `bpsai-pair ttask list` - List tasks from board
+   - `bpsai-pair ttask show` - View task details
+   - `bpsai-pair ttask start` - Claim and start task
+   - `bpsai-pair ttask done` - Complete task
+   - `bpsai-pair ttask block` - Mark as blocked
+   - `bpsai-pair ttask comment` - Add progress comment
+
+3. **TASK-042**: Update config schema for Trello
+   - List mapping configuration
+   - Custom field configuration
+   - Agent identity setting
+   - Auto-sync toggle
+
+4. **TASK-043**: Add Trello skills to template
+   - `trello-task-workflow` skill for working on tasks
+   - `trello-aware-planning` skill for planning
+   - Updated CLAUDE.md with Trello section
+   - Updated capabilities.yaml with Trello triggers
+
+5. **TASK-044**: Add Trello integration tests
+   - 21 new tests for auth and client modules
+   - Full test suite now 216 tests
 
 ### Sprint 9 Complete - Prompt Caching & Release
 
@@ -224,22 +269,25 @@ All new files added to `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`:
 
 ## What's Next
 
-**v2.2.0 Released!**
+**Sprint 10 Complete - Trello Integration**
 
-The plan `paircoder-v2.2-features` is complete. All 39 tasks across 9 sprints done.
+Ready for v2.3.0 release with Trello integration:
 
-Key deliverables:
-- Multi-agent orchestration (Claude Code, Codex CLI)
-- Task lifecycle management with archival
-- Token/cost tracking and metrics
-- Prompt caching for context efficiency
-- Documentation consolidation
-- Clean v2.2 template structure
+```bash
+# Bump version to 2.3.0
+# Update CHANGELOG.md
+# Build and publish
+cd tools/cli
+python -m build
+twine upload dist/*
+```
 
-Next steps:
-- Publish to PyPI: `twine upload dist/*`
-- Create GitHub release with v2.2.0 tag
-- Monitor for issues post-release
+Key deliverables for v2.3:
+- Trello CLI commands for connection and board management
+- Trello task commands for working on cards
+- Config schema updates for Trello settings
+- Two new skills: trello-task-workflow, trello-aware-planning
+- 21 new integration tests
 
 Previous releases included:
 - Skills (model-invoked workflows)
@@ -304,6 +352,18 @@ bpsai-pair benchmark run --suite default # Run benchmark suite
 bpsai-pair benchmark results --latest    # View latest results
 bpsai-pair benchmark compare             # Compare agents
 bpsai-pair benchmark list                # List available benchmarks
+
+# Trello Integration (v2.3)
+bpsai-pair trello connect                # Store API credentials
+bpsai-pair trello status                 # Check connection
+bpsai-pair trello boards                 # List available boards
+bpsai-pair trello use-board <id>         # Set active board
+bpsai-pair trello config --show          # View/edit config
+bpsai-pair ttask list                    # List tasks from board
+bpsai-pair ttask show TRELLO-XXX         # View task details
+bpsai-pair ttask start TRELLO-XXX        # Claim and start task
+bpsai-pair ttask done TRELLO-XXX -s "..." # Complete with summary
+bpsai-pair ttask block TRELLO-XXX -r "..." # Mark as blocked
 ```
 
 ## Claude Code Skills Available
@@ -314,3 +374,5 @@ bpsai-pair benchmark list                # List available benchmarks
 | tdd-implement | "fix", "bug", "test", "implement" |
 | code-review | "review", "check", "PR" |
 | finish-branch | "finish", "merge", "complete" |
+| trello-task-workflow | "work on task", "TRELLO-", "next task" |
+| trello-aware-planning | "plan feature", "create tasks", "sprint" |

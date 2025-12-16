@@ -34,6 +34,8 @@ try:
     from .integrations import TimeTrackingManager, TimeTrackingConfig
     from .benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
     from .context import ContextCache, ContextLoader
+    from .trello.commands import app as trello_app
+    from .trello.task_commands import app as trello_task_app
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -50,6 +52,8 @@ except ImportError:
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
     from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
     from bpsai_pair.context import ContextCache, ContextLoader
+    from bpsai_pair.trello.commands import app as trello_app
+    from bpsai_pair.trello.task_commands import app as trello_task_app
 
 # Initialize Rich console
 console = Console()
@@ -110,6 +114,14 @@ cache_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 app.add_typer(cache_app, name="cache")
+
+# Trello integration sub-apps
+try:
+    app.add_typer(trello_app, name="trello")
+    app.add_typer(trello_task_app, name="ttask")
+except NameError:
+    # Trello module not available (py-trello not installed)
+    pass
 
 def _flows_root(root: Path) -> Path:
     return root / ".paircoder" / "flows"
