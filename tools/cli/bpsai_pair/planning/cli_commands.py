@@ -849,7 +849,8 @@ def task_update(
             "blocked": "\U0001f6ab",
             "cancelled": "\u274c",
         }
-        console.print(f"{emoji_map.get(status, '\u2713')} Updated {task_id} -> {status}")
+        checkmark = "\u2713"
+        console.print(f"{emoji_map.get(status, checkmark)} Updated {task_id} -> {status}")
 
         # Run hooks if status actually changed and hooks not disabled
         if not no_hooks and old_status != status:
