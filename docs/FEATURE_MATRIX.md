@@ -1,24 +1,28 @@
-# PairCoder v2.4 Feature Matrix
+# PairCoder v2.5 Feature Matrix
 
-> Generated from Sprint 1-11 audit on 2025-12-16
+> Generated from Sprint 1-13 audit on 2025-12-16
 
 ## CLI Commands Summary
 
 | Group | Commands | Count |
 |-------|----------|-------|
 | Core | init, feature, pack, context-sync, status, validate, ci | 7 |
+| Presets | preset list/show/preview, init --preset | 4 |
 | Planning | plan new/list/show/tasks/status/sync-trello/add-task | 7 |
-| Tasks | task list/show/update/next/archive/restore/list-archived/cleanup/changelog-preview | 9 |
+| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
 | Flows | flow list/show/run/validate | 4 |
-| Orchestration | orchestrate task/analyze/handoff | 3 |
+| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
+| Intent | intent detect/should-plan/suggest-flow | 3 |
+| GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
+| Standup | standup generate/post | 2 |
 | Metrics | metrics summary/task/breakdown/budget/export | 5 |
 | Timer | timer start/stop/status/show/summary | 5 |
 | Benchmark | benchmark run/results/compare/list | 4 |
 | Cache | cache stats/clear/invalidate | 3 |
-| Trello | trello connect/status/disconnect/boards/use-board/lists/config | 7 |
+| Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
-| **Total** | | **64** |
+| **Total** | | **88** |
 
 ## Features by Sprint
 
@@ -95,6 +99,27 @@
 | Plan status | `plan status` | ✅ Works | Task breakdown |
 | Auto-hooks | - | ✅ Works | In config.yaml |
 
+### Sprint 12: Trello Webhooks (v2.4)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Trello webhooks | `trello webhook serve/status` | ✅ Works | Listen for card moves |
+| Agent assignment | - | ✅ Works | Assign on Ready column |
+| GitHub PR integration | `github create/list/merge/link` | ✅ Works | Task-linked PRs |
+
+### Sprint 13: Full Autonomy (v2.5)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Preset system | `preset list/show/preview` | ✅ Works | 8 built-in presets |
+| BPS preset | `init --preset bps` | ✅ Works | 7-list Trello workflow |
+| Intent detection | `intent detect/should-plan/suggest-flow` | ✅ Works | Natural language intent |
+| Autonomous workflow | `orchestrate auto-session/auto-run/workflow-status` | ✅ Works | State machine |
+| Auto-task assignment | `task next --start`, `task auto-next` | ✅ Works | Pick and start next |
+| Progress comments | `trello progress` | ✅ Works | 7 report types |
+| Auto-PR creation | `github auto-pr` | ✅ Works | Detect TASK-xxx from branch |
+| PR merge archive | `github archive-merged` | ✅ Works | Archive task on merge |
+| Daily standup | `standup generate/post` | ✅ Works | markdown/slack/trello formats |
+| Hook reliability | - | ✅ Works | Always fires on status change |
+
 ## MCP Tools (13 total)
 
 | Tool | Description | Parameters |
@@ -169,7 +194,7 @@ my-project/
 ## Configuration (config.yaml)
 
 ```yaml
-version: "2.4"
+version: "2.5"
 
 project:
   name: "project-name"
@@ -225,11 +250,16 @@ hooks:
 |--------|-------|--------|
 | Core CLI | 50+ | ✅ Pass |
 | Planning | 40+ | ✅ Pass |
-| Orchestration | 20+ | ✅ Pass |
+| Orchestration | 30+ | ✅ Pass |
+| Intent | 37 | ✅ Pass |
+| Autonomous | 19 | ✅ Pass |
 | Metrics | 20+ | ✅ Pass |
 | Time Tracking | 15+ | ✅ Pass |
 | Benchmarks | 15+ | ✅ Pass |
 | Cache | 14 | ✅ Pass |
-| Trello | 21 | ✅ Pass |
+| Trello | 50+ | ✅ Pass |
+| GitHub | 25+ | ✅ Pass |
+| Standup | 10+ | ✅ Pass |
+| Presets | 27 | ✅ Pass |
 | MCP | 29 | ✅ Pass |
-| **Total** | **245** | ✅ Pass |
+| **Total** | **412** | ✅ Pass |

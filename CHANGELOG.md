@@ -5,6 +5,63 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.5.0] - 2025-12-16
+
+### Added
+- **Preset System** - 8 built-in presets for quick project initialization
+  - `bpsai-pair preset list` - List available presets
+  - `bpsai-pair preset show <name>` - Show preset details
+  - `bpsai-pair preset preview <name>` - Preview generated config
+  - `bpsai-pair init --preset <name>` - Initialize with preset
+  - Presets: python-cli, python-api, react, fullstack, library, minimal, autonomous, **bps**
+- **BPS Preset** - Full BPS AI Software workflow with 7-list Trello structure
+  - Lists: Intake/Backlog, Planned/Ready, In Progress, Review/Testing, Deployed/Done, Issues/Tech Debt, Notes/Ops Log
+  - 8 label colors for stack types (Backend, Frontend, Database, etc.)
+  - Automation mappings for task events
+  - Hooks enabled by default
+- **GitHub PR Integration** - Automated pull request workflows
+  - `bpsai-pair github auto-pr` - Auto-create PR from branch name (detects TASK-xxx)
+  - `bpsai-pair github archive-merged <pr>` - Archive task when PR merges
+  - `bpsai-pair github archive-merged --all` - Scan and archive all merged PRs
+  - `bpsai-pair github link <task>` - Link task to existing PR
+- **Trello Progress Comments** - Report progress directly on Trello cards
+  - `bpsai-pair trello progress TASK-001 "message"` - Post progress update
+  - `bpsai-pair trello progress TASK-001 --started` - Report task started
+  - `bpsai-pair trello progress TASK-001 --blocked "reason"` - Report blocked
+  - `bpsai-pair trello progress TASK-001 --completed "summary"` - Report completion
+  - `bpsai-pair trello progress TASK-001 --review` - Request review
+- **Daily Standup Summary** - Generate team status updates
+  - `bpsai-pair standup generate` - Generate markdown summary
+  - `bpsai-pair standup generate --format slack` - Slack-formatted output
+  - `bpsai-pair standup generate --since 48` - Custom lookback period
+  - `bpsai-pair standup post` - Post summary to Trello Notes list
+- **Intent Detection** - Detect work intent from natural language
+  - `bpsai-pair intent detect <text>` - Detect intent type
+  - `bpsai-pair intent should-plan <text>` - Check if planning needed
+  - `bpsai-pair intent suggest-flow <text>` - Suggest appropriate flow
+- **Autonomous Workflow Framework** - State machine for hands-off task execution
+  - `bpsai-pair orchestrate auto-session` - Run autonomous session
+  - `bpsai-pair orchestrate workflow-status` - Show workflow state
+  - Event logging and task selection logic
+- **Trello Webhook Server** - Listen for card movements
+  - `bpsai-pair trello webhook serve` - Start webhook server
+  - `bpsai-pair trello webhook status` - Check webhook status
+  - Agent assignment when cards move to Ready column
+- **23 new tests** for progress reporter, standup, and GitHub integration (412 total tests)
+
+### Fixed
+- **Hook Reliability** - Hooks now ALWAYS fire on task status changes
+  - `task update --status in_progress` fires `on_task_start` hooks
+  - `task update --status done` fires `on_task_complete` hooks
+  - `task update --status blocked` fires `on_task_block` hooks
+- **Config Path Compatibility** - Hooks check both `trello.automation` and `trello.card_format.automation`
+- **TaskParser API** - Fixed `task_parser.get()` → `task_parser.get_task_by_id()` across all modules
+
+### Changed
+- Version bumped to 2.5.0 across all files
+- README updated with 80+ commands and new feature sections
+- Total command count now 80+ (up from 60+)
+
 ## [v2.4.0] - 2025-12-16
 
 ### Added

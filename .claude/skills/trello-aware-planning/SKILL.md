@@ -1,378 +1,161 @@
----
-name: trello-aware-planning
-description: |
-  Create and organize tasks in Trello during planning sessions.
-  Use when designing features, breaking down work, or organizing
-  sprints. Creates cards with proper structure for AI processing.
-triggers:
-  - plan feature
-  - break down work
-  - create tasks
-  - organize sprint
-  - design approach
-  - what tasks do we need
-  - let's plan
-model_invoked: true
-roles:
-  navigator:
-    primary: true
-    description: Strategic planning and task organization
-  driver:
-    primary: false
-    description: Execute task creation commands
----
+# Trello-Aware Planning Skill
 
-# Trello-Aware Planning
+## Purpose
+Create and manage development plans with automatic Trello synchronization following BPS AI Software project management guidelines.
 
-This skill helps you plan features and create well-structured Trello tasks that both humans and AI agents can work on effectively.
+## Triggers
+- "plan feature", "create plan", "new project"
+- "create tasks", "break down", "sprint planning"
+- "sync to trello", "create board"
 
-## When to Use This Skill
+## BPS Trello Guidelines
 
-- Starting a new feature
-- Breaking down a large task into smaller pieces
-- Organizing work for a sprint
-- Creating tasks from a design discussion
-- Converting requirements into actionable work items
+### Board Structure (7 Lists Max)
+1. **Intake / Backlog** - New ideas, bugs, tickets
+2. **Planned / Ready** - Selected for upcoming work (1-2 weeks)
+3. **In Progress** - Active development
+4. **Review / Testing** - Under review or verification
+5. **Deployed / Done** - Completed and live
+6. **Issues / Tech Debt** - Bugs, regressions, improvements
+7. **Notes / Ops Log** - Deployment notes, decisions
 
-## Prerequisites
-
-Ensure Trello is connected and a board is configured:
-
-```bash
-bpsai-pair trello status
-bpsai-pair config show | grep -A 5 trello
+### Card Title Format
 ```
-
-## Planning Workflow
-
-### Step 1: Understand the Goal
-
-Before creating tasks, clarify:
-1. What is the end-user outcome?
-2. What are the acceptance criteria?
-3. What are the dependencies?
-4. What's the priority?
-
-### Step 2: Break Down the Work
-
-Good task breakdown follows these principles:
-
-| Principle | Good Example | Bad Example |
-|-----------|--------------|-------------|
-| **Small** | "Add email validation to signup form" | "Build authentication system" |
-| **Specific** | "Create POST /api/users endpoint" | "Work on API" |
-| **Testable** | "Unit tests for JWT refresh logic" | "Add tests" |
-| **Independent** | Can be completed without waiting | Blocked by 5 other tasks |
-
-### Step 3: Create Tasks
-
-#### Basic Task Creation
-
-```bash
-bpsai-pair task create \
-  --title "Add email validation to signup form" \
-  --description "Validate email format on client and server side. Show inline errors." \
-  --priority P1 \
-  --list Sprint
+[Stack] Task Name
 ```
+Examples:
+- `[CLI] Implement MCP server core`
+- `[Docs] Update README with v2.4 features`
+- `[Flask] Add authentication middleware`
 
-#### AI-Ready Task (Marked for Agent Processing)
+### Effort Estimation (Not Story Points)
+Use throughput-based sizing:
+- **S (Small)** - Few hours, single file changes (complexity 0-25)
+- **M (Medium)** - Half day to full day (complexity 26-50)
+- **L (Large)** - Multiple days, cross-cutting (complexity 51+)
 
+### Labels by Stack
+| Label | Color | Use For |
+|-------|-------|---------|
+| Frontend | 🟩 Green | React, UI, UX |
+| Backend | 🟦 Blue | Flask, API, Python |
+| Worker | 🟪 Purple | Background jobs, AI pipelines |
+| Deployment | 🟥 Red | CI/CD, infrastructure |
+| Bug / Issue | 🟧 Orange | Bugs, runtime issues |
+| Security | 🟨 Yellow | Auth, compliance |
+| Documentation | 🟫 Brown | Docs, guides |
+| AI / ML | ⚫ Black | Models, LLM, MCP |
+
+## Workflow
+
+### Phase 1: Planning
+
+1. **Understand Requirements**
+   - What problem are we solving?
+   - What's the scope?
+   - What are the acceptance criteria?
+
+2. **Break Down into Tasks**
+   - Each task = one unit of work
+   - Tasks should be completable in 1-2 days max
+   - Identify dependencies
+
+3. **Create Plan File**
+   ```bash
+   bpsai-pair plan new <slug> --type feature --title "Title"
+   ```
+
+4. **Add Tasks to Plan**
+   For each task:
+   - Assign effort (S/M/L based on complexity)
+   - Identify stack for labeling
+   - Note dependencies
+
+### Phase 2: Trello Sync
+
+1. **Sync Plan to Trello**
+   ```bash
+   bpsai-pair plan sync-trello <plan-id> [--board <board-id>]
+   ```
+
+2. **Verify Card Creation**
+   - Cards should be in "Planned / Ready" list
+   - Title format: `[Stack] Task Name`
+   - Description includes objective and acceptance criteria
+   - Labels match stack
+   - Effort field set
+
+### Phase 3: Execution Tracking
+
+When starting a task:
 ```bash
-bpsai-pair task create \
-  --title "Implement JWT refresh token endpoint" \
-  --description "Create POST /api/auth/refresh endpoint that validates refresh token and issues new access token" \
-  --priority P0 \
-  --list Sprint \
-  --agent-task \
-  --labels "backend,auth"
+bpsai-pair task update <task-id> --status in_progress
+# Or via MCP: paircoder_task_start
 ```
+- Card moves to "In Progress"
+- Timer starts automatically (if hooks enabled)
 
-The `--agent-task` flag checks the "Agent Task" custom field, making it visible to both Codex and Claude agents.
-
-#### Task with Full Structure
-
+When completing a task:
 ```bash
-bpsai-pair task create \
-  --title "Add rate limiting to API" \
-  --description "Implement rate limiting using Redis. 100 requests per minute per user." \
-  --priority P1 \
-  --list Sprint \
-  --agent-task \
-  --labels "backend,security" \
-  --checklist "Acceptance Criteria" \
-    "Rate limit of 100 req/min enforced" \
-    "429 response when exceeded" \
-    "X-RateLimit headers included" \
-    "Unit tests for rate limiter" \
-    "Integration test with Redis"
+bpsai-pair task update <task-id> --status done
+# Or via MCP: paircoder_task_complete
 ```
+- Card moves to "Deployed / Done"
+- Metrics recorded
+- Timer stopped
 
-### Step 4: Set Dependencies
+## Recording Your Work
 
-If tasks must be completed in order:
-
+### Before Planning Session
 ```bash
-# Task B depends on Task A
-bpsai-pair task add-dependency TRELLO-456 --depends-on TRELLO-123
-```
+# Check current plans
+bpsai-pair plan list
 
-This adds an item to the "card dependencies" checklist. The dependent task is blocked until the dependency is checked off.
-
-### Step 5: Organize Sprint
-
-Move tasks to appropriate lists:
-
-```bash
-# Ready for this sprint
-bpsai-pair task move TRELLO-123 --list "Sprint"
-
-# Not ready yet (backlog)
-bpsai-pair task move TRELLO-456 --list "Backlog"
-
-# Needs more definition
-bpsai-pair task move TRELLO-789 --list "Icebox"
-```
-
-## Task Templates
-
-### Feature Task
-
-```bash
-bpsai-pair task create \
-  --title "[Feature] User profile page" \
-  --description "Create user profile page showing avatar, bio, and recent activity" \
-  --priority P1 \
-  --list Sprint \
-  --agent-task \
-  --labels "frontend,feature" \
-  --checklist "Acceptance Criteria" \
-    "Shows user avatar and name" \
-    "Displays editable bio field" \
-    "Lists 10 most recent activities" \
-    "Responsive on mobile" \
-    "Loading skeleton while fetching"
-```
-
-### Bug Fix Task
-
-```bash
-bpsai-pair task create \
-  --title "[Bug] Login fails with special characters in password" \
-  --description "Users with passwords containing & or # cannot log in. Error: 'Invalid credentials'" \
-  --priority P0 \
-  --list Sprint \
-  --agent-task \
-  --labels "bug,auth,urgent" \
-  --checklist "Verification" \
-    "Can login with password containing &" \
-    "Can login with password containing #" \
-    "Can login with password containing %" \
-    "Regression test added"
-```
-
-### Refactor Task
-
-```bash
-bpsai-pair task create \
-  --title "[Refactor] Extract API client to shared module" \
-  --description "Move API client code from components to shared/api-client.ts for reuse" \
-  --priority P2 \
-  --list Backlog \
-  --labels "refactor,tech-debt" \
-  --checklist "Scope" \
-    "Create shared/api-client.ts" \
-    "Migrate UserService calls" \
-    "Migrate AuthService calls" \
-    "Update imports in components" \
-    "No behavior changes (refactor only)"
-```
-
-### Research/Spike Task
-
-```bash
-bpsai-pair task create \
-  --title "[Spike] Evaluate WebSocket vs SSE for real-time updates" \
-  --description "Research and prototype both approaches. Document pros/cons for our use case." \
-  --priority P1 \
-  --list Sprint \
-  --labels "research,architecture" \
-  --checklist "Deliverables" \
-    "Prototype with WebSocket" \
-    "Prototype with SSE" \
-    "Performance comparison" \
-    "Complexity comparison" \
-    "Recommendation document"
-```
-
-## Planning Session Flow
-
-### 1. Review Current State
-
-```bash
-# What's in progress?
+# Check what's already in progress
 bpsai-pair task list --status in_progress
-
-# What's blocked?
-bpsai-pair task list --status blocked
-
-# What's in the sprint?
-bpsai-pair task list --list "Sprint"
 ```
 
-### 2. Discuss New Work
-
-Use the Navigator role to:
-- Clarify requirements
-- Identify risks
-- Estimate complexity
-- Determine dependencies
-
-### 3. Create Tasks
-
-For each work item identified:
-1. Write clear title (action verb + object)
-2. Add description with context
-3. Set appropriate priority
-4. Add acceptance criteria checklist
-5. Mark as agent-task if suitable for AI
-6. Add labels for categorization
-
-### 4. Organize Board
-
+### After Creating Plan
 ```bash
-# Prioritize sprint
-bpsai-pair task list --list "Sprint" --sort priority
+# Verify plan created
+bpsai-pair plan status <plan-id>
 
-# Check for orphaned tasks
-bpsai-pair task list --list "Backlog" --no-labels
+# Sync to Trello
+bpsai-pair plan sync-trello <plan-id> --dry-run  # Preview first
+bpsai-pair plan sync-trello <plan-id>            # Actually sync
 ```
 
-### 5. Verify Dependencies
+### Via MCP (if available)
+```json
+Tool: paircoder_plan_status
+Input: {"plan_id": "plan-2025-01-feature-xyz"}
 
-```bash
-# Show tasks with dependencies
-bpsai-pair task list --has-dependencies
+Tool: paircoder_trello_sync_plan
+Input: {"plan_id": "plan-2025-01-feature-xyz", "create_lists": true}
+```
 
-# Check for circular dependencies
-bpsai-pair task validate-dependencies
+## Weekly Summary
+
+At end of each week, create summary in "Notes / Ops Log":
+
+```markdown
+### Week {N} Summary ({date range})
+✅ {X} Completed
+⚙️ {Y} In Progress
+🐞 {Z} Issues
+
+**Highlights:**
+- Completed feature X
+- Fixed critical bug Y
+
+**Blockers:**
+- Waiting on API access for Z
 ```
 
 ## Best Practices
 
-### Task Sizing
-
-| Size | Time Estimate | Example |
-|------|---------------|---------|
-| XS | < 1 hour | "Fix typo in error message" |
-| S | 1-2 hours | "Add input validation" |
-| M | 2-4 hours | "Create new API endpoint" |
-| L | 4-8 hours | "Implement feature module" |
-| XL | > 8 hours | **Break down further!** |
-
-### Priority Guidelines
-
-| Priority | Meaning | Example |
-|----------|---------|---------|
-| P0 | Critical/Blocking | Security fix, broken core feature |
-| P1 | High/Important | Sprint commitment, key feature |
-| P2 | Normal | Nice to have, improvements |
-| P3 | Low | Tech debt, future enhancement |
-
-### Agent-Suitable Tasks
-
-Mark tasks as agent-ready (`--agent-task`) when:
-- ✅ Clear, specific requirements
-- ✅ Bounded scope (not open-ended)
-- ✅ Can be verified with tests
-- ✅ No external dependencies (API keys, etc.)
-- ✅ Standard patterns (CRUD, validation, etc.)
-
-Do NOT mark as agent-ready when:
-- ❌ Requires human judgment (UX decisions)
-- ❌ Needs external access (production DB)
-- ❌ Ambiguous requirements
-- ❌ Cross-team coordination needed
-
-### Labels Convention
-
-Use consistent labels across the board:
-
-```
-Type:     feature, bug, refactor, docs, test, spike
-Area:     frontend, backend, api, database, infra
-Priority: urgent, high, medium, low
-Status:   needs-review, needs-design, ready
-```
-
-## Integration with Other Skills
-
-After planning:
-
-1. **trello-task-workflow**: Pick up and execute tasks
-2. **design-plan-implement**: Deep dive on complex features
-3. **tdd-implement**: Execute bug fix tasks
-4. **code-review**: Review completed work
-
-## Example Planning Session
-
-**User:** "Let's plan the user authentication feature"
-
-**Claude (Navigator role):**
-
-1. First, let me understand the scope:
-   - What auth methods? (email/password, OAuth, magic link?)
-   - What's the user model?
-   - Any existing code to integrate with?
-
-2. Breaking down into tasks:
-
-```bash
-# Core auth
-bpsai-pair task create --title "Create User model and migration" \
-  --priority P0 --agent-task --labels "backend,auth"
-
-bpsai-pair task create --title "Implement password hashing with bcrypt" \
-  --priority P0 --agent-task --labels "backend,auth,security"
-
-bpsai-pair task create --title "Create POST /api/auth/register endpoint" \
-  --priority P0 --agent-task --labels "backend,auth,api"
-
-bpsai-pair task create --title "Create POST /api/auth/login endpoint" \
-  --priority P0 --agent-task --labels "backend,auth,api"
-
-# JWT handling
-bpsai-pair task create --title "Implement JWT token generation" \
-  --priority P0 --agent-task --labels "backend,auth"
-
-bpsai-pair task create --title "Create auth middleware for protected routes" \
-  --priority P0 --agent-task --labels "backend,auth"
-
-# Frontend
-bpsai-pair task create --title "Create login form component" \
-  --priority P1 --labels "frontend,auth"
-
-bpsai-pair task create --title "Create registration form component" \
-  --priority P1 --labels "frontend,auth"
-
-# Set dependencies
-bpsai-pair task add-dependency TRELLO-103 --depends-on TRELLO-101  # Login depends on User model
-bpsai-pair task add-dependency TRELLO-104 --depends-on TRELLO-103  # JWT depends on Login
-```
-
-3. Sprint organization:
-
-```bash
-# Move P0 tasks to Sprint
-bpsai-pair task move TRELLO-101 --list "Sprint"
-bpsai-pair task move TRELLO-102 --list "Sprint"
-# ... etc
-```
-
-4. Verify the plan:
-
-```bash
-bpsai-pair task list --list "Sprint" --sort priority
-```
-
-Ready to start implementation!
+1. **Keep tasks small** - If > 2 days, break it down further
+2. **Clear titles** - Anyone should understand from title alone
+3. **Track throughput** - Count cards completed, not points estimated
+4. **Update daily** - 5 min to move cards and add notes
+5. **Weekly review** - 15 min to summarize and plan ahead

@@ -179,11 +179,6 @@ class HookRunner:
     def _sync_trello(self, ctx: HookContext) -> dict:
         """Sync task state to Trello card."""
         try:
-            # Check if task has trello_card_id
-            trello_card_id = getattr(ctx.task, "trello_card_id", None)
-            if not trello_card_id:
-                return {"trello_synced": False, "reason": "No card linked"}
-
             from .trello.auth import load_token
             from .trello.client import TrelloService
 
@@ -191,22 +186,75 @@ class HookRunner:
             if not token_data:
                 return {"trello_synced": False, "reason": "Not connected to Trello"}
 
+            # Get board_id from config
+            trello_config = self.config.get("trello", {})
+            board_id = trello_config.get("board_id")
+            if not board_id:
+                return {"trello_synced": False, "reason": "No board_id configured"}
+
             service = TrelloService(
                 api_key=token_data["api_key"], token=token_data["token"]
             )
+            service.set_board(board_id)
 
-            # Map event to action
-            action_map = {
-                "on_task_start": "start",
-                "on_task_complete": "complete",
-                "on_task_block": "block",
+            # Get automation config for target lists
+            # Check multiple locations for backwards compatibility
+            automation = trello_config.get("automation", {})
+            if not automation:
+                # Also check card_format.automation (older config structure)
+                automation = trello_config.get("card_format", {}).get("automation", {})
+
+            # Map event to target list and comment
+            event_config = {
+                "on_task_start": automation.get("on_task_start", {}),
+                "on_task_complete": automation.get("on_task_complete", {}),
+                "on_task_block": automation.get("on_task_block", {}),
             }
-            action = action_map.get(ctx.event, "comment")
+            config = event_config.get(ctx.event, {})
+            target_list = config.get("move_to_list")
+            comment_template = config.get("add_comment")
 
-            # Find and update card
-            # Note: This requires the board to be set first
-            # In practice, this would need board_id from config
-            return {"trello_synced": True, "action": action, "card_id": trello_card_id}
+            if not target_list:
+                return {"trello_synced": False, "reason": f"No target list for {ctx.event}"}
+
+            # Find card by task ID in title (e.g., "[TASK-001] Title")
+            card = None
+            for lst in service.board.all_lists():
+                for c in lst.list_cards():
+                    if f"[{ctx.task_id}]" in c.name:
+                        card = c
+                        break
+                if card:
+                    break
+
+            if not card:
+                # Also check trello_card_id if available
+                trello_card_id = getattr(ctx.task, "trello_card_id", None)
+                if trello_card_id:
+                    card, _ = service.find_card(trello_card_id)
+
+            if not card:
+                return {"trello_synced": False, "reason": f"Card not found for {ctx.task_id}"}
+
+            # Move card to target list
+            service.move_card(card, target_list)
+
+            # Add comment if configured
+            if comment_template:
+                comment = comment_template.format(
+                    agent=ctx.agent or "Agent",
+                    summary=ctx.extra.get("summary", "Task updated"),
+                    reason=ctx.extra.get("reason", "No reason provided"),
+                )
+                service.add_comment(card, comment)
+
+            logger.info(f"Moved card for {ctx.task_id} to '{target_list}'")
+            return {
+                "trello_synced": True,
+                "action": ctx.event,
+                "target_list": target_list,
+                "card_name": card.name,
+            }
         except ImportError:
             return {"trello_synced": False, "reason": "py-trello not installed"}
         except Exception as e:

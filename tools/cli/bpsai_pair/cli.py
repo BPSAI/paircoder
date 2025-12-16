@@ -28,7 +28,7 @@ try:
     from .config import Config
     from .flows import FlowParser, FlowValidationError
     from .flows.parser_v2 import FlowParser as FlowParserV2
-    from .planning.cli_commands import plan_app, task_app
+    from .planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
     from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from .integrations import TimeTrackingManager, TimeTrackingConfig
@@ -36,6 +36,8 @@ try:
     from .context import ContextCache, ContextLoader
     from .trello.commands import app as trello_app
     from .trello.task_commands import app as trello_task_app
+    from .presets import get_preset, list_presets, get_preset_names, PresetManager
+    from .github.commands import app as github_app
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -46,7 +48,7 @@ except ImportError:
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
-    from bpsai_pair.planning.cli_commands import plan_app, task_app
+    from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
     from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
@@ -54,6 +56,8 @@ except ImportError:
     from bpsai_pair.context import ContextCache, ContextLoader
     from bpsai_pair.trello.commands import app as trello_app
     from bpsai_pair.trello.task_commands import app as trello_task_app
+    from bpsai_pair.presets import get_preset, list_presets, get_preset_names, PresetManager
+    from bpsai_pair.github.commands import app as github_app
 
 # Initialize Rich console
 console = Console()
@@ -79,6 +83,8 @@ app.add_typer(flow_app, name="flow")
 # Plan and Task sub-apps for v2 planning system
 app.add_typer(plan_app, name="plan")
 app.add_typer(task_app, name="task")
+app.add_typer(intent_app, name="intent")
+app.add_typer(standup_app, name="standup")
 
 # Orchestration sub-app for multi-agent coordination
 orchestrate_app = typer.Typer(
@@ -93,6 +99,125 @@ metrics_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 app.add_typer(metrics_app, name="metrics")
+
+# Preset sub-app for managing configuration presets
+preset_app = typer.Typer(
+    help="Manage configuration presets",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(preset_app, name="preset")
+
+
+@preset_app.command("list")
+def preset_list(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """List available configuration presets."""
+    presets = list_presets()
+
+    if json_out:
+        print_json([{
+            "name": p.name,
+            "description": p.description,
+            "project_type": p.project_type,
+            "coverage_target": p.coverage_target,
+            "flows": p.enabled_flows,
+        } for p in presets])
+    else:
+        table = Table(title="Available Presets")
+        table.add_column("Name", style="cyan")
+        table.add_column("Type", style="green")
+        table.add_column("Description")
+        table.add_column("Coverage", justify="right")
+
+        for p in presets:
+            table.add_row(
+                p.name,
+                p.project_type,
+                p.description,
+                f"{p.coverage_target}%"
+            )
+
+        console.print(table)
+        console.print("\n[dim]Use: bpsai-pair init --preset <name> --name <project> --goal <goal>[/dim]")
+
+
+@preset_app.command("show")
+def preset_show(
+    name: str = typer.Argument(..., help="Preset name"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show details for a specific preset."""
+    preset = get_preset(name)
+
+    if not preset:
+        console.print(f"[red]✗ Unknown preset: {name}[/red]")
+        console.print(f"[dim]Available: {', '.join(get_preset_names())}[/dim]")
+        raise typer.Exit(1)
+
+    if json_out:
+        print_json({
+            "name": preset.name,
+            "description": preset.description,
+            "project_type": preset.project_type,
+            "coverage_target": preset.coverage_target,
+            "default_branch_type": preset.default_branch_type,
+            "main_branch": preset.main_branch,
+            "python_formatter": preset.python_formatter,
+            "node_formatter": preset.node_formatter,
+            "flows": preset.enabled_flows,
+            "pack_excludes": preset.pack_excludes,
+            "model_routing": preset.model_routing,
+        })
+    else:
+        console.print(f"[bold cyan]{preset.name}[/bold cyan]")
+        console.print(f"[dim]{preset.description}[/dim]\n")
+
+        console.print("[bold]Project Settings[/bold]")
+        console.print(f"  Type: {preset.project_type}")
+        console.print(f"  Coverage target: {preset.coverage_target}%")
+
+        console.print("\n[bold]Workflow Settings[/bold]")
+        console.print(f"  Branch type: {preset.default_branch_type}")
+        console.print(f"  Main branch: {preset.main_branch}")
+
+        console.print("\n[bold]Formatters[/bold]")
+        console.print(f"  Python: {preset.python_formatter}")
+        console.print(f"  Node: {preset.node_formatter}")
+
+        console.print("\n[bold]Enabled Flows[/bold]")
+        for flow in preset.enabled_flows:
+            console.print(f"  - {flow}")
+
+        console.print(f"\n[bold]Pack Excludes[/bold] ({len(preset.pack_excludes)} patterns)")
+        for exclude in preset.pack_excludes[:5]:
+            console.print(f"  - {exclude}")
+        if len(preset.pack_excludes) > 5:
+            console.print(f"  ... and {len(preset.pack_excludes) - 5} more")
+
+        if preset.model_routing:
+            console.print("\n[bold]Model Routing[/bold]")
+            console.print("  [green]✓[/green] Complexity-based routing enabled")
+
+
+@preset_app.command("preview")
+def preset_preview(
+    name: str = typer.Argument(..., help="Preset name"),
+    project_name: str = typer.Option("My Project", "--name", "-n", help="Project name"),
+    goal: str = typer.Option("Build awesome software", "--goal", "-g", help="Primary goal"),
+):
+    """Preview the config.yaml that would be generated."""
+    preset = get_preset(name)
+
+    if not preset:
+        console.print(f"[red]✗ Unknown preset: {name}[/red]")
+        console.print(f"[dim]Available: {', '.join(get_preset_names())}[/dim]")
+        raise typer.Exit(1)
+
+    yaml_output = preset.to_yaml(project_name, goal)
+    console.print("[bold]Generated config.yaml:[/bold]\n")
+    console.print(yaml_output)
+
 
 # Timer sub-app for time tracking
 timer_app = typer.Typer(
@@ -128,6 +253,13 @@ try:
     app.add_typer(trello_task_app, name="ttask")
 except NameError:
     # Trello module not available (py-trello not installed)
+    pass
+
+# GitHub integration sub-app
+try:
+    app.add_typer(github_app, name="github")
+except NameError:
+    # GitHub module not available
     pass
 
 def _flows_root(root: Path) -> Path:
@@ -229,6 +361,102 @@ def orchestrate_handoff(
     )
 
     console.print(f"[green]✓[/green] Created handoff package: {package_path}")
+
+
+@orchestrate_app.command("auto-run")
+def orchestrate_auto_run(
+    task_id: Optional[str] = typer.Argument(None, help="Task ID (auto-selects if not provided)"),
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID for task selection"),
+    create_pr: bool = typer.Option(True, "--pr/--no-pr", help="Create PR on completion"),
+    run_tests: bool = typer.Option(True, "--test/--no-test", help="Run tests before PR"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Run autonomous workflow for a single task."""
+    from .orchestration.autonomous import AutonomousWorkflow, WorkflowConfig
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    config = WorkflowConfig(
+        auto_select_tasks=task_id is None,
+        auto_create_pr=create_pr,
+        run_tests_before_pr=run_tests,
+    )
+
+    workflow = AutonomousWorkflow(paircoder_dir, config)
+
+    success = workflow.run_task_workflow(task_id=task_id, plan_id=plan_id)
+
+    if json_out:
+        print_json(workflow.get_status())
+    else:
+        status = workflow.get_status()
+        if success:
+            console.print("[green]Workflow completed successfully[/green]")
+        else:
+            console.print("[red]Workflow failed or no tasks available[/red]")
+
+        console.print(f"  Phase: {status['workflow_state']['phase']}")
+        console.print(f"  Events: {status['workflow_state']['events_count']}")
+        if status['workflow_state']['error']:
+            console.print(f"  Error: {status['workflow_state']['error']}")
+
+
+@orchestrate_app.command("auto-session")
+def orchestrate_auto_session(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID for task selection"),
+    max_tasks: int = typer.Option(5, "--max", "-m", help="Maximum tasks to process"),
+    create_pr: bool = typer.Option(True, "--pr/--no-pr", help="Create PRs"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Run autonomous session processing multiple tasks."""
+    from .orchestration.autonomous import AutonomousWorkflow, WorkflowConfig
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    config = WorkflowConfig(
+        auto_select_tasks=True,
+        auto_create_pr=create_pr,
+        max_tasks_per_session=max_tasks,
+    )
+
+    workflow = AutonomousWorkflow(paircoder_dir, config)
+    completed = workflow.run_session(plan_id=plan_id, max_tasks=max_tasks)
+
+    if json_out:
+        print_json({"completed_tasks": completed, "count": len(completed)})
+    else:
+        console.print(f"[green]Session completed: {len(completed)} tasks done[/green]")
+        for task_id in completed:
+            console.print(f"  - {task_id}")
+
+
+@orchestrate_app.command("workflow-status")
+def orchestrate_workflow_status(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show current autonomous workflow status."""
+    from .orchestration.autonomous import AutonomousWorkflow
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    workflow = AutonomousWorkflow(paircoder_dir)
+    status = workflow.get_status()
+
+    if json_out:
+        print_json(status)
+    else:
+        console.print("[bold]Workflow Status[/bold]")
+        console.print(f"  Phase: {status['workflow_state']['phase']}")
+        console.print(f"  Current Task: {status['workflow_state']['current_task_id'] or 'None'}")
+        console.print(f"  Current Flow: {status['workflow_state']['current_flow'] or 'None'}")
+        console.print(f"  PR Number: {status['workflow_state']['pr_number'] or 'None'}")
+
+        console.print("\n[bold]Configuration[/bold]")
+        for key, value in status['config'].items():
+            console.print(f"  {key}: {value}")
 
 
 # --- Metrics Commands ---
@@ -956,26 +1184,107 @@ def init(
     ),
     interactive: bool = typer.Option(
         False, "--interactive", "-i", help="Interactive mode to gather project info"
-    )
+    ),
+    preset: Optional[str] = typer.Option(
+        None, "--preset", "-p",
+        help="Use a preset configuration (python-cli, python-api, react, fullstack, library, minimal, autonomous)"
+    ),
+    project_name: Optional[str] = typer.Option(
+        None, "--name", "-n", help="Project name (used with --preset)"
+    ),
+    goal: Optional[str] = typer.Option(
+        None, "--goal", "-g", help="Primary goal (used with --preset)"
+    ),
 ):
-    """Initialize repo with governance, context, prompts, scripts, and workflows."""
+    """Initialize repo with governance, context, prompts, scripts, and workflows.
+
+    Use --preset for quick setup with project-type-specific defaults:
+
+        bpsai-pair init --preset python-cli --name "My CLI" --goal "Build awesome CLI"
+
+    Available presets: python-cli, python-api, react, fullstack, library, minimal, autonomous
+
+    Use --interactive for guided setup, or no flags for minimal scaffolding.
+    """
+    import yaml
     root = repo_root()
 
     preexisting_config = Config.find_config_file(root)
 
-    if interactive:
+    # Handle preset-based initialization
+    if preset:
+        preset_obj = get_preset(preset)
+        if not preset_obj:
+            console.print(f"[red]✗ Unknown preset: {preset}[/red]")
+            console.print(f"[dim]Available presets: {', '.join(get_preset_names())}[/dim]")
+            raise typer.Exit(1)
+
+        # Get project name and goal
+        p_name = project_name or typer.prompt("Project name", default="My Project")
+        p_goal = goal or typer.prompt("Primary goal", default="Build awesome software")
+
+        # Generate config from preset
+        config_dict = preset_obj.to_config_dict(p_name, p_goal)
+
+        # Ensure .paircoder directory exists
+        paircoder_dir = root / ".paircoder"
+        paircoder_dir.mkdir(exist_ok=True)
+
+        # Write config file
+        config_file = paircoder_dir / "config.yaml"
+        with open(config_file, 'w') as f:
+            yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+
+        console.print(f"[green]✓[/green] Applied preset: {preset}")
+        console.print(f"  Project: {p_name}")
+        console.print(f"  Goal: {p_goal}")
+        console.print(f"  Coverage target: {preset_obj.coverage_target}%")
+        console.print(f"  Flows: {', '.join(preset_obj.enabled_flows)}")
+
+    elif interactive:
         # Interactive mode to gather project information
-        project_name = typer.prompt("Project name", default="My Project")
+        pname = typer.prompt("Project name", default="My Project")
         primary_goal = typer.prompt("Primary goal", default="Build awesome software")
         coverage = typer.prompt("Coverage target (%)", default="80")
 
-        # Create a config file
-        config = Config(
-            project_name=project_name,
-            primary_goal=primary_goal,
-            coverage_target=int(coverage)
-        )
-        config.save(root, use_v2=True)
+        # Ask about preset selection
+        console.print("\n[bold]Available presets:[/bold]")
+        for p in list_presets():
+            console.print(f"  {p.name}: {p.description}")
+
+        use_preset = typer.confirm("\nWould you like to use a preset?", default=False)
+        if use_preset:
+            preset_choice = typer.prompt(
+                "Select preset",
+                default="python-cli"
+            )
+            preset_obj = get_preset(preset_choice)
+            if preset_obj:
+                config_dict = preset_obj.to_config_dict(pname, primary_goal)
+                config_dict["project"]["coverage_target"] = int(coverage)
+
+                paircoder_dir = root / ".paircoder"
+                paircoder_dir.mkdir(exist_ok=True)
+                config_file = paircoder_dir / "config.yaml"
+                with open(config_file, 'w') as f:
+                    yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
+                console.print(f"[green]✓[/green] Applied preset: {preset_choice}")
+            else:
+                console.print(f"[yellow]⚠ Unknown preset, using defaults[/yellow]")
+                config = Config(
+                    project_name=pname,
+                    primary_goal=primary_goal,
+                    coverage_target=int(coverage)
+                )
+                config.save(root, use_v2=True)
+        else:
+            # Create a config file without preset
+            config = Config(
+                project_name=pname,
+                primary_goal=primary_goal,
+                coverage_target=int(coverage)
+            )
+            config.save(root, use_v2=True)
 
     # Use bundled template if none provided
     if template is None:
@@ -990,16 +1299,18 @@ def init(
 
         console.print("[green]✓[/green] Initialized repo with pair-coding scaffolding")
         # Ensure v2 configuration exists (canonical: .paircoder/config.yaml)
-        ensure_v2_config(root)
+        if not preset:  # Don't overwrite preset config
+            ensure_v2_config(root)
         console.print("[dim]Review diffs and commit changes[/dim]")
     else:
         # Use provided template (simplified for now)
         console.print(f"[yellow]Using template: {template}[/yellow]")
         # Ensure v2 configuration exists (canonical: .paircoder/config.yaml)
-        ensure_v2_config(root)
+        if not preset:  # Don't overwrite preset config
+            ensure_v2_config(root)
         # If this repo had no config before init ran, ensure we have a canonical v2 config file.
         # This keeps v1 repos stable (no surprise migrations) while making new scaffolds v2-native.
-        if preexisting_config is None:
+        if preexisting_config is None and not preset:
             v2_config = root / ".paircoder" / "config.yaml"
             v2_config_yml = root / ".paircoder" / "config.yml"
             if not v2_config.exists() and not v2_config_yml.exists():

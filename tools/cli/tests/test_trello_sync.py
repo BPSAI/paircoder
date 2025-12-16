@@ -1,0 +1,523 @@
+"""Tests for Trello sync functionality."""
+import pytest
+from unittest.mock import Mock, MagicMock, patch
+from bpsai_pair.trello.client import (
+    TrelloService,
+    CustomFieldDefinition,
+    EffortMapping,
+)
+from bpsai_pair.trello.sync import (
+    TrelloSyncManager,
+    TaskSyncConfig,
+    TaskData,
+    BPS_LABELS,
+    STACK_KEYWORDS,
+    create_sync_manager,
+)
+
+
+class TestEffortMapping:
+    """Tests for EffortMapping class."""
+
+    def test_small_effort(self):
+        """Test complexity 0-25 maps to S."""
+        mapping = EffortMapping()
+        assert mapping.get_effort(0) == "S"
+        assert mapping.get_effort(10) == "S"
+        assert mapping.get_effort(25) == "S"
+
+    def test_medium_effort(self):
+        """Test complexity 26-50 maps to M."""
+        mapping = EffortMapping()
+        assert mapping.get_effort(26) == "M"
+        assert mapping.get_effort(35) == "M"
+        assert mapping.get_effort(50) == "M"
+
+    def test_large_effort(self):
+        """Test complexity 51-100 maps to L."""
+        mapping = EffortMapping()
+        assert mapping.get_effort(51) == "L"
+        assert mapping.get_effort(75) == "L"
+        assert mapping.get_effort(100) == "L"
+
+
+class TestCustomFieldDefinition:
+    """Tests for CustomFieldDefinition dataclass."""
+
+    def test_text_field(self):
+        """Test text field definition."""
+        field = CustomFieldDefinition(
+            id="abc123",
+            name="Project",
+            field_type="text",
+            options={}
+        )
+        assert field.id == "abc123"
+        assert field.name == "Project"
+        assert field.field_type == "text"
+        assert field.options == {}
+
+    def test_list_field_with_options(self):
+        """Test list field with options."""
+        field = CustomFieldDefinition(
+            id="def456",
+            name="Effort",
+            field_type="list",
+            options={"opt1": "S", "opt2": "M", "opt3": "L"}
+        )
+        assert field.field_type == "list"
+        assert field.options["opt1"] == "S"
+
+
+class TestTaskData:
+    """Tests for TaskData class."""
+
+    def test_from_task(self):
+        """Test creating TaskData from Task object."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Implement feature"
+        mock_task.status = "pending"
+        mock_task.body = "Description\n\n- [ ] First item\n- [x] Done item"
+        mock_task.priority = "P0"
+        mock_task.complexity = 35
+        mock_task.tags = ["backend", "api"]
+        mock_task.plan = "sprint-14"
+
+        task_data = TaskData.from_task(mock_task)
+
+        assert task_data.id == "TASK-001"
+        assert task_data.title == "Implement feature"
+        assert task_data.status == "pending"
+        assert task_data.priority == "P0"
+        assert task_data.complexity == 35
+        assert task_data.tags == ["backend", "api"]
+        assert task_data.plan_title == "sprint-14"
+        assert "First item" in task_data.acceptance_criteria
+        assert "Done item" in task_data.acceptance_criteria
+
+    def test_from_task_minimal(self):
+        """Test creating TaskData from minimal Task object."""
+        mock_task = Mock()
+        mock_task.id = "TASK-002"
+        mock_task.title = "Simple task"
+        mock_task.status = "done"
+        mock_task.body = None
+        # Simulate missing attributes
+        del mock_task.priority
+        del mock_task.complexity
+        del mock_task.tags
+        del mock_task.plan
+
+        task_data = TaskData.from_task(mock_task)
+
+        assert task_data.id == "TASK-002"
+        assert task_data.priority == "P1"  # default
+        assert task_data.complexity == 50  # default
+        assert task_data.tags == []
+        assert task_data.acceptance_criteria == []
+
+
+class TestTrelloSyncManager:
+    """Tests for TrelloSyncManager class."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create a mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.get_custom_fields.return_value = []
+        service.get_labels.return_value = []
+        return service
+
+    @pytest.fixture
+    def sync_manager(self, mock_service):
+        """Create a TrelloSyncManager with mock service."""
+        return TrelloSyncManager(mock_service)
+
+    def test_infer_stack_from_tags(self, sync_manager):
+        """Test stack inference from task tags."""
+        task = TaskData(
+            id="TASK-001",
+            title="Add endpoint",
+            tags=["backend", "api"]
+        )
+        assert sync_manager.infer_stack(task) == "Backend"
+
+    def test_infer_stack_from_title(self, sync_manager):
+        """Test stack inference from task title."""
+        task = TaskData(
+            id="TASK-001",
+            title="Fix React component bug",
+            tags=[]
+        )
+        # "React" should map to Frontend
+        stack = sync_manager.infer_stack(task)
+        assert stack == "Frontend"
+
+    def test_infer_stack_deployment(self, sync_manager):
+        """Test stack inference for deployment tasks."""
+        task = TaskData(
+            id="TASK-001",
+            title="Deploy to production",
+            tags=["docker"]
+        )
+        assert sync_manager.infer_stack(task) == "Deployment"
+
+    def test_infer_stack_security(self, sync_manager):
+        """Test stack inference for security tasks."""
+        task = TaskData(
+            id="TASK-001",
+            title="Add authentication",
+            tags=[]
+        )
+        assert sync_manager.infer_stack(task) == "Security/Admin"
+
+    def test_infer_stack_documentation(self, sync_manager):
+        """Test stack inference for documentation tasks."""
+        task = TaskData(
+            id="TASK-001",
+            title="Update README",
+            tags=["doc"]
+        )
+        assert sync_manager.infer_stack(task) == "Documentation"
+
+    def test_infer_stack_none(self, sync_manager):
+        """Test stack inference returns None when cannot infer."""
+        task = TaskData(
+            id="TASK-001",
+            title="Do something",
+            tags=[]
+        )
+        assert sync_manager.infer_stack(task) is None
+
+    def test_build_card_description(self, sync_manager):
+        """Test card description building."""
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            description="This is the objective.\n\nMore details here.",
+            priority="P0",
+            complexity=35,
+            acceptance_criteria=["Tests pass", "Code reviewed"],
+            plan_title="Sprint 14"
+        )
+
+        desc = sync_manager.build_card_description(task)
+
+        assert "## Objective" in desc
+        assert "This is the objective." in desc
+        assert "## Acceptance Criteria" in desc
+        assert "- [ ] Tests pass" in desc
+        assert "- [ ] Code reviewed" in desc
+        assert "Complexity: 35" in desc
+        assert "Priority: P0" in desc
+        assert "Plan: Sprint 14" in desc
+        assert "Created by: PairCoder" in desc
+
+    def test_build_card_description_minimal(self, sync_manager):
+        """Test card description with minimal data."""
+        task = TaskData(
+            id="TASK-001",
+            title="Simple task",
+            complexity=20
+        )
+
+        desc = sync_manager.build_card_description(task)
+
+        assert "Complexity: 20" in desc
+        assert "Priority: P1" in desc  # default
+
+    def test_ensure_bps_labels(self, mock_service, sync_manager):
+        """Test ensuring BPS labels exist."""
+        mock_service.ensure_label_exists.return_value = {"id": "lbl1", "name": "Backend", "color": "blue"}
+
+        results = sync_manager.ensure_bps_labels()
+
+        assert mock_service.ensure_label_exists.call_count == len(BPS_LABELS)
+        assert all(success for success in results.values())
+
+    def test_ensure_bps_labels_disabled(self, mock_service):
+        """Test that label creation can be disabled."""
+        config = TaskSyncConfig(create_missing_labels=False)
+        manager = TrelloSyncManager(mock_service, config)
+
+        results = manager.ensure_bps_labels()
+
+        assert results == {}
+        mock_service.ensure_label_exists.assert_not_called()
+
+    def test_sync_task_creates_new_card(self, mock_service, sync_manager):
+        """Test syncing a task creates a new card."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+        mock_service.add_label_to_card.return_value = True
+
+        task = TaskData(
+            id="TASK-001",
+            title="New feature",
+            complexity=35,
+            tags=["backend"]
+        )
+
+        result = sync_manager.sync_task_to_card(task, "Backlog")
+
+        assert result == mock_card
+        mock_service.create_card_with_custom_fields.assert_called_once()
+        mock_service.set_effort_field.assert_called_once_with(mock_card, 35, "Effort")
+
+    def test_sync_task_updates_existing_card(self, mock_service, sync_manager):
+        """Test syncing a task updates existing card."""
+        mock_card = Mock()
+        mock_service.find_card_with_prefix.return_value = (mock_card, Mock())
+        mock_service.set_card_custom_fields.return_value = {}
+        mock_service.set_effort_field.return_value = True
+
+        task = TaskData(
+            id="TASK-001",
+            title="Existing feature",
+            complexity=50
+        )
+
+        result = sync_manager.sync_task_to_card(task, update_existing=True)
+
+        assert result == mock_card
+        mock_service.set_card_custom_fields.assert_called_once()
+        mock_service.create_card_with_custom_fields.assert_not_called()
+
+    def test_sync_task_skips_existing_when_disabled(self, mock_service, sync_manager):
+        """Test syncing skips existing card when update_existing=False."""
+        mock_card = Mock()
+        mock_service.find_card_with_prefix.return_value = (mock_card, Mock())
+
+        task = TaskData(id="TASK-001", title="Feature")
+
+        result = sync_manager.sync_task_to_card(task, update_existing=False)
+
+        assert result == mock_card
+        mock_service.set_card_custom_fields.assert_not_called()
+
+    def test_sync_tasks_batch(self, mock_service, sync_manager):
+        """Test syncing multiple tasks."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_service.create_card_with_custom_fields.return_value = Mock()
+        mock_service.ensure_label_exists.return_value = {"id": "lbl1"}
+        mock_service.set_effort_field.return_value = True
+        mock_service.add_label_to_card.return_value = True
+
+        tasks = [
+            TaskData(id="TASK-001", title="Task 1", complexity=20),
+            TaskData(id="TASK-002", title="Task 2", complexity=40),
+            TaskData(id="TASK-003", title="Task 3", complexity=60),
+        ]
+
+        results = sync_manager.sync_tasks(tasks)
+
+        assert len(results) == 3
+        assert all(card is not None for card in results.values())
+
+
+class TestTrelloServiceCustomFields:
+    """Tests for TrelloService custom field methods."""
+
+    def test_get_custom_fields(self):
+        """Test getting custom fields from board."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            # Setup mock board and field definitions
+            mock_board = Mock()
+            mock_defn = Mock()
+            mock_defn.id = "field1"
+            mock_defn.name = "Project"
+            mock_defn.field_type = "text"
+            mock_defn.list_options = {}
+            mock_board.get_custom_field_definitions.return_value = [mock_defn]
+
+            service.board = mock_board
+
+            fields = service.get_custom_fields()
+
+            assert len(fields) == 1
+            assert fields[0].name == "Project"
+            assert fields[0].field_type == "text"
+
+    def test_get_custom_fields_with_list_options(self):
+        """Test getting list-type custom field with options."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_board = Mock()
+            mock_defn = Mock()
+            mock_defn.id = "field1"
+            mock_defn.name = "Effort"
+            mock_defn.field_type = "list"
+            mock_defn.list_options = {"opt1": "S", "opt2": "M", "opt3": "L"}
+            mock_board.get_custom_field_definitions.return_value = [mock_defn]
+
+            service.board = mock_board
+
+            fields = service.get_custom_fields()
+
+            assert len(fields) == 1
+            assert fields[0].field_type == "list"
+            assert fields[0].options == {"opt1": "S", "opt2": "M", "opt3": "L"}
+
+    def test_get_custom_field_by_name(self):
+        """Test finding custom field by name."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_board = Mock()
+            mock_defn1 = Mock()
+            mock_defn1.id = "f1"
+            mock_defn1.name = "Project"
+            mock_defn1.field_type = "text"
+            mock_defn1.list_options = {}
+
+            mock_defn2 = Mock()
+            mock_defn2.id = "f2"
+            mock_defn2.name = "Effort"
+            mock_defn2.field_type = "list"
+            mock_defn2.list_options = {"o1": "S"}
+
+            mock_board.get_custom_field_definitions.return_value = [mock_defn1, mock_defn2]
+
+            service.board = mock_board
+
+            field = service.get_custom_field_by_name("effort")  # case insensitive
+
+            assert field is not None
+            assert field.name == "Effort"
+
+    def test_get_custom_field_by_name_not_found(self):
+        """Test finding non-existent custom field."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_board = Mock()
+            mock_board.get_custom_field_definitions.return_value = []
+
+            service.board = mock_board
+
+            field = service.get_custom_field_by_name("NonExistent")
+
+            assert field is None
+
+    def test_set_custom_field_value_text(self):
+        """Test setting text custom field."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+
+            field = CustomFieldDefinition(
+                id="field1",
+                name="Project",
+                field_type="text",
+                options={}
+            )
+
+            result = service.set_custom_field_value(mock_card, field, "My Project")
+
+            assert result is True
+            service.client.fetch_json.assert_called_once()
+            call_args = service.client.fetch_json.call_args
+            assert "/card/card123/customField/field1/item" in call_args[0][0]
+
+    def test_set_custom_field_value_list(self):
+        """Test setting list custom field."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+
+            field = CustomFieldDefinition(
+                id="field1",
+                name="Effort",
+                field_type="list",
+                options={"opt1": "S", "opt2": "M", "opt3": "L"}
+            )
+
+            result = service.set_custom_field_value(mock_card, field, "M")
+
+            assert result is True
+            call_args = service.client.fetch_json.call_args
+            assert call_args[1]["post_args"]["idValue"] == "opt2"
+
+    def test_set_custom_field_value_list_not_found(self):
+        """Test setting list field with invalid option."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+
+            field = CustomFieldDefinition(
+                id="field1",
+                name="Effort",
+                field_type="list",
+                options={"opt1": "S", "opt2": "M"}
+            )
+
+            result = service.set_custom_field_value(mock_card, field, "XL")
+
+            assert result is False
+
+    def test_set_effort_field(self):
+        """Test setting effort field from complexity."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_board = Mock()
+            mock_defn = Mock()
+            mock_defn.id = "effort1"
+            mock_defn.name = "Effort"
+            mock_defn.field_type = "list"
+            mock_defn.list_options = {"o1": "S", "o2": "M", "o3": "L"}
+            mock_board.get_custom_field_definitions.return_value = [mock_defn]
+
+            service.board = mock_board
+            mock_card = Mock()
+            mock_card.id = "card123"
+
+            result = service.set_effort_field(mock_card, complexity=35)
+
+            assert result is True
+            # Should set to "M" for complexity 35
+
+
+class TestBPSLabels:
+    """Tests for BPS label configuration."""
+
+    def test_all_bps_labels_defined(self):
+        """Test all expected BPS labels are defined."""
+        expected = [
+            "Frontend", "Backend", "Worker/Function", "Deployment",
+            "Bug/Issue", "Security/Admin", "Documentation", "AI/ML"
+        ]
+        for label in expected:
+            assert label in BPS_LABELS
+
+    def test_bps_label_colors(self):
+        """Test BPS label colors are valid Trello colors."""
+        valid_colors = {"green", "yellow", "orange", "red", "purple", "blue", "sky", "lime", "pink", "black"}
+        for label, color in BPS_LABELS.items():
+            assert color in valid_colors, f"Invalid color {color} for label {label}"
+
+
+class TestStackKeywords:
+    """Tests for stack inference keywords."""
+
+    def test_all_stacks_have_keywords(self):
+        """Test all BPS stacks have inference keywords."""
+        for stack in BPS_LABELS.keys():
+            assert stack in STACK_KEYWORDS, f"No keywords defined for {stack}"
+
+    def test_keywords_are_lowercase(self):
+        """Test all keywords are lowercase."""
+        for stack, keywords in STACK_KEYWORDS.items():
+            for kw in keywords:
+                assert kw == kw.lower(), f"Keyword '{kw}' for {stack} is not lowercase"

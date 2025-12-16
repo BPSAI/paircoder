@@ -565,7 +565,7 @@ def plan_sync_trello(
 
                     # Card description
                     desc = f"""## Objective
-{task.objective or task.title}
+{getattr(task, 'objective', None) or task.title}
 
 ## Details
 - **Priority:** {task.priority}
@@ -813,8 +813,13 @@ def task_update(
         help="New status: pending|in_progress|done|blocked|cancelled"
     ),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to narrow search"),
+    no_hooks: bool = typer.Option(False, "--no-hooks", help="Skip running hooks"),
 ):
-    """Update a task's status."""
+    """Update a task's status.
+
+    Automatically runs hooks (Trello sync, timer, metrics) on status changes.
+    Use --no-hooks to skip hook execution.
+    """
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
     plan_parser = PlanParser(paircoder_dir / "plans")
@@ -825,6 +830,15 @@ def task_update(
         if plan:
             plan_slug = plan.slug
 
+    # Get the task before updating (for hook context)
+    task = task_parser.get_task_by_id(task_id, plan_slug)
+    if not task:
+        console.print(f"[red]Task not found: {task_id}[/red]")
+        raise typer.Exit(1)
+
+    old_status = task.status.value
+
+    # Update the status
     success = task_parser.update_status(task_id, status, plan_slug)
 
     if success:
@@ -836,20 +850,104 @@ def task_update(
             "cancelled": "\u274c",
         }
         console.print(f"{emoji_map.get(status, '\u2713')} Updated {task_id} -> {status}")
+
+        # Run hooks if status actually changed and hooks not disabled
+        if not no_hooks and old_status != status:
+            _run_status_hooks(paircoder_dir, task_id, status, task)
     else:
         console.print(f"[red]Failed to update task: {task_id}[/red]")
         raise typer.Exit(1)
 
 
+def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) -> None:
+    """Run hooks based on status change.
+
+    Args:
+        paircoder_dir: Path to .paircoder directory
+        task_id: The task ID
+        new_status: The new status value
+        task: The task object
+    """
+    try:
+        from ..hooks import HookRunner, HookContext, load_config
+
+        config = load_config(paircoder_dir)
+        runner = HookRunner(config, paircoder_dir)
+
+        if not runner.enabled:
+            return
+
+        # Map status to event name
+        status_to_event = {
+            "in_progress": "on_task_start",
+            "done": "on_task_complete",
+            "blocked": "on_task_block",
+        }
+
+        event = status_to_event.get(new_status)
+        if not event:
+            return
+
+        # Create hook context
+        ctx = HookContext(
+            task_id=task_id,
+            task=task,
+            event=event,
+            agent="cli",
+            extra={"summary": f"Task updated to {new_status}"},
+        )
+
+        # Run the hooks
+        results = runner.run_hooks(event, ctx)
+
+        # Report hook results
+        for result in results:
+            if result.success:
+                if result.result and result.result.get("trello_synced"):
+                    target_list = result.result.get("target_list", "")
+                    console.print(f"  [dim]→ Trello: moved to '{target_list}'[/dim]")
+                elif result.result and result.result.get("timer_started"):
+                    console.print(f"  [dim]→ Timer started[/dim]")
+                elif result.result and result.result.get("timer_stopped"):
+                    duration = result.result.get("duration_seconds", 0)
+                    console.print(f"  [dim]→ Timer stopped ({duration:.0f}s)[/dim]")
+            else:
+                if result.error and "Not connected" not in result.error:
+                    console.print(f"  [yellow]→ {result.hook}: {result.error}[/yellow]")
+
+    except ImportError:
+        pass  # Hooks module not available
+    except Exception as e:
+        console.print(f"  [yellow]→ Hooks error: {e}[/yellow]")
+
+
 @task_app.command("next")
-def task_next():
-    """Show the next task to work on."""
+def task_next(
+    start: bool = typer.Option(False, "--start", "-s", help="Automatically start the next task"),
+):
+    """Show the next task to work on.
+
+    Use --start to automatically set the task to in_progress.
+    """
     state_manager = get_state_manager()
     task = state_manager.get_next_task()
 
     if not task:
         console.print("[dim]No tasks available. Create a plan first![/dim]")
         return
+
+    # If --start flag, auto-assign the task
+    if start and task.status != TaskStatus.IN_PROGRESS:
+        from .auto_assign import auto_assign_next
+
+        paircoder_dir = find_paircoder_dir()
+        task = auto_assign_next(paircoder_dir, plan_id=task.plan_id)
+
+        if task:
+            console.print(f"[green]✓ Auto-started task:[/green] {task.id}")
+        else:
+            console.print("[red]Failed to auto-start task[/red]")
+            return
 
     console.print(f"[bold]Next task:[/bold] {task.status_emoji} {task.id}")
     console.print(f"[cyan]Title:[/cyan] {task.title}")
@@ -863,7 +961,40 @@ def task_next():
         if len(lines) > 10:
             console.print(f"\n[dim]... ({len(lines) - 10} more lines)[/dim]")
 
-    console.print(f"\n[dim]To start: bpsai-pair task update {task.id} --status in_progress[/dim]")
+    if task.status != TaskStatus.IN_PROGRESS:
+        console.print(f"\n[dim]To start: bpsai-pair task next --start[/dim]")
+        console.print(f"[dim]Or: bpsai-pair task update {task.id} --status in_progress[/dim]")
+
+
+@task_app.command("auto-next")
+def task_auto_next(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to filter tasks"),
+):
+    """Automatically assign and start the next pending task.
+
+    This command finds the highest-priority pending task and sets it to in_progress.
+    Tasks are prioritized by: priority (P0 > P1 > P2), then complexity (lower first).
+
+    Example:
+        # Auto-start next task from any plan
+        bpsai-pair task auto-next
+
+        # Auto-start next task from specific plan
+        bpsai-pair task auto-next --plan plan-2025-12-sprint-13-autonomy
+    """
+    from .auto_assign import auto_assign_next
+
+    paircoder_dir = find_paircoder_dir()
+    task = auto_assign_next(paircoder_dir, plan_id=plan_id)
+
+    if not task:
+        console.print("[yellow]No pending tasks available[/yellow]")
+        return
+
+    console.print(f"[green]✓ Auto-assigned:[/green] {task.id}")
+    console.print(f"[cyan]Title:[/cyan] {task.title}")
+    console.print(f"[cyan]Priority:[/cyan] {task.priority} | Complexity: {task.complexity}")
+    console.print(f"[cyan]Status:[/cyan] {task.status_emoji} {task.status.value}")
 
 
 @task_app.command("archive")
@@ -1154,6 +1285,228 @@ def task_changelog_preview(
 
     console.print("[bold]Changelog Preview:[/bold]\n")
     console.print(preview)
+
+
+# ============================================================================
+# INTENT DETECTION COMMANDS
+# ============================================================================
+
+intent_app = typer.Typer(
+    help="Intent detection and planning mode commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@intent_app.command("detect")
+def intent_detect(
+    text: str = typer.Argument(..., help="Text to analyze for intent"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Detect work intent from text."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    matches = detector.detect_all(text)
+
+    if json_out:
+        import json as json_module
+        output = [{
+            "intent": m.intent.value,
+            "confidence": m.confidence,
+            "suggested_flow": m.suggested_flow,
+            "triggers": m.triggers,
+        } for m in matches]
+        console.print(json_module.dumps(output, indent=2))
+        return
+
+    if not matches:
+        console.print("[dim]No clear intent detected[/dim]")
+        return
+
+    console.print("[bold]Detected Intents:[/bold]\n")
+    for match in matches:
+        confidence_color = "green" if match.confidence >= 0.8 else "yellow" if match.confidence >= 0.6 else "dim"
+        console.print(f"[{confidence_color}]{match.intent.value}[/{confidence_color}] ({match.confidence:.0%})")
+        if match.suggested_flow:
+            console.print(f"  Suggested flow: {match.suggested_flow}")
+        if match.triggers:
+            console.print(f"  Triggers: {', '.join(match.triggers[:3])}")
+        console.print()
+
+
+@intent_app.command("should-plan")
+def intent_should_plan(
+    text: str = typer.Argument(..., help="Text to analyze"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Check if text should trigger planning mode."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    should_plan, match = detector.should_enter_planning_mode(text)
+
+    if json_out:
+        import json as json_module
+        output = {
+            "should_plan": should_plan,
+            "intent": match.intent.value if match else None,
+            "confidence": match.confidence if match else 0,
+            "suggested_flow": match.suggested_flow if match else None,
+        }
+        console.print(json_module.dumps(output, indent=2))
+        return
+
+    if should_plan and match:
+        console.print(f"[green]YES - Planning mode recommended[/green]")
+        console.print(f"  Intent: {match.intent.value} ({match.confidence:.0%})")
+        console.print(f"  Suggested flow: {match.suggested_flow}")
+    else:
+        console.print("[dim]No - Direct action is fine[/dim]")
+
+
+@intent_app.command("suggest-flow")
+def intent_suggest_flow(
+    text: str = typer.Argument(..., help="Text to analyze"),
+):
+    """Suggest appropriate flow for text."""
+    from .intent_detection import IntentDetector
+
+    detector = IntentDetector()
+    flow = detector.get_flow_suggestion(text)
+
+    if flow:
+        console.print(f"[green]Suggested flow: {flow}[/green]")
+        console.print(f"\n[dim]Run: bpsai-pair flow run {flow}[/dim]")
+    else:
+        console.print("[dim]No specific flow suggested for this request.[/dim]")
+
+
+# ============================================================================
+# STANDUP COMMANDS
+# ============================================================================
+
+standup_app = typer.Typer(
+    help="Daily standup summary commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@standup_app.command("generate")
+def standup_generate(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Filter by plan ID"),
+    since: int = typer.Option(24, "--since", "-s", help="Hours to look back for completed tasks"),
+    format: str = typer.Option("markdown", "--format", "-f", help="Output format: markdown, slack, trello"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Write to file instead of stdout"),
+):
+    """Generate a daily standup summary.
+
+    Shows completed tasks, in-progress work, and blockers.
+
+    Examples:
+        # Generate markdown summary
+        bpsai-pair standup generate
+
+        # Generate Slack-formatted summary
+        bpsai-pair standup generate --format slack
+
+        # Look back 48 hours
+        bpsai-pair standup generate --since 48
+
+        # Save to file
+        bpsai-pair standup generate -o standup.md
+    """
+    from .standup import generate_standup
+
+    paircoder_dir = find_paircoder_dir()
+
+    summary = generate_standup(
+        paircoder_dir=paircoder_dir,
+        plan_id=plan_id,
+        since_hours=since,
+        format=format,
+    )
+
+    if output:
+        from pathlib import Path
+        Path(output).write_text(summary)
+        console.print(f"[green]Wrote standup summary to {output}[/green]")
+    else:
+        console.print(summary)
+
+
+@standup_app.command("post")
+def standup_post(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Filter by plan ID"),
+    since: int = typer.Option(24, "--since", "-s", help="Hours to look back"),
+):
+    """Post standup summary to Trello board's Notes list.
+
+    Adds a comment to the weekly summary card with today's standup.
+    """
+    from .standup import StandupGenerator
+
+    paircoder_dir = find_paircoder_dir()
+
+    # Load config to get board ID
+    config_file = paircoder_dir / "config.yaml"
+    if not config_file.exists():
+        console.print("[red]No config.yaml found[/red]")
+        raise typer.Exit(1)
+
+    import yaml
+    config = yaml.safe_load(config_file.read_text()) or {}
+    board_id = config.get("trello", {}).get("board_id")
+
+    if not board_id:
+        console.print("[red]No Trello board configured[/red]")
+        console.print("[dim]Run: bpsai-pair trello use-board <id>[/dim]")
+        raise typer.Exit(1)
+
+    generator = StandupGenerator(paircoder_dir)
+    summary = generator.generate(since_hours=since, plan_id=plan_id)
+    comment = summary.to_trello_comment()
+
+    # Post to Trello
+    try:
+        from ..trello.auth import load_token
+        from ..trello.client import TrelloService
+
+        token_data = load_token()
+        if not token_data:
+            console.print("[red]Not connected to Trello[/red]")
+            raise typer.Exit(1)
+
+        service = TrelloService(
+            api_key=token_data["api_key"],
+            token=token_data["token"]
+        )
+        service.set_board(board_id)
+
+        # Find or create weekly summary card in Notes list
+        notes_cards = service.get_cards_in_list("Notes / Ops Log")
+        summary_card = None
+
+        week_str = datetime.now().strftime("Week %W")
+        for card in notes_cards:
+            if week_str in card.name or "Weekly Summary" in card.name:
+                summary_card = card
+                break
+
+        if summary_card:
+            service.add_comment(summary_card, comment)
+            console.print(f"[green]Posted standup to '{summary_card.name}'[/green]")
+        else:
+            console.print(f"[yellow]No weekly summary card found in Notes / Ops Log[/yellow]")
+            console.print("[dim]Create a card with 'Week' or 'Weekly Summary' in the title[/dim]")
+            console.print("\n[bold]Generated Summary:[/bold]")
+            console.print(comment)
+
+    except ImportError:
+        console.print("[red]Trello module not available[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error posting to Trello: {e}[/red]")
+        raise typer.Exit(1)
 
 
 # ============================================================================
