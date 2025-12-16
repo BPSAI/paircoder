@@ -44,6 +44,12 @@ class Preset:
     # Model routing (optional complexity-based routing)
     model_routing: Optional[Dict[str, Any]] = None
 
+    # Trello configuration (optional)
+    trello_config: Optional[Dict[str, Any]] = None
+
+    # Hooks configuration (optional)
+    hooks_config: Optional[Dict[str, Any]] = None
+
     def to_config_dict(self, project_name: str, primary_goal: str) -> Dict[str, Any]:
         """Convert preset to a config dictionary.
 
@@ -82,6 +88,14 @@ class Preset:
         # Add model routing if specified
         if self.model_routing:
             config["routing"] = self.model_routing
+
+        # Add Trello configuration if specified
+        if self.trello_config:
+            config["trello"] = self.trello_config
+
+        # Add hooks configuration if specified
+        if self.hooks_config:
+            config["hooks"] = self.hooks_config
 
         return config
 
@@ -241,6 +255,103 @@ PRESETS: Dict[str, Preset] = {
                 "complex": {"max_score": 80, "model": "claude-opus-4-5"},
                 "epic": {"max_score": 100, "model": "claude-opus-4-5"},
             }
+        },
+    ),
+
+    "bps": Preset(
+        name="bps",
+        description="BPS AI Software preset with 7-list Trello workflow",
+        project_type="BPS Project",
+        coverage_target=80,
+        pack_excludes=COMMON_EXCLUDES + [
+            "*.egg-info",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            "htmlcov",
+            ".coverage",
+        ],
+        enabled_flows=[
+            "design-plan-implement",
+            "tdd-implement",
+            "review",
+            "finish-branch",
+        ],
+        model_routing={
+            "by_complexity": {
+                "trivial": {"max_score": 20, "model": "claude-haiku-4-5"},
+                "simple": {"max_score": 40, "model": "claude-haiku-4-5"},
+                "moderate": {"max_score": 60, "model": "claude-sonnet-4-5"},
+                "complex": {"max_score": 80, "model": "claude-opus-4-5"},
+                "epic": {"max_score": 100, "model": "claude-opus-4-5"},
+            }
+        },
+        trello_config={
+            # BPS 7-list structure per TRELLO_GUIDELINES.md
+            "lists": {
+                "backlog": "Intake / Backlog",
+                "ready": "Planned / Ready",
+                "in_progress": "In Progress",
+                "review": "Review / Testing",
+                "done": "Deployed / Done",
+                "blocked": "Issues / Tech Debt",
+                "notes": "Notes / Ops Log",
+            },
+            # Card title format: [Stack] Title
+            "card_format": "[{stack}] {title}",
+            # Label colors per BPS guidelines
+            "labels": {
+                "frontend": {"name": "Frontend", "color": "green"},
+                "backend": {"name": "Backend", "color": "blue"},
+                "worker": {"name": "Worker / Function", "color": "purple"},
+                "deployment": {"name": "Deployment", "color": "red"},
+                "bug": {"name": "Bug / Issue", "color": "orange"},
+                "security": {"name": "Security / Admin", "color": "yellow"},
+                "docs": {"name": "Documentation", "color": "sky"},
+                "ai": {"name": "AI / ML Integration", "color": "black"},
+            },
+            # Custom fields
+            "custom_fields": {
+                "project": "Project",
+                "stack": "Stack",
+                "status": "Status",
+                "effort": "Effort",
+                "deployment_tag": "Deployment Tag",
+            },
+            # Automation mappings
+            "automation": {
+                "on_task_start": {
+                    "move_to_list": "In Progress",
+                    "add_comment": "🤖 {agent} started working on this task",
+                },
+                "on_task_complete": {
+                    "move_to_list": "Deployed / Done",
+                    "add_comment": "✅ Task completed by {agent}\n\n{summary}",
+                },
+                "on_task_block": {
+                    "move_to_list": "Issues / Tech Debt",
+                    "add_comment": "⚠️ Task blocked: {reason}",
+                },
+                "on_task_review": {
+                    "move_to_list": "Review / Testing",
+                    "add_comment": "🔍 {agent} submitted for review",
+                },
+            },
+            # Status mapping for webhook sync
+            "status_mapping": {
+                "Intake / Backlog": "pending",
+                "Planned / Ready": "pending",
+                "In Progress": "in_progress",
+                "Review / Testing": "in_progress",
+                "Deployed / Done": "done",
+                "Issues / Tech Debt": "blocked",
+            },
+        },
+        hooks_config={
+            "enabled": True,
+            "on_task_start": ["start_timer", "sync_trello", "update_state"],
+            "on_task_complete": ["stop_timer", "record_metrics", "sync_trello", "check_unblocked"],
+            "on_task_block": ["sync_trello"],
         },
     ),
 }

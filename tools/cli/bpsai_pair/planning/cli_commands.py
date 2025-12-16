@@ -813,8 +813,13 @@ def task_update(
         help="New status: pending|in_progress|done|blocked|cancelled"
     ),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to narrow search"),
+    no_hooks: bool = typer.Option(False, "--no-hooks", help="Skip running hooks"),
 ):
-    """Update a task's status."""
+    """Update a task's status.
+
+    Automatically runs hooks (Trello sync, timer, metrics) on status changes.
+    Use --no-hooks to skip hook execution.
+    """
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
     plan_parser = PlanParser(paircoder_dir / "plans")
@@ -825,6 +830,15 @@ def task_update(
         if plan:
             plan_slug = plan.slug
 
+    # Get the task before updating (for hook context)
+    task = task_parser.get_task_by_id(task_id, plan_slug)
+    if not task:
+        console.print(f"[red]Task not found: {task_id}[/red]")
+        raise typer.Exit(1)
+
+    old_status = task.status.value
+
+    # Update the status
     success = task_parser.update_status(task_id, status, plan_slug)
 
     if success:
@@ -836,9 +850,75 @@ def task_update(
             "cancelled": "\u274c",
         }
         console.print(f"{emoji_map.get(status, '\u2713')} Updated {task_id} -> {status}")
+
+        # Run hooks if status actually changed and hooks not disabled
+        if not no_hooks and old_status != status:
+            _run_status_hooks(paircoder_dir, task_id, status, task)
     else:
         console.print(f"[red]Failed to update task: {task_id}[/red]")
         raise typer.Exit(1)
+
+
+def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) -> None:
+    """Run hooks based on status change.
+
+    Args:
+        paircoder_dir: Path to .paircoder directory
+        task_id: The task ID
+        new_status: The new status value
+        task: The task object
+    """
+    try:
+        from ..hooks import HookRunner, HookContext, load_config
+
+        config = load_config(paircoder_dir)
+        runner = HookRunner(config, paircoder_dir)
+
+        if not runner.enabled:
+            return
+
+        # Map status to event name
+        status_to_event = {
+            "in_progress": "on_task_start",
+            "done": "on_task_complete",
+            "blocked": "on_task_block",
+        }
+
+        event = status_to_event.get(new_status)
+        if not event:
+            return
+
+        # Create hook context
+        ctx = HookContext(
+            task_id=task_id,
+            task=task,
+            event=event,
+            agent="cli",
+            extra={"summary": f"Task updated to {new_status}"},
+        )
+
+        # Run the hooks
+        results = runner.run_hooks(event, ctx)
+
+        # Report hook results
+        for result in results:
+            if result.success:
+                if result.result and result.result.get("trello_synced"):
+                    target_list = result.result.get("target_list", "")
+                    console.print(f"  [dim]→ Trello: moved to '{target_list}'[/dim]")
+                elif result.result and result.result.get("timer_started"):
+                    console.print(f"  [dim]→ Timer started[/dim]")
+                elif result.result and result.result.get("timer_stopped"):
+                    duration = result.result.get("duration_seconds", 0)
+                    console.print(f"  [dim]→ Timer stopped ({duration:.0f}s)[/dim]")
+            else:
+                if result.error and "Not connected" not in result.error:
+                    console.print(f"  [yellow]→ {result.hook}: {result.error}[/yellow]")
+
+    except ImportError:
+        pass  # Hooks module not available
+    except Exception as e:
+        console.print(f"  [yellow]→ Hooks error: {e}[/yellow]")
 
 
 @task_app.command("next")

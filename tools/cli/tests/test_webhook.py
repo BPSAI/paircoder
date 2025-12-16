@@ -228,7 +228,7 @@ class TestCreateTaskUpdater:
         )
 
         mock_parser = MagicMock()
-        mock_parser.get.return_value = mock_task
+        mock_parser.get_task_by_id.return_value = mock_task
         mock_parser_class.return_value = mock_parser
 
         updater = create_task_updater(paircoder_dir)

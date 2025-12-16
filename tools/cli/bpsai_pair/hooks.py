@@ -198,7 +198,11 @@ class HookRunner:
             service.set_board(board_id)
 
             # Get automation config for target lists
+            # Check multiple locations for backwards compatibility
             automation = trello_config.get("automation", {})
+            if not automation:
+                # Also check card_format.automation (older config structure)
+                automation = trello_config.get("card_format", {}).get("automation", {})
 
             # Map event to target list and comment
             event_config = {

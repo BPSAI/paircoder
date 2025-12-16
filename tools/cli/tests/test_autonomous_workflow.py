@@ -128,7 +128,7 @@ class TestAutonomousWorkflow:
         mock_task = MagicMock()
         mock_task.title = "Build a new feature"
         workflow._task_parser = MagicMock()
-        workflow._task_parser.get.return_value = mock_task
+        workflow._task_parser.get_task_by_id.return_value = mock_task
 
         flow = workflow.start_planning()
 
@@ -141,7 +141,7 @@ class TestAutonomousWorkflow:
 
         mock_task = MagicMock()
         workflow._task_parser = MagicMock()
-        workflow._task_parser.get.return_value = mock_task
+        workflow._task_parser.get_task_by_id.return_value = mock_task
 
         result = workflow.start_implementation()
 
@@ -154,7 +154,7 @@ class TestAutonomousWorkflow:
 
         mock_task = MagicMock()
         workflow._task_parser = MagicMock()
-        workflow._task_parser.get.return_value = mock_task
+        workflow._task_parser.get_task_by_id.return_value = mock_task
 
         result = workflow.complete_task()
 
