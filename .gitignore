@@ -41,6 +41,7 @@ yarn-error.log*
 
 # Python
 __pycache__/
+/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -101,3 +102,4 @@ $RECYCLE.BIN/
 tools/cli/dist/
 tools/cli/build/
 agent_pack.tgz
+*.pyc

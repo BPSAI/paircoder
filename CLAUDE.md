@@ -62,11 +62,11 @@ Always update `.paircoder/context/state.md`:
 
 This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
 
-Current focus: **v2 Upgrade**
-- Consolidating files under `.paircoder/`
-- Implementing planning system
-- Creating core flows
-- Enabling LLM integration (what you're reading now!)
+Current focus: **v2.1 Released**
+- Planning system complete (plan, task commands)
+- Skills and flows implemented
+- Multi-agent architecture (skills, agents, hooks)
+- Ready for ongoing development
 
 ## CLI Reference
 
