@@ -215,3 +215,39 @@ When reviewing your own code before submitting:
 4. Check for debug statements
 5. Verify documentation
 6. Confirm task acceptance criteria are met
+
+## Recording Your Work
+
+### Tracking Review Time
+While code review isn't a tracked task, you can log time spent:
+
+**Via CLI:**
+```bash
+# Check current project metrics
+bpsai-pair status
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_metrics_record
+Input: {
+  "task_id": "review",
+  "agent": "claude-code",
+  "model": "claude-sonnet-4-5",
+  "input_tokens": 5000,
+  "output_tokens": 1000,
+  "action_type": "review"
+}
+```
+
+### Recording Review Comments
+When providing feedback on a PR:
+1. Use the feedback template format above
+2. Note files reviewed and issues found
+3. Track time if significant
+
+### After Review Complete
+```bash
+# Update project state if needed
+bpsai-pair context-sync --last "Reviewed PR #XXX - 3 issues found"
+```

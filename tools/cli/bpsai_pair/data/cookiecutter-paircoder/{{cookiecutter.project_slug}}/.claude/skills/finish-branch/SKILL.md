@@ -244,3 +244,47 @@ Before marking complete, verify:
 - [ ] Commit message follows format
 - [ ] PR description complete
 - [ ] Task status updated to `done`
+
+## Recording Your Work
+
+### Completing a Task
+When ready to finish:
+
+**Via CLI:**
+```bash
+# Mark task complete
+bpsai-pair task update TASK-XXX --status done
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_complete
+Input: {
+  "task_id": "TASK-XXX",
+  "summary": "Implemented feature X with tests",
+  "input_tokens": 20000,
+  "output_tokens": 5000,
+  "agent": "claude-code"
+}
+```
+
+### Recording Files Changed
+Include in your completion summary:
+- Files modified
+- Tests added
+- Key decisions made
+
+### Syncing to Trello (if configured)
+If the task is linked to Trello, it will auto-sync on completion if hooks are enabled.
+
+Manual sync:
+```bash
+# Update card status
+bpsai-pair ttask done TRELLO-XXX -s "Completed implementation"
+```
+
+### Archive After Merge
+```bash
+# Archive completed tasks (after PR merged)
+bpsai-pair task archive --completed --plan <plan-id>
+```

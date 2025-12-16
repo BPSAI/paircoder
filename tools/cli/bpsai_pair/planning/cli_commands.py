@@ -438,6 +438,225 @@ def plan_status(
     console.print("")
 
 
+@plan_app.command("sync-trello")
+def plan_sync_trello(
+    plan_id: str = typer.Argument(..., help="Plan ID to sync"),
+    board_id: Optional[str] = typer.Option(None, "--board", "-b", help="Target Trello board ID"),
+    create_lists: bool = typer.Option(True, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
+    link_cards: bool = typer.Option(True, "--link/--no-link", help="Store card IDs in task files"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without making changes"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Sync plan tasks to Trello board as cards."""
+    paircoder_dir = find_paircoder_dir()
+    plan_parser = PlanParser(paircoder_dir / "plans")
+    task_parser = TaskParser(paircoder_dir / "tasks")
+
+    # Load plan
+    plan = plan_parser.get_plan_by_id(plan_id)
+    if not plan:
+        console.print(f"[red]Plan not found: {plan_id}[/red]")
+        raise typer.Exit(1)
+
+    # Load tasks
+    tasks = task_parser.get_tasks_for_plan(plan_id)
+    if not tasks:
+        console.print(f"[yellow]No tasks found for plan: {plan_id}[/yellow]")
+        raise typer.Exit(1)
+
+    results = {
+        "plan_id": plan_id,
+        "board_id": board_id,
+        "lists_created": [],
+        "cards_created": [],
+        "cards_updated": [],
+        "errors": [],
+        "dry_run": dry_run,
+    }
+
+    # Group tasks by sprint
+    sprints_tasks = {}
+    for task in tasks:
+        sprint_name = task.sprint or "Backlog"
+        if sprint_name not in sprints_tasks:
+            sprints_tasks[sprint_name] = []
+        sprints_tasks[sprint_name].append(task)
+
+    if dry_run:
+        # Preview mode
+        console.print(f"\n[bold]Would sync plan:[/bold] {plan_id}")
+        console.print(f"[bold]Target board:[/bold] {board_id or '(not specified)'}")
+        console.print(f"\n[bold]Tasks to sync:[/bold]")
+
+        for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
+            console.print(f"\n  [cyan]{sprint_name}[/cyan]:")
+            for task in sprint_tasks:
+                console.print(f"    [{task.id}] {task.title}")
+                results["cards_created"].append({
+                    "task_id": task.id,
+                    "title": task.title,
+                    "sprint": sprint_name,
+                })
+
+        console.print(f"\n[dim]Total: {len(tasks)} tasks in {len(sprints_tasks)} lists[/dim]")
+
+        if json_out:
+            console.print(json.dumps(results, indent=2))
+        return
+
+    # Check for Trello connection
+    if not board_id:
+        console.print("[red]Board ID required. Use --board <board-id>[/red]")
+        console.print("[dim]List boards: bpsai-pair trello boards[/dim]")
+        raise typer.Exit(1)
+
+    try:
+        from ..trello.auth import load_token
+        from ..trello.client import TrelloService
+
+        token_data = load_token()
+        if not token_data:
+            console.print("[red]Not connected to Trello. Run 'bpsai-pair trello connect' first.[/red]")
+            raise typer.Exit(1)
+
+        service = TrelloService(
+            api_key=token_data["api_key"],
+            token=token_data["token"]
+        )
+
+        # Set board
+        service.set_board(board_id)
+        results["board_id"] = board_id
+
+        console.print(f"\n[bold]Syncing plan:[/bold] {plan_id}")
+        console.print(f"[bold]Target board:[/bold] {service.board.name}")
+
+        # Process each sprint
+        for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
+            console.print(f"\n  [cyan]{sprint_name}[/cyan]:")
+
+            # Get or create list
+            board_lists = service.get_board_lists()
+            if sprint_name not in board_lists:
+                if create_lists:
+                    service.board.add_list(sprint_name)
+                    service.lists = {lst.name: lst for lst in service.board.all_lists()}
+                    results["lists_created"].append(sprint_name)
+                    console.print(f"    [green]+ Created list[/green]")
+                else:
+                    results["errors"].append(f"List not found: {sprint_name}")
+                    console.print(f"    [red]✗ List not found[/red]")
+                    continue
+
+            target_list = service.lists.get(sprint_name)
+            if not target_list:
+                continue
+
+            # Create cards for tasks
+            for task in sprint_tasks:
+                try:
+                    # Check if card already exists
+                    existing_cards = target_list.list_cards()
+                    existing = None
+                    for card in existing_cards:
+                        if f"[{task.id}]" in card.name:
+                            existing = card
+                            break
+
+                    # Card description
+                    desc = f"""## Objective
+{task.objective or task.title}
+
+## Details
+- **Priority:** {task.priority}
+- **Complexity:** {task.complexity}
+- **Sprint:** {task.sprint or 'N/A'}
+
+---
+*Synced from PairCoder*
+"""
+
+                    if existing:
+                        # Update existing card
+                        existing.set_description(desc)
+                        results["cards_updated"].append({
+                            "task_id": task.id,
+                            "card_id": existing.id,
+                        })
+                        console.print(f"    [yellow]↻[/yellow] {task.id}: {task.title}")
+                    else:
+                        # Create new card
+                        card_name = f"[{task.id}] {task.title}"
+                        card = target_list.add_card(card_name, desc)
+                        results["cards_created"].append({
+                            "task_id": task.id,
+                            "card_id": card.id,
+                        })
+                        console.print(f"    [green]+[/green] {task.id}: {task.title}")
+
+                        # Update task file with card ID if requested
+                        if link_cards:
+                            _update_task_with_card_id(task, card.id, task_parser)
+
+                except Exception as e:
+                    error_msg = f"Failed to create card for {task.id}: {str(e)}"
+                    results["errors"].append(error_msg)
+                    console.print(f"    [red]✗[/red] {task.id}: {str(e)}")
+
+        # Summary
+        console.print(f"\n[bold]Summary:[/bold]")
+        console.print(f"  Lists created: {len(results['lists_created'])}")
+        console.print(f"  Cards created: {len(results['cards_created'])}")
+        console.print(f"  Cards updated: {len(results['cards_updated'])}")
+        if results["errors"]:
+            console.print(f"  [red]Errors: {len(results['errors'])}[/red]")
+
+        if json_out:
+            console.print(json.dumps(results, indent=2))
+
+    except ImportError:
+        console.print("[red]py-trello not installed. Install with: pip install 'bpsai-pair[trello]'[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+def _update_task_with_card_id(task: Task, card_id: str, task_parser: TaskParser) -> bool:
+    """Update task file with Trello card ID."""
+    try:
+        # Find task file
+        task_file = task_parser._find_task_file(task.id)
+        if not task_file:
+            return False
+
+        content = task_file.read_text()
+
+        # Insert trello_card_id into frontmatter
+        if "trello_card_id:" not in content:
+            # Find end of frontmatter
+            lines = content.split("\n")
+            new_lines = []
+            in_frontmatter = False
+            inserted = False
+
+            for line in lines:
+                if line.strip() == "---":
+                    if in_frontmatter and not inserted:
+                        # Insert before closing ---
+                        new_lines.append(f'trello_card_id: "{card_id}"')
+                        inserted = True
+                    in_frontmatter = not in_frontmatter
+                new_lines.append(line)
+
+            task_file.write_text("\n".join(new_lines))
+            return True
+
+        return False
+    except Exception:
+        return False
+
+
 @plan_app.command("add-task")
 def plan_add_task(
     plan_id: str = typer.Argument(..., help="Plan ID"),

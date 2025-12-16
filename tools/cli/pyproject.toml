@@ -1,7 +1,7 @@
 [project]
 readme = "README.md"
 name = "bpsai-pair"
-version = "2.2.0"
+version = "2.4.0"
 description = "CLI for AI pair-coding workflow"
 requires-python = ">=3.9"
 dependencies = [ "typer>=0.12", "rich>=13.7", "pyyaml>=6.0",]
@@ -27,6 +27,9 @@ bpsai_pair = ["data/**/*"]
 [project.optional-dependencies]
 trello = [
     "py-trello>=0.19.0",
+]
+mcp = [
+    "mcp>=1.0.0",
 ]
 docs = [
     "sphinx>=7.0",

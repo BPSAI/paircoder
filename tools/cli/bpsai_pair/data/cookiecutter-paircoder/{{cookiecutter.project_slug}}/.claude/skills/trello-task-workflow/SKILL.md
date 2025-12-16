@@ -175,3 +175,68 @@ bpsai-pair trello config --show
 bpsai-pair trello config --set-list "in_progress=Working"
 bpsai-pair trello config --agent codex
 ```
+
+## Recording Your Work
+
+### Starting a Task
+When beginning work, both local and Trello are updated:
+
+```bash
+# Starts task and syncs to Trello
+bpsai-pair ttask start TRELLO-123 --summary "Starting implementation"
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_start
+Input: {"task_id": "TRELLO-123", "agent": "claude-code"}
+```
+
+Auto-hooks (if enabled) will also:
+- Start time tracking
+- Update state.md
+- Sync card status to Trello
+
+### Progress Updates
+Add comments to keep Trello in sync:
+
+```bash
+bpsai-pair ttask comment TRELLO-123 "Completed module X"
+```
+
+### Completing a Task
+When done, sync completion to Trello:
+
+```bash
+bpsai-pair ttask done TRELLO-123 -s "Implemented with 5 tests"
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_complete
+Input: {
+  "task_id": "TRELLO-123",
+  "summary": "Implemented feature with tests",
+  "input_tokens": 15000,
+  "output_tokens": 3000
+}
+```
+
+Auto-hooks will:
+- Stop timer and record duration
+- Record token metrics
+- Update Trello card to Done
+- Check if other tasks are unblocked
+
+### Syncing Local Changes to Trello
+If you made local task changes that need to sync:
+
+**Via MCP:**
+```json
+Tool: paircoder_trello_update_card
+Input: {
+  "task_id": "TRELLO-123",
+  "action": "complete",
+  "comment": "Implemented feature X"
+}
+```

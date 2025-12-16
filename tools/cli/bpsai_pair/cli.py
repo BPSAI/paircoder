@@ -115,6 +115,13 @@ cache_app = typer.Typer(
 )
 app.add_typer(cache_app, name="cache")
 
+# MCP sub-app for Model Context Protocol server
+mcp_app = typer.Typer(
+    help="MCP (Model Context Protocol) server commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(mcp_app, name="mcp")
+
 # Trello integration sub-apps
 try:
     app.add_typer(trello_app, name="trello")
@@ -701,6 +708,96 @@ def cache_invalidate(
         console.print(f"[green]Invalidated cache for {file_path}[/green]")
     else:
         console.print(f"[dim]No cache entry for {file_path}[/dim]")
+
+
+# --- MCP Commands ---
+
+@mcp_app.command("serve")
+def mcp_serve(
+    transport: str = typer.Option("stdio", "--transport", "-t", help="Transport: stdio or sse"),
+    port: int = typer.Option(3000, "--port", "-p", help="Port for SSE transport"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output"),
+):
+    """Start MCP server for Claude and other MCP-compatible agents."""
+    try:
+        from .mcp.server import run_server
+    except ImportError:
+        console.print("[red]MCP package not installed.[/red]")
+        console.print("[dim]Install with: pip install 'bpsai-pair[mcp]'[/dim]")
+        raise typer.Exit(1)
+
+    if verbose:
+        console.print(f"[dim]Starting MCP server on {transport}...[/dim]")
+
+    try:
+        run_server(transport=transport, port=port)
+    except ImportError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@mcp_app.command("tools")
+def mcp_tools(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """List available MCP tools."""
+    from .mcp.server import list_tools
+
+    tools = list_tools()
+
+    if json_out:
+        print_json({"tools": tools, "count": len(tools)})
+    else:
+        table = Table(title="Available MCP Tools")
+        table.add_column("Tool", style="cyan")
+        table.add_column("Description")
+        table.add_column("Parameters", style="dim")
+
+        for tool in tools:
+            params = ", ".join(tool["parameters"]) if tool["parameters"] else "-"
+            table.add_row(tool["name"], tool["description"], params)
+
+        console.print(table)
+
+
+@mcp_app.command("test")
+def mcp_test(
+    tool: str = typer.Argument(..., help="Tool name to test"),
+    input_json: str = typer.Argument("{}", help="JSON input for the tool"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Test an MCP tool locally."""
+    import asyncio
+
+    try:
+        input_data = json.loads(input_json)
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Invalid JSON: {e}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        from .mcp.server import test_tool
+    except ImportError:
+        console.print("[red]MCP package not installed.[/red]")
+        console.print("[dim]Install with: pip install 'bpsai-pair[mcp]'[/dim]")
+        raise typer.Exit(1)
+
+    try:
+        result = asyncio.run(test_tool(tool, input_data))
+
+        if json_out:
+            print_json(result)
+        else:
+            console.print(f"[bold]Tool:[/bold] {tool}")
+            console.print(f"[bold]Input:[/bold] {input_data}")
+            console.print(f"[bold]Result:[/bold]")
+            console.print_json(data=result)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @flow_app.command("list")

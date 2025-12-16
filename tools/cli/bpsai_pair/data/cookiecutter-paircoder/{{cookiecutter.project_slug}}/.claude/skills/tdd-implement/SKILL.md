@@ -243,3 +243,52 @@ pytest --cov=src
 ❌ **Don't write multiple tests at once**
 - One test at a time
 - Keeps focus and provides clear feedback
+
+## Recording Your Work
+
+### Before Starting
+Mark the task as started:
+
+**Via CLI:**
+```bash
+bpsai-pair task update TASK-XXX --status in_progress
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_start
+Input: {"task_id": "TASK-XXX", "agent": "claude-code"}
+```
+
+### During Implementation
+Track test counts as you work. When completing, include:
+- Number of tests added
+- Files modified
+
+### After Completing
+Record your work with test metrics:
+
+**Via CLI:**
+```bash
+bpsai-pair task update TASK-XXX --status done
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_complete
+Input: {
+  "task_id": "TASK-XXX",
+  "summary": "Fixed bug X with 5 new tests",
+  "input_tokens": 10000,
+  "output_tokens": 2000,
+  "model": "claude-sonnet-4-5"
+}
+```
+
+### Commit Format
+```bash
+git commit -m "[TASK-XXX] Fix: Description
+
+- Added N tests
+- Fixed edge case handling"
+```

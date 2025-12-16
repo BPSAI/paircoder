@@ -158,3 +158,58 @@ pending → in_progress → done
                 ↓
              blocked (with notes)
 ```
+
+## Recording Your Work
+
+### Before Starting a Task
+If this is a tracked task, mark it as started:
+
+**Via CLI:**
+```bash
+bpsai-pair task update TASK-XXX --status in_progress
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_start
+Input: {"task_id": "TASK-XXX", "agent": "claude-code"}
+```
+
+### During Planning
+After creating tasks from the design phase:
+
+```bash
+# Create plan file
+bpsai-pair plan new my-feature --type feature --goal "Implement feature X"
+
+# Add tasks to plan
+bpsai-pair plan add-task <plan-id> --id TASK-001 --title "Task title"
+
+# Sync to Trello (if configured)
+bpsai-pair plan sync-trello <plan-id> --board <board-id>
+```
+
+### After Completing
+Record your work when the feature is done:
+
+**Via CLI:**
+```bash
+bpsai-pair task update TASK-XXX --status done
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_task_complete
+Input: {
+  "task_id": "TASK-XXX",
+  "summary": "Implemented feature with X approach",
+  "input_tokens": 15000,
+  "output_tokens": 3000
+}
+```
+
+### If Blocked
+```bash
+bpsai-pair task update TASK-XXX --status blocked
+# Update task file with blocking reason
+```

@@ -4,13 +4,13 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-01-paircoder-v2.3-trello`
+**Plan:** `plan-2025-01-paircoder-v2.4-mcp`
 **Status:** in_progress
-**Current Sprint:** sprint-10 (Trello Integration) ✅
+**Current Sprint:** sprint-11 (MCP Server & Hooks) ✅
 
 ## Current Focus
 
-Sprint 10 complete! Trello integration added for task management across AI agents.
+Sprint 11 complete! MCP server with 13 tools and auto-hooks system added.
 
 ## Task Status
 
@@ -109,7 +109,58 @@ Sprint 10 complete! Trello integration added for task management across AI agent
 | TASK-043 | Add Trello skills to template | ✅ done | P1 |
 | TASK-044 | Add Trello integration tests | ✅ done | P2 |
 
+### Sprint 11: MCP Server & Hooks ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-047 | Implement MCP server core | ✅ done | P0 |
+| TASK-048 | MCP orchestration and metrics tools | ✅ done | P1 |
+| TASK-049 | MCP Trello integration tools | ✅ done | P1 |
+| TASK-050 | Auto-hooks system | ✅ done | P1 |
+| TASK-051 | Enhanced skills with CLI commands | ✅ done | P2 |
+| TASK-052 | MCP server tests | ✅ done | P2 |
+| TASK-053 | Documentation and release v2.4.0 | ✅ done | P2 |
+
 ## What Was Just Done
+
+### Sprint 11 Complete - MCP Server & Hooks
+
+All Sprint 11 tasks completed:
+
+1. **TASK-047**: Implement MCP server core
+   - MCP server with stdio transport
+   - 13 tools for task, plan, context, orchestration, metrics, Trello
+   - CLI commands: `mcp serve`, `mcp tools`, `mcp test`
+   - Optional dependency: `pip install 'bpsai-pair[mcp]'`
+
+2. **TASK-048**: MCP orchestration and metrics tools
+   - `paircoder_orchestrate_analyze` - Task complexity analysis
+   - `paircoder_orchestrate_handoff` - Agent transition packages
+   - `paircoder_metrics_record` - Token usage recording
+   - `paircoder_metrics_summary` - Cost and usage summaries
+
+3. **TASK-049**: MCP Trello integration tools
+   - `paircoder_trello_sync_plan` - Sync plan tasks to Trello
+   - `paircoder_trello_update_card` - Update card on state change
+   - CLI command: `bpsai-pair plan sync-trello`
+
+4. **TASK-050**: Auto-hooks system
+   - HookRunner with configurable hooks per event
+   - Built-in hooks: start_timer, stop_timer, record_metrics, sync_trello, update_state, check_unblocked
+   - Integrated with MCP task_start and task_complete
+
+5. **TASK-051**: Enhanced skills with CLI commands
+   - All 6 skills updated with "Recording Your Work" section
+   - CLI commands and MCP tools documented in each skill
+
+6. **TASK-052**: MCP server tests
+   - 29 new tests for MCP server, tools, and hooks
+   - Full test suite now 245 tests passing
+
+7. **TASK-053**: Documentation and release v2.4.0
+   - Version bumped to 2.4.0
+   - README updated with MCP documentation
+   - State.md updated with Sprint 11 status
 
 ### Sprint 10 Complete - Trello Integration
 
@@ -269,25 +320,28 @@ All new files added to `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`:
 
 ## What's Next
 
-**Sprint 10 Complete - Trello Integration**
+**Sprint 11 Complete - MCP Server & Hooks**
 
-Ready for v2.3.0 release with Trello integration:
+Ready for v2.4.0 release with MCP server:
 
 ```bash
-# Bump version to 2.3.0
-# Update CHANGELOG.md
 # Build and publish
 cd tools/cli
 python -m build
 twine upload dist/*
 ```
 
-Key deliverables for v2.3:
+Key deliverables for v2.4:
+- MCP server with 13 tools (task, plan, context, orchestration, metrics, Trello)
+- Auto-hooks system for task state change automation
+- CLI commands: `mcp serve`, `mcp tools`, `mcp test`, `plan sync-trello`
+- All 6 skills updated with "Recording Your Work" sections
+- 29 new tests (245 total)
+
+v2.3 included:
 - Trello CLI commands for connection and board management
 - Trello task commands for working on cards
-- Config schema updates for Trello settings
 - Two new skills: trello-task-workflow, trello-aware-planning
-- 21 new integration tests
 
 Previous releases included:
 - Skills (model-invoked workflows)
@@ -364,6 +418,12 @@ bpsai-pair ttask show TRELLO-XXX         # View task details
 bpsai-pair ttask start TRELLO-XXX        # Claim and start task
 bpsai-pair ttask done TRELLO-XXX -s "..." # Complete with summary
 bpsai-pair ttask block TRELLO-XXX -r "..." # Mark as blocked
+
+# MCP Server (v2.4)
+bpsai-pair mcp serve                     # Start MCP server (stdio)
+bpsai-pair mcp tools                     # List available MCP tools
+bpsai-pair mcp test <tool-name>          # Test tool locally
+bpsai-pair plan sync-trello <plan-id>    # Sync plan to Trello board
 ```
 
 ## Claude Code Skills Available

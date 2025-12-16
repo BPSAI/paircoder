@@ -217,3 +217,73 @@ This skill works alongside other skills:
 
 5. **finish-branch**
    - Complete and merge
+
+## Recording Your Work
+
+### Creating Plans
+When creating a new plan:
+
+```bash
+# Create plan with goals
+bpsai-pair plan new feature-x --type feature --title "Feature X" --goal "Improve Y"
+
+# Add tasks to plan
+bpsai-pair plan add-task feature-x --id TASK-001 --title "Task title"
+```
+
+### Syncing to Trello
+After creating tasks, sync them to Trello:
+
+```bash
+# Sync plan tasks to Trello board as cards
+bpsai-pair plan sync-trello plan-2025-01-feature-x --board <board-id>
+
+# Dry run to preview
+bpsai-pair plan sync-trello plan-2025-01-feature-x --board <board-id> --dry-run
+```
+
+**Via MCP (if available):**
+```json
+Tool: paircoder_trello_sync_plan
+Input: {
+  "plan_id": "plan-2025-01-feature-x",
+  "board_id": "BOARD_ID",
+  "create_lists": true,
+  "link_cards": true
+}
+```
+
+This will:
+- Create lists for each sprint if missing
+- Create cards for each task
+- Link task files to Trello cards
+- Set card descriptions with objectives
+
+### Viewing Plan Status
+Check progress on the plan:
+
+```bash
+bpsai-pair plan status plan-2025-01-feature-x
+```
+
+**Via MCP:**
+```json
+Tool: paircoder_plan_status
+Input: {"plan_id": "plan-2025-01-feature-x"}
+```
+
+### Recording Planning Time
+If tracking time spent planning:
+
+**Via MCP:**
+```json
+Tool: paircoder_metrics_record
+Input: {
+  "task_id": "planning",
+  "agent": "claude-code",
+  "model": "claude-sonnet-4-5",
+  "input_tokens": 8000,
+  "output_tokens": 2000,
+  "action_type": "planning"
+}
+```
