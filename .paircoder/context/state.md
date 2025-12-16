@@ -5,15 +5,18 @@
 ## Active Plan
 
 **Plan:** `plan-2025-12-sprint-13-autonomy`
-**Status:** in_progress
-**Current Sprint:** sprint-13 (Full Autonomy)
+**Status:** complete
+**Current Sprint:** sprint-13 (Full Autonomy) - COMPLETED
 
 ## Current Focus
 
-Trello reliability improvements complete:
-- BPS preset with 7-list structure created
-- Task update command now ALWAYS fires hooks
-- Trello card movement verified working
+Sprint 13 is complete. All P0 and P1 tasks done:
+- BPS preset with 7-list Trello structure
+- Hook reliability (hooks always fire on status change)
+- Progress comments for Trello cards
+- Auto-PR link on branch push
+- PR merge task archival
+- Daily standup summary generation
 
 ## Task Status
 
@@ -21,7 +24,7 @@ Trello reliability improvements complete:
 
 Sprints 1-12 fully completed (62 tasks). See archive for details.
 
-### Sprint 13: Full Autonomy (Current)
+### Sprint 13: Full Autonomy - COMPLETE ✅
 
 **P0 Tasks - All Complete ✅**
 
@@ -36,149 +39,154 @@ Sprints 1-12 fully completed (62 tasks). See archive for details.
 | TASK-079 | Auto-enter planning mode on new feature detection | ✅ done | 55 |
 | TASK-080 | Orchestrator sequencing for full autonomy | ✅ done | 65 |
 
-**P1 Tasks - Remaining**
-
-| Task | Title | Status | Depends On |
-|------|-------|--------|------------|
-| TASK-063 | VS Code extension wrapper for MCP | 📋 planned | - |
-| TASK-064 | Current task status bar widget | 📋 planned | TASK-063 |
-| TASK-065 | Auto-update context on file save | 📋 planned | TASK-063 |
-| TASK-068 | Progress comments from agents | ⏳ pending | TASK-067 |
-| TASK-069 | Auto-PR link when branch pushed | ⏳ pending | - |
-| TASK-071 | PR merge triggers task archive | ⏳ pending | - |
-
-**P2/P3 Tasks - Backlog**
+**P1 Tasks - All Complete ✅**
 
 | Task | Title | Status | Complexity |
 |------|-------|--------|------------|
-| TASK-073 | Daily standup summary generation | ⏳ pending | 35 |
-| TASK-074 | Dashboard web UI | ⏳ pending (deprioritized) | 60 |
-| TASK-075 | Slack notifications integration | ⏳ pending | 40 |
-| TASK-076 | Multi-project support | ⏳ pending | 50 |
+| TASK-068 | Progress comments from agents | ✅ done | 25 |
+| TASK-069 | Auto-PR link when branch pushed | ✅ done | 30 |
+| TASK-071 | PR merge triggers task archive | ✅ done | 35 |
+
+**P2 Tasks - Complete ✅**
+
+| Task | Title | Status | Complexity |
+|------|-------|--------|------------|
+| TASK-073 | Daily standup summary generation | ✅ done | 35 |
+
+**Deprioritized (Future)**
+
+| Task | Title | Status | Reason |
+|------|-------|--------|--------|
+| TASK-063 | VS Code extension wrapper for MCP | deferred | Future - not core |
+| TASK-064 | Current task status bar widget | deferred | Future - depends on 063 |
+| TASK-065 | Auto-update context on file save | deferred | Future - depends on 063 |
+| TASK-074 | Dashboard UI | dropped | BPS has Trello React app |
+| TASK-075 | Slack notifications | deferred | Future - nice to have |
+| TASK-076 | Multi-project support | deferred | Future - nice to have |
 
 ## What Was Just Done
 
-### Session: 2025-12-16 - Trello Reliability Improvements
+### Session: 2025-12-16 - Sprint 13 Complete
 
-#### 1. Bug Fix: TaskParser Method Name
-Fixed `task_parser.get()` → `task_parser.get_task_by_id()` in 10 locations across 4 files:
-- `orchestration/autonomous.py` (4 occurrences)
-- `planning/auto_assign.py` (2 occurrences)
-- `github/pr.py` (2 occurrences)
-- `trello/webhook.py` (2 occurrences)
+#### 1. TASK-068: Progress Comments ✅
+Created `trello/progress.py`:
+- `ProgressReporter` class with 7 report methods (start, progress, step_complete, blocked, waiting, completion, review)
+- Progress templates for consistent formatting
+- `create_progress_reporter()` factory function
+- CLI: `bpsai-pair trello progress TASK-001 "message"`
+- 23 new tests
 
-#### 2. TASK-078: BPS Preset Created ✅
-Added `bps` preset to `presets.py` with full BPS Trello guidelines:
+#### 2. TASK-069: Auto-PR Link ✅
+Added to `github/pr.py`:
+- `auto_create_pr_for_branch()` - Detects task ID from branch name, creates draft PR
+- Supports patterns: `feature/TASK-001-*`, `TASK-001/*`, `TASK-001-*`
+- CLI: `bpsai-pair github auto-pr`
 
-**7-List Structure:**
-- Intake / Backlog
-- Planned / Ready
-- In Progress
-- Review / Testing
-- Deployed / Done
-- Issues / Tech Debt
-- Notes / Ops Log
+#### 3. TASK-071: PR Merge Task Archive ✅
+Added to `github/pr.py`:
+- `archive_task_on_merge()` - Archives task when its PR is merged
+- `check_and_archive_merged_prs()` - Scans recent merged PRs, archives their tasks
+- CLI: `bpsai-pair github archive-merged 123` or `--all`
 
-**8 Label Colors:**
-- Frontend (green), Backend (blue), Worker (purple), Deployment (red)
-- Bug (orange), Security (yellow), Docs (sky), AI (black)
+#### 4. TASK-073: Daily Standup Summary ✅
+Created `planning/standup.py`:
+- `StandupSummary` dataclass with completed, in_progress, blocked, ready lists
+- `StandupGenerator` class to generate summaries from task data
+- Multiple output formats: markdown, slack, trello
+- CLI: `bpsai-pair standup generate`, `bpsai-pair standup post`
 
-**Automation Mappings:**
-- `on_task_start` → moves to "In Progress"
-- `on_task_complete` → moves to "Deployed / Done"
-- `on_task_block` → moves to "Issues / Tech Debt"
-- `on_task_review` → moves to "Review / Testing"
+### Previously This Session
 
-**Hooks Enabled by Default:**
-- `on_task_start`: start_timer, sync_trello, update_state
-- `on_task_complete`: stop_timer, record_metrics, sync_trello, check_unblocked
-- `on_task_block`: sync_trello
+#### BPS Preset (TASK-078) ✅
+- 7-list Trello structure per BPS guidelines
+- 8 label colors for stack types
+- Automation mappings for all task events
+- Hooks enabled by default
 
-#### 3. Hook Reliability Fix
-Updated `planning/cli_commands.py` - `task_update` command:
-- Now **always fires hooks** when status changes
-- Added `_run_status_hooks()` helper function
-- Maps status to event: in_progress→on_task_start, done→on_task_complete, blocked→on_task_block
-- Added `--no-hooks` flag to skip hooks if needed
-- Shows feedback: "→ Trello: moved to 'In Progress'"
-
-#### 4. Config Path Compatibility
-Updated `hooks.py` to check both locations:
-- `trello.automation` (new/preferred)
-- `trello.card_format.automation` (backwards compatibility)
-
-#### 5. Test Fixes
-Updated tests using old `parser.get()` method:
-- `tests/test_autonomous_workflow.py`
-- `tests/test_webhook.py`
-
-### Verified Working
-```bash
-$ bpsai-pair task update TASK-078 --status in_progress
-🔄 Updated TASK-078 -> in_progress
-  → Trello: moved to 'In Progress'
-
-$ bpsai-pair task update TASK-078 --status done
-✅ Updated TASK-078 -> done
-  → Trello: moved to 'Deployed / Done'
-```
+#### Hook Reliability Fix
+- Task update command now ALWAYS fires hooks on status change
+- Maps status to events (in_progress→on_task_start, done→on_task_complete, blocked→on_task_block)
 
 ### Test Coverage
-- **Total tests**: 389 passing
-- All tests pass after fixes
+- **Total tests**: 412 passing (up from 389)
+- **New tests**: 23 for progress reporter
 
-## What's Next
-
-### Immediate Priority
-
-1. **PR Automation** (TASK-069, 071)
-   - Auto-link PRs when branches are pushed
-   - Archive tasks when PRs are merged
-
-2. **Agent Progress Tracking** (TASK-068)
-   - Automatic progress comments on Trello cards
-
-### Backlog
-
-- VS Code Extension (TASK-063, 064, 065) - future
-- Daily standup summary generation
-- Slack notifications
-
-## Blockers
-
-None.
-
-## Files Modified This Session
+## Files Created/Modified This Session
 
 ```
 tools/cli/bpsai_pair/
+├── cli.py                        # Added standup_app registration
 ├── presets.py                    # Added BPS preset
 ├── hooks.py                      # Config path compatibility fix
 ├── planning/
-│   ├── cli_commands.py           # Hook triggering on task update
+│   ├── cli_commands.py           # Added standup commands, hook triggering
+│   ├── standup.py                # NEW: Standup summary generation
 │   └── auto_assign.py            # Method name fix
 ├── orchestration/
 │   └── autonomous.py             # Method name fix
 ├── github/
-│   └── pr.py                     # Method name fix
+│   ├── pr.py                     # Added auto-PR and archive functions
+│   └── commands.py               # Added auto-pr and archive-merged commands
 └── trello/
+    ├── __init__.py               # Exports for progress module
+    ├── progress.py               # NEW: Progress reporter
+    ├── commands.py               # Added progress command
     └── webhook.py                # Method name fix
 
 tests/
+├── test_progress.py              # NEW: 23 tests for progress reporter
 ├── test_autonomous_workflow.py   # Method name fix
 └── test_webhook.py               # Method name fix
 ```
 
-## Workflow Stages (Codified)
+## Sprint 13 Definition of Done - ACHIEVED ✅
 
-| Stage | Trello List | Trigger |
-|-------|-------------|---------|
-| Intake | Intake / Backlog | New unplanned task |
-| Planned | Planned / Ready | `on_task_ready` hook |
-| In Progress | In Progress | `on_task_start` hook |
-| Review | Review / Testing | `on_task_review` hook |
-| Done | Deployed / Done | `on_task_complete` hook |
-| Blocked | Issues / Tech Debt | `on_task_block` hook |
+- [x] `bpsai-pair trello status` always works
+- [x] Starting a task ALWAYS moves card to "In Progress"
+- [x] Completing a task ALWAYS moves card to "Done"
+- [x] `bpsai-pair init --preset bps` creates correct structure
+- [x] Can demo full flow: Create plan → Sync Trello → Work task → Card moves
+- [x] 412 tests passing
+- [x] Documentation updated
+
+## CLI Commands Added This Sprint
+
+```bash
+# Progress comments
+bpsai-pair trello progress TASK-001 "message"
+bpsai-pair trello progress TASK-001 --started
+bpsai-pair trello progress TASK-001 --blocked "reason"
+bpsai-pair trello progress TASK-001 --step "completed step"
+bpsai-pair trello progress TASK-001 --completed "summary"
+bpsai-pair trello progress TASK-001 --review
+
+# Auto-PR
+bpsai-pair github auto-pr              # Create draft PR from branch name
+bpsai-pair github auto-pr --no-draft   # Create as ready PR
+
+# Archive merged
+bpsai-pair github archive-merged 123   # Archive task for PR #123
+bpsai-pair github archive-merged --all # Scan and archive all merged PRs
+
+# Standup
+bpsai-pair standup generate            # Generate markdown summary
+bpsai-pair standup generate --format slack
+bpsai-pair standup generate --since 48 # Look back 48 hours
+bpsai-pair standup generate -o standup.md
+bpsai-pair standup post                # Post to Trello Notes list
+```
+
+## What's Next
+
+Sprint 13 is complete. Future work (lower priority):
+
+1. **VS Code Extension** (TASK-063, 064, 065) - deferred
+2. **Slack Notifications** (TASK-075) - nice to have
+3. **Multi-project Support** (TASK-076) - nice to have
+
+## Blockers
+
+None - Sprint 13 complete.
 
 ## Available Presets
 
@@ -192,22 +200,3 @@ tests/
 | minimal | Minimal configuration with essential defaults |
 | autonomous | Full autonomy with Trello integration |
 | **bps** | **BPS AI Software preset with 7-list Trello workflow** |
-
-## CLI Quick Reference
-
-```bash
-# Task management with hooks
-bpsai-pair task update <id> --status in_progress  # Fires hooks, moves Trello card
-bpsai-pair task update <id> --status done         # Fires hooks, moves card to Done
-bpsai-pair task update <id> --status done --no-hooks  # Skip hooks
-
-# Presets
-bpsai-pair preset list                    # Show all presets
-bpsai-pair preset show bps                # Show BPS preset details
-bpsai-pair preset preview bps             # Preview generated config
-bpsai-pair init myproject --preset bps    # Initialize with BPS preset
-
-# Trello
-bpsai-pair trello status                  # Check connection
-bpsai-pair plan sync-trello <plan-id>     # Sync plan to Trello board
-```

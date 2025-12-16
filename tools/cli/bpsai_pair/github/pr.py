@@ -388,3 +388,188 @@ class PRWorkflow:
 
         self.pr_manager.update_task_on_merge(pr_number, on_merge)
         return next_task_id
+
+
+def auto_create_pr_for_branch(
+    project_root: Optional[Path] = None,
+    paircoder_dir: Optional[Path] = None,
+    draft: bool = True,
+) -> Optional[PRInfo]:
+    """Auto-create a draft PR when a feature branch is pushed.
+
+    This function is designed to be called after a git push. It:
+    1. Detects the current branch
+    2. Extracts task ID from branch name (e.g., feature/TASK-001-description)
+    3. Creates a draft PR if one doesn't exist
+
+    Args:
+        project_root: Project root directory
+        paircoder_dir: Path to .paircoder directory
+        draft: Create as draft PR (default True)
+
+    Returns:
+        PRInfo if PR was created, None otherwise
+    """
+    project_root = project_root or Path.cwd()
+    paircoder_dir = paircoder_dir or (project_root / ".paircoder")
+
+    manager = PRManager(project_root=project_root, paircoder_dir=paircoder_dir)
+
+    # Get current branch
+    branch = manager.service.get_current_branch()
+    if not branch:
+        logger.warning("Could not determine current branch")
+        return None
+
+    # Check if on main/default branch
+    default_branch = manager.service.client.get_default_branch(project_root)
+    if branch == default_branch:
+        logger.info("On default branch, skipping PR creation")
+        return None
+
+    # Check if PR already exists for this branch
+    existing = manager.get_pr_for_branch(branch)
+    if existing:
+        logger.info(f"PR already exists: #{existing.number}")
+        return existing
+
+    # Extract task ID from branch name
+    # Patterns: feature/TASK-001-*, TASK-001/*, TASK-001-*
+    task_id = None
+    task_match = re.search(r"(TASK-\d+)", branch, re.IGNORECASE)
+    if task_match:
+        task_id = task_match.group(1).upper()
+
+    if not task_id:
+        logger.info(f"No task ID found in branch name: {branch}")
+        return None
+
+    # Create the PR
+    logger.info(f"Creating draft PR for {task_id} on branch {branch}")
+    return manager.create_pr_for_task(
+        task_id=task_id,
+        summary=f"Implementation of {task_id}",
+        draft=draft,
+    )
+
+
+def archive_task_on_merge(
+    pr_number: int,
+    project_root: Optional[Path] = None,
+    paircoder_dir: Optional[Path] = None,
+) -> bool:
+    """Archive a task when its associated PR is merged.
+
+    Args:
+        pr_number: PR number to check
+        project_root: Project root directory
+        paircoder_dir: Path to .paircoder directory
+
+    Returns:
+        True if task was archived
+    """
+    project_root = project_root or Path.cwd()
+    paircoder_dir = paircoder_dir or (project_root / ".paircoder")
+
+    manager = PRManager(project_root=project_root, paircoder_dir=paircoder_dir)
+
+    # Get PR status
+    status = manager.service.client.get_pr_status(
+        pr_number=pr_number,
+        cwd=project_root,
+    )
+
+    if not status:
+        logger.warning(f"Could not get PR #{pr_number} status")
+        return False
+
+    pr_info = PRInfo.from_gh_json(status)
+
+    if pr_info.state != "merged":
+        logger.info(f"PR #{pr_number} is not merged (state: {pr_info.state})")
+        return False
+
+    if not pr_info.task_id:
+        logger.info(f"PR #{pr_number} is not linked to a task")
+        return False
+
+    # Archive the task
+    try:
+        from ..tasks import TaskArchiver, TaskLifecycle
+
+        archiver = TaskArchiver(project_root)
+        lifecycle = TaskLifecycle(paircoder_dir / "tasks")
+
+        # Find the task file
+        task_file = None
+        for f in (paircoder_dir / "tasks").rglob(f"{pr_info.task_id}.task.md"):
+            task_file = f
+            break
+
+        if not task_file:
+            # Look in root tasks directory
+            task_file = paircoder_dir / "tasks" / f"{pr_info.task_id}.task.md"
+
+        if not task_file.exists():
+            logger.warning(f"Task file not found: {pr_info.task_id}")
+            return False
+
+        # Load and archive
+        task = lifecycle.load_task(task_file)
+        result = archiver.archive_batch([task], task.sprint or "merged")
+
+        if result.archived:
+            logger.info(f"Archived {pr_info.task_id} after PR #{pr_number} merge")
+            return True
+        else:
+            logger.warning(f"Failed to archive {pr_info.task_id}: {result.errors}")
+            return False
+
+    except ImportError:
+        logger.warning("Task archiver not available")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to archive task: {e}")
+        return False
+
+
+def check_and_archive_merged_prs(
+    project_root: Optional[Path] = None,
+    paircoder_dir: Optional[Path] = None,
+    limit: int = 10,
+) -> List[str]:
+    """Check recent merged PRs and archive associated tasks.
+
+    Args:
+        project_root: Project root directory
+        paircoder_dir: Path to .paircoder directory
+        limit: Maximum PRs to check
+
+    Returns:
+        List of archived task IDs
+    """
+    project_root = project_root or Path.cwd()
+    paircoder_dir = paircoder_dir or (project_root / ".paircoder")
+
+    manager = PRManager(project_root=project_root, paircoder_dir=paircoder_dir)
+
+    # Get recently merged PRs
+    prs = manager.service.client.list_prs(
+        state="closed",
+        limit=limit,
+        cwd=project_root,
+    )
+
+    archived = []
+    for pr_data in prs:
+        pr_info = PRInfo.from_gh_json(pr_data)
+
+        # Check if merged (not just closed)
+        if pr_info.state == "merged" and pr_info.task_id:
+            # Check if task is already archived
+            task_file = paircoder_dir / "tasks" / f"{pr_info.task_id}.task.md"
+            if task_file.exists():
+                if archive_task_on_merge(pr_info.number, project_root, paircoder_dir):
+                    archived.append(pr_info.task_id)
+
+    return archived

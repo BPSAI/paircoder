@@ -287,3 +287,103 @@ def link_task(
     console.print(f"[green]PR #{pr.number} can be linked to {task_id}[/green]")
     console.print("[dim]Update PR title to include [TASK-XXX] prefix[/dim]")
     console.print(f"[dim]Example: [{task_id}] {pr.title}[/dim]")
+
+
+@app.command("auto-pr")
+def auto_pr(
+    draft: bool = typer.Option(True, "--draft/--no-draft", help="Create as draft PR"),
+):
+    """Auto-create PR for current branch if it has a task ID.
+
+    This command detects the task ID from the branch name and creates a draft PR.
+    Branch naming patterns supported:
+    - feature/TASK-001-description
+    - TASK-001/description
+    - TASK-001-description
+
+    Example:
+        git checkout -b feature/TASK-001-add-authentication
+        git push -u origin HEAD
+        bpsai-pair github auto-pr
+    """
+    from .pr import auto_create_pr_for_branch
+
+    paircoder_dir = _find_paircoder_dir()
+    project_root = paircoder_dir.parent
+
+    pr = auto_create_pr_for_branch(
+        project_root=project_root,
+        paircoder_dir=paircoder_dir,
+        draft=draft,
+    )
+
+    if pr:
+        if hasattr(pr, 'number'):
+            console.print(f"[green]Created draft PR #{pr.number}[/green]")
+            console.print(f"  URL: {pr.url}")
+            if pr.task_id:
+                console.print(f"  Task: {pr.task_id}")
+        else:
+            console.print(f"[green]PR already exists[/green]")
+    else:
+        console.print("[yellow]Could not create PR[/yellow]")
+        console.print("[dim]Ensure branch name contains TASK-XXX[/dim]")
+        console.print("[dim]Example: feature/TASK-001-description[/dim]")
+
+
+@app.command("archive-merged")
+def archive_merged(
+    pr_number: Optional[int] = typer.Argument(None, help="Specific PR number to check"),
+    check_all: bool = typer.Option(False, "--all", "-a", help="Check all recent merged PRs"),
+    limit: int = typer.Option(10, "--limit", "-l", help="Max PRs to check when using --all"),
+):
+    """Archive tasks whose PRs have been merged.
+
+    Can archive a specific task by PR number, or scan recent merged PRs.
+
+    Examples:
+        # Archive task for a specific merged PR
+        bpsai-pair github archive-merged 123
+
+        # Check all recently merged PRs and archive their tasks
+        bpsai-pair github archive-merged --all
+    """
+    from .pr import archive_task_on_merge, check_and_archive_merged_prs
+
+    paircoder_dir = _find_paircoder_dir()
+    project_root = paircoder_dir.parent
+
+    if pr_number:
+        # Archive specific PR's task
+        success = archive_task_on_merge(
+            pr_number=pr_number,
+            project_root=project_root,
+            paircoder_dir=paircoder_dir,
+        )
+
+        if success:
+            console.print(f"[green]Archived task for PR #{pr_number}[/green]")
+        else:
+            console.print(f"[yellow]Could not archive task for PR #{pr_number}[/yellow]")
+            console.print("[dim]PR may not be merged or not linked to a task[/dim]")
+
+    elif check_all:
+        # Check all recent merged PRs
+        archived = check_and_archive_merged_prs(
+            project_root=project_root,
+            paircoder_dir=paircoder_dir,
+            limit=limit,
+        )
+
+        if archived:
+            console.print(f"[green]Archived {len(archived)} tasks:[/green]")
+            for task_id in archived:
+                console.print(f"  - {task_id}")
+        else:
+            console.print("[dim]No tasks to archive[/dim]")
+
+    else:
+        console.print("[yellow]Specify a PR number or use --all[/yellow]")
+        console.print("[dim]Examples:[/dim]")
+        console.print("[dim]  bpsai-pair github archive-merged 123[/dim]")
+        console.print("[dim]  bpsai-pair github archive-merged --all[/dim]")

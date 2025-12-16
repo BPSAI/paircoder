@@ -259,6 +259,89 @@ def trello_config(
         _save_config(config)
 
 
+@app.command("progress")
+def progress_comment(
+    task_id: str = typer.Argument(..., help="Task ID (e.g., TASK-001)"),
+    message: str = typer.Argument(None, help="Progress message"),
+    blocked: Optional[str] = typer.Option(None, "--blocked", "-b", help="Report blocking issue"),
+    waiting: Optional[str] = typer.Option(None, "--waiting", "-w", help="Report waiting for dependency"),
+    step: Optional[str] = typer.Option(None, "--step", "-s", help="Report completed step"),
+    started: bool = typer.Option(False, "--started", help="Report task started"),
+    completed: bool = typer.Option(False, "--completed", "-c", help="Report task completed"),
+    review: bool = typer.Option(False, "--review", "-r", help="Report submitted for review"),
+    agent: str = typer.Option("claude", "--agent", "-a", help="Agent name for comment"),
+):
+    """Post a progress comment to a Trello card.
+
+    Examples:
+        # Report progress
+        bpsai-pair trello progress TASK-001 "Completed authentication module"
+
+        # Report blocking issue
+        bpsai-pair trello progress TASK-001 --blocked "Waiting for API access"
+
+        # Report step completion
+        bpsai-pair trello progress TASK-001 --step "Unit tests passing"
+
+        # Report task started
+        bpsai-pair trello progress TASK-001 --started
+
+        # Report completion with summary
+        bpsai-pair trello progress TASK-001 --completed "Added user auth with OAuth2"
+    """
+    from pathlib import Path
+    from .progress import create_progress_reporter
+
+    paircoder_dir = Path.cwd() / ".paircoder"
+    if not paircoder_dir.exists():
+        console.print("[red]Not in a PairCoder project directory[/red]")
+        raise typer.Exit(1)
+
+    reporter = create_progress_reporter(paircoder_dir, task_id, agent)
+    if not reporter:
+        console.print("[red]Could not create progress reporter. Check Trello connection.[/red]")
+        raise typer.Exit(1)
+
+    success = False
+
+    if started:
+        success = reporter.report_start()
+        if success:
+            console.print(f"[green]Posted: Task started[/green]")
+    elif blocked:
+        success = reporter.report_blocked(blocked)
+        if success:
+            console.print(f"[green]Posted: Blocked - {blocked}[/green]")
+    elif waiting:
+        success = reporter.report_waiting(waiting)
+        if success:
+            console.print(f"[green]Posted: Waiting for {waiting}[/green]")
+    elif step:
+        success = reporter.report_step_complete(step)
+        if success:
+            console.print(f"[green]Posted: Completed step - {step}[/green]")
+    elif completed:
+        summary = message or "Task completed"
+        success = reporter.report_completion(summary)
+        if success:
+            console.print(f"[green]Posted: Task completed[/green]")
+    elif review:
+        success = reporter.report_review()
+        if success:
+            console.print(f"[green]Posted: Submitted for review[/green]")
+    elif message:
+        success = reporter.report_progress(message)
+        if success:
+            console.print(f"[green]Posted: {message}[/green]")
+    else:
+        console.print("[yellow]No progress update specified. Use --help for options.[/yellow]")
+        raise typer.Exit(1)
+
+    if not success:
+        console.print("[red]Failed to post progress comment[/red]")
+        raise typer.Exit(1)
+
+
 # Register webhook subcommands
 from .webhook_commands import app as webhook_app
 app.add_typer(webhook_app, name="webhook")

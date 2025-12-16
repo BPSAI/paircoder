@@ -28,7 +28,7 @@ try:
     from .config import Config
     from .flows import FlowParser, FlowValidationError
     from .flows.parser_v2 import FlowParser as FlowParserV2
-    from .planning.cli_commands import plan_app, task_app, intent_app
+    from .planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
     from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from .integrations import TimeTrackingManager, TimeTrackingConfig
@@ -48,7 +48,7 @@ except ImportError:
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
-    from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app
+    from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
     from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
@@ -84,6 +84,7 @@ app.add_typer(flow_app, name="flow")
 app.add_typer(plan_app, name="plan")
 app.add_typer(task_app, name="task")
 app.add_typer(intent_app, name="intent")
+app.add_typer(standup_app, name="standup")
 
 # Orchestration sub-app for multi-agent coordination
 orchestrate_app = typer.Typer(
