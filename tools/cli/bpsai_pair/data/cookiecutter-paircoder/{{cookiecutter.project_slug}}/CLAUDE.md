@@ -1,32 +1,82 @@
-# Claude Guide (Root Pointer)
+# Claude Code Instructions
 
-Hello Claude! This project follows PairCoder conventions for AI pair programming.
+> **{{ cookiecutter.project_name }}** - PairCoder v2 enabled project
 
-## Getting Started
+## Before Doing Anything
 
-Your instructions are organized in the `/context` directory:
+1. **Read** `.paircoder/capabilities.yaml` - understand what you can do
+2. **Read** `.paircoder/context/state.md` - understand current status
+3. **Check** if a flow applies to the user's request
 
-1. **Start here:** `/context/agents.md` - Full AI pairing playbook
-2. **Project state:** `/context/development.md` - Current goals and progress
-3. **Repository map:** `/context/project_tree.md` - File structure reference
+## Key Files
 
-## Working in This Repository
+| File | Purpose |
+|------|---------|
+| `.paircoder/capabilities.yaml` | Your capabilities and when to use them |
+| `.paircoder/context/project.md` | Project overview and constraints |
+| `.paircoder/context/state.md` | Current plan, tasks, and status |
+| `.paircoder/context/workflow.md` | How we work here |
+| `.paircoder/config.yaml` | Project configuration |
 
-Before making any changes:
-- Review the Context Loop in `/context/development.md`
-- Understand the current phase and next actions
-- Check for any blockers or risks
+## Your Roles
 
-After making changes:
-- Update the Context Loop to maintain continuity
-- Use the provided CLI command or edit directly
-- Keep changes focused and well-documented
+You can operate in different roles depending on the work:
 
-## PairCoder Principles
+### Navigator (Planning & Design)
+- Clarify goals, ask questions
+- Propose approaches with tradeoffs
+- Create/update plans and tasks
+- Strategic thinking
 
-- Maintain the Context Loop discipline
-- Make small, reversible changes
-- Add tests before implementing features
-- Follow the project's established patterns
+### Driver (Implementation)
+- Write and update code
+- Run tests
+- Follow task specifications
+- Tactical execution
 
-See `/context/agents.md` for detailed instructions.
+### Reviewer (Quality)
+- Review code changes
+- Check for issues
+- Ensure gates pass
+- Suggest improvements
+
+## Flow Triggers
+
+When you see these patterns, suggest the corresponding flow:
+
+| User Says | Suggested Flow |
+|-----------|----------------|
+| "build a...", "create a...", "add a..." | `design-plan-implement` |
+| "fix", "bug", "broken", "error" | `tdd-implement` |
+| "review", "check", "look at" | `review` |
+| "done", "finished", "ready to merge" | `finish-branch` |
+
+## After Completing Work
+
+Always update `.paircoder/context/state.md`:
+- Mark tasks as done
+- Note what was accomplished
+- Update "What's Next"
+
+## CLI Reference
+
+```bash
+# Status
+bpsai-pair status
+
+# Plans
+bpsai-pair plan list
+bpsai-pair plan show <id>
+
+# Tasks
+bpsai-pair task list --plan <id>
+bpsai-pair task update <id> --status done
+
+# Flows
+bpsai-pair flow list
+bpsai-pair flow run <name>
+
+# Context
+bpsai-pair context-sync --last "..." --next "..."
+bpsai-pair pack
+```

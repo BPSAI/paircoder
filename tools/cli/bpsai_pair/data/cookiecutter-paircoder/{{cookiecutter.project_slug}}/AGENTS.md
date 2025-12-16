@@ -1,29 +1,65 @@
-# Agents Guide (Root Pointer)
+# Agents Guide
 
-Welcome, AI agent! This project uses PairCoder for AI pair programming.
+Welcome, AI agent! This project uses **PairCoder v2** for AI pair programming.
 
-## Where to Start
+## Before Doing Anything
 
-All instructions, context, and project information are maintained in the `/context` directory:
+1. **Read** `.paircoder/capabilities.yaml` - understand what you can do
+2. **Read** `.paircoder/context/state.md` - understand current status
+3. **Check** if a flow applies to the user's request
 
-1. **Read first:** `/context/agents.md` - Complete playbook and guidelines
-2. **Current state:** `/context/development.md` - Roadmap and Context Loop
-3. **File structure:** `/context/project_tree.md` - Repository layout
-4. **Component docs:** `/context/directory_notes/` - Directory-specific guidance
+## Key Files
 
-## Critical Reminder
+| File | Purpose |
+|------|---------|
+| `.paircoder/capabilities.yaml` | Your capabilities and when to use them |
+| `.paircoder/context/project.md` | Project overview and constraints |
+| `.paircoder/context/state.md` | Current plan, tasks, and status |
+| `.paircoder/context/workflow.md` | How we work here |
+| `.paircoder/config.yaml` | Project configuration |
 
-Always check the Context Loop at the end of `/context/development.md` for:
-- **Overall goal is:** The project's primary objective
-- **Last action was:** What was just completed
-- **Next action will be:** The immediate next step
-- **Blockers/Risks:** Any issues needing attention
+## Your Roles
 
-## After Making Changes
+| Role | When |
+|------|------|
+| **Navigator** | Planning, design decisions, clarifying questions |
+| **Driver** | Writing code, implementing tasks, running tests |
+| **Reviewer** | Code review, quality checks, verification |
 
-Update the Context Loop using:
+## Flow Triggers
+
+| User Says | Suggested Flow |
+|-----------|----------------|
+| "build a...", "create a...", "add a..." | `design-plan-implement` |
+| "fix", "bug", "broken", "error" | `tdd-implement` |
+| "review", "check", "look at" | `review` |
+| "done", "finished", "ready to merge" | `finish-branch` |
+
+## After Completing Work
+
+Always update `.paircoder/context/state.md`:
+- Mark tasks as done
+- Note what was accomplished
+- Update "What's Next"
+
+## CLI Reference
+
 ```bash
-bpsai-pair context-sync --last "What you did" --next "Next step" --blockers "Any issues"
-```
+# Status
+bpsai-pair status
 
-Begin by reading `/context/agents.md` for complete instructions.
+# Plans
+bpsai-pair plan list
+bpsai-pair plan show <id>
+
+# Tasks
+bpsai-pair task list --plan <id>
+bpsai-pair task update <id> --status done
+
+# Flows
+bpsai-pair flow list
+bpsai-pair flow run <name>
+
+# Context
+bpsai-pair context-sync --last "..." --next "..."
+```

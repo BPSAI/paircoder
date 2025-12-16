@@ -1,0 +1,144 @@
+# PairCoder Capability Manifest
+# This file tells LLMs (Claude Code, Codex CLI, etc.) what they can do and when
+
+version: "2.0"
+name: {{ cookiecutter.project_slug }}
+description: |
+  {{ cookiecutter.project_name }} - AI pair programming enabled project.
+  LLMs should read this file to understand available capabilities.
+
+# ============================================================================
+# QUICK START FOR LLMs
+# ============================================================================
+#
+# 1. Read .paircoder/context/project.md to understand this project
+# 2. Read .paircoder/context/state.md to see current plan/task status
+# 3. Check if any flows apply to the user's request
+# 4. Execute the appropriate capability
+#
+# ============================================================================
+
+# Where to find context
+context_files:
+  project: .paircoder/context/project.md
+  workflow: .paircoder/context/workflow.md
+  state: .paircoder/context/state.md
+
+# Where to find other resources
+directories:
+  flows: .paircoder/flows/
+  plans: .paircoder/plans/
+  tasks: .paircoder/tasks/
+
+# ============================================================================
+# CAPABILITIES
+# ============================================================================
+
+capabilities:
+
+  - id: create_plan
+    name: "Create a new plan"
+    description: "Creates a plan with goals and tasks for a feature, bugfix, or refactor."
+    when_to_use:
+      - User describes a feature they want to build
+      - User wants to fix a bug that requires multiple steps
+      - User says "let's plan" or "how should we approach"
+    how_to_invoke:
+      cli: "bpsai-pair plan new <slug> --type <feature|bugfix|refactor>"
+    flow_to_run: design-plan-implement
+
+  - id: view_plan
+    name: "View current plan status"
+    description: "Shows the current active plan, its goals, and task statuses."
+    when_to_use:
+      - User asks "what's the plan" or "where are we"
+      - Before starting any work
+    how_to_invoke:
+      cli: "bpsai-pair plan show <plan-id>"
+
+  - id: update_task_status
+    name: "Update task status"
+    description: "Marks a task as in_progress, done, or blocked."
+    when_to_use:
+      - After completing a task
+      - When starting work on a task
+    how_to_invoke:
+      cli: "bpsai-pair task update <task-id> --status <status>"
+
+  - id: run_flow
+    name: "Run a workflow"
+    description: "Executes a defined workflow (flow) for structured work."
+    when_to_use:
+      - Starting a new feature (run design-plan-implement)
+      - Implementing a task (run tdd-implement)
+      - Reviewing code (run review)
+    how_to_invoke:
+      cli: "bpsai-pair flow run <flow-name>"
+
+  - id: sync_context
+    name: "Update context/state"
+    description: "Updates the current state with what was done and what's next."
+    when_to_use:
+      - After completing significant work
+      - Before ending a session
+    how_to_invoke:
+      cli: "bpsai-pair context-sync --last '<what>' --next '<next>'"
+
+  - id: show_status
+    name: "Show overall status"
+    description: "Shows git status, current branch, active plan, task progress."
+    when_to_use:
+      - User asks "where are we" or "what's the status"
+      - Starting a new session
+    how_to_invoke:
+      cli: "bpsai-pair status"
+
+# ============================================================================
+# FLOW TRIGGERS
+# ============================================================================
+
+flow_triggers:
+  - trigger: "user_describes_feature"
+    patterns: ["build a", "create a", "add a", "implement"]
+    suggested_flow: design-plan-implement
+
+  - trigger: "user_reports_bug"
+    patterns: ["bug", "broken", "not working", "fix"]
+    suggested_flow: tdd-implement
+
+  - trigger: "user_wants_review"
+    patterns: ["review", "check my", "look at"]
+    suggested_flow: review
+
+# ============================================================================
+# ROLES
+# ============================================================================
+
+roles:
+  navigator:
+    description: "Strategic thinking, planning, design decisions."
+    when_active:
+      - During planning phases
+      - When user needs guidance on approach
+
+  driver:
+    description: "Implementation, writing code, running tests."
+    when_active:
+      - When implementing specific tasks
+      - When user says "let's code"
+
+  reviewer:
+    description: "Code review, quality checks, verification."
+    when_active:
+      - During review flow
+      - Before merging
+
+# ============================================================================
+# IMPORTANT NOTES
+# ============================================================================
+
+notes:
+  - Always read state.md first to understand current context
+  - If a flow applies to the user's request, suggest or run it
+  - Keep state.md updated after significant actions
+  - Tasks should be small (2-20 minutes of work each)

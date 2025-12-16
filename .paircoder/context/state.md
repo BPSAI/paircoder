@@ -50,47 +50,51 @@ Ready to begin Sprint 4: Template updates and documentation.
 
 | Task | Title | Status | Priority |
 |------|-------|--------|----------|
-| TASK-016 | Update cookiecutter template for v2 | ⏳ pending | P1 |
+| TASK-016 | Update cookiecutter template for v2 | ✅ done | P1 |
 | TASK-017 | Update USER_GUIDE.md | ⏳ pending | P2 |
 | TASK-018 | Update README.md | ⏳ pending | P2 |
 | TASK-019 | Bump version and prepare release | ⏳ pending | P2 |
 
 ## What Was Just Done
 
-### Claude Code Integration (Sprint 2-3 completion)
+### TASK-016: Cookiecutter Template Update
 
-Claude Code successfully:
+Updated the cookiecutter template to use v2 `.paircoder/` structure:
 
-1. **Copied planning module** to `tools/cli/bpsai_pair/planning/`
-2. **Converted Click to Typer** - Adapted CLI commands to match main CLI framework
-3. **Integrated plan/task commands** - Registered with main app
-4. **Updated flow commands** - Now use v2 parser supporting `.flow.md`
-5. **Updated tests** - Test suite passes with new format
+1. **Created `.paircoder/config.yaml`** - v2 configuration with models, routing, flows
+2. **Created `.paircoder/capabilities.yaml`** - LLM capability manifest
+3. **Created `.paircoder/context/`** - project.md, workflow.md, state.md
+4. **Created `.paircoder/flows/`** - tdd-implement.flow.md starter flow
+5. **Updated AGENTS.md & CLAUDE.md** - Point to new `.paircoder/` structure
 
-### Key Files Modified
+### Key Files Added to Template
 
-- `tools/cli/bpsai_pair/cli.py` - Added plan_app, task_app, FlowParserV2
-- `tools/cli/bpsai_pair/planning/*` - Full planning module
-- `tools/cli/bpsai_pair/flows/parser_v2.py` - New flow parser
-- `tools/cli/tests/test_flow_cli.py` - Updated for .flow.md
+```
+.paircoder/
+├── config.yaml
+├── capabilities.yaml
+├── context/
+│   ├── project.md
+│   ├── workflow.md
+│   └── state.md
+├── flows/
+│   └── tdd-implement.flow.md
+├── plans/.gitkeep
+└── tasks/.gitkeep
+```
 
 ## What's Next
 
-1. **TASK-016**: Update cookiecutter template
-   - Restructure to use `.paircoder/`
-   - Add default config, capabilities, flows
-   - Update AGENTS.md/CLAUDE.md pointers
-   
-2. **TASK-017**: Update USER_GUIDE.md
+1. **TASK-017**: Update USER_GUIDE.md
    - Document planning system
    - Document new CLI commands
    - Add LLM integration section
 
-3. **TASK-018**: Update README.md
+2. **TASK-018**: Update README.md
    - Highlight v2 features
    - Update command overview
 
-4. **TASK-019**: Version bump and release
+3. **TASK-019**: Version bump and release
    - Decide on 2.0.0 vs 0.3.0
    - Update CHANGELOG
    - Create release
