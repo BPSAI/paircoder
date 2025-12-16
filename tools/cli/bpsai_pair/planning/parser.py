@@ -254,11 +254,11 @@ class TaskParser:
     def get_task_by_id(self, task_id: str, plan_slug: Optional[str] = None) -> Optional[Task]:
         """
         Find and parse a task by its ID.
-        
+
         Args:
             task_id: Task ID (e.g., "TASK-001")
             plan_slug: Optional plan slug to narrow search
-            
+
         Returns:
             Task object or None if not found
         """
@@ -266,6 +266,20 @@ class TaskParser:
             if task.id == task_id:
                 return task
         return None
+
+    def get_tasks_for_plan(self, plan_id: str) -> list[Task]:
+        """
+        Get all tasks belonging to a specific plan.
+
+        Filters tasks by the plan_id field in frontmatter, not by directory.
+
+        Args:
+            plan_id: Plan ID to filter by (e.g., "plan-2025-01-paircoder-v2.4-mcp")
+
+        Returns:
+            List of Task objects belonging to this plan
+        """
+        return [t for t in self.parse_all() if t.plan_id == plan_id]
     
     def save(self, task: Task, plan_slug: Optional[str] = None) -> Path:
         """

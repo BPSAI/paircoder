@@ -66,23 +66,34 @@ class TestMCPServer:
         assert "plan" in task_list["parameters"]
         assert "sprint" in task_list["parameters"]
 
-    @patch("bpsai_pair.mcp.server.HAS_MCP", False)
     def test_create_server_raises_without_mcp(self):
         """create_server raises ImportError when MCP not installed."""
-        # Need to reimport to get the patched version
-        import importlib
-        import bpsai_pair.mcp.server as server_module
-        importlib.reload(server_module)
+        from bpsai_pair.mcp import server as server_module
 
-        with pytest.raises(ImportError, match="MCP package not installed"):
-            server_module.create_server()
+        # Save original value
+        original_has_mcp = server_module.HAS_MCP
 
-    @patch("bpsai_pair.mcp.server.HAS_MCP", False)
+        try:
+            # Simulate MCP not installed
+            server_module.HAS_MCP = False
+            with pytest.raises(ImportError, match="MCP package not installed"):
+                server_module.create_server()
+        finally:
+            # Restore
+            server_module.HAS_MCP = original_has_mcp
+
     def test_run_server_raises_without_mcp(self):
         """run_server raises ImportError when MCP not installed."""
-        import importlib
-        import bpsai_pair.mcp.server as server_module
-        importlib.reload(server_module)
+        from bpsai_pair.mcp import server as server_module
 
-        with pytest.raises(ImportError, match="MCP package not installed"):
-            server_module.run_server()
+        # Save original value
+        original_has_mcp = server_module.HAS_MCP
+
+        try:
+            # Simulate MCP not installed
+            server_module.HAS_MCP = False
+            with pytest.raises(ImportError, match="MCP package not installed"):
+                server_module.run_server()
+        finally:
+            # Restore
+            server_module.HAS_MCP = original_has_mcp

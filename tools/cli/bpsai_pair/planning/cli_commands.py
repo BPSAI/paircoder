@@ -308,8 +308,8 @@ def plan_status(
         console.print(f"[red]Plan not found: {plan_id}[/red]")
         raise typer.Exit(1)
 
-    # Load tasks
-    tasks = task_parser.parse_all(plan.slug)
+    # Load tasks for this plan (filter by plan_id in frontmatter)
+    tasks = task_parser.get_tasks_for_plan(plan.id)
 
     # Calculate task counts
     task_counts = {"pending": 0, "in_progress": 0, "done": 0, "blocked": 0, "cancelled": 0}

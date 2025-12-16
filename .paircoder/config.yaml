@@ -82,3 +82,19 @@ flows:
 metrics:
   enabled: true
   store_path: .paircoder/history/metrics.jsonl
+
+hooks:
+  enabled: true
+  on_task_start:
+    - start_timer
+    - sync_trello
+    - update_state
+  on_task_complete:
+    - stop_timer
+    - record_metrics
+    - sync_trello
+    - update_state
+    - check_unblocked
+  on_task_block:
+    - sync_trello
+    - update_state
