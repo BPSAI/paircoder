@@ -24,6 +24,15 @@ from .models import Plan, Task, TaskStatus, PlanStatus, PlanType, Sprint
 from .parser import PlanParser, TaskParser
 from .state import StateManager
 
+# Import task lifecycle management
+try:
+    from ..tasks import TaskArchiver, TaskLifecycle, ChangelogGenerator, TaskState
+except ImportError:
+    TaskArchiver = None
+    TaskLifecycle = None
+    ChangelogGenerator = None
+    TaskState = None
+
 
 console = Console()
 
@@ -480,6 +489,296 @@ def task_next():
             console.print(f"\n[dim]... ({len(lines) - 10} more lines)[/dim]")
 
     console.print(f"\n[dim]To start: bpsai-pair task update {task.id} --status in_progress[/dim]")
+
+
+@task_app.command("archive")
+def task_archive(
+    task_ids: Optional[List[str]] = typer.Argument(None, help="Task IDs to archive"),
+    completed: bool = typer.Option(False, "--completed", help="Archive all completed tasks"),
+    sprint: Optional[str] = typer.Option(None, "--sprint", "-s", help="Archive tasks from sprint(s), comma-separated"),
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan slug"),
+    version: Optional[str] = typer.Option(None, "--version", "-v", help="Version for changelog entry"),
+    no_changelog: bool = typer.Option(False, "--no-changelog", help="Skip changelog update"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be archived"),
+):
+    """Archive completed tasks."""
+    if TaskArchiver is None:
+        console.print("[red]Task lifecycle module not available[/red]")
+        raise typer.Exit(1)
+
+    paircoder_dir = find_paircoder_dir()
+    root_dir = paircoder_dir.parent
+
+    # Determine plan slug
+    if not plan_id:
+        # Try to get from active plan in state
+        state_manager = get_state_manager()
+        state = state_manager.load_state()
+        if state and state.active_plan:
+            plan_id = state.active_plan.replace("plan-", "").split("-", 2)[-1] if "-" in state.active_plan else state.active_plan
+        else:
+            console.print("[red]No plan specified and no active plan found[/red]")
+            raise typer.Exit(1)
+
+    # Normalize plan slug (remove plan- prefix and date)
+    plan_slug = plan_id
+    if plan_slug.startswith("plan-"):
+        parts = plan_slug.split("-")
+        if len(parts) > 3:
+            plan_slug = "-".join(parts[3:])
+
+    archiver = TaskArchiver(root_dir)
+    lifecycle = TaskLifecycle(paircoder_dir / "tasks")
+
+    # Collect tasks to archive
+    tasks_to_archive = []
+    plan_dir = paircoder_dir / "tasks" / plan_slug
+
+    if not plan_dir.exists():
+        console.print(f"[red]Plan directory not found: {plan_dir}[/red]")
+        raise typer.Exit(1)
+
+    if task_ids:
+        # Archive specific tasks
+        for task_id in task_ids:
+            task_file = plan_dir / f"{task_id}.task.md"
+            if task_file.exists():
+                task = lifecycle.load_task(task_file)
+                tasks_to_archive.append(task)
+            else:
+                console.print(f"[yellow]Task not found: {task_id}[/yellow]")
+    elif sprint:
+        # Archive by sprint
+        sprints = [s.strip() for s in sprint.split(",")]
+        tasks_to_archive = lifecycle.get_tasks_by_sprint(plan_dir, sprints)
+    elif completed:
+        # Archive all completed
+        tasks_to_archive = lifecycle.get_tasks_by_status(
+            plan_dir, [TaskState.COMPLETED, TaskState.CANCELLED]
+        )
+    else:
+        console.print("[red]Specify --completed, --sprint, or task IDs[/red]")
+        raise typer.Exit(1)
+
+    if not tasks_to_archive:
+        console.print("[dim]No tasks to archive.[/dim]")
+        return
+
+    # Show what will be archived
+    if dry_run:
+        console.print("[bold]Would archive:[/bold]")
+        for task in tasks_to_archive:
+            console.print(f"  {task.id}: {task.title} ({task.status.value})")
+        console.print(f"\n[dim]Total: {len(tasks_to_archive)} tasks[/dim]")
+        return
+
+    # Perform archive
+    console.print(f"Archiving {len(tasks_to_archive)} tasks...")
+    result = archiver.archive_batch(tasks_to_archive, plan_slug, version)
+
+    for task in result.archived:
+        console.print(f"  [green]\u2713[/green] {task.id}: {task.title}")
+
+    for skip in result.skipped:
+        console.print(f"  [yellow]\u23f8[/yellow] {skip}")
+
+    for error in result.errors:
+        console.print(f"  [red]\u2717[/red] {error}")
+
+    # Update changelog
+    if not no_changelog and result.archived and version:
+        changelog_path = root_dir / "CHANGELOG.md"
+        changelog = ChangelogGenerator(changelog_path)
+        changelog.update_changelog(result.archived, version)
+        console.print(f"\n[green]Updated CHANGELOG.md with {version}[/green]")
+
+    console.print(f"\n[green]Archived {len(result.archived)} tasks to:[/green]")
+    console.print(f"  {result.archive_path}")
+
+
+@task_app.command("restore")
+def task_restore(
+    task_id: str = typer.Argument(..., help="Task ID to restore"),
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan slug"),
+):
+    """Restore a task from archive."""
+    if TaskArchiver is None:
+        console.print("[red]Task lifecycle module not available[/red]")
+        raise typer.Exit(1)
+
+    paircoder_dir = find_paircoder_dir()
+    root_dir = paircoder_dir.parent
+
+    # Determine plan slug
+    if not plan_id:
+        state_manager = get_state_manager()
+        state = state_manager.load_state()
+        if state and state.active_plan:
+            plan_id = state.active_plan
+
+    plan_slug = plan_id
+    if plan_slug and plan_slug.startswith("plan-"):
+        parts = plan_slug.split("-")
+        if len(parts) > 3:
+            plan_slug = "-".join(parts[3:])
+
+    archiver = TaskArchiver(root_dir)
+
+    try:
+        restored_path = archiver.restore_task(task_id, plan_slug)
+        console.print(f"[green]\u2713 Restored {task_id} to:[/green]")
+        console.print(f"  {restored_path}")
+    except FileNotFoundError:
+        console.print(f"[red]Archived task not found: {task_id}[/red]")
+        raise typer.Exit(1)
+
+
+@task_app.command("list-archived")
+def task_list_archived(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan slug"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """List archived tasks."""
+    if TaskArchiver is None:
+        console.print("[red]Task lifecycle module not available[/red]")
+        raise typer.Exit(1)
+
+    paircoder_dir = find_paircoder_dir()
+    root_dir = paircoder_dir.parent
+
+    plan_slug = plan_id
+    if plan_slug and plan_slug.startswith("plan-"):
+        parts = plan_slug.split("-")
+        if len(parts) > 3:
+            plan_slug = "-".join(parts[3:])
+
+    archiver = TaskArchiver(root_dir)
+    archived = archiver.list_archived(plan_slug)
+
+    if json_out:
+        from dataclasses import asdict
+        data = [asdict(t) for t in archived]
+        console.print(json.dumps(data, indent=2))
+        return
+
+    if not archived:
+        console.print("[dim]No archived tasks found.[/dim]")
+        return
+
+    table = Table(title=f"Archived Tasks ({len(archived)})")
+    table.add_column("ID", style="cyan")
+    table.add_column("Title")
+    table.add_column("Sprint")
+    table.add_column("Archived At")
+
+    for task in archived:
+        table.add_row(
+            task.id,
+            task.title[:40] + "..." if task.title and len(task.title) > 40 else task.title or "",
+            task.sprint or "-",
+            task.archived_at[:10] if task.archived_at else "-",
+        )
+
+    console.print(table)
+
+
+@task_app.command("cleanup")
+def task_cleanup(
+    retention_days: int = typer.Option(90, "--retention", "-r", help="Retention period in days"),
+    dry_run: bool = typer.Option(True, "--dry-run/--confirm", help="Dry run or confirm deletion"),
+):
+    """Clean up old archived tasks."""
+    if TaskArchiver is None:
+        console.print("[red]Task lifecycle module not available[/red]")
+        raise typer.Exit(1)
+
+    paircoder_dir = find_paircoder_dir()
+    root_dir = paircoder_dir.parent
+
+    archiver = TaskArchiver(root_dir)
+    to_remove = archiver.cleanup(retention_days, dry_run)
+
+    if not to_remove:
+        console.print(f"[dim]No tasks older than {retention_days} days.[/dim]")
+        return
+
+    if dry_run:
+        console.print(f"[bold]Would remove ({len(to_remove)} tasks older than {retention_days} days):[/bold]")
+        for item in to_remove:
+            console.print(f"  {item}")
+        console.print("\n[dim]Run with --confirm to delete[/dim]")
+    else:
+        console.print(f"[green]Removed {len(to_remove)} archived tasks:[/green]")
+        for item in to_remove:
+            console.print(f"  [red]\u2717[/red] {item}")
+
+
+@task_app.command("changelog-preview")
+def task_changelog_preview(
+    sprint: Optional[str] = typer.Option(None, "--sprint", "-s", help="Sprint(s) to preview, comma-separated"),
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan slug"),
+    version: str = typer.Option("vX.Y.Z", "--version", "-v", help="Version string"),
+):
+    """Preview changelog entry for tasks."""
+    if TaskArchiver is None or ChangelogGenerator is None:
+        console.print("[red]Task lifecycle module not available[/red]")
+        raise typer.Exit(1)
+
+    paircoder_dir = find_paircoder_dir()
+    root_dir = paircoder_dir.parent
+
+    # Determine plan slug
+    if not plan_id:
+        state_manager = get_state_manager()
+        state = state_manager.load_state()
+        if state and state.active_plan:
+            plan_id = state.active_plan
+
+    plan_slug = plan_id
+    if plan_slug and plan_slug.startswith("plan-"):
+        parts = plan_slug.split("-")
+        if len(parts) > 3:
+            plan_slug = "-".join(parts[3:])
+
+    lifecycle = TaskLifecycle(paircoder_dir / "tasks")
+    plan_dir = paircoder_dir / "tasks" / plan_slug
+
+    if not plan_dir.exists():
+        console.print(f"[red]Plan directory not found: {plan_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Get tasks
+    if sprint:
+        sprints = [s.strip() for s in sprint.split(",")]
+        tasks = lifecycle.get_tasks_by_sprint(plan_dir, sprints)
+    else:
+        tasks = lifecycle.get_tasks_by_status(plan_dir, [TaskState.COMPLETED])
+
+    if not tasks:
+        console.print("[dim]No completed tasks found.[/dim]")
+        return
+
+    # Convert to ArchivedTask format for changelog generator
+    from ..tasks.archiver import ArchivedTask
+    archived_tasks = [
+        ArchivedTask(
+            id=t.id,
+            title=t.title,
+            sprint=t.sprint,
+            status=t.status.value,
+            completed_at=t.completed_at.isoformat() if t.completed_at else None,
+            archived_at="",
+            changelog_entry=t.changelog_entry,
+            tags=t.tags,
+        )
+        for t in tasks
+    ]
+
+    changelog = ChangelogGenerator(root_dir / "CHANGELOG.md")
+    preview = changelog.preview(archived_tasks, version)
+
+    console.print("[bold]Changelog Preview:[/bold]\n")
+    console.print(preview)
 
 
 # ============================================================================

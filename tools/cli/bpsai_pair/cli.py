@@ -30,6 +30,9 @@ try:
     from .flows.parser_v2 import FlowParser as FlowParserV2
     from .planning.cli_commands import plan_app, task_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
+    from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
+    from .integrations import TimeTrackingManager, TimeTrackingConfig
+    from .benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -42,6 +45,9 @@ except ImportError:
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
     from bpsai_pair.planning.cli_commands import plan_app, task_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
+    from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
+    from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
+    from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
 
 # Initialize Rich console
 console = Console()
@@ -74,6 +80,27 @@ orchestrate_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 app.add_typer(orchestrate_app, name="orchestrate")
+
+# Metrics sub-app for token tracking and cost estimation
+metrics_app = typer.Typer(
+    help="Token tracking and cost estimation",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(metrics_app, name="metrics")
+
+# Timer sub-app for time tracking
+timer_app = typer.Typer(
+    help="Time tracking integration",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(timer_app, name="timer")
+
+# Benchmark sub-app for performance testing
+benchmark_app = typer.Typer(
+    help="AI agent benchmarking framework",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(benchmark_app, name="benchmark")
 
 def _flows_root(root: Path) -> Path:
     return root / ".paircoder" / "flows"
@@ -174,6 +201,432 @@ def orchestrate_handoff(
     )
 
     console.print(f"[green]✓[/green] Created handoff package: {package_path}")
+
+
+# --- Metrics Commands ---
+
+def _get_metrics_collector() -> MetricsCollector:
+    """Get a metrics collector instance."""
+    root = repo_root()
+    history_dir = root / ".paircoder" / "history"
+    return MetricsCollector(history_dir)
+
+
+@metrics_app.command("summary")
+def metrics_summary(
+    period: str = typer.Option("daily", "--period", "-p", help="Period: daily, weekly, monthly"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show metrics summary for a time period."""
+    collector = _get_metrics_collector()
+    reporter = MetricsReporter(collector)
+
+    summary = reporter.get_summary(period)
+
+    if json_out:
+        print_json(summary.to_dict())
+    else:
+        console.print(reporter.format_summary_report(summary))
+
+
+@metrics_app.command("task")
+def metrics_task(
+    task_id: str = typer.Argument(..., help="Task ID"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show metrics for a specific task."""
+    collector = _get_metrics_collector()
+    reporter = MetricsReporter(collector)
+
+    metrics = reporter.get_task_metrics(task_id)
+
+    if json_out:
+        print_json(metrics)
+    else:
+        console.print(f"[bold]Task Metrics: {task_id}[/bold]")
+        console.print(f"Events: {metrics['events']} ({metrics['successful']} success, {metrics['failed']} failed)")
+        console.print(f"Tokens: {metrics['tokens']['total']:,} ({metrics['tokens']['input']:,} in / {metrics['tokens']['output']:,} out)")
+        console.print(f"Cost: ${metrics['cost_usd']:.4f}")
+        console.print(f"Duration: {metrics['duration_ms'] / 1000:.1f}s")
+
+
+@metrics_app.command("breakdown")
+def metrics_breakdown(
+    by: str = typer.Option("agent", "--by", "-b", help="Breakdown by: agent, task, model"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show cost breakdown by dimension."""
+    collector = _get_metrics_collector()
+    reporter = MetricsReporter(collector)
+
+    breakdown = reporter.get_breakdown(by)
+
+    if json_out:
+        print_json(breakdown)
+    else:
+        total_cost = sum(v["cost_usd"] for v in breakdown.values())
+        table = Table(title=f"Cost Breakdown by {by.title()}")
+        table.add_column(by.title(), style="cyan")
+        table.add_column("Events", justify="right")
+        table.add_column("Tokens", justify="right")
+        table.add_column("Cost", justify="right")
+        table.add_column("%", justify="right")
+
+        for key, stats in sorted(breakdown.items(), key=lambda x: x[1]["cost_usd"], reverse=True):
+            pct = (stats["cost_usd"] / total_cost * 100) if total_cost > 0 else 0
+            table.add_row(
+                key,
+                str(stats["events"]),
+                f"{stats['tokens']['total']:,}",
+                f"${stats['cost_usd']:.4f}",
+                f"{pct:.1f}%",
+            )
+
+        console.print(table)
+
+
+@metrics_app.command("budget")
+def metrics_budget(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show budget status."""
+    collector = _get_metrics_collector()
+    enforcer = BudgetEnforcer(collector)
+
+    status = enforcer.check_budget()
+
+    if json_out:
+        print_json({
+            "daily": {
+                "spent": status.daily_spent,
+                "limit": status.daily_limit,
+                "remaining": status.daily_remaining,
+                "percent": status.daily_percent,
+            },
+            "monthly": {
+                "spent": status.monthly_spent,
+                "limit": status.monthly_limit,
+                "remaining": status.monthly_remaining,
+                "percent": status.monthly_percent,
+            },
+            "alert": {
+                "triggered": status.alert_triggered,
+                "message": status.alert_message,
+            },
+        })
+    else:
+        console.print("[bold]Budget Status[/bold]")
+        console.print("")
+        console.print(f"Daily:   ${status.daily_spent:.2f} / ${status.daily_limit:.2f} ({status.daily_percent:.1f}%)")
+        console.print(f"         Remaining: ${status.daily_remaining:.2f}")
+        console.print("")
+        console.print(f"Monthly: ${status.monthly_spent:.2f} / ${status.monthly_limit:.2f} ({status.monthly_percent:.1f}%)")
+        console.print(f"         Remaining: ${status.monthly_remaining:.2f}")
+
+        if status.alert_triggered:
+            console.print("")
+            console.print(f"[yellow]⚠ {status.alert_message}[/yellow]")
+
+
+@metrics_app.command("export")
+def metrics_export(
+    output: str = typer.Option("metrics.csv", "--output", "-o", help="Output file path"),
+    format_type: str = typer.Option("csv", "--format", "-f", help="Export format: csv"),
+):
+    """Export metrics to file."""
+    collector = _get_metrics_collector()
+    reporter = MetricsReporter(collector)
+
+    if format_type.lower() == "csv":
+        csv_content = reporter.export_csv()
+        Path(output).write_text(csv_content)
+        console.print(f"[green]✓[/green] Exported metrics to {output}")
+    else:
+        console.print(f"[red]Unsupported format: {format_type}[/red]")
+        raise typer.Exit(1)
+
+
+# --- Timer Commands ---
+
+def _get_time_manager() -> TimeTrackingManager:
+    """Get a time tracking manager instance."""
+    root = repo_root()
+    cache_path = root / ".paircoder" / "history" / "time-entries.json"
+    config = TimeTrackingConfig()  # Will use defaults or env vars
+    return TimeTrackingManager(config, cache_path)
+
+
+@timer_app.command("start")
+def timer_start(
+    task_id: str = typer.Argument(..., help="Task ID to track time for"),
+    description: Optional[str] = typer.Option(None, "--description", "-d", help="Timer description"),
+):
+    """Start a timer for a task."""
+    manager = _get_time_manager()
+
+    desc = description or f"{task_id}: Working on task"
+    timer_id = manager.provider.start_timer(task_id, desc)
+
+    console.print(f"[green]✓[/green] Timer started: {desc}")
+    console.print(f"  Timer ID: {timer_id}")
+
+
+@timer_app.command("stop")
+def timer_stop():
+    """Stop the current timer."""
+    manager = _get_time_manager()
+
+    current = manager.get_status()
+    if not current:
+        console.print("[yellow]No active timer[/yellow]")
+        return
+
+    entry = manager.provider.stop_timer(current.id)
+
+    duration_str = manager.format_duration(entry.duration) if entry.duration else "0m"
+    console.print(f"[green]✓[/green] Timer stopped: {duration_str}")
+    console.print(f"  Task: {entry.task_id}")
+    console.print(f"  Description: {entry.description}")
+
+
+@timer_app.command("status")
+def timer_status():
+    """Show current timer status."""
+    manager = _get_time_manager()
+
+    current = manager.get_status()
+    if not current:
+        console.print("[dim]No active timer[/dim]")
+        return
+
+    elapsed = datetime.now() - current.start
+    elapsed_str = manager.format_duration(elapsed)
+
+    console.print(f"[bold]Active Timer[/bold]")
+    console.print(f"  Task: {current.task_id}")
+    console.print(f"  Description: {current.description}")
+    console.print(f"  Started: {current.start.strftime('%H:%M:%S')}")
+    console.print(f"  Elapsed: {elapsed_str}")
+
+
+@timer_app.command("show")
+def timer_show(
+    task_id: str = typer.Argument(..., help="Task ID"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show time entries for a task."""
+    manager = _get_time_manager()
+
+    entries = manager.get_task_entries(task_id)
+    total = manager.get_task_time(task_id)
+
+    if json_out:
+        print_json({
+            "task_id": task_id,
+            "entries": [e.to_dict() for e in entries],
+            "total_seconds": total.total_seconds(),
+            "total_formatted": manager.format_duration(total),
+        })
+        return
+
+    console.print(f"[bold]Time for {task_id}[/bold]")
+    console.print(f"Total: {manager.format_duration(total)}")
+    console.print("")
+
+    if entries:
+        console.print("Entries:")
+        for entry in entries:
+            date_str = entry.start.strftime("%Y-%m-%d")
+            time_str = entry.start.strftime("%H:%M")
+            duration_str = manager.format_duration(entry.duration) if entry.duration else "running"
+            console.print(f"  - {date_str} {time_str} ({duration_str})")
+    else:
+        console.print("[dim]No entries recorded[/dim]")
+
+
+@timer_app.command("summary")
+def timer_summary(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Filter by plan"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show time summary across tasks."""
+    manager = _get_time_manager()
+
+    task_ids = manager.cache.get_all_tasks()
+
+    if plan_id:
+        # Filter by plan prefix
+        task_ids = [t for t in task_ids if t.startswith(plan_id) or plan_id in t]
+
+    summary = {}
+    total = manager.provider.cache.get_total("_total") if hasattr(manager.provider, "cache") else None
+
+    for task_id in task_ids:
+        if task_id.startswith("_"):
+            continue
+        time_spent = manager.get_task_time(task_id)
+        if time_spent.total_seconds() > 0:
+            summary[task_id] = {
+                "seconds": time_spent.total_seconds(),
+                "formatted": manager.format_duration(time_spent),
+            }
+
+    if json_out:
+        print_json(summary)
+        return
+
+    if not summary:
+        console.print("[dim]No time entries found[/dim]")
+        return
+
+    table = Table(title="Time Summary")
+    table.add_column("Task", style="cyan")
+    table.add_column("Time", justify="right")
+
+    grand_total = sum(v["seconds"] for v in summary.values())
+
+    for task_id, data in sorted(summary.items()):
+        table.add_row(task_id, data["formatted"])
+
+    console.print(table)
+    console.print(f"\n[bold]Total:[/bold] {manager.format_duration(timedelta(seconds=grand_total))}")
+
+
+# --- Benchmark Commands ---
+
+def _get_benchmark_paths():
+    """Get paths for benchmarking."""
+    root = repo_root()
+    suite_path = root / ".paircoder" / "benchmarks" / "suite.yaml"
+    output_dir = root / ".paircoder" / "history" / "benchmarks"
+    return suite_path, output_dir
+
+
+@benchmark_app.command("run")
+def benchmark_run(
+    only: Optional[str] = typer.Option(None, "--only", help="Comma-separated benchmark IDs"),
+    agents: Optional[str] = typer.Option(None, "--agents", "-a", help="Comma-separated agents to test"),
+    iterations: int = typer.Option(3, "--iterations", "-i", help="Number of iterations per benchmark"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would run without executing"),
+):
+    """Run benchmarks."""
+    suite_path, output_dir = _get_benchmark_paths()
+
+    if not suite_path.exists():
+        console.print(f"[red]Benchmark suite not found: {suite_path}[/red]")
+        console.print("[dim]Create .paircoder/benchmarks/suite.yaml to define benchmarks[/dim]")
+        raise typer.Exit(1)
+
+    config = BenchmarkConfig(
+        iterations=iterations,
+        agents=agents.split(",") if agents else ["claude-code"],
+        dry_run=dry_run,
+    )
+
+    runner = BenchmarkRunner(suite_path, output_dir, config)
+
+    benchmark_ids = only.split(",") if only else None
+
+    console.print("[bold]Running benchmarks...[/bold]\n")
+
+    results = runner.run(
+        benchmark_ids=benchmark_ids,
+        agents=config.agents,
+        iterations=iterations,
+    )
+
+    # Show summary
+    for bench_id in set(r.benchmark_id for r in results):
+        bench_results = [r for r in results if r.benchmark_id == bench_id]
+        console.print(f"\n{bench_id}:")
+        for agent in config.agents:
+            agent_results = [r for r in bench_results if r.agent == agent]
+            passed = sum(1 for r in agent_results if r.success)
+            total = len(agent_results)
+            avg_duration = sum(r.duration_seconds for r in agent_results) / total if total else 0
+            avg_cost = sum(r.cost_usd for r in agent_results) / total if total else 0
+
+            status = "✓" * passed + "✗" * (total - passed)
+            console.print(f"  {agent}: {status} ({passed}/{total}, avg {avg_duration:.1f}s, ${avg_cost:.4f})")
+
+    # Overall summary
+    total = len(results)
+    passed = sum(1 for r in results if r.success)
+    console.print(f"\n[bold]Summary:[/bold]")
+    console.print(f"  Total: {total} runs")
+    console.print(f"  Passed: {passed} ({passed/total*100:.1f}%)")
+
+
+@benchmark_app.command("results")
+def benchmark_results(
+    run_id: Optional[str] = typer.Option(None, "--id", help="Specific run ID"),
+    latest: bool = typer.Option(True, "--latest", help="Show latest results"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """View benchmark results."""
+    _, output_dir = _get_benchmark_paths()
+
+    reporter = BenchmarkReporter(output_dir)
+    results = reporter.load_results(run_id if not latest else None)
+
+    if not results:
+        console.print("[dim]No benchmark results found[/dim]")
+        return
+
+    if json_out:
+        print_json([r.to_dict() for r in results])
+    else:
+        console.print(reporter.format_summary(results))
+
+
+@benchmark_app.command("compare")
+def benchmark_compare(
+    baseline: str = typer.Option(..., "--baseline", "-b", help="Baseline agent"),
+    challenger: str = typer.Option(..., "--challenger", "-c", help="Challenger agent"),
+    run_id: Optional[str] = typer.Option(None, "--id", help="Specific run ID"),
+):
+    """Compare two agents."""
+    _, output_dir = _get_benchmark_paths()
+
+    reporter = BenchmarkReporter(output_dir)
+    results = reporter.load_results(run_id)
+
+    if not results:
+        console.print("[dim]No benchmark results found[/dim]")
+        return
+
+    comparison = reporter.compare_agents(results, baseline, challenger)
+    console.print(reporter.format_comparison(comparison))
+
+
+@benchmark_app.command("list")
+def benchmark_list():
+    """List available benchmarks."""
+    suite_path, _ = _get_benchmark_paths()
+
+    if not suite_path.exists():
+        console.print("[dim]No benchmark suite found[/dim]")
+        console.print(f"[dim]Create {suite_path} to define benchmarks[/dim]")
+        return
+
+    from .benchmarks.runner import BenchmarkSuite
+    suite = BenchmarkSuite.from_yaml(suite_path)
+
+    table = Table(title="Available Benchmarks")
+    table.add_column("ID", style="cyan")
+    table.add_column("Category")
+    table.add_column("Complexity")
+    table.add_column("Description")
+
+    for bench_id, bench in suite.benchmarks.items():
+        table.add_row(
+            bench_id,
+            bench.category,
+            bench.complexity,
+            bench.description[:40] + "..." if len(bench.description) > 40 else bench.description,
+        )
+
+    console.print(table)
 
 
 @flow_app.command("list")
