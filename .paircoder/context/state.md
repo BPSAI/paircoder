@@ -6,12 +6,12 @@
 
 **Plan:** `plan-2025-01-paircoder-v2-upgrade`
 **Status:** in_progress
-**Current Sprint:** sprint-2 (Planning System Implementation) — **COMPLETE** ✓
+**Current Sprint:** sprint-4 (Template & Documentation)
 
 ## Current Focus
 
-Sprint 2 is complete. Planning module implemented with full CLI commands.
-Ready to begin Sprint 3 (CLI Extensions & Flows).
+Sprints 1-3 complete! Planning module fully integrated into CLI.
+Ready to begin Sprint 4: Template updates and documentation.
 
 ## Task Status
 
@@ -32,11 +32,11 @@ Ready to begin Sprint 3 (CLI Extensions & Flows).
 |------|-------|--------|-------|
 | TASK-007 | Implement plan YAML parser | ✅ done | `planning/parser.py` |
 | TASK-008 | Implement task YAML+MD parser | ✅ done | `planning/parser.py` |
-| TASK-009 | Add 'bpsai-pair plan' CLI commands | ✅ done | `planning/cli_commands.py` |
-| TASK-010 | Add 'bpsai-pair task' CLI commands | ✅ done | `planning/cli_commands.py` |
-| TASK-015 | Update flow parser for .flow.md | ✅ done | `flows/parser_v2.py` (pulled forward) |
+| TASK-009 | Add 'bpsai-pair plan' CLI commands | ✅ done | Converted to Typer |
+| TASK-010 | Add 'bpsai-pair task' CLI commands | ✅ done | Converted to Typer |
+| TASK-015 | Update flow parser for .flow.md | ✅ done | Pulled forward |
 
-### Sprint 3: CLI Extensions & Flows (ready to start)
+### Sprint 3: CLI Extensions & Flows ✅
 
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
@@ -44,71 +44,79 @@ Ready to begin Sprint 3 (CLI Extensions & Flows).
 | TASK-012 | Create tdd-implement.flow.md | ✅ done | Created in Sprint 1 |
 | TASK-013 | Create review.flow.md | ✅ done | Created in Sprint 1 |
 | TASK-014 | Create finish-branch.flow.md | ✅ done | Created in Sprint 1 |
-| — | Integrate planning module into CLI | ⏳ pending | See INTEGRATION.md |
+| — | Integrate planning module into CLI | ✅ done | Claude Code completed |
 
-### Sprint 4: Template & Documentation (not started)
+### Sprint 4: Template & Documentation ⏳
 
-| Task | Title | Status |
-|------|-------|--------|
-| TASK-016 | Update cookiecutter template for v2 | ⏳ pending |
-| TASK-017 | Update USER_GUIDE.md | ⏳ pending |
-| TASK-018 | Update README.md | ⏳ pending |
-| TASK-019 | Bump version and prepare release | ⏳ pending |
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-016 | Update cookiecutter template for v2 | ⏳ pending | P1 |
+| TASK-017 | Update USER_GUIDE.md | ⏳ pending | P2 |
+| TASK-018 | Update README.md | ⏳ pending | P2 |
+| TASK-019 | Bump version and prepare release | ⏳ pending | P2 |
 
 ## What Was Just Done
 
-### Sprint 2 Deliverables
+### Claude Code Integration (Sprint 2-3 completion)
 
-Created complete planning module (`bpsai_pair/planning/`):
+Claude Code successfully:
 
-- **models.py** — Data classes for Plan, Task, Sprint with:
-  - Status enums (TaskStatus, PlanStatus, PlanType)
-  - Serialization (to_dict, from_dict)
-  - Helper properties (slug, status_emoji)
+1. **Copied planning module** to `tools/cli/bpsai_pair/planning/`
+2. **Converted Click to Typer** - Adapted CLI commands to match main CLI framework
+3. **Integrated plan/task commands** - Registered with main app
+4. **Updated flow commands** - Now use v2 parser supporting `.flow.md`
+5. **Updated tests** - Test suite passes with new format
 
-- **parser.py** — File parsers:
-  - `PlanParser` — Parse .plan.yaml files
-  - `TaskParser` — Parse .task.md files (YAML frontmatter + Markdown)
-  - `parse_frontmatter()` — Extract YAML from Markdown files
+### Key Files Modified
 
-- **state.py** — State management:
-  - `ProjectState` — Parsed from state.md
-  - `StateManager` — Coordinate plans, tasks, status
-
-- **cli_commands.py** — Click commands:
-  - `plan new|list|show|tasks|add-task`
-  - `task list|show|update|next`
-
-Also created updated flow parser (`bpsai_pair/flows/parser_v2.py`):
-- Supports both `.flow.yml` (legacy) and `.flow.md` (v2)
-- Deduplicates (prefers .flow.md over .flow.yml)
-- Full Flow dataclass with roles, triggers, steps
+- `tools/cli/bpsai_pair/cli.py` - Added plan_app, task_app, FlowParserV2
+- `tools/cli/bpsai_pair/planning/*` - Full planning module
+- `tools/cli/bpsai_pair/flows/parser_v2.py` - New flow parser
+- `tools/cli/tests/test_flow_cli.py` - Updated for .flow.md
 
 ## What's Next
 
-1. **Integrate planning module** — Copy files to `tools/cli/bpsai_pair/`
-2. **Update cli.py** — Add plan/task command groups
-3. **Update flow commands** — Use parser_v2 for flow list/show
-4. **Test CLI** — Verify all commands work
-5. **Begin Sprint 4** — Update cookiecutter template
+1. **TASK-016**: Update cookiecutter template
+   - Restructure to use `.paircoder/`
+   - Add default config, capabilities, flows
+   - Update AGENTS.md/CLAUDE.md pointers
+   
+2. **TASK-017**: Update USER_GUIDE.md
+   - Document planning system
+   - Document new CLI commands
+   - Add LLM integration section
+
+3. **TASK-018**: Update README.md
+   - Highlight v2 features
+   - Update command overview
+
+4. **TASK-019**: Version bump and release
+   - Decide on 2.0.0 vs 0.3.0
+   - Update CHANGELOG
+   - Create release
 
 ## Blockers
 
-None — ready to integrate and test.
+None — ready to proceed with Sprint 4.
 
-## Files Delivered
+## CLI Commands Now Available
 
-```
-sprint2/
-├── bpsai_pair/
-│   ├── planning/
-│   │   ├── __init__.py
-│   │   ├── models.py
-│   │   ├── parser.py
-│   │   ├── state.py
-│   │   └── cli_commands.py
-│   └── flows/
-│       └── parser_v2.py
-├── test_planning.py
-└── INTEGRATION.md
+```bash
+# Planning
+bpsai-pair plan new <slug> --type feature --title "Title"
+bpsai-pair plan list
+bpsai-pair plan show <plan-id>
+bpsai-pair plan tasks <plan-id>
+bpsai-pair plan add-task <plan-id> --id TASK-XXX --title "Title"
+
+# Tasks  
+bpsai-pair task list
+bpsai-pair task show <task-id>
+bpsai-pair task update <task-id> --status done
+bpsai-pair task next
+
+# Flows (v2)
+bpsai-pair flow list        # Shows .flow.md files
+bpsai-pair flow show <name>
+bpsai-pair flow run <name>
 ```
