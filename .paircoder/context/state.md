@@ -51,7 +51,7 @@ Ready to begin Sprint 4: Template updates and documentation.
 | Task | Title | Status | Priority |
 |------|-------|--------|----------|
 | TASK-016 | Update cookiecutter template for v2 | ✅ done | P1 |
-| TASK-017 | Update USER_GUIDE.md | ⏳ pending | P2 |
+| TASK-017 | Update USER_GUIDE.md | ✅ done | P2 |
 | TASK-018 | Update README.md | ⏳ pending | P2 |
 | TASK-019 | Bump version and prepare release | ⏳ pending | P2 |
 
