@@ -4,14 +4,14 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-01-paircoder-v2-upgrade`
+**Plan:** `plan-2025-01-paircoder-v2.2-features`
 **Status:** in_progress
-**Current Sprint:** sprint-7 (Lifecycle & Analytics) ✅
+**Current Sprint:** sprint-8 (Consolidation & Cleanup) ✅
 
 ## Current Focus
 
-Sprint 7 complete! Task lifecycle management, token tracking, time tracking,
-and benchmarking framework implemented.
+Sprint 8 complete! Documentation consolidated, obsolete files removed,
+template path fixed.
 
 ## Task Status
 
@@ -83,7 +83,35 @@ and benchmarking framework implemented.
 | TASK-031 | Time Tracking Integration | ✅ done | P2 |
 | TASK-032 | Benchmarking Framework | ✅ done | P2 |
 
+### Sprint 8: Consolidation & Cleanup ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-033 | Archive v2-upgrade plan tasks | ✅ done | P0 |
+| TASK-034 | Consolidate documentation to root | ✅ done | P0 |
+| TASK-035 | Remove obsolete prompts/ directory | ✅ done | P1 |
+| TASK-036 | Fix cookiecutter template path | ✅ done | P1 |
+
 ## What Was Just Done
+
+### Sprint 8 Complete - Consolidation & Cleanup
+
+All Sprint 8 tasks completed:
+
+1. **TASK-033**: Archive v2-upgrade plan tasks
+   - Archived Sprint 6-7 tasks (TASK-025 to TASK-032)
+   - Generated v2.1.0 changelog entry
+   - Fixed title parsing in lifecycle module
+2. **TASK-034**: Consolidate documentation to root
+   - Moved USER_GUIDE.md to docs/
+   - Updated root README.md with v2 content
+   - Minimized tools/cli/README.md
+   - Removed duplicate CHANGELOG and paircoder-docs.md
+3. **TASK-035**: Remove obsolete prompts/ directory
+   - Removed from template (already gone from repo)
+4. **TASK-036**: Fix cookiecutter template path
+   - Removed nested tools/cli/tools/cli/ duplicate
+   - Verified template contains v2.2 structure
 
 ### Sprint 7 Complete - Lifecycle & Analytics
 
@@ -169,14 +197,17 @@ All new files added to `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`:
 
 ## What's Next
 
-**v2.2.0 ready for release!**
+**Sprint 9: Prompt Caching & Release**
 
-New in v2.2.0:
-- Multi-agent orchestration system
-- Headless Claude Code invocation
-- Agent handoff protocol
-- Codex CLI adapter
-- Intelligent task routing
+Tasks remaining:
+- TASK-037: Implement prompt caching
+- TASK-038: Codex optimization pass
+- TASK-039: Prepare v2.2.0 release
+
+Sprint 8 deliverables:
+- Documentation consolidated to repository root
+- Template path fixed (no more nested duplicates)
+- v2-upgrade tasks archived with changelog
 
 Previous releases included:
 - Skills (model-invoked workflows)
