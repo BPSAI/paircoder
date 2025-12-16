@@ -66,6 +66,15 @@ Sprints 1-12 fully completed (62 tasks). See archive for details.
 
 ## What Was Just Done
 
+### Session: 2025-12-16 - Documentation Updates
+
+Updated all documentation for v2.5.0:
+
+1. **README.md** - Updated to v2.5.0 with 80+ commands, new feature sections
+2. **CHANGELOG.md** - Added v2.5.0 section with all Sprint 13 features
+3. **docs/USER_GUIDE.md** - Added Presets, Autonomous Workflow, Intent Detection, GitHub Integration, Standup sections; updated to 412 tests
+4. **docs/FEATURE_MATRIX.md** - Added Sprint 12-13 features, updated command count to 88, test count to 412
+
 ### Session: 2025-12-16 - Sprint 13 Complete
 
 #### 1. TASK-068: Progress Comments ✅
