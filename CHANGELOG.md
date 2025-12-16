@@ -5,6 +5,29 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.0] - 2025-12-15
+
+### Added
+- Prompt caching for efficient context management (TASK-037)
+- `bpsai-pair cache` commands (stats, clear, invalidate)
+- Codex-optimized context packing with `--lite` flag (TASK-038)
+
+### Changed
+- Consolidated documentation to repository root (TASK-034)
+- Updated cookiecutter template for v2.2 structure (TASK-036)
+- Improved Codex CLI guidance in AGENTS.md (TASK-038)
+
+### Removed
+- Obsolete `prompts/` directory (TASK-035)
+- Duplicate documentation from tools/cli/ (TASK-034)
+
+### Fixed
+- Nested cookiecutter template path (TASK-036)
+- Task title parsing in lifecycle module
+
+### Infrastructure
+- Archived v2-upgrade plan (32 tasks) (TASK-033)
+
 ## [v2.1.0] - 2025-12-15
 
 ### Added

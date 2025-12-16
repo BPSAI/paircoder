@@ -210,21 +210,45 @@ class ContextPacker:
         root: Path,
         output: Path,
         extra_files: Optional[List[str]] = None,
-        dry_run: bool = False
+        dry_run: bool = False,
+        lite: bool = False,
     ) -> List[Path]:
-        """Create a context pack for AI agents."""
-        # Default files to include
-        context_files = [
-            root / "context" / "development.md",
-            root / "context" / "agents.md",
-            root / "context" / "project_tree.md",
-        ]
+        """Create a context pack for AI agents.
 
-        # Add directory_notes if it exists
-        dir_notes = root / "context" / "directory_notes"
-        if dir_notes.exists():
-            for note in dir_notes.rglob("*.md"):
-                context_files.append(note)
+        Args:
+            root: Project root directory
+            output: Output archive path
+            extra_files: Additional files to include
+            dry_run: If True, don't create archive
+            lite: If True, create minimal pack for Codex (< 32KB)
+        """
+        if lite:
+            # Minimal context for Codex CLI (32KB limit)
+            context_files = [
+                root / ".paircoder" / "context" / "state.md",
+                root / "AGENTS.md",
+            ]
+        else:
+            # Full context pack (v1 + v2 paths)
+            context_files = [
+                # v1 paths
+                root / "context" / "development.md",
+                root / "context" / "agents.md",
+                root / "context" / "project_tree.md",
+                # v2 paths
+                root / ".paircoder" / "context" / "project.md",
+                root / ".paircoder" / "context" / "state.md",
+                root / ".paircoder" / "context" / "workflow.md",
+                root / ".paircoder" / "capabilities.yaml",
+                root / "AGENTS.md",
+                root / "CLAUDE.md",
+            ]
+
+            # Add directory_notes if it exists
+            dir_notes = root / "context" / "directory_notes"
+            if dir_notes.exists():
+                for note in dir_notes.rglob("*.md"):
+                    context_files.append(note)
 
         # Add extra files
         if extra_files:

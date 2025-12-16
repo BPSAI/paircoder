@@ -1,0 +1,148 @@
+{
+  "plan": "paircoder-v2-upgrade",
+  "archived_at": "2025-12-15T21:25:30.783502",
+  "tasks": [
+    {
+      "id": "TASK-025",
+      "title": "Headless Mode Integration for Orchestration",
+      "sprint": "sprint-6",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.778955",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "orchestration",
+        "headless",
+        "claude-code",
+        "api"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-025.task.md"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Agent Handoff Protocol",
+      "sprint": "sprint-6",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.779337",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "orchestration",
+        "handoff",
+        "multi-agent",
+        "pack"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-026.task.md"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Codex CLI Adapter",
+      "sprint": "sprint-6",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.779754",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "codex",
+        "adapter",
+        "flows",
+        "cross-agent"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-027.task.md"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Orchestrator Service",
+      "sprint": "sprint-6",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.781159",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "orchestration",
+        "multi-agent",
+        "routing",
+        "automation"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-028.task.md"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Task Lifecycle Management",
+      "sprint": "sprint-7",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.781802",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "tasks",
+        "lifecycle",
+        "archive",
+        "retention",
+        "cleanup",
+        "changelog"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-029.task.md"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Token Tracking and Cost Estimation",
+      "sprint": "sprint-7",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.782244",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "metrics",
+        "tokens",
+        "cost",
+        "tracking",
+        "analytics"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-030.task.md"
+    },
+    {
+      "id": "TASK-031",
+      "title": "Time Tracking Integration",
+      "sprint": "sprint-7",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.782719",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "time-tracking",
+        "toggl",
+        "clockify",
+        "integration"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-031.task.md"
+    },
+    {
+      "id": "TASK-032",
+      "title": "Benchmarking Framework",
+      "sprint": "sprint-7",
+      "status": "completed",
+      "completed_at": null,
+      "archived_at": "2025-12-15T21:25:30.783238",
+      "pr": null,
+      "changelog_entry": null,
+      "tags": [
+        "benchmarking",
+        "metrics",
+        "performance",
+        "comparison",
+        "analytics"
+      ],
+      "original_path": ".paircoder/tasks/paircoder-v2-upgrade/TASK-032.task.md"
+    }
+  ],
+  "changelog_generated": false,
+  "version": "v2.1.0"
+}

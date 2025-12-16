@@ -6,7 +6,7 @@
 - **Sprint**: sprint-9
 - **Priority**: P0
 - **Complexity**: 25
-- **Status**: pending
+- **Status**: done
 - **Created**: 2025-12-15
 - **Tags**: chore, release
 - **changelog_entry**: Released PairCoder v2.2.0

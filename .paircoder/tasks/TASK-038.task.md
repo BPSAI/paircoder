@@ -6,7 +6,7 @@
 - **Sprint**: sprint-9
 - **Priority**: P2
 - **Complexity**: 35
-- **Status**: pending
+- **Status**: done
 - **Created**: 2025-12-15
 - **Tags**: enhancement, codex, optimization
 - **changelog_entry**: Optimized AGENTS.md and context for Codex CLI efficiency

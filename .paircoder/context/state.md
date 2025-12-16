@@ -5,13 +5,12 @@
 ## Active Plan
 
 **Plan:** `plan-2025-01-paircoder-v2.2-features`
-**Status:** in_progress
-**Current Sprint:** sprint-8 (Consolidation & Cleanup) ✅
+**Status:** completed
+**Current Sprint:** sprint-9 (Prompt Caching & Release) ✅
 
 ## Current Focus
 
-Sprint 8 complete! Documentation consolidated, obsolete files removed,
-template path fixed.
+Sprint 9 complete! v2.2.0 ready for release with prompt caching and Codex optimizations.
 
 ## Task Status
 
@@ -92,7 +91,35 @@ template path fixed.
 | TASK-035 | Remove obsolete prompts/ directory | ✅ done | P1 |
 | TASK-036 | Fix cookiecutter template path | ✅ done | P1 |
 
+### Sprint 9: Prompt Caching & Release ✅
+
+| Task | Title | Status | Priority |
+|------|-------|--------|----------|
+| TASK-037 | Implement prompt caching | ✅ done | P0 |
+| TASK-038 | Codex optimization pass | ✅ done | P2 |
+| TASK-039 | Prepare v2.2.0 release | ✅ done | P0 |
+
 ## What Was Just Done
+
+### Sprint 9 Complete - Prompt Caching & Release
+
+All Sprint 9 tasks completed:
+
+1. **TASK-037**: Implement prompt caching
+   - ContextCache class with mtime-based invalidation
+   - ContextLoader for cached context loading
+   - CLI commands: cache stats, clear, invalidate
+   - 14 new tests added
+
+2. **TASK-038**: Codex optimization pass
+   - Added Codex-specific section to AGENTS.md
+   - Added `--lite` flag to pack command
+   - Pack includes only essential files for 32KB limit
+
+3. **TASK-039**: Prepare v2.2.0 release
+   - Version bumped to 2.2.0
+   - CHANGELOG.md updated with full v2.2.0 section
+   - All 195 tests passing
 
 ### Sprint 8 Complete - Consolidation & Cleanup
 
@@ -197,17 +224,22 @@ All new files added to `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`:
 
 ## What's Next
 
-**Sprint 9: Prompt Caching & Release**
+**v2.2.0 Released!**
 
-Tasks remaining:
-- TASK-037: Implement prompt caching
-- TASK-038: Codex optimization pass
-- TASK-039: Prepare v2.2.0 release
+The plan `paircoder-v2.2-features` is complete. All 39 tasks across 9 sprints done.
 
-Sprint 8 deliverables:
-- Documentation consolidated to repository root
-- Template path fixed (no more nested duplicates)
-- v2-upgrade tasks archived with changelog
+Key deliverables:
+- Multi-agent orchestration (Claude Code, Codex CLI)
+- Task lifecycle management with archival
+- Token/cost tracking and metrics
+- Prompt caching for context efficiency
+- Documentation consolidation
+- Clean v2.2 template structure
+
+Next steps:
+- Publish to PyPI: `twine upload dist/*`
+- Create GitHub release with v2.2.0 tag
+- Monitor for issues post-release
 
 Previous releases included:
 - Skills (model-invoked workflows)

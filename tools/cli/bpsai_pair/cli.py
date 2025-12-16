@@ -33,6 +33,7 @@ try:
     from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from .integrations import TimeTrackingManager, TimeTrackingConfig
     from .benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
+    from .context import ContextCache, ContextLoader
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -48,6 +49,7 @@ except ImportError:
     from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
     from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
+    from bpsai_pair.context import ContextCache, ContextLoader
 
 # Initialize Rich console
 console = Console()
@@ -101,6 +103,13 @@ benchmark_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 app.add_typer(benchmark_app, name="benchmark")
+
+# Cache sub-app for context caching
+cache_app = typer.Typer(
+    help="Context caching for efficient context management",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(cache_app, name="cache")
 
 def _flows_root(root: Path) -> Path:
     return root / ".paircoder" / "flows"
@@ -629,6 +638,59 @@ def benchmark_list():
     console.print(table)
 
 
+# --- Cache Commands ---
+
+@cache_app.command("stats")
+def cache_stats(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show cache statistics."""
+    root = repo_root()
+    cache = ContextCache(root / ".paircoder" / "cache")
+    stats = cache.stats()
+
+    if json_out:
+        print_json(stats)
+    else:
+        console.print("[bold]Cache Statistics[/bold]")
+        console.print(f"  Entries: {stats['entries']}")
+        console.print(f"  Total size: {stats['total_bytes']:,} bytes")
+        if stats['oldest']:
+            console.print(f"  Oldest: {stats['oldest']}")
+        if stats['newest']:
+            console.print(f"  Newest: {stats['newest']}")
+
+
+@cache_app.command("clear")
+def cache_clear(
+    confirm: bool = typer.Option(False, "--confirm", "-y", help="Confirm clear"),
+):
+    """Clear the context cache."""
+    if not confirm:
+        console.print("[yellow]Use --confirm to clear the cache[/yellow]")
+        raise typer.Exit(1)
+
+    root = repo_root()
+    cache = ContextCache(root / ".paircoder" / "cache")
+    count = cache.clear()
+    console.print(f"[green]Cleared {count} cache entries[/green]")
+
+
+@cache_app.command("invalidate")
+def cache_invalidate(
+    file_path: str = typer.Argument(..., help="File path to invalidate"),
+):
+    """Invalidate cache for a specific file."""
+    root = repo_root()
+    cache = ContextCache(root / ".paircoder" / "cache")
+    full_path = root / file_path
+
+    if cache.invalidate(full_path):
+        console.print(f"[green]Invalidated cache for {file_path}[/green]")
+    else:
+        console.print(f"[dim]No cache entry for {file_path}[/dim]")
+
+
 @flow_app.command("list")
 def flow_list(
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
@@ -898,6 +960,7 @@ def pack(
     extra: Optional[List[str]] = typer.Option(None, "--extra", "-e", help="Additional paths to include"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview files without creating archive"),
     list_only: bool = typer.Option(False, "--list", "-l", help="List files to be included"),
+    lite: bool = typer.Option(False, "--lite", help="Minimal pack for Codex CLI (< 32KB)"),
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
     """Create agent context package (cross-platform)."""
@@ -909,7 +972,8 @@ def pack(
         root=root,
         output=output_path,
         extra_files=extra,
-        dry_run=(dry_run or list_only)
+        dry_run=(dry_run or list_only),
+        lite=lite,
     )
 
     if json_out:

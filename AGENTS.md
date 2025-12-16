@@ -57,3 +57,35 @@ bpsai-pair plan show <id>      # Show plan details
 bpsai-pair flow list           # List available flows
 bpsai-pair flow run <name>     # Run a flow
 ```
+
+## Codex CLI Notes
+
+When working with Codex CLI (32KB context limit):
+
+1. **Be direct** - Codex works best with clear, specific instructions
+2. **One task at a time** - Don't give multi-step plans
+3. **File-focused** - Tell it exactly which files to modify
+4. **Avoid exploration** - Don't ask "what should we do?" - tell it what to do
+5. **Use lite context** - `bpsai-pair pack --lite` for minimal context
+
+### Codex-Optimized Task Format
+
+Instead of:
+> "Design and implement a caching system for context files"
+
+Use:
+> "In tools/cli/bpsai_pair/context/cache.py, create a ContextCache class with get(), set(), and invalidate() methods."
+
+### Best For
+
+- Simple bug fixes
+- Mechanical refactoring
+- File renames/moves
+- Adding tests for existing code
+
+### Avoid For
+
+- Architectural decisions
+- Complex feature design
+- Security-sensitive code
+- Multi-file coordinated changes
