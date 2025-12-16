@@ -4,208 +4,157 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-12-sprint-13-autonomy`
-**Status:** complete
-**Current Sprint:** sprint-13 (Full Autonomy) - COMPLETED
+**Plan:** `plan-2025-12-sprint-14-trello-deep`
+**Status:** in_progress
+**Current Sprint:** sprint-14 (Trello Deep Integration)
 
 ## Current Focus
 
-Sprint 13 is complete. All P0 and P1 tasks done:
-- BPS preset with 7-list Trello structure
-- Hook reliability (hooks always fire on status change)
-- Progress comments for Trello cards
-- Auto-PR link on branch push
-- PR merge task archival
-- Daily standup summary generation
+Sprint 14: Make Trello cards created by PairCoder look exactly like Mike would create manually.
+
+**Key Objectives:**
+- Sync custom fields (Project, Stack, Effort, Status)
+- Labels with exact BPS colors
+- Card description templates following BPS format
+- Two-way sync (Trello changes update local tasks)
+- Checklists from acceptance criteria
+- Due date sync
+- Activity log comments
 
 ## Task Status
 
-### Sprint 1-12: All Complete ✅
+### Sprint 1-12: Archived
 
-Sprints 1-12 fully completed (62 tasks). See archive for details.
+See `.paircoder/history/sprints-1-12-archive.md` for historical details.
 
-### Sprint 13: Full Autonomy - COMPLETE ✅
+### Sprint 13: Full Autonomy - COMPLETE
 
-**P0 Tasks - All Complete ✅**
+All tasks completed. See Sprint 13 section in archive.
 
-| Task | Title | Status | Complexity |
-|------|-------|--------|------------|
-| TASK-066 | Webhook listener for Trello card moves | ✅ done | 40 |
-| TASK-067 | Agent assignment on Ready column | ✅ done | 35 |
-| TASK-070 | GitHub PR integration | ✅ done | 50 |
-| TASK-072 | Automatic next task assignment | ✅ done | 40 |
-| TASK-077 | Add preset system for config initialization | ✅ done | 45 |
-| TASK-078 | Create BPS preset with full Trello guidelines | ✅ done | 35 |
-| TASK-079 | Auto-enter planning mode on new feature detection | ✅ done | 55 |
-| TASK-080 | Orchestrator sequencing for full autonomy | ✅ done | 65 |
+Key deliverables:
+- Preset system (8 presets including BPS)
+- Progress comments for Trello cards
+- Auto-PR creation from branch names
+- PR merge task archival
+- Daily standup generation
+- Hook reliability (always fires on status change)
 
-**P1 Tasks - All Complete ✅**
+### Sprint 14: Trello Deep Integration - IN PROGRESS
 
-| Task | Title | Status | Complexity |
-|------|-------|--------|------------|
-| TASK-068 | Progress comments from agents | ✅ done | 25 |
-| TASK-069 | Auto-PR link when branch pushed | ✅ done | 30 |
-| TASK-071 | PR merge triggers task archive | ✅ done | 35 |
+| Task | Title | Status | Priority | Complexity |
+|------|-------|--------|----------|------------|
+| TASK-081 | Sync Trello custom fields | done | P0 | 35 |
+| TASK-082 | Sync Trello labels with exact BPS colors | pending | P0 | 25 |
+| TASK-083 | Card description templates (BPS format) | pending | P1 | 25 |
+| TASK-084 | Effort → Trello Effort field mapping | pending | P1 | 20 |
+| TASK-085 | Two-way sync (Trello → local) | pending | P1 | 45 |
+| TASK-086 | Support checklists in cards | pending | P1 | 30 |
+| TASK-087 | Due date sync | pending | P2 | 20 |
+| TASK-088 | Activity log comments | pending | P2 | 25 |
 
-**P2 Tasks - Complete ✅**
+### Backlog (Deprioritized)
 
-| Task | Title | Status | Complexity |
-|------|-------|--------|------------|
-| TASK-073 | Daily standup summary generation | ✅ done | 35 |
-
-**Deprioritized (Future)**
-
-| Task | Title | Status | Reason |
-|------|-------|--------|--------|
-| TASK-063 | VS Code extension wrapper for MCP | deferred | Future - not core |
-| TASK-064 | Current task status bar widget | deferred | Future - depends on 063 |
-| TASK-065 | Auto-update context on file save | deferred | Future - depends on 063 |
-| TASK-074 | Dashboard UI | dropped | BPS has Trello React app |
-| TASK-075 | Slack notifications | deferred | Future - nice to have |
-| TASK-076 | Multi-project support | deferred | Future - nice to have |
+Tasks moved to `.paircoder/tasks/backlog/`:
+- TASK-063: VS Code extension
+- TASK-064: Status bar widget
+- TASK-065: Auto-context on save
+- TASK-074: Dashboard UI
+- TASK-075: Slack notifications
+- TASK-076: Multi-project support
 
 ## What Was Just Done
 
-### Session: 2025-12-16 - Documentation Updates
+### Session: 2025-12-16 - TASK-081 Complete
 
-Updated all documentation for v2.5.0:
+**Trello Custom Fields Sync (TASK-081)** - DONE
 
-1. **README.md** - Updated to v2.5.0 with 80+ commands, new feature sections
-2. **CHANGELOG.md** - Added v2.5.0 section with all Sprint 13 features
-3. **docs/USER_GUIDE.md** - Added Presets, Autonomous Workflow, Intent Detection, GitHub Integration, Standup sections; updated to 412 tests
-4. **docs/FEATURE_MATRIX.md** - Added Sprint 12-13 features, updated command count to 88, test count to 412
+Added to `trello/client.py`:
+- `CustomFieldDefinition` dataclass for field metadata
+- `EffortMapping` class for complexity → S/M/L mapping
+- `get_custom_fields()` - List custom fields on board
+- `get_custom_field_by_name()` - Find field by name
+- `set_custom_field_value()` - Set text/number/list/checkbox/date fields
+- `set_card_custom_fields()` - Bulk set multiple fields
+- `set_effort_field()` - Set effort from complexity score
+- `create_card_with_custom_fields()` - Create card with fields
+- Label management: `get_labels()`, `get_label_by_name()`, `create_label()`, `ensure_label_exists()`, `add_label_to_card()`
 
-### Session: 2025-12-16 - Sprint 13 Complete
+Created `trello/sync.py`:
+- `TaskData` dataclass with `from_task()` factory
+- `TaskSyncConfig` for field mappings and settings
+- `TrelloSyncManager` class:
+  - `infer_stack()` - Detect stack from task title/tags
+  - `build_card_description()` - BPS-formatted descriptions
+  - `ensure_bps_labels()` - Create missing labels
+  - `sync_task_to_card()` - Create or update card
+  - `sync_tasks()` - Batch sync multiple tasks
+- `BPS_LABELS` with exact color mappings
+- `STACK_KEYWORDS` for inference
 
-#### 1. TASK-068: Progress Comments ✅
-Created `trello/progress.py`:
-- `ProgressReporter` class with 7 report methods (start, progress, step_complete, blocked, waiting, completion, review)
-- Progress templates for consistent formatting
-- `create_progress_reporter()` factory function
-- CLI: `bpsai-pair trello progress TASK-001 "message"`
-- 23 new tests
+Created `tests/test_trello_sync.py`:
+- 33 tests for custom fields and sync functionality
+- Tests for EffortMapping, TaskData, TrelloSyncManager, TrelloService
+- Tests for BPS labels and stack keyword configuration
 
-#### 2. TASK-069: Auto-PR Link ✅
-Added to `github/pr.py`:
-- `auto_create_pr_for_branch()` - Detects task ID from branch name, creates draft PR
-- Supports patterns: `feature/TASK-001-*`, `TASK-001/*`, `TASK-001-*`
-- CLI: `bpsai-pair github auto-pr`
+**Test Coverage:** 445 tests passing (up from 412)
 
-#### 3. TASK-071: PR Merge Task Archive ✅
-Added to `github/pr.py`:
-- `archive_task_on_merge()` - Archives task when its PR is merged
-- `check_and_archive_merged_prs()` - Scans recent merged PRs, archives their tasks
-- CLI: `bpsai-pair github archive-merged 123` or `--all`
+### Previous: Sprint 13 Cleanup
 
-#### 4. TASK-073: Daily Standup Summary ✅
-Created `planning/standup.py`:
-- `StandupSummary` dataclass with completed, in_progress, blocked, ready lists
-- `StandupGenerator` class to generate summaries from task data
-- Multiple output formats: markdown, slack, trello
-- CLI: `bpsai-pair standup generate`, `bpsai-pair standup post`
+1. Created `.paircoder/history/sprints-1-12-archive.md`
+2. Created `.paircoder/tasks/backlog/` directory
+3. Moved 6 deprioritized tasks to backlog
+4. Updated documentation (README, CHANGELOG, USER_GUIDE, FEATURE_MATRIX)
 
-### Previously This Session
+## Sprint 14 Definition of Done
 
-#### BPS Preset (TASK-078) ✅
-- 7-list Trello structure per BPS guidelines
-- 8 label colors for stack types
-- Automation mappings for all task events
-- Hooks enabled by default
+- [ ] `plan sync-trello` creates cards with all custom fields populated
+- [ ] Labels match exact BPS colors
+- [ ] Card description follows BPS template
+- [ ] Moving card in Trello updates local task status
+- [ ] Checklist items created from acceptance criteria
+- [ ] All tests passing
 
-#### Hook Reliability Fix
-- Task update command now ALWAYS fires hooks on status change
-- Maps status to events (in_progress→on_task_start, done→on_task_complete, blocked→on_task_block)
+## BPS Trello Requirements
 
-### Test Coverage
-- **Total tests**: 412 passing (up from 389)
-- **New tests**: 23 for progress reporter
+### Custom Fields
 
-## Files Created/Modified This Session
+| Field | Example | Maps From |
+|-------|---------|-----------|
+| Project | Aurora | plan.title |
+| Stack | Flask | task.tags or inferred |
+| Status | In Progress | task.status |
+| Effort | S / M / L | task.complexity |
+| Deployment Tag | v1.2.3 | git tag or manual |
 
-```
-tools/cli/bpsai_pair/
-├── cli.py                        # Added standup_app registration
-├── presets.py                    # Added BPS preset
-├── hooks.py                      # Config path compatibility fix
-├── planning/
-│   ├── cli_commands.py           # Added standup commands, hook triggering
-│   ├── standup.py                # NEW: Standup summary generation
-│   └── auto_assign.py            # Method name fix
-├── orchestration/
-│   └── autonomous.py             # Method name fix
-├── github/
-│   ├── pr.py                     # Added auto-PR and archive functions
-│   └── commands.py               # Added auto-pr and archive-merged commands
-└── trello/
-    ├── __init__.py               # Exports for progress module
-    ├── progress.py               # NEW: Progress reporter
-    ├── commands.py               # Added progress command
-    └── webhook.py                # Method name fix
+### Label Colors
 
-tests/
-├── test_progress.py              # NEW: 23 tests for progress reporter
-├── test_autonomous_workflow.py   # Method name fix
-└── test_webhook.py               # Method name fix
-```
-
-## Sprint 13 Definition of Done - ACHIEVED ✅
-
-- [x] `bpsai-pair trello status` always works
-- [x] Starting a task ALWAYS moves card to "In Progress"
-- [x] Completing a task ALWAYS moves card to "Done"
-- [x] `bpsai-pair init --preset bps` creates correct structure
-- [x] Can demo full flow: Create plan → Sync Trello → Work task → Card moves
-- [x] 412 tests passing
-- [x] Documentation updated
-
-## CLI Commands Added This Sprint
-
-```bash
-# Progress comments
-bpsai-pair trello progress TASK-001 "message"
-bpsai-pair trello progress TASK-001 --started
-bpsai-pair trello progress TASK-001 --blocked "reason"
-bpsai-pair trello progress TASK-001 --step "completed step"
-bpsai-pair trello progress TASK-001 --completed "summary"
-bpsai-pair trello progress TASK-001 --review
-
-# Auto-PR
-bpsai-pair github auto-pr              # Create draft PR from branch name
-bpsai-pair github auto-pr --no-draft   # Create as ready PR
-
-# Archive merged
-bpsai-pair github archive-merged 123   # Archive task for PR #123
-bpsai-pair github archive-merged --all # Scan and archive all merged PRs
-
-# Standup
-bpsai-pair standup generate            # Generate markdown summary
-bpsai-pair standup generate --format slack
-bpsai-pair standup generate --since 48 # Look back 48 hours
-bpsai-pair standup generate -o standup.md
-bpsai-pair standup post                # Post to Trello Notes list
-```
+| Label | Color | Hex |
+|-------|-------|-----|
+| Frontend | Green | #61bd4f |
+| Backend | Blue | #0079bf |
+| Worker/Function | Purple | #c377e0 |
+| Deployment | Red | #eb5a46 |
+| Bug/Issue | Orange | #ff9f1a |
+| Security/Admin | Yellow | #f2d600 |
+| Documentation | Sky | #00c2e0 |
+| AI/ML | Black | #344563 |
 
 ## What's Next
 
-Sprint 13 is complete. Future work (lower priority):
+1. **TASK-081**: Implement custom field sync
+   - Add `get_custom_fields()` and `set_custom_field_value()` to TrelloClient
+   - Create field mapping config
+   - Update `plan sync-trello` to set custom fields
 
-1. **VS Code Extension** (TASK-063, 064, 065) - deferred
-2. **Slack Notifications** (TASK-075) - nice to have
-3. **Multi-project Support** (TASK-076) - nice to have
+2. **TASK-082**: Label color sync
+   - Ensure labels exist with correct BPS colors
+   - Apply labels based on task tags
 
 ## Blockers
 
-None - Sprint 13 complete.
+None currently.
 
-## Available Presets
+## Test Coverage
 
-| Preset | Description |
-|--------|-------------|
-| python-cli | Python CLI application with Click/Typer |
-| python-api | Python REST API with Flask/FastAPI |
-| react | React/Next.js frontend application |
-| fullstack | Full-stack (Python backend + React frontend) |
-| library | Python library/package for distribution |
-| minimal | Minimal configuration with essential defaults |
-| autonomous | Full autonomy with Trello integration |
-| **bps** | **BPS AI Software preset with 7-list Trello workflow** |
+- **Total tests**: 445 passing
+- **Test command**: `pytest -v`

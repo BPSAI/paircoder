@@ -1,0 +1,354 @@
+"""
+Trello sync module for syncing tasks to Trello cards with custom fields.
+"""
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, field
+from pathlib import Path
+import logging
+import re
+
+from .client import TrelloService, EffortMapping
+
+logger = logging.getLogger(__name__)
+
+
+# BPS Label color mapping
+BPS_LABELS = {
+    "Frontend": "green",
+    "Backend": "blue",
+    "Worker/Function": "purple",
+    "Deployment": "red",
+    "Bug/Issue": "orange",
+    "Security/Admin": "yellow",
+    "Documentation": "sky",
+    "AI/ML": "black",
+}
+
+# Keywords to infer stack from task title/tags
+STACK_KEYWORDS = {
+    "Frontend": ["frontend", "ui", "react", "vue", "angular", "css", "html", "component"],
+    "Backend": ["backend", "api", "flask", "fastapi", "django", "server", "endpoint"],
+    "Worker/Function": ["worker", "function", "lambda", "celery", "task", "job", "queue"],
+    "Deployment": ["deploy", "docker", "k8s", "kubernetes", "ci", "cd", "pipeline"],
+    "Bug/Issue": ["bug", "fix", "issue", "error", "crash"],
+    "Security/Admin": ["security", "auth", "admin", "permission", "role", "soc2"],
+    "Documentation": ["doc", "readme", "guide", "tutorial", "comment"],
+    "AI/ML": ["ai", "ml", "model", "llm", "claude", "gpt", "embedding"],
+}
+
+
+@dataclass
+class TaskSyncConfig:
+    """Configuration for syncing tasks to Trello."""
+    # Custom field mappings
+    project_field: str = "Project"
+    stack_field: str = "Stack"
+    status_field: str = "Status"
+    effort_field: str = "Effort"
+    deployment_tag_field: str = "Deployment Tag"
+
+    # Effort mapping ranges
+    effort_mapping: EffortMapping = field(default_factory=EffortMapping)
+
+    # Whether to create missing labels
+    create_missing_labels: bool = True
+
+    # Default list for new cards
+    default_list: str = "Backlog"
+
+
+@dataclass
+class TaskData:
+    """Task data for syncing to Trello."""
+    id: str
+    title: str
+    description: str = ""
+    status: str = "pending"
+    priority: str = "P1"
+    complexity: int = 50
+    tags: List[str] = field(default_factory=list)
+    acceptance_criteria: List[str] = field(default_factory=list)
+    plan_title: Optional[str] = None
+
+    @classmethod
+    def from_task(cls, task: Any) -> "TaskData":
+        """Create TaskData from a Task object."""
+        # Extract acceptance criteria from task body if present
+        acceptance_criteria = []
+        if hasattr(task, 'body') and task.body:
+            # Look for checklist items in body
+            for line in task.body.split('\n'):
+                line = line.strip()
+                if line.startswith('- [ ]') or line.startswith('- [x]'):
+                    # Remove checkbox prefix
+                    item = re.sub(r'^- \[[ x]\]\s*', '', line)
+                    acceptance_criteria.append(item)
+
+        return cls(
+            id=task.id,
+            title=task.title,
+            description=getattr(task, 'body', '') or '',
+            status=task.status,
+            priority=getattr(task, 'priority', 'P1'),
+            complexity=getattr(task, 'complexity', 50),
+            tags=getattr(task, 'tags', []) or [],
+            acceptance_criteria=acceptance_criteria,
+            plan_title=getattr(task, 'plan', None),
+        )
+
+
+class TrelloSyncManager:
+    """Manages syncing tasks to Trello with custom fields."""
+
+    def __init__(self, service: TrelloService, config: Optional[TaskSyncConfig] = None):
+        """Initialize sync manager.
+
+        Args:
+            service: Configured TrelloService
+            config: Sync configuration (uses defaults if not provided)
+        """
+        self.service = service
+        self.config = config or TaskSyncConfig()
+
+    def infer_stack(self, task: TaskData) -> Optional[str]:
+        """Infer stack/label from task title and tags.
+
+        Args:
+            task: Task data
+
+        Returns:
+            Stack name or None if cannot infer
+        """
+        # Check tags first
+        for tag in task.tags:
+            tag_lower = tag.lower()
+            for stack, keywords in STACK_KEYWORDS.items():
+                if tag_lower in keywords or any(kw in tag_lower for kw in keywords):
+                    return stack
+
+        # Check title
+        title_lower = task.title.lower()
+        for stack, keywords in STACK_KEYWORDS.items():
+            if any(kw in title_lower for kw in keywords):
+                return stack
+
+        return None
+
+    def build_card_description(self, task: TaskData) -> str:
+        """Build BPS-formatted card description.
+
+        Args:
+            task: Task data
+
+        Returns:
+            Formatted description string
+        """
+        sections = []
+
+        # Objective section
+        if task.description:
+            # Use first paragraph as objective
+            paragraphs = task.description.split('\n\n')
+            objective = paragraphs[0].strip()
+            if objective and not objective.startswith('#'):
+                sections.append(f"## Objective\n{objective}")
+
+        # Acceptance criteria as checkboxes
+        if task.acceptance_criteria:
+            criteria_lines = [f"- [ ] {item}" for item in task.acceptance_criteria]
+            sections.append("## Acceptance Criteria\n" + "\n".join(criteria_lines))
+
+        # Metadata footer
+        footer_parts = [
+            f"Complexity: {task.complexity}",
+            f"Priority: {task.priority}",
+        ]
+        if task.plan_title:
+            footer_parts.append(f"Plan: {task.plan_title}")
+
+        sections.append("---\n" + " | ".join(footer_parts) + "\nCreated by: PairCoder")
+
+        return "\n\n".join(sections)
+
+    def ensure_bps_labels(self) -> Dict[str, bool]:
+        """Ensure all BPS labels exist on the board.
+
+        Returns:
+            Dict mapping label names to creation success
+        """
+        results = {}
+
+        if not self.config.create_missing_labels:
+            return results
+
+        for label_name, color in BPS_LABELS.items():
+            label = self.service.ensure_label_exists(label_name, color)
+            results[label_name] = label is not None
+
+        return results
+
+    def sync_task_to_card(
+        self,
+        task: TaskData,
+        list_name: Optional[str] = None,
+        update_existing: bool = True
+    ) -> Optional[Any]:
+        """Sync a task to a Trello card.
+
+        Args:
+            task: Task data to sync
+            list_name: Target list name (uses config default if not provided)
+            update_existing: Whether to update existing cards or skip
+
+        Returns:
+            Card object or None if failed
+        """
+        target_list = list_name or self.config.default_list
+
+        # Check if card already exists
+        existing_card, existing_list = self.service.find_card_with_prefix(task.id)
+
+        if existing_card:
+            if not update_existing:
+                logger.info(f"Card for {task.id} already exists, skipping")
+                return existing_card
+
+            # Update existing card
+            return self._update_card(existing_card, task)
+        else:
+            # Create new card
+            return self._create_card(task, target_list)
+
+    def _create_card(self, task: TaskData, list_name: str) -> Optional[Any]:
+        """Create a new Trello card for a task.
+
+        Args:
+            task: Task data
+            list_name: Target list name
+
+        Returns:
+            Created card or None
+        """
+        # Build card name with task ID prefix
+        card_name = f"[{task.id}] {task.title}"
+        description = self.build_card_description(task)
+
+        # Build custom fields
+        custom_fields = {}
+
+        # Project field
+        if task.plan_title:
+            custom_fields[self.config.project_field] = task.plan_title
+
+        # Stack field (inferred)
+        stack = self.infer_stack(task)
+        if stack:
+            custom_fields[self.config.stack_field] = stack
+
+        # Status field
+        custom_fields[self.config.status_field] = task.status.replace('_', ' ').title()
+
+        # Create card
+        card = self.service.create_card_with_custom_fields(
+            list_name=list_name,
+            name=card_name,
+            desc=description,
+            custom_fields=custom_fields
+        )
+
+        if not card:
+            return None
+
+        # Set effort field (separate because it uses complexity mapping)
+        self.service.set_effort_field(card, task.complexity, self.config.effort_field)
+
+        # Add labels
+        stack = self.infer_stack(task)
+        if stack:
+            self.service.add_label_to_card(card, stack)
+
+        # Add labels from tags
+        for tag in task.tags:
+            tag_title = tag.title()
+            if tag_title in BPS_LABELS:
+                self.service.add_label_to_card(card, tag_title)
+
+        logger.info(f"Created card for {task.id}: {card_name}")
+        return card
+
+    def _update_card(self, card: Any, task: TaskData) -> Any:
+        """Update an existing card with task data.
+
+        Args:
+            card: Existing Trello card
+            task: Task data
+
+        Returns:
+            Updated card
+        """
+        # Update custom fields
+        custom_fields = {}
+
+        if task.plan_title:
+            custom_fields[self.config.project_field] = task.plan_title
+
+        stack = self.infer_stack(task)
+        if stack:
+            custom_fields[self.config.stack_field] = stack
+
+        custom_fields[self.config.status_field] = task.status.replace('_', ' ').title()
+
+        self.service.set_card_custom_fields(card, custom_fields)
+        self.service.set_effort_field(card, task.complexity, self.config.effort_field)
+
+        logger.info(f"Updated card for {task.id}")
+        return card
+
+    def sync_tasks(
+        self,
+        tasks: List[TaskData],
+        list_name: Optional[str] = None,
+        update_existing: bool = True
+    ) -> Dict[str, Optional[Any]]:
+        """Sync multiple tasks to Trello cards.
+
+        Args:
+            tasks: List of task data
+            list_name: Target list name
+            update_existing: Whether to update existing cards
+
+        Returns:
+            Dict mapping task IDs to cards (or None if failed)
+        """
+        # Ensure BPS labels exist
+        self.ensure_bps_labels()
+
+        results = {}
+        for task in tasks:
+            card = self.sync_task_to_card(task, list_name, update_existing)
+            results[task.id] = card
+
+        return results
+
+
+def create_sync_manager(
+    api_key: str,
+    token: str,
+    board_id: str,
+    config: Optional[TaskSyncConfig] = None
+) -> TrelloSyncManager:
+    """Create a configured TrelloSyncManager.
+
+    Args:
+        api_key: Trello API key
+        token: Trello API token
+        board_id: Board ID to sync to
+        config: Sync configuration
+
+    Returns:
+        Configured TrelloSyncManager
+    """
+    service = TrelloService(api_key, token)
+    service.set_board(board_id)
+
+    return TrelloSyncManager(service, config)
