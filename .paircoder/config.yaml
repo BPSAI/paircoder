@@ -1,4 +1,4 @@
-version: "2.0"
+version: "2.2"
 
 project:
   name: "paircoder"
@@ -31,7 +31,7 @@ pack:
 
 models:
   # Role-based model assignment
-  navigator: claude-sonnet-4-5
+  navigator: claude-opus-4-5
   driver: claude-sonnet-4-5
   reviewer: claude-sonnet-4-5
 

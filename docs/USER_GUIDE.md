@@ -78,9 +78,6 @@ your-project/
 │           └── TASK-001.task.md
 ├── AGENTS.md                      # Root pointer for AI agents
 ├── CLAUDE.md                      # Root pointer for Claude Code
-└── context/                       # Legacy context (optional)
-    ├── development.md
-    └── project_tree.md
 ```
 
 ### Key Files Explained

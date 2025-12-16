@@ -6,18 +6,6 @@
 
 ---
 
-## Revision Notes
-
-This ADR was revised to correct a critical omission: the planning system (Goals → Tasks → Sprints) 
-was incorrectly listed under "What's Explicitly NOT Included". The planning system IS a core 
-component of v2 and is now properly documented.
-
-Additionally, the LLM Capability Manifest has been added as a key component to enable
-Claude Code, Codex CLI, and similar tools to understand and use PairCoder without
-requiring users to know CLI commands.
-
----
-
 ## Context
 
 Paircoder v1 established a disciplined workflow for AI pair programming: context loops, agent packs, 
