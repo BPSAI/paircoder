@@ -94,6 +94,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Time Tracking Integration (TASK-031)
 - Benchmarking Framework (TASK-032)
 
+## [1.0.0] - 2025-09-05
+
+### Closed Beta
+- **Released in closed beta to gather feedback and plans for v2 upgrade.** 
+
 ## [0.2.5] - 2025-09-01
 
 ### Changed
