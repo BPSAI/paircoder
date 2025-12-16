@@ -103,3 +103,5 @@ tools/cli/dist/
 tools/cli/build/
 agent_pack.tgz
 *.pyc
+__pycache__/
+*.pyc
