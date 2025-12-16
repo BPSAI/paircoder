@@ -10,135 +10,16 @@
 
 ## Current Focus
 
-Sprint 13 P0 tasks complete! All autonomy foundations in place:
-- Trello webhooks and agent assignment
-- GitHub PR integration
-- Intent detection and auto-planning
-- Autonomous workflow orchestration
-- Configuration presets
+Trello reliability improvements complete:
+- BPS preset with 7-list structure created
+- Task update command now ALWAYS fires hooks
+- Trello card movement verified working
 
 ## Task Status
 
-### Sprint 1: Foundation & Claude Code Integration ✅
+### Sprint 1-12: All Complete ✅
 
-| Task | Title | Status |
-|------|-------|--------|
-| TASK-001 | Create v2 directory structure | ✅ done |
-| TASK-002 | Create LLM capability manifest | ✅ done |
-| TASK-003 | Update ADR 0002 | ✅ done |
-| TASK-004 | Create project.md | ✅ done |
-| TASK-005 | Create workflow.md | ✅ done |
-| TASK-006 | Create state.md | ✅ done |
-
-### Sprint 2: Planning System Implementation ✅
-
-| Task | Title | Status | Notes |
-|------|-------|--------|-------|
-| TASK-007 | Implement plan YAML parser | ✅ done | `planning/parser.py` |
-| TASK-008 | Implement task YAML+MD parser | ✅ done | `planning/parser.py` |
-| TASK-009 | Add 'bpsai-pair plan' CLI commands | ✅ done | Converted to Typer |
-| TASK-010 | Add 'bpsai-pair task' CLI commands | ✅ done | Converted to Typer |
-| TASK-015 | Update flow parser for .flow.md | ✅ done | Pulled forward |
-
-### Sprint 3: CLI Extensions & Flows ✅
-
-| Task     | Title | Status | Notes |
-|----------|-------|--------|-------|
-| TASK-011 | Create design-plan-implement.flow.md | ✅ done | Created in Sprint 1 |
-| TASK-012 | Create tdd-implement.flow.md | ✅ done | Created in Sprint 1 |
-| TASK-013 | Create review.flow.md | ✅ done | Created in Sprint 1 |
-| TASK-014 | Create finish-branch.flow.md | ✅ done | Created in Sprint 1 |
-| Task-015 | Integrate planning module into CLI | ✅ done | Claude Code completed |
-
-### Sprint 4: Template & Documentation ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-016 | Update cookiecutter template for v2 | ✅ done | P1 |
-| TASK-017 | Update USER_GUIDE.md | ✅ done | P2 |
-| TASK-018 | Update README.md | ✅ done | P2 |
-| TASK-019 | Bump version and prepare release | ✅ done | P2 |
-
-### Sprint 5: Claude Code Alignment ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-022 | Convert flows to skills (SKILL.md) | ✅ done | P0 |
-| TASK-020 | Create universal AGENTS.md template | ✅ done | P0 |
-| TASK-023 | Create custom subagents | ✅ done | P1 |
-| TASK-021 | Create CLAUDE.md pointer file | ✅ done | P0 |
-| TASK-024 | Implement hooks for auto context-sync | ✅ done | P1 |
-
-### Sprint 6: Multi-Agent Orchestration ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-025 | Headless Mode Integration | ✅ done | P0 |
-| TASK-026 | Agent Handoff Protocol | ✅ done | P1 |
-| TASK-027 | Codex CLI Adapter | ✅ done | P1 |
-| TASK-028 | Orchestrator Service | ✅ done | P2 |
-
-### Sprint 7: Lifecycle & Analytics ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-029 | Task Lifecycle Management | ✅ done | P1 |
-| TASK-030 | Token Tracking and Cost Estimation | ✅ done | P1 |
-| TASK-031 | Time Tracking Integration | ✅ done | P2 |
-| TASK-032 | Benchmarking Framework | ✅ done | P2 |
-
-### Sprint 8: Consolidation & Cleanup ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-033 | Archive v2-upgrade plan tasks | ✅ done | P0 |
-| TASK-034 | Consolidate documentation to root | ✅ done | P0 |
-| TASK-035 | Remove obsolete prompts/ directory | ✅ done | P1 |
-| TASK-036 | Fix cookiecutter template path | ✅ done | P1 |
-
-### Sprint 9: Prompt Caching & Release ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-037 | Implement prompt caching | ✅ done | P0 |
-| TASK-038 | Codex optimization pass | ✅ done | P2 |
-| TASK-039 | Prepare v2.2.0 release | ✅ done | P0 |
-
-### Sprint 10: Trello Integration ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-040 | Add Trello CLI commands | ✅ done | P0 |
-| TASK-041 | Add Trello task commands | ✅ done | P0 |
-| TASK-042 | Update config for Trello | ✅ done | P1 |
-| TASK-043 | Add Trello skills to template | ✅ done | P1 |
-| TASK-044 | Add Trello integration tests | ✅ done | P2 |
-
-### Sprint 11: MCP Server & Hooks ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-047 | Implement MCP server core | ✅ done | P0 |
-| TASK-048 | MCP orchestration and metrics tools | ✅ done | P1 |
-| TASK-049 | MCP Trello integration tools | ✅ done | P1 |
-| TASK-050 | Auto-hooks system | ✅ done | P1 |
-| TASK-051 | Enhanced skills with CLI commands | ✅ done | P2 |
-| TASK-052 | MCP server tests | ✅ done | P2 |
-| TASK-053 | Documentation and release v2.4.0 | ✅ done | P2 |
-
-### Sprint 12: Documentation & Release v2.4.0 ✅
-
-| Task | Title | Status | Priority |
-|------|-------|--------|----------|
-| TASK-054 | Audit state and sync documentation | ✅ done | P0 |
-| TASK-055 | Version bump to 2.4.0 | ✅ done | P0 |
-| TASK-056 | Update CHANGELOG.md | ✅ done | P0 |
-| TASK-057 | Update README.md | ✅ done | P0 |
-| TASK-058 | Update docs/USER_GUIDE.md | ✅ done | P1 |
-| TASK-059 | Create docs/MCP_SETUP.md | ✅ done | P1 |
-| TASK-060 | Test Trello integration live | ✅ done | P1 |
-| TASK-061 | Build and publish v2.4.0 | ✅ done | P0 |
-| TASK-062 | Update cookiecutter template | ✅ done | P2 |
+Sprints 1-12 fully completed (62 tasks). See archive for details.
 
 ### Sprint 13: Full Autonomy (Current)
 
@@ -151,236 +32,182 @@ Sprint 13 P0 tasks complete! All autonomy foundations in place:
 | TASK-070 | GitHub PR integration | ✅ done | 50 |
 | TASK-072 | Automatic next task assignment | ✅ done | 40 |
 | TASK-077 | Add preset system for config initialization | ✅ done | 45 |
+| TASK-078 | Create BPS preset with full Trello guidelines | ✅ done | 35 |
 | TASK-079 | Auto-enter planning mode on new feature detection | ✅ done | 55 |
 | TASK-080 | Orchestrator sequencing for full autonomy | ✅ done | 65 |
 
-**P1 Tasks - In Progress**
+**P1 Tasks - Remaining**
 
 | Task | Title | Status | Depends On |
 |------|-------|--------|------------|
 | TASK-063 | VS Code extension wrapper for MCP | 📋 planned | - |
 | TASK-064 | Current task status bar widget | 📋 planned | TASK-063 |
 | TASK-065 | Auto-update context on file save | 📋 planned | TASK-063 |
-| TASK-068 | Progress comments from agents | 📋 planned | TASK-067 |
+| TASK-068 | Progress comments from agents | ⏳ pending | TASK-067 |
 | TASK-069 | Auto-PR link when branch pushed | ⏳ pending | - |
 | TASK-071 | PR merge triggers task archive | ⏳ pending | - |
 
-**P2 Tasks - Backlog**
+**P2/P3 Tasks - Backlog**
 
 | Task | Title | Status | Complexity |
 |------|-------|--------|------------|
 | TASK-073 | Daily standup summary generation | ⏳ pending | 35 |
-| TASK-074 | Dashboard web UI | ⏳ pending | 60 |
+| TASK-074 | Dashboard web UI | ⏳ pending (deprioritized) | 60 |
 | TASK-075 | Slack notifications integration | ⏳ pending | 40 |
 | TASK-076 | Multi-project support | ⏳ pending | 50 |
-| TASK-078 | Create BPS preset with full Trello guidelines | ⏳ pending | 35 |
 
 ## What Was Just Done
 
-### Sprint 13 P0 Complete - Full Autonomy Foundations
+### Session: 2025-12-16 - Trello Reliability Improvements
 
-All Sprint 13 P0 tasks completed (7 tasks):
+#### 1. Bug Fix: TaskParser Method Name
+Fixed `task_parser.get()` → `task_parser.get_task_by_id()` in 10 locations across 4 files:
+- `orchestration/autonomous.py` (4 occurrences)
+- `planning/auto_assign.py` (2 occurrences)
+- `github/pr.py` (2 occurrences)
+- `trello/webhook.py` (2 occurrences)
 
-1. **TASK-066**: Webhook listener for Trello card moves
-   - TrelloWebhookServer for receiving card move events
-   - CardMoveEvent parsing and status mapping
-   - WebhookHandler for processing events
-   - CLI: `bpsai-pair trello webhook serve`
+#### 2. TASK-078: BPS Preset Created ✅
+Added `bps` preset to `presets.py` with full BPS Trello guidelines:
 
-2. **TASK-067**: Agent assignment on Ready column
-   - Auto-assign agents when cards move to "Planned / Ready"
-   - Creates "Agent: <name>" label on cards
-   - Adds assignment comment with timestamp
-   - Optional auto-start to "In Progress"
+**7-List Structure:**
+- Intake / Backlog
+- Planned / Ready
+- In Progress
+- Review / Testing
+- Deployed / Done
+- Issues / Tech Debt
+- Notes / Ops Log
 
-3. **TASK-070**: GitHub PR integration
-   - GitHubClient using `gh` CLI
-   - PRManager for task-linked PRs
-   - PRWorkflow for automation
-   - CLI: `bpsai-pair github create`, `list`, `merge`
+**8 Label Colors:**
+- Frontend (green), Backend (blue), Worker (purple), Deployment (red)
+- Bug (orange), Security (yellow), Docs (sky), AI (black)
 
-4. **TASK-072**: Automatic next task assignment
-   - `get_next_pending_task()` with priority/complexity sorting
-   - AutoAssigner with optional Trello integration
-   - CLI: `bpsai-pair task auto-next`, `task next --start`
+**Automation Mappings:**
+- `on_task_start` → moves to "In Progress"
+- `on_task_complete` → moves to "Deployed / Done"
+- `on_task_block` → moves to "Issues / Tech Debt"
+- `on_task_review` → moves to "Review / Testing"
 
-5. **TASK-077**: Add preset system for config initialization
-   - 7 built-in presets (python-cli, python-api, react, fullstack, library, minimal, autonomous)
-   - PresetManager for loading and applying presets
-   - CLI: `bpsai-pair preset list`, `show`, `preview`
-   - `bpsai-pair init --preset <name>`
+**Hooks Enabled by Default:**
+- `on_task_start`: start_timer, sync_trello, update_state
+- `on_task_complete`: stop_timer, record_metrics, sync_trello, check_unblocked
+- `on_task_block`: sync_trello
 
-6. **TASK-079**: Auto-enter planning mode on new feature detection
-   - WorkIntent enum (9 intent types)
-   - IntentDetector with pattern matching
-   - PlanningModeManager for automatic planning
-   - CLI: `bpsai-pair intent detect`, `should-plan`, `suggest-flow`
+#### 3. Hook Reliability Fix
+Updated `planning/cli_commands.py` - `task_update` command:
+- Now **always fires hooks** when status changes
+- Added `_run_status_hooks()` helper function
+- Maps status to event: in_progress→on_task_start, done→on_task_complete, blocked→on_task_block
+- Added `--no-hooks` flag to skip hooks if needed
+- Shows feedback: "→ Trello: moved to 'In Progress'"
 
-7. **TASK-080**: Orchestrator sequencing for full autonomy
-   - WorkflowPhase and WorkflowEvent enums
-   - WorkflowState and WorkflowConfig dataclasses
-   - AutonomousWorkflow with full lifecycle management
-   - WorkflowSequencer for step-by-step orchestration
-   - CLI: `bpsai-pair orchestrate auto-run`, `auto-session`, `workflow-status`
+#### 4. Config Path Compatibility
+Updated `hooks.py` to check both locations:
+- `trello.automation` (new/preferred)
+- `trello.card_format.automation` (backwards compatibility)
 
-### Additional Improvements
+#### 5. Test Fixes
+Updated tests using old `parser.get()` method:
+- `tests/test_autonomous_workflow.py`
+- `tests/test_webhook.py`
 
-- **Trello Card Movement**: Fixed `_sync_trello` hook to actually move cards
-- **Workflow Guide**: Created `orchestration/workflow_guide.py` codifying workflow stages
-- **Task Dependencies**: Added `depends_on` fields to task files
-- **IDE Task Planning**: Detailed plans for TASK-063, 064, 065 (VS Code extension)
+### Verified Working
+```bash
+$ bpsai-pair task update TASK-078 --status in_progress
+🔄 Updated TASK-078 -> in_progress
+  → Trello: moved to 'In Progress'
 
-### New Modules Created (Sprint 13)
-
-```
-tools/cli/bpsai_pair/
-├── github/                    # GitHub integration
-│   ├── __init__.py
-│   ├── client.py              # GitHubClient, GitHubService
-│   ├── pr.py                  # PRManager, PRInfo, PRWorkflow
-│   └── commands.py            # CLI commands
-├── planning/
-│   └── intent_detection.py    # WorkIntent, IntentDetector, PlanningModeManager
-├── orchestration/
-│   ├── autonomous.py          # AutonomousWorkflow, WorkflowSequencer
-│   └── workflow_guide.py      # WorkflowGuide, stage mappings
-├── presets.py                 # Preset, PresetManager, PRESETS
-└── trello/
-    └── webhook.py             # TrelloWebhookServer, WebhookHandler
+$ bpsai-pair task update TASK-078 --status done
+✅ Updated TASK-078 -> done
+  → Trello: moved to 'Deployed / Done'
 ```
 
 ### Test Coverage
-
 - **Total tests**: 389 passing
-- **New tests**: 108 for Sprint 13 features
-  - test_autonomous_workflow.py: 19 tests
-  - test_intent_detection.py: 37 tests
-  - test_github.py: 25 tests
-  - test_presets.py: 27 tests (via previous session)
-  - test_webhook.py: Extended
+- All tests pass after fixes
 
 ## What's Next
 
-### Immediate (P1 Tasks)
+### Immediate Priority
 
-1. **VS Code Extension** (TASK-063, 064, 065)
-   - VS Code extension wrapper for MCP
-   - Status bar widget for current task
-   - Auto-update context on file save
-
-2. **Agent Progress Tracking** (TASK-068)
-   - Automatic progress comments on Trello cards
-   - ProgressReporter class with templates
-
-3. **PR Automation** (TASK-069, 071)
+1. **PR Automation** (TASK-069, 071)
    - Auto-link PRs when branches are pushed
    - Archive tasks when PRs are merged
 
-### Backlog (P2 Tasks)
+2. **Agent Progress Tracking** (TASK-068)
+   - Automatic progress comments on Trello cards
 
+### Backlog
+
+- VS Code Extension (TASK-063, 064, 065) - future
 - Daily standup summary generation
-- Dashboard web UI
 - Slack notifications
-- Multi-project support
-- BPS preset with Trello guidelines
 
 ## Blockers
 
 None.
 
+## Files Modified This Session
+
+```
+tools/cli/bpsai_pair/
+├── presets.py                    # Added BPS preset
+├── hooks.py                      # Config path compatibility fix
+├── planning/
+│   ├── cli_commands.py           # Hook triggering on task update
+│   └── auto_assign.py            # Method name fix
+├── orchestration/
+│   └── autonomous.py             # Method name fix
+├── github/
+│   └── pr.py                     # Method name fix
+└── trello/
+    └── webhook.py                # Method name fix
+
+tests/
+├── test_autonomous_workflow.py   # Method name fix
+└── test_webhook.py               # Method name fix
+```
+
 ## Workflow Stages (Codified)
 
 | Stage | Trello List | Trigger |
 |-------|-------------|---------|
-| Intake | Intake / Backlog | New unpanned task |
+| Intake | Intake / Backlog | New unplanned task |
 | Planned | Planned / Ready | `on_task_ready` hook |
 | In Progress | In Progress | `on_task_start` hook |
 | Review | Review / Testing | `on_task_review` hook |
 | Done | Deployed / Done | `on_task_complete` hook |
 | Blocked | Issues / Tech Debt | `on_task_block` hook |
 
-## CLI Commands Available
+## Available Presets
+
+| Preset | Description |
+|--------|-------------|
+| python-cli | Python CLI application with Click/Typer |
+| python-api | Python REST API with Flask/FastAPI |
+| react | React/Next.js frontend application |
+| fullstack | Full-stack (Python backend + React frontend) |
+| library | Python library/package for distribution |
+| minimal | Minimal configuration with essential defaults |
+| autonomous | Full autonomy with Trello integration |
+| **bps** | **BPS AI Software preset with 7-list Trello workflow** |
+
+## CLI Quick Reference
 
 ```bash
-# Planning
-bpsai-pair plan new <slug> --type feature --title "Title"
-bpsai-pair plan list
-bpsai-pair plan show <plan-id>
-bpsai-pair plan tasks <plan-id>
-bpsai-pair plan add-task <plan-id> --id TASK-XXX --title "Title"
-bpsai-pair plan sync-trello <plan-id>
-
-# Tasks
-bpsai-pair task list
-bpsai-pair task show <task-id>
-bpsai-pair task update <task-id> --status done
-bpsai-pair task next
-bpsai-pair task next --start          # Auto-start next task
-bpsai-pair task auto-next             # Full auto-assignment
-
-# Flows
-bpsai-pair flow list
-bpsai-pair flow show <name>
-bpsai-pair flow run <name>
-
-# Orchestration
-bpsai-pair orchestrate task <task-id>
-bpsai-pair orchestrate analyze <task-id>
-bpsai-pair orchestrate handoff <task-id>
-bpsai-pair orchestrate auto-run --task <id>   # Run single task workflow
-bpsai-pair orchestrate auto-session           # Run autonomous session
-bpsai-pair orchestrate workflow-status        # Show current status
-
-# Intent Detection
-bpsai-pair intent detect "Build a new feature"
-bpsai-pair intent should-plan "Create dashboard"
-bpsai-pair intent suggest-flow "Refactor auth"
+# Task management with hooks
+bpsai-pair task update <id> --status in_progress  # Fires hooks, moves Trello card
+bpsai-pair task update <id> --status done         # Fires hooks, moves card to Done
+bpsai-pair task update <id> --status done --no-hooks  # Skip hooks
 
 # Presets
-bpsai-pair preset list
-bpsai-pair preset show <name>
-bpsai-pair preset preview <name>
-bpsai-pair init --preset <name>
+bpsai-pair preset list                    # Show all presets
+bpsai-pair preset show bps                # Show BPS preset details
+bpsai-pair preset preview bps             # Preview generated config
+bpsai-pair init myproject --preset bps    # Initialize with BPS preset
 
-# GitHub Integration
-bpsai-pair github status
-bpsai-pair github create --task TASK-001
-bpsai-pair github list
-bpsai-pair github merge <pr-number>
-bpsai-pair github link <pr-number> --task TASK-001
-
-# Trello Integration
-bpsai-pair trello connect
-bpsai-pair trello status
-bpsai-pair trello boards
-bpsai-pair trello use-board <id>
-bpsai-pair trello webhook serve --agent claude
-bpsai-pair ttask list
-bpsai-pair ttask show TRELLO-XXX
-bpsai-pair ttask start TRELLO-XXX
-bpsai-pair ttask done TRELLO-XXX -s "..."
-bpsai-pair ttask move TRELLO-XXX --list "In Progress"
-
-# MCP Server
-bpsai-pair mcp serve
-bpsai-pair mcp tools
-bpsai-pair mcp test <tool-name>
-
-# Metrics & Time Tracking
-bpsai-pair metrics summary
-bpsai-pair metrics task TASK-XXX
-bpsai-pair timer start TASK-XXX
-bpsai-pair timer stop
-bpsai-pair timer status
+# Trello
+bpsai-pair trello status                  # Check connection
+bpsai-pair plan sync-trello <plan-id>     # Sync plan to Trello board
 ```
-
-## Skills Available
-
-| Skill | Triggers On |
-|-------|-------------|
-| design-plan-implement | "design", "plan", "approach", "feature" |
-| tdd-implement | "fix", "bug", "test", "implement" |
-| code-review | "review", "check", "PR" |
-| finish-branch | "finish", "merge", "complete" |
-| trello-task-workflow | "work on task", "TRELLO-", "next task" |
-| trello-aware-planning | "plan feature", "create tasks", "sprint" |
