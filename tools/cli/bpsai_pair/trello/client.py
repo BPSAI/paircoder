@@ -501,7 +501,13 @@ class TrelloService:
             return False
 
         try:
-            card.add_label_id(label['id'])
+            # Use the direct API call to add label by ID
+            # (Card.add_label expects a Label object, but we have a dict)
+            card.client.fetch_json(
+                f'/cards/{card.id}/idLabels',
+                http_method='POST',
+                post_args={'value': label['id']}
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to add label: {e}")

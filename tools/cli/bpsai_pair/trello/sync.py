@@ -286,6 +286,10 @@ class TrelloSyncManager:
         Returns:
             Updated card
         """
+        # Update description with BPS format
+        description = self.build_card_description(task)
+        card.set_description(description)
+
         # Update custom fields
         custom_fields = {}
 
@@ -300,6 +304,15 @@ class TrelloSyncManager:
 
         self.service.set_card_custom_fields(card, custom_fields)
         self.service.set_effort_field(card, task.complexity, self.config.effort_field)
+
+        # Add labels (stack-based and tag-based)
+        if stack:
+            self.service.add_label_to_card(card, stack)
+
+        for tag in task.tags:
+            tag_title = tag.title()
+            if tag_title in BPS_LABELS:
+                self.service.add_label_to_card(card, tag_title)
 
         logger.info(f"Updated card for {task.id}")
         return card

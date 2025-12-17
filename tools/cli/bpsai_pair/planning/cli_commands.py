@@ -513,6 +513,7 @@ def plan_sync_trello(
     try:
         from ..trello.auth import load_token
         from ..trello.client import TrelloService
+        from ..trello.sync import TrelloSyncManager, TaskData, TaskSyncConfig
 
         token_data = load_token()
         if not token_data:
@@ -528,8 +529,26 @@ def plan_sync_trello(
         service.set_board(board_id)
         results["board_id"] = board_id
 
+        # Create sync manager with BPS configuration
+        sync_config = TaskSyncConfig(
+            project_field="Project",
+            stack_field="Stack",
+            status_field="Status",
+            effort_field="Effort",
+            default_list="Backlog",
+            create_missing_labels=True,
+        )
+        sync_manager = TrelloSyncManager(service, sync_config)
+
         console.print(f"\n[bold]Syncing plan:[/bold] {plan_id}")
         console.print(f"[bold]Target board:[/bold] {service.board.name}")
+
+        # Ensure BPS labels exist on the board
+        console.print("\n[dim]Ensuring BPS labels exist...[/dim]")
+        label_results = sync_manager.ensure_bps_labels()
+        labels_created = sum(1 for v in label_results.values() if v)
+        if labels_created:
+            console.print(f"  [green]+ Created {labels_created} BPS labels[/green]")
 
         # Process each sprint
         for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
@@ -548,55 +567,46 @@ def plan_sync_trello(
                     console.print(f"    [red]✗ List not found[/red]")
                     continue
 
-            target_list = service.lists.get(sprint_name)
-            if not target_list:
-                continue
-
-            # Create cards for tasks
+            # Sync cards for tasks using TrelloSyncManager
             for task in sprint_tasks:
                 try:
+                    # Convert to TaskData with plan title for Project field
+                    task_data = TaskData.from_task(task)
+                    task_data.plan_title = plan.title if plan else plan_id
+
                     # Check if card already exists
-                    existing_cards = target_list.list_cards()
-                    existing = None
-                    for card in existing_cards:
-                        if f"[{task.id}]" in card.name:
-                            existing = card
-                            break
+                    existing_card, _ = service.find_card_with_prefix(task.id)
 
-                    # Card description
-                    desc = f"""## Objective
-{getattr(task, 'objective', None) or task.title}
+                    # Sync using TrelloSyncManager (handles custom fields, labels, descriptions)
+                    card = sync_manager.sync_task_to_card(
+                        task=task_data,
+                        list_name=sprint_name,
+                        update_existing=True
+                    )
 
-## Details
-- **Priority:** {task.priority}
-- **Complexity:** {task.complexity}
-- **Sprint:** {task.sprint or 'N/A'}
+                    if card:
+                        if existing_card:
+                            results["cards_updated"].append({
+                                "task_id": task.id,
+                                "card_id": card.id,
+                            })
+                            console.print(f"    [yellow]↻[/yellow] {task.id}: {task.title}")
+                        else:
+                            results["cards_created"].append({
+                                "task_id": task.id,
+                                "card_id": card.id,
+                            })
+                            # Show inferred stack if any
+                            stack = sync_manager.infer_stack(task_data)
+                            stack_info = f" [{stack}]" if stack else ""
+                            console.print(f"    [green]+[/green] {task.id}: {task.title}{stack_info}")
 
----
-*Synced from PairCoder*
-"""
-
-                    if existing:
-                        # Update existing card
-                        existing.set_description(desc)
-                        results["cards_updated"].append({
-                            "task_id": task.id,
-                            "card_id": existing.id,
-                        })
-                        console.print(f"    [yellow]↻[/yellow] {task.id}: {task.title}")
+                            # Update task file with card ID if requested
+                            if link_cards:
+                                _update_task_with_card_id(task, card.id, task_parser)
                     else:
-                        # Create new card
-                        card_name = f"[{task.id}] {task.title}"
-                        card = target_list.add_card(card_name, desc)
-                        results["cards_created"].append({
-                            "task_id": task.id,
-                            "card_id": card.id,
-                        })
-                        console.print(f"    [green]+[/green] {task.id}: {task.title}")
-
-                        # Update task file with card ID if requested
-                        if link_cards:
-                            _update_task_with_card_id(task, card.id, task_parser)
+                        results["errors"].append(f"Failed to sync card for {task.id}")
+                        console.print(f"    [red]✗[/red] {task.id}: Failed to sync")
 
                 except Exception as e:
                     error_msg = f"Failed to create card for {task.id}: {str(e)}"
