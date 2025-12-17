@@ -5,6 +5,7 @@ This module provides security controls for autonomous execution:
 - Pre-execution security review
 - Secret detection
 - Dependency vulnerability scanning
+- Docker sandbox isolation
 """
 
 from .allowlist import (
@@ -17,6 +18,13 @@ from .review import (
     SecurityReviewHook,
     CodeChangeReviewer,
 )
+from .sandbox import (
+    SandboxConfig,
+    SandboxRunner,
+    SandboxResult,
+    FileChange,
+    MountConfig,
+)
 
 __all__ = [
     "AllowlistManager",
@@ -25,4 +33,9 @@ __all__ = [
     "ReviewResult",
     "SecurityReviewHook",
     "CodeChangeReviewer",
+    "SandboxConfig",
+    "SandboxRunner",
+    "SandboxResult",
+    "FileChange",
+    "MountConfig",
 ]

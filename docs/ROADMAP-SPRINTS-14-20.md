@@ -8,16 +8,16 @@
 
 ## Sprint Summary
 
-| Sprint | Theme | Tasks | Est. Effort | Priority |
-|--------|-------|-------|-------------|----------|
-| 14 | Trello Deep Integration | 8 tasks | 3-4 days | **Current** |
-| 15 | Security & Sandboxing | 7 tasks | 4-5 days | High |
-| 16 | Real Sub-agents | 6 tasks | 3-4 days | Medium |
-| 17 | Time, Tokens & Metrics | 8 tasks | 3-4 days | Medium |
-| 18 | Methodology, Sessions & Recovery | 12 tasks | 4-5 days | Medium |
-| 19 | Cross-Platform Skills 🔥 | 7 tasks | 3-4 days | Future |
-| 20 | Emergent Skill Discovery 🧠 | 9 tasks | 4-5 days | Future |
-| Backlog | Remote API (TASK-114) 🔥 | 1 task | 3-4 days | Future |
+| Sprint | Theme | Tasks | Est. Effort | Priority        |
+|--------|-------|-------|-------------|-----------------|
+| 14 | Trello Deep Integration | 8 tasks | 3-4 days | Complete|
+| 15 | Security & Sandboxing | 7 tasks | 4-5 days | **Current**|
+| 16 | Real Sub-agents | 6 tasks | 3-4 days | Medium          |
+| 17 | Time, Tokens & Metrics | 8 tasks | 3-4 days | Medium          |
+| 18 | Methodology, Sessions & Recovery | 12 tasks | 4-5 days | Medium          |
+| 19 | Cross-Platform Skills 🔥 | 7 tasks | 3-4 days | Future          |
+| 20 | Emergent Skill Discovery 🧠 | 9 tasks | 4-5 days | Future          |
+| Backlog | Remote API (TASK-114) 🔥 | 1 task | 3-4 days | Future          |
 
 ---
 
@@ -49,7 +49,7 @@
 
 ---
 
-## Sprint 14: Trello Deep Integration - IN PROGRESS
+## Sprint 14: Trello Deep Integration - Complete
 
 > **Goal:** Cards created by PairCoder look exactly like Mike would create manually.
 
@@ -66,14 +66,6 @@
 | TASK-087 | Due date sync | pending | 20 |
 | TASK-088 | Activity log comments | pending | 25 |
 
-### ⚠️ Integration Gap Identified
-
-The new `TrelloSyncManager` class exists but is **not wired into the actual commands**:
-- `trello/sync.py` created with `TrelloSyncManager`, `BPS_LABELS`, `TaskSyncConfig`
-- `plan sync-trello` command is NOT using the new sync module
-- Labels and custom fields NOT being applied to real cards
-
-**Fix Required:** Update `planning/cli_commands.py` to use `TrelloSyncManager`
 
 ### BPS Trello Requirements
 
@@ -203,7 +195,7 @@ commands:
 | TASK-097 | Planner agent implementation | Invokes planner for design tasks | 35 |
 | TASK-098 | Reviewer agent implementation | Invokes reviewer for code review | 35 |
 | TASK-099 | Security agent implementation | Invokes security for pre-commit review | 40 |
-| TASK-100 | Agent handoff protocol (real) | Actual context passing between agents | 40 |
+| TASK-100 | Agent handoff protocol  | Actual context passing between agents | 40 |
 | TASK-101 | Agent selection logic | Route tasks to appropriate agent | 30 |
 
 ### Agent Invocation Options
@@ -744,7 +736,7 @@ bpsai-pair skill validate .paircoder/skills/my-skill/
 
 > **Goal:** Self-improving system that discovers missing skills from failures and creates them.
 
-### The Vision (Credit: Community Feedback)
+### The Vision (Credit: EricGT)
 
 ```
 Plan (uses Skills) → Execute → Miss → New Skill → Better Next Plan
