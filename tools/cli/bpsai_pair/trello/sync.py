@@ -80,16 +80,18 @@ TASK_STATUS_TO_TRELLO_STATUS = {
     "in_progress": "In Progress",
     "review": "Testing",
     "blocked": "Blocked",
-    "done": "Done",
+    "done": "Deployed/Done",
 }
 
 # Trello Status to task status mapping (reverse of above)
+# Maps Status custom field dropdown values back to task status
 TRELLO_STATUS_TO_TASK_STATUS = {
     "Enqueued": "pending",
     "In Progress": "in_progress",
     "Testing": "review",
     "Blocked": "blocked",
-    "Done": "done",
+    "Deployed/Done": "done",
+    "Done": "done",  # Alternative value some boards might use
 }
 
 # Keywords to infer stack from task title/tags
@@ -125,7 +127,7 @@ class TaskSyncConfig:
     create_missing_labels: bool = True
 
     # Default list for new cards (Intake/Backlog for Butler workflow)
-    default_list: str = "Intake / Backlog"
+    default_list: str = "Intake/Backlog"
 
     # Card description template (None uses default BPS template)
     card_template: Optional[str] = None
@@ -610,19 +612,71 @@ def create_sync_manager(
 
 
 # List name to status mapping for reverse sync
+# Includes both spaced and non-spaced variants for flexible matching
 LIST_TO_STATUS = {
+    # Backlog/Pending variants
+    "Intake/Backlog": "pending",
     "Intake / Backlog": "pending",
     "Backlog": "pending",
+    "Planned/Ready": "pending",
     "Planned / Ready": "pending",
     "Ready": "pending",
+    # In Progress variants
     "In Progress": "in_progress",
-    "Review / Testing": "in_progress",
-    "In Review": "in_progress",
+    # Review variants
+    "Review/Testing": "review",
+    "Review / Testing": "review",
+    "In Review": "review",
+    # Done variants
+    "Deployed/Done": "done",
     "Deployed / Done": "done",
     "Done": "done",
+    # Blocked variants
+    "Issues/Tech Debt": "blocked",
     "Issues / Tech Debt": "blocked",
     "Blocked": "blocked",
 }
+
+
+def _normalize_list_name(name: str) -> str:
+    """Normalize list name for matching (remove spaces around slashes)."""
+    import re
+    return re.sub(r'\s*/\s*', '/', name).strip()
+
+
+def _get_status_for_list_flexible(list_name: str) -> Optional[str]:
+    """Get status for a list name with flexible matching.
+    
+    Args:
+        list_name: Trello list name
+        
+    Returns:
+        Status string or None
+    """
+    # Try exact match first
+    if list_name in LIST_TO_STATUS:
+        return LIST_TO_STATUS[list_name]
+    
+    # Try normalized match
+    normalized = _normalize_list_name(list_name)
+    for key, status in LIST_TO_STATUS.items():
+        if _normalize_list_name(key) == normalized:
+            return status
+    
+    # Try pattern matching
+    list_lower = list_name.lower()
+    if "done" in list_lower or "deployed" in list_lower:
+        return "done"
+    if "progress" in list_lower:
+        return "in_progress"
+    if "review" in list_lower or "testing" in list_lower:
+        return "review"
+    if "blocked" in list_lower or "issue" in list_lower:
+        return "blocked"
+    if "backlog" in list_lower or "intake" in list_lower or "ready" in list_lower:
+        return "pending"
+    
+    return None
 
 
 @dataclass
@@ -689,7 +743,7 @@ class TrelloToLocalSync:
         Returns:
             Task status string or None if no mapping
         """
-        return LIST_TO_STATUS.get(list_name)
+        return _get_status_for_list_flexible(list_name)
 
     def _sync_checklist_to_task(
         self,

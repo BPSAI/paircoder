@@ -31,15 +31,68 @@ class CardMoveEvent:
         return None
 
 
-# Default list-to-status mappings
-LIST_STATUS_MAP = {
+# Default list-to-status mappings (fallback if board fetch fails)
+# Uses flexible matching via get_status_for_list() function
+DEFAULT_LIST_STATUS_MAP = {
+    # Include both spaced and non-spaced variants for robustness
+    "Intake/Backlog": "pending",
     "Intake / Backlog": "pending",
+    "Planned/Ready": "pending",
     "Planned / Ready": "pending",
+    "Backlog": "pending",
     "In Progress": "in_progress",
-    "Review / Testing": "in_progress",
+    "Review/Testing": "review",
+    "Review / Testing": "review",
+    "Deployed/Done": "done",
     "Deployed / Done": "done",
+    "Done": "done",
+    "Issues/Tech Debt": "blocked",
     "Issues / Tech Debt": "blocked",
+    "Blocked": "blocked",
 }
+
+
+def get_status_for_list(list_name: str, list_status_map: dict = None) -> Optional[str]:
+    """Get status for a list name with flexible matching.
+    
+    Args:
+        list_name: Trello list name
+        list_status_map: Optional custom mapping (uses DEFAULT if not provided)
+        
+    Returns:
+        Status string or None if no match
+    """
+    if list_status_map is None:
+        list_status_map = DEFAULT_LIST_STATUS_MAP
+    
+    # Try exact match first
+    if list_name in list_status_map:
+        return list_status_map[list_name]
+    
+    # Try normalized match (remove spaces around slashes)
+    import re
+    normalized = re.sub(r'\s*/\s*', '/', list_name).strip()
+    if normalized in list_status_map:
+        return list_status_map[normalized]
+    
+    # Try pattern matching on keywords
+    list_lower = list_name.lower()
+    if "done" in list_lower or "deployed" in list_lower:
+        return "done"
+    if "progress" in list_lower or "doing" in list_lower:
+        return "in_progress"
+    if "review" in list_lower or "testing" in list_lower:
+        return "review"
+    if "blocked" in list_lower or "issue" in list_lower:
+        return "blocked"
+    if "backlog" in list_lower or "intake" in list_lower or "ready" in list_lower:
+        return "pending"
+    
+    return None
+
+
+# Keep old name for backwards compatibility
+LIST_STATUS_MAP = DEFAULT_LIST_STATUS_MAP
 
 
 class WebhookHandler(BaseHTTPRequestHandler):
@@ -157,8 +210,8 @@ class TrelloWebhookServer:
             self._server.shutdown()
 
 
-# Lists that trigger agent assignment
-READY_LISTS = ["Planned / Ready", "Ready"]
+# Lists that trigger agent assignment (include both spacing variants)
+READY_LISTS = ["Planned / Ready", "Planned/Ready", "Ready"]
 
 
 def create_task_updater(paircoder_dir: Path) -> Callable[[CardMoveEvent], None]:
@@ -179,8 +232,8 @@ def create_task_updater(paircoder_dir: Path) -> Callable[[CardMoveEvent], None]:
             logger.warning(f"Could not extract task ID from card: {event.card_name}")
             return
 
-        # Determine new status from list name
-        new_status = LIST_STATUS_MAP.get(event.list_after)
+        # Determine new status from list name using flexible matching
+        new_status = get_status_for_list(event.list_after)
         if not new_status:
             logger.info(f"No status mapping for list: {event.list_after}")
             return
@@ -240,10 +293,21 @@ def create_agent_assigner(
     import requests
     from datetime import datetime
 
+    def is_ready_list(list_name: str) -> bool:
+        """Check if list matches ready patterns with flexible matching."""
+        import re
+        normalized = re.sub(r'\s*/\s*', '/', list_name).strip()
+        for ready in READY_LISTS:
+            ready_normalized = re.sub(r'\s*/\s*', '/', ready).strip()
+            if normalized == ready_normalized:
+                return True
+        # Also check for keyword
+        return "ready" in list_name.lower()
+
     def assign_agent(event: CardMoveEvent) -> None:
         """Assign agent to card when it moves to Ready."""
         # Only trigger on moves TO a Ready list
-        if event.list_after not in READY_LISTS:
+        if not is_ready_list(event.list_after):
             return
 
         task_id = event.task_id

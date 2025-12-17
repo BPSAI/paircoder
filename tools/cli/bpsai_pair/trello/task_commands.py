@@ -88,14 +88,15 @@ def task_list(
     """List tasks from Trello board."""
     client, config = get_board_client()
 
-    # Get list name mappings from config
+    # Get list name mappings from config with sensible defaults
+    # These defaults include common variants to handle spacing differences
     list_mappings = config.get("trello", {}).get("lists", {
-        "backlog": "Backlog",
-        "sprint": "Sprint",
+        "backlog": "Intake/Backlog",
+        "sprint": "Planned/Ready",
         "in_progress": "In Progress",
-        "review": "In Review",
-        "done": "Done",
-        "blocked": "Blocked",
+        "review": "Review/Testing",
+        "done": "Deployed/Done",
+        "blocked": "Issues/Tech Debt",
     })
 
     cards = []
@@ -314,21 +315,37 @@ def task_block(
 
 @app.command("comment")
 def task_comment(
-    card_id: str = typer.Argument(..., help="Card ID"),
+    task_id: str = typer.Argument(..., help="Task or Card ID (e.g., TASK-001 or TRELLO-123)"),
     message: str = typer.Argument(..., help="Comment message"),
 ):
-    """Add a comment to a task."""
+    """Add a progress comment to a task.
+
+    Uses structured activity logging with emojis and timestamps.
+    """
+    from .activity import TrelloActivityLogger
+
     client, _ = get_board_client()
-    card, lst = client.find_card(card_id)
 
-    if not card:
-        console.print(f"[red]Card not found: {card_id}[/red]")
-        raise typer.Exit(1)
+    # Create activity logger for structured comments
+    activity_logger = TrelloActivityLogger(client)
 
-    # Log as progress update
-    log_activity(card, "progress", message)
+    # Try to log via activity logger (handles both TASK-XXX and TRELLO-XXX)
+    success = activity_logger.log_progress(task_id, note=message)
 
-    console.print(f"[green]✓ Comment added to: {card.name}[/green]")
+    if success:
+        console.print(f"[green]✓ Progress logged for: {task_id}[/green]")
+        console.print(f"  📝 {message}")
+    else:
+        # Fall back to direct card lookup
+        card, lst = client.find_card(task_id)
+
+        if not card:
+            console.print(f"[red]Card not found: {task_id}[/red]")
+            raise typer.Exit(1)
+
+        # Log as progress update
+        log_activity(card, "progress", message)
+        console.print(f"[green]✓ Comment added to: {card.name}[/green]")
 
 
 @app.command("move")

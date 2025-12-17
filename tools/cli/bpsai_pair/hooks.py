@@ -67,6 +67,7 @@ class HookRunner:
             "sync_trello": self._sync_trello,
             "update_state": self._update_state,
             "check_unblocked": self._check_unblocked,
+            "log_trello_activity": self._log_trello_activity,
         }
 
     @property
@@ -306,6 +307,78 @@ class HookRunner:
         except Exception as e:
             logger.warning(f"Unblock check failed: {e}")
             return {"unblocked_tasks": [], "error": str(e)}
+
+    def _log_trello_activity(self, ctx: HookContext) -> dict:
+        """Log activity to Trello card as a comment.
+
+        Logs appropriate event based on hook context:
+        - on_task_start → TASK_STARTED
+        - on_task_complete → TASK_COMPLETED
+        - on_task_block → TASK_BLOCKED
+        """
+        try:
+            from .trello.auth import load_token
+            from .trello.activity import TrelloActivityLogger, ActivityEvent
+            from .trello.client import TrelloService
+
+            token_data = load_token()
+            if not token_data:
+                return {"activity_logged": False, "reason": "Not connected to Trello"}
+
+            trello_config = self.config.get("trello", {})
+            board_id = trello_config.get("board_id")
+            if not board_id:
+                return {"activity_logged": False, "reason": "No board_id configured"}
+
+            service = TrelloService(
+                api_key=token_data["api_key"], token=token_data["token"]
+            )
+            service.set_board(board_id)
+            activity_logger = TrelloActivityLogger(service)
+
+            # Map hook event to activity event
+            event_mapping = {
+                "on_task_start": ActivityEvent.TASK_STARTED,
+                "on_task_complete": ActivityEvent.TASK_COMPLETED,
+                "on_task_block": ActivityEvent.TASK_BLOCKED,
+            }
+
+            activity_event = event_mapping.get(ctx.event)
+            if not activity_event:
+                return {"activity_logged": False, "reason": f"Unknown event: {ctx.event}"}
+
+            extra = ctx.extra or {}
+
+            # Log appropriate event
+            if activity_event == ActivityEvent.TASK_STARTED:
+                success = activity_logger.log_task_started(
+                    ctx.task_id,
+                    agent=ctx.agent or "Agent"
+                )
+            elif activity_event == ActivityEvent.TASK_COMPLETED:
+                success = activity_logger.log_task_completed(
+                    ctx.task_id,
+                    summary=extra.get("summary", "Task completed")
+                )
+            elif activity_event == ActivityEvent.TASK_BLOCKED:
+                success = activity_logger.log_task_blocked(
+                    ctx.task_id,
+                    reason=extra.get("reason", "No reason provided")
+                )
+            else:
+                success = False
+
+            if success:
+                logger.info(f"Logged activity for {ctx.task_id}: {activity_event.value}")
+                return {"activity_logged": True, "event": activity_event.value}
+            else:
+                return {"activity_logged": False, "reason": "Card not found"}
+
+        except ImportError as e:
+            return {"activity_logged": False, "reason": f"Import error: {e}"}
+        except Exception as e:
+            logger.warning(f"Activity logging failed: {e}")
+            return {"activity_logged": False, "error": str(e)}
 
 
 def load_config(paircoder_dir: Path) -> dict:

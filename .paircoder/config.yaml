@@ -106,12 +106,12 @@ hooks:
 trello:
   board_structure:
     lists:
-    - name: Intake / Backlog
+    - name: Intake/Backlog
       maps_to_status:
       - pending
       - backlog
       description: New ideas, bugs, or tickets
-    - name: Planned / Ready
+    - name: Planned/Ready
       maps_to_status:
       - ready
       - planned
@@ -120,22 +120,22 @@ trello:
       maps_to_status:
       - in_progress
       description: Active development tasks
-    - name: Review / Testing
+    - name: Review/Testing
       maps_to_status:
       - review
       - testing
       description: Tasks under review or verification
-    - name: Deployed / Done
+    - name: Deployed/Done
       maps_to_status:
       - done
       - deployed
       description: Completed and live work
-    - name: Issues / Tech Debt
+    - name: Issues/Tech Debt
       maps_to_status:
       - blocked
       - issue
       description: Bugs, regressions, or improvements
-    - name: Notes / Ops Log
+    - name: Notes/Ops Log
       maps_to_status:
       - log
       description: Deployment notes, decisions, operational logs
@@ -243,20 +243,20 @@ trello:
     - mcp
   automation:
     on_task_ready:
-      move_to_list: Planned / Ready
+      move_to_list: Planned/Ready
       add_comment: "\U0001F4CB Task planned and ready for work"
     on_task_start:
       move_to_list: In Progress
       add_comment: "\U0001F916 Started by {agent}"
     on_task_review:
-      move_to_list: Review / Testing
+      move_to_list: Review/Testing
       add_comment: "\U0001F50D Under review: {summary}"
     on_task_complete:
-      move_to_list: Deployed / Done
+      move_to_list: Deployed/Done
       add_comment: "\u2705 Completed: {summary}"
     on_task_block:
-      move_to_list: Issues / Tech Debt
-      add_label: Bug / Issue
+      move_to_list: Issues/Tech Debt
+      add_label: Bug/Issue
       add_comment: "\u2298 Blocked: {reason}"
   weekly_workflow:
     track_throughput: true
