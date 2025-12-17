@@ -313,6 +313,201 @@ def task_block(
     console.print(f"  Reason: {reason}")
 
 
+@app.command("check")
+def check_item(
+    task_id: str = typer.Argument(..., help="Task ID (e.g., TASK-089 or TRELLO-123)"),
+    item_text: str = typer.Argument(..., help="Checklist item text (partial match OK)"),
+    checklist_name: Optional[str] = typer.Option(None, "--checklist", "-c", help="Checklist name (default: search all)"),
+):
+    """Check off a checklist item as complete.
+    
+    Use this to mark acceptance criteria as done while working on a task.
+    Partial text matching is supported - just provide enough to uniquely identify the item.
+    
+    Examples:
+        bpsai-pair ttask check TASK-089 "No hardcoded credentials"
+        bpsai-pair ttask check TASK-089 "SQL injection" --checklist "Acceptance Criteria"
+    """
+    import requests
+    
+    client, _ = get_board_client()
+    card, _ = client.find_card(task_id)
+
+    if not card:
+        console.print(f"[red]Card not found: {task_id}[/red]")
+        raise typer.Exit(1)
+
+    # Refresh card to get checklists
+    try:
+        card.fetch()
+    except Exception:
+        pass
+
+    if not card.checklists:
+        console.print(f"[yellow]No checklists found on card: {task_id}[/yellow]")
+        raise typer.Exit(1)
+
+    # Search for the item
+    found_item = None
+    found_checklist = None
+    item_text_lower = item_text.lower()
+
+    for checklist in card.checklists:
+        # Filter by checklist name if specified
+        if checklist_name and checklist.name.lower() != checklist_name.lower():
+            continue
+            
+        for item in checklist.items:
+            item_name = item.get("name", "")
+            if item_text_lower in item_name.lower():
+                if found_item is not None:
+                    # Multiple matches - need more specific text
+                    console.print(f"[yellow]Multiple items match '{item_text}'. Be more specific.[/yellow]")
+                    console.print(f"  Found: {found_item.get('name', '')}")
+                    console.print(f"  Found: {item_name}")
+                    raise typer.Exit(1)
+                found_item = item
+                found_checklist = checklist
+
+    if not found_item:
+        console.print(f"[red]Checklist item not found: {item_text}[/red]")
+        console.print("\n[dim]Available items:[/dim]")
+        for checklist in card.checklists:
+            console.print(f"  [bold]{checklist.name}[/bold]")
+            for item in checklist.items:
+                check = "✓" if item.get("checked") else "○"
+                console.print(f"    {check} {item.get('name', '')}")
+        raise typer.Exit(1)
+
+    # Check if already checked
+    if found_item.get("checked"):
+        console.print(f"[dim]Already checked: {found_item.get('name', '')}[/dim]")
+        return
+
+    # Check the item using py-trello's method
+    try:
+        # py-trello uses set_checklist_item method
+        found_checklist.set_checklist_item(found_item.get("name"), checked=True)
+        console.print(f"[green]✓ Checked: {found_item.get('name', '')}[/green]")
+        
+        # Log activity
+        log_activity(card, "checked", found_item.get("name", "")[:50])
+    except AttributeError:
+        # Fallback: use direct API call if py-trello method not available
+        try:
+            from .auth import load_token
+            creds = load_token()
+            
+            check_item_id = found_item.get("id")
+            url = f"https://api.trello.com/1/cards/{card.id}/checkItem/{check_item_id}"
+            
+            response = requests.put(
+                url,
+                params={
+                    "key": creds["api_key"],
+                    "token": creds["token"],
+                    "state": "complete"
+                }
+            )
+            
+            if response.status_code == 200:
+                console.print(f"[green]✓ Checked: {found_item.get('name', '')}[/green]")
+                log_activity(card, "checked", found_item.get("name", "")[:50])
+            else:
+                console.print(f"[red]Failed to check item: {response.status_code}[/red]")
+                raise typer.Exit(1)
+        except Exception as e:
+            console.print(f"[red]Error checking item: {e}[/red]")
+            raise typer.Exit(1)
+
+
+@app.command("uncheck")
+def uncheck_item(
+    task_id: str = typer.Argument(..., help="Task ID (e.g., TASK-089 or TRELLO-123)"),
+    item_text: str = typer.Argument(..., help="Checklist item text (partial match OK)"),
+    checklist_name: Optional[str] = typer.Option(None, "--checklist", "-c", help="Checklist name (default: search all)"),
+):
+    """Uncheck a checklist item (mark as incomplete).
+    
+    Use this if you need to undo a checked item.
+    
+    Examples:
+        bpsai-pair ttask uncheck TASK-089 "No hardcoded credentials"
+    """
+    import requests
+    
+    client, _ = get_board_client()
+    card, _ = client.find_card(task_id)
+
+    if not card:
+        console.print(f"[red]Card not found: {task_id}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        card.fetch()
+    except Exception:
+        pass
+
+    if not card.checklists:
+        console.print(f"[yellow]No checklists found on card: {task_id}[/yellow]")
+        raise typer.Exit(1)
+
+    # Search for the item
+    found_item = None
+    found_checklist = None
+    item_text_lower = item_text.lower()
+
+    for checklist in card.checklists:
+        if checklist_name and checklist.name.lower() != checklist_name.lower():
+            continue
+            
+        for item in checklist.items:
+            item_name = item.get("name", "")
+            if item_text_lower in item_name.lower():
+                if found_item is not None:
+                    console.print(f"[yellow]Multiple items match '{item_text}'. Be more specific.[/yellow]")
+                    raise typer.Exit(1)
+                found_item = item
+                found_checklist = checklist
+
+    if not found_item:
+        console.print(f"[red]Checklist item not found: {item_text}[/red]")
+        raise typer.Exit(1)
+
+    if not found_item.get("checked"):
+        console.print(f"[dim]Already unchecked: {found_item.get('name', '')}[/dim]")
+        return
+
+    try:
+        found_checklist.set_checklist_item(found_item.get("name"), checked=False)
+        console.print(f"[yellow]○ Unchecked: {found_item.get('name', '')}[/yellow]")
+    except AttributeError:
+        try:
+            from .auth import load_token
+            creds = load_token()
+            
+            check_item_id = found_item.get("id")
+            url = f"https://api.trello.com/1/cards/{card.id}/checkItem/{check_item_id}"
+            
+            response = requests.put(
+                url,
+                params={
+                    "key": creds["api_key"],
+                    "token": creds["token"],
+                    "state": "incomplete"
+                }
+            )
+            
+            if response.status_code == 200:
+                console.print(f"[yellow]○ Unchecked: {found_item.get('name', '')}[/yellow]")
+            else:
+                console.print(f"[red]Failed to uncheck item: {response.status_code}[/red]")
+                raise typer.Exit(1)
+        except Exception as e:
+            console.print(f"[red]Error unchecking item: {e}[/red]")
+            raise typer.Exit(1)
+
+
 @app.command("comment")
 def task_comment(
     task_id: str = typer.Argument(..., help="Task or Card ID (e.g., TASK-001 or TRELLO-123)"),
