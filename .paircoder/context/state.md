@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2025-12-16
+> Last updated: 2025-12-17
 
 ## Active Plan
 
@@ -48,7 +48,7 @@ Key deliverables:
 | TASK-083 | Card description templates (BPS format) | done | P1 | 25 |
 | TASK-084 | Effort → Trello Effort field mapping | done | P1 | 20 |
 | TASK-085 | Two-way sync (Trello → local) | done | P0 | 45 |
-| TASK-086 | Support checklists in cards | pending | P1 | 30 |
+| TASK-086 | Support checklists in cards | done | P1 | 30 |
 | TASK-087 | Due date sync | pending | P2 | 20 |
 | TASK-088 | Activity log comments | pending | P2 | 25 |
 
@@ -64,7 +64,38 @@ Tasks moved to `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-17 - TASK-085 Complete
+### Session: 2025-12-17 - TASK-086 Complete
+
+**Checklist Support (TASK-086)** - DONE
+
+Implemented full checklist support for Trello cards:
+
+**New checklist API methods in `trello/client.py`:**
+- `get_card_checklists()` - Get all checklists on a card
+- `get_checklist_by_name()` - Find checklist by name (case-insensitive)
+- `create_checklist()` - Create new checklist on card
+- `add_checklist_item()` - Add item to checklist with checked state
+- `update_checklist_item()` - Update item state (check/uncheck) or name
+- `delete_checklist()` - Delete a checklist
+- `ensure_checklist()` - Create or update checklist with items
+
+**Updated `trello/sync.py`:**
+- `TaskData.checked_criteria` - Track which acceptance criteria are checked
+- `TaskData.from_task()` - Parse checked/unchecked items from task body
+- `TrelloSyncManager._sync_checklist()` - Sync acceptance criteria to card
+- `TrelloToLocalSync._sync_checklist_to_task()` - Reverse sync checklist state
+- `_create_card()` and `_update_card()` now sync checklists automatically
+
+**Sync behavior:**
+- Checklist named "Acceptance Criteria" created from task body
+- Checkbox state (`- [x]` vs `- [ ]`) preserved during sync
+- Reverse sync updates local task file when Trello items are checked
+- Preserves indentation when updating task body
+
+**New tests:** 25 tests for checklist functionality
+**Test Coverage:** 531 tests passing (up from 506)
+
+### Previous: 2025-12-17 - TASK-085 Complete
 
 **Two-way Sync (TASK-085)** - DONE
 
@@ -213,7 +244,7 @@ Created `tests/test_trello_sync.py`:
 - [x] Labels match exact BPS colors
 - [x] Card description follows BPS template
 - [x] Moving card in Trello updates local task status
-- [ ] Checklist items created from acceptance criteria
+- [x] Checklist items created from acceptance criteria
 - [x] All tests passing
 
 ## BPS Trello Requirements
@@ -243,14 +274,10 @@ Created `tests/test_trello_sync.py`:
 
 ## What's Next
 
-1. **TASK-086**: Support checklists in cards
-   - Create checklists from acceptance criteria
-   - Sync checklist state
-
-2. **TASK-087**: Due date sync
+1. **TASK-087**: Due date sync
    - Sync due dates between tasks and cards
 
-3. **TASK-088**: Activity log comments
+2. **TASK-088**: Activity log comments
    - Post progress updates as Trello comments
 
 ## Blockers
@@ -259,5 +286,5 @@ None currently.
 
 ## Test Coverage
 
-- **Total tests**: 506 passing
+- **Total tests**: 531 passing
 - **Test command**: `pytest -v`

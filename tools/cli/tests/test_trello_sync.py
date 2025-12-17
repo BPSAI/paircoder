@@ -891,18 +891,23 @@ class TestTrelloToLocalSync:
         assert result.action == "skipped"
         assert "not found locally" in result.error
 
-    def test_sync_card_status_change(self, sync_manager):
+    def test_sync_card_status_change(self, sync_manager, mock_service):
         """Test sync card with status change."""
         mock_card = Mock()
         mock_card.name = "[TASK-001] Test task"
+        mock_card.due_date = None
         mock_list = Mock()
         mock_list.name = "In Progress"
         mock_card.get_list.return_value = mock_list
+
+        # Mock checklist lookup to return None (no checklist)
+        mock_service.get_checklist_by_name.return_value = None
 
         # Mock task with pending status
         mock_task = Mock()
         mock_task.status = Mock()
         mock_task.status.value = "pending"
+        mock_task.body = ""
 
         sync_manager._task_parser = Mock()
         sync_manager._task_parser.get_task_by_id.return_value = mock_task
@@ -915,7 +920,7 @@ class TestTrelloToLocalSync:
         assert result.changes["status"]["from"] == "pending"
         assert result.changes["status"]["to"] == "in_progress"
 
-    def test_sync_card_no_changes(self, sync_manager):
+    def test_sync_card_no_changes(self, sync_manager, mock_service):
         """Test sync card when no changes needed."""
         mock_card = Mock()
         mock_card.name = "[TASK-001] Test task"
@@ -924,10 +929,14 @@ class TestTrelloToLocalSync:
         mock_list.name = "In Progress"
         mock_card.get_list.return_value = mock_list
 
+        # Mock checklist lookup to return None (no checklist)
+        mock_service.get_checklist_by_name.return_value = None
+
         # Mock task already in_progress
         mock_task = Mock()
         mock_task.status = Mock()
         mock_task.status.value = "in_progress"
+        mock_task.body = ""
 
         sync_manager._task_parser = Mock()
         sync_manager._task_parser.get_task_by_id.return_value = mock_task
@@ -991,3 +1000,529 @@ class TestTrelloToLocalSync:
         assert preview[0]["field"] == "status"
         assert preview[0]["from"] == "in_progress"
         assert preview[0]["to"] == "done"
+
+
+class TestTaskDataCheckedCriteria:
+    """Tests for TaskData with checked acceptance criteria."""
+
+    def test_from_task_tracks_checked_items(self):
+        """Test that TaskData.from_task tracks checked acceptance criteria."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Test task"
+        mock_task.status = "in_progress"
+        mock_task.body = """
+# Acceptance Criteria
+
+- [x] First item done
+- [ ] Second item not done
+- [x] Third item done
+- [ ] Fourth item
+"""
+        mock_task.priority = "P1"
+        mock_task.complexity = 30
+        mock_task.tags = []
+        mock_task.plan = None
+
+        task_data = TaskData.from_task(mock_task)
+
+        assert len(task_data.acceptance_criteria) == 4
+        assert "First item done" in task_data.acceptance_criteria
+        assert "Second item not done" in task_data.acceptance_criteria
+        assert len(task_data.checked_criteria) == 2
+        assert "First item done" in task_data.checked_criteria
+        assert "Third item done" in task_data.checked_criteria
+        assert "Second item not done" not in task_data.checked_criteria
+
+    def test_from_task_handles_uppercase_x(self):
+        """Test that TaskData.from_task handles uppercase X in checkboxes."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Test task"
+        mock_task.status = "pending"
+        mock_task.body = "- [X] Done with uppercase X"
+        mock_task.priority = "P1"
+        mock_task.complexity = 30
+        mock_task.tags = []
+        mock_task.plan = None
+
+        task_data = TaskData.from_task(mock_task)
+
+        assert "Done with uppercase X" in task_data.acceptance_criteria
+        assert "Done with uppercase X" in task_data.checked_criteria
+
+    def test_from_task_no_criteria(self):
+        """Test TaskData.from_task with no acceptance criteria."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Test task"
+        mock_task.status = "pending"
+        mock_task.body = "Just a description without checkboxes"
+        mock_task.priority = "P1"
+        mock_task.complexity = 30
+        mock_task.tags = []
+        mock_task.plan = None
+
+        task_data = TaskData.from_task(mock_task)
+
+        assert task_data.acceptance_criteria == []
+        assert task_data.checked_criteria == []
+
+
+class TestSyncManagerChecklist:
+    """Tests for TrelloSyncManager checklist functionality."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.ensure_checklist.return_value = {
+            "id": "checklist123",
+            "name": "Acceptance Criteria",
+            "items": []
+        }
+        return service
+
+    @pytest.fixture
+    def sync_manager(self, mock_service):
+        """Create TrelloSyncManager with mock service."""
+        return TrelloSyncManager(mock_service)
+
+    def test_sync_checklist_creates_checklist(self, sync_manager, mock_service):
+        """Test _sync_checklist creates checklist with items."""
+        mock_card = Mock()
+        acceptance_criteria = ["First item", "Second item", "Third item"]
+
+        result = sync_manager._sync_checklist(mock_card, acceptance_criteria)
+
+        assert result is not None
+        mock_service.ensure_checklist.assert_called_once_with(
+            card=mock_card,
+            name="Acceptance Criteria",
+            items=acceptance_criteria,
+            checked_items=[]
+        )
+
+    def test_sync_checklist_with_checked_items(self, sync_manager, mock_service):
+        """Test _sync_checklist passes checked items."""
+        mock_card = Mock()
+        acceptance_criteria = ["Item 1", "Item 2", "Item 3"]
+        checked_criteria = ["Item 1", "Item 3"]
+
+        sync_manager._sync_checklist(mock_card, acceptance_criteria, checked_criteria)
+
+        mock_service.ensure_checklist.assert_called_once_with(
+            card=mock_card,
+            name="Acceptance Criteria",
+            items=acceptance_criteria,
+            checked_items=checked_criteria
+        )
+
+    def test_sync_checklist_empty_criteria(self, sync_manager, mock_service):
+        """Test _sync_checklist with empty criteria returns None."""
+        mock_card = Mock()
+
+        result = sync_manager._sync_checklist(mock_card, [])
+
+        assert result is None
+        mock_service.ensure_checklist.assert_not_called()
+
+    def test_sync_checklist_custom_name(self, sync_manager, mock_service):
+        """Test _sync_checklist with custom checklist name."""
+        mock_card = Mock()
+        acceptance_criteria = ["Test item"]
+
+        sync_manager._sync_checklist(
+            mock_card, acceptance_criteria,
+            checklist_name="Custom Checklist"
+        )
+
+        mock_service.ensure_checklist.assert_called_once()
+        call_args = mock_service.ensure_checklist.call_args
+        assert call_args[1]["name"] == "Custom Checklist"
+
+    def test_create_card_includes_checklist(self, sync_manager, mock_service):
+        """Test _create_card creates checklist from acceptance criteria."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_service.lists = {"Backlog": Mock()}
+        mock_card = Mock()
+        mock_service.lists["Backlog"].add_card.return_value = mock_card
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            acceptance_criteria=["AC 1", "AC 2"],
+            checked_criteria=["AC 1"]
+        )
+
+        sync_manager._create_card(task, "Backlog")
+
+        mock_service.ensure_checklist.assert_called_once_with(
+            card=mock_card,
+            name="Acceptance Criteria",
+            items=["AC 1", "AC 2"],
+            checked_items=["AC 1"]
+        )
+
+    def test_update_card_syncs_checklist(self, sync_manager, mock_service):
+        """Test _update_card syncs checklist."""
+        mock_card = Mock()
+        mock_card.description = "Created by: PairCoder"
+
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            acceptance_criteria=["AC 1", "AC 2"],
+            checked_criteria=["AC 2"]
+        )
+
+        sync_manager._update_card(mock_card, task)
+
+        mock_service.ensure_checklist.assert_called_once_with(
+            card=mock_card,
+            name="Acceptance Criteria",
+            items=["AC 1", "AC 2"],
+            checked_items=["AC 2"]
+        )
+
+
+class TestTrelloToLocalSyncChecklist:
+    """Tests for TrelloToLocalSync checklist functionality."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.board = Mock()
+        return service
+
+    @pytest.fixture
+    def temp_tasks_dir(self):
+        """Create temporary tasks directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    @pytest.fixture
+    def sync_manager(self, mock_service, temp_tasks_dir):
+        """Create TrelloToLocalSync with mocks."""
+        return TrelloToLocalSync(mock_service, temp_tasks_dir)
+
+    def test_sync_checklist_to_task_updates_unchecked_to_checked(self, sync_manager, mock_service):
+        """Test _sync_checklist_to_task updates unchecked items to checked."""
+        mock_card = Mock()
+        mock_service.get_checklist_by_name.return_value = {
+            "id": "cl1",
+            "name": "Acceptance Criteria",
+            "items": [
+                {"id": "item1", "name": "First item", "checked": True},
+                {"id": "item2", "name": "Second item", "checked": False},
+            ]
+        }
+
+        mock_task = Mock()
+        mock_task.body = """
+# Acceptance Criteria
+
+- [ ] First item
+- [ ] Second item
+"""
+
+        changes = sync_manager._sync_checklist_to_task(mock_card, mock_task)
+
+        assert changes is not None
+        assert len(changes["items_updated"]) == 1
+        assert changes["items_updated"][0]["item"] == "First item"
+        assert changes["items_updated"][0]["to"] == "checked"
+        assert "- [x] First item" in mock_task.body
+        assert "- [ ] Second item" in mock_task.body
+
+    def test_sync_checklist_to_task_updates_checked_to_unchecked(self, sync_manager, mock_service):
+        """Test _sync_checklist_to_task updates checked items to unchecked."""
+        mock_card = Mock()
+        mock_service.get_checklist_by_name.return_value = {
+            "id": "cl1",
+            "name": "Acceptance Criteria",
+            "items": [
+                {"id": "item1", "name": "First item", "checked": False},
+            ]
+        }
+
+        mock_task = Mock()
+        mock_task.body = "- [x] First item"
+
+        changes = sync_manager._sync_checklist_to_task(mock_card, mock_task)
+
+        assert changes is not None
+        assert len(changes["items_updated"]) == 1
+        assert changes["items_updated"][0]["item"] == "First item"
+        assert changes["items_updated"][0]["to"] == "unchecked"
+        assert "- [ ] First item" in mock_task.body
+
+    def test_sync_checklist_to_task_no_checklist(self, sync_manager, mock_service):
+        """Test _sync_checklist_to_task returns None when no checklist found."""
+        mock_card = Mock()
+        mock_service.get_checklist_by_name.return_value = None
+
+        mock_task = Mock()
+        mock_task.body = "- [ ] Some item"
+
+        changes = sync_manager._sync_checklist_to_task(mock_card, mock_task)
+
+        assert changes is None
+
+    def test_sync_checklist_to_task_no_changes(self, sync_manager, mock_service):
+        """Test _sync_checklist_to_task returns None when no changes needed."""
+        mock_card = Mock()
+        mock_service.get_checklist_by_name.return_value = {
+            "id": "cl1",
+            "name": "Acceptance Criteria",
+            "items": [
+                {"id": "item1", "name": "First item", "checked": True},
+            ]
+        }
+
+        mock_task = Mock()
+        mock_task.body = "- [x] First item"
+
+        changes = sync_manager._sync_checklist_to_task(mock_card, mock_task)
+
+        assert changes is None  # No changes needed
+
+    def test_sync_checklist_to_task_preserves_indentation(self, sync_manager, mock_service):
+        """Test _sync_checklist_to_task preserves original indentation."""
+        mock_card = Mock()
+        mock_service.get_checklist_by_name.return_value = {
+            "id": "cl1",
+            "name": "Acceptance Criteria",
+            "items": [
+                {"id": "item1", "name": "Indented item", "checked": True},
+            ]
+        }
+
+        mock_task = Mock()
+        mock_task.body = "    - [ ] Indented item"
+
+        sync_manager._sync_checklist_to_task(mock_card, mock_task)
+
+        assert "    - [x] Indented item" in mock_task.body
+
+    def test_sync_card_to_task_includes_checklist(self, sync_manager, mock_service):
+        """Test sync_card_to_task includes checklist changes."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_card.due_date = None
+        mock_list = Mock()
+        mock_list.name = "In Progress"
+        mock_card.get_list.return_value = mock_list
+
+        mock_service.get_checklist_by_name.return_value = {
+            "id": "cl1",
+            "name": "Acceptance Criteria",
+            "items": [{"id": "item1", "name": "Test item", "checked": True}]
+        }
+
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "in_progress"
+        mock_task.body = "- [ ] Test item"
+
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert "checklist" in result.changes
+        assert len(result.changes["checklist"]["items_updated"]) == 1
+
+
+class TestTrelloServiceChecklist:
+    """Tests for TrelloService checklist methods."""
+
+    def test_get_card_checklists(self):
+        """Test getting checklists from a card."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_checklist = Mock()
+            mock_checklist.id = "cl1"
+            mock_checklist.name = "My Checklist"
+            mock_checklist.items = [
+                {"id": "item1", "name": "Item 1", "checked": False, "pos": 1},
+                {"id": "item2", "name": "Item 2", "checked": True, "pos": 2},
+            ]
+            mock_card.checklists = [mock_checklist]
+
+            checklists = service.get_card_checklists(mock_card)
+
+            assert len(checklists) == 1
+            assert checklists[0]["id"] == "cl1"
+            assert checklists[0]["name"] == "My Checklist"
+            assert len(checklists[0]["items"]) == 2
+
+    def test_get_checklist_by_name(self):
+        """Test finding checklist by name."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_checklist = Mock()
+            mock_checklist.id = "cl1"
+            mock_checklist.name = "Acceptance Criteria"
+            mock_checklist.items = []
+            mock_card.checklists = [mock_checklist]
+
+            checklist = service.get_checklist_by_name(mock_card, "acceptance criteria")
+
+            assert checklist is not None
+            assert checklist["name"] == "Acceptance Criteria"
+
+    def test_get_checklist_by_name_not_found(self):
+        """Test finding non-existent checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.checklists = []
+
+            checklist = service.get_checklist_by_name(mock_card, "Missing")
+
+            assert checklist is None
+
+    def test_create_checklist(self):
+        """Test creating a new checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_new_checklist = Mock()
+            mock_new_checklist.id = "cl_new"
+            mock_new_checklist.name = "New Checklist"
+            mock_card.add_checklist.return_value = mock_new_checklist
+
+            checklist = service.create_checklist(mock_card, "New Checklist")
+
+            assert checklist is not None
+            assert checklist["id"] == "cl_new"
+            assert checklist["name"] == "New Checklist"
+            mock_card.add_checklist.assert_called_once_with("New Checklist", [])
+
+    def test_add_checklist_item(self):
+        """Test adding item to checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            service.client.fetch_json.return_value = {
+                "id": "item_new",
+                "name": "New Item",
+                "state": "incomplete"
+            }
+
+            item = service.add_checklist_item(mock_card, "cl1", "New Item", checked=False)
+
+            assert item is not None
+            assert item["id"] == "item_new"
+            assert item["name"] == "New Item"
+            assert item["checked"] is False
+
+    def test_add_checklist_item_checked(self):
+        """Test adding checked item to checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            service.client.fetch_json.return_value = {
+                "id": "item_new",
+                "name": "Done Item",
+                "state": "complete"
+            }
+
+            item = service.add_checklist_item(mock_card, "cl1", "Done Item", checked=True)
+
+            assert item is not None
+            assert item["checked"] is True
+
+    def test_update_checklist_item(self):
+        """Test updating checklist item."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+
+            result = service.update_checklist_item(mock_card, "cl1", "item1", checked=True)
+
+            assert result is True
+            service.client.fetch_json.assert_called_once()
+            call_args = service.client.fetch_json.call_args
+            assert "/cards/card123/checkItem/item1" in call_args[0][0]
+            assert call_args[1]["post_args"]["state"] == "complete"
+
+    def test_delete_checklist(self):
+        """Test deleting a checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            result = service.delete_checklist("cl123")
+
+            assert result is True
+            service.client.fetch_json.assert_called_once()
+            call_args = service.client.fetch_json.call_args
+            assert "/checklists/cl123" in call_args[0][0]
+            assert call_args[1]["http_method"] == "DELETE"
+
+    def test_ensure_checklist_creates_new(self):
+        """Test ensure_checklist creates new checklist when not exists."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.checklists = []  # No existing checklists
+
+            mock_new_checklist = Mock()
+            mock_new_checklist.id = "cl_new"
+            mock_new_checklist.name = "Acceptance Criteria"
+            mock_card.add_checklist.return_value = mock_new_checklist
+
+            service.client.fetch_json.return_value = {
+                "id": "item1", "name": "Item 1", "state": "incomplete"
+            }
+
+            result = service.ensure_checklist(
+                mock_card, "Acceptance Criteria",
+                items=["Item 1", "Item 2"],
+                checked_items=["Item 2"]
+            )
+
+            assert result is not None
+            mock_card.add_checklist.assert_called_once()
+
+    def test_ensure_checklist_updates_existing(self):
+        """Test ensure_checklist updates existing checklist."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_checklist = Mock()
+            mock_checklist.id = "cl1"
+            mock_checklist.name = "Acceptance Criteria"
+            mock_checklist.items = [
+                {"id": "item1", "name": "Existing Item", "checked": False, "pos": 1}
+            ]
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+            mock_card.checklists = [mock_checklist]
+
+            service.client.fetch_json.return_value = {"id": "item2", "name": "New Item", "state": "incomplete"}
+
+            result = service.ensure_checklist(
+                mock_card, "Acceptance Criteria",
+                items=["Existing Item", "New Item"],
+                checked_items=[]
+            )
+
+            assert result is not None
+            # Should add missing "New Item"
+            assert service.client.fetch_json.called

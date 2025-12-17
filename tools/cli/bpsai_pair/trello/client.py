@@ -512,3 +512,227 @@ class TrelloService:
         except Exception as e:
             logger.error(f"Failed to add label: {e}")
             return False
+
+    # ========== Checklist Methods ==========
+
+    def get_card_checklists(self, card: Any) -> List[Dict[str, Any]]:
+        """Get all checklists on a card.
+
+        Args:
+            card: Trello card object
+
+        Returns:
+            List of checklist dicts with 'id', 'name', 'items'
+        """
+        try:
+            checklists = []
+            for cl in card.checklists:
+                items = []
+                for item in cl.items:
+                    items.append({
+                        'id': item.get('id'),
+                        'name': item.get('name'),
+                        'checked': item.get('checked', False),
+                        'pos': item.get('pos', 0),
+                    })
+                checklists.append({
+                    'id': cl.id,
+                    'name': cl.name,
+                    'items': items,
+                })
+            return checklists
+        except Exception as e:
+            logger.error(f"Failed to get checklists: {e}")
+            return []
+
+    def get_checklist_by_name(self, card: Any, name: str) -> Optional[Dict[str, Any]]:
+        """Find a checklist by name on a card.
+
+        Args:
+            card: Trello card object
+            name: Checklist name to find
+
+        Returns:
+            Checklist dict or None if not found
+        """
+        checklists = self.get_card_checklists(card)
+        for cl in checklists:
+            if cl['name'].lower() == name.lower():
+                return cl
+        return None
+
+    def create_checklist(self, card: Any, name: str) -> Optional[Dict[str, Any]]:
+        """Create a new checklist on a card.
+
+        Args:
+            card: Trello card object
+            name: Name for the new checklist
+
+        Returns:
+            Checklist dict with 'id', 'name' or None if failed
+        """
+        try:
+            checklist = card.add_checklist(name, [])
+            return {
+                'id': checklist.id,
+                'name': checklist.name,
+                'items': [],
+            }
+        except Exception as e:
+            logger.error(f"Failed to create checklist: {e}")
+            return None
+
+    def add_checklist_item(
+        self,
+        card: Any,
+        checklist_id: str,
+        name: str,
+        checked: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """Add an item to a checklist.
+
+        Args:
+            card: Trello card object
+            checklist_id: ID of the checklist
+            name: Name/text of the item
+            checked: Whether the item is checked
+
+        Returns:
+            Item dict with 'id', 'name', 'checked' or None if failed
+        """
+        try:
+            # Use direct API call
+            result = self.client.fetch_json(
+                f'/checklists/{checklist_id}/checkItems',
+                http_method='POST',
+                post_args={
+                    'name': name,
+                    'checked': 'true' if checked else 'false',
+                }
+            )
+            return {
+                'id': result.get('id'),
+                'name': result.get('name'),
+                'checked': result.get('state') == 'complete',
+            }
+        except Exception as e:
+            logger.error(f"Failed to add checklist item: {e}")
+            return None
+
+    def update_checklist_item(
+        self,
+        card: Any,
+        checklist_id: str,
+        item_id: str,
+        checked: Optional[bool] = None,
+        name: Optional[str] = None
+    ) -> bool:
+        """Update a checklist item.
+
+        Args:
+            card: Trello card object
+            checklist_id: ID of the checklist
+            item_id: ID of the item to update
+            checked: New checked state (optional)
+            name: New name (optional)
+
+        Returns:
+            True if successful
+        """
+        try:
+            post_args = {}
+            if checked is not None:
+                post_args['state'] = 'complete' if checked else 'incomplete'
+            if name is not None:
+                post_args['name'] = name
+
+            if not post_args:
+                return True  # Nothing to update
+
+            self.client.fetch_json(
+                f'/cards/{card.id}/checkItem/{item_id}',
+                http_method='PUT',
+                post_args=post_args
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update checklist item: {e}")
+            return False
+
+    def delete_checklist(self, checklist_id: str) -> bool:
+        """Delete a checklist.
+
+        Args:
+            checklist_id: ID of the checklist to delete
+
+        Returns:
+            True if successful
+        """
+        try:
+            self.client.fetch_json(
+                f'/checklists/{checklist_id}',
+                http_method='DELETE'
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete checklist: {e}")
+            return False
+
+    def ensure_checklist(
+        self,
+        card: Any,
+        name: str,
+        items: List[str],
+        checked_items: Optional[List[str]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Ensure a checklist exists with the specified items.
+
+        Creates the checklist if it doesn't exist, or updates it if it does.
+        Items are matched by name.
+
+        Args:
+            card: Trello card object
+            name: Checklist name
+            items: List of item names
+            checked_items: List of item names that should be checked
+
+        Returns:
+            Checklist dict or None if failed
+        """
+        checked_items = checked_items or []
+
+        # Check if checklist already exists
+        existing = self.get_checklist_by_name(card, name)
+
+        if existing:
+            # Update existing checklist
+            existing_names = {item['name']: item for item in existing['items']}
+
+            # Add missing items
+            for item_name in items:
+                if item_name not in existing_names:
+                    checked = item_name in checked_items
+                    self.add_checklist_item(card, existing['id'], item_name, checked)
+                else:
+                    # Update checked state if needed
+                    item = existing_names[item_name]
+                    should_be_checked = item_name in checked_items
+                    if item['checked'] != should_be_checked:
+                        self.update_checklist_item(
+                            card, existing['id'], item['id'],
+                            checked=should_be_checked
+                        )
+
+            return existing
+        else:
+            # Create new checklist
+            checklist = self.create_checklist(card, name)
+            if not checklist:
+                return None
+
+            # Add items
+            for item_name in items:
+                checked = item_name in checked_items
+                self.add_checklist_item(card, checklist['id'], item_name, checked)
+
+            return checklist

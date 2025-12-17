@@ -156,6 +156,7 @@ class TaskData:
     complexity: int = 50
     tags: List[str] = field(default_factory=list)
     acceptance_criteria: List[str] = field(default_factory=list)
+    checked_criteria: List[str] = field(default_factory=list)  # Items that are checked
     plan_title: Optional[str] = None
 
     @classmethod
@@ -163,13 +164,19 @@ class TaskData:
         """Create TaskData from a Task object."""
         # Extract acceptance criteria from task body if present
         acceptance_criteria = []
+        checked_criteria = []
         if hasattr(task, 'body') and task.body:
             # Look for checklist items in body
             for line in task.body.split('\n'):
                 line = line.strip()
-                if line.startswith('- [ ]') or line.startswith('- [x]'):
-                    # Remove checkbox prefix
-                    item = re.sub(r'^- \[[ x]\]\s*', '', line)
+                if line.startswith('- [x]') or line.startswith('- [X]'):
+                    # Checked item - remove checkbox prefix
+                    item = re.sub(r'^- \[[xX]\]\s*', '', line)
+                    acceptance_criteria.append(item)
+                    checked_criteria.append(item)
+                elif line.startswith('- [ ]'):
+                    # Unchecked item - remove checkbox prefix
+                    item = re.sub(r'^- \[ \]\s*', '', line)
                     acceptance_criteria.append(item)
 
         return cls(
@@ -181,6 +188,7 @@ class TaskData:
             complexity=getattr(task, 'complexity', 50),
             tags=getattr(task, 'tags', []) or [],
             acceptance_criteria=acceptance_criteria,
+            checked_criteria=checked_criteria,
             plan_title=getattr(task, 'plan', None),
         )
 
@@ -354,6 +362,10 @@ class TrelloSyncManager:
             if tag_title in BPS_LABELS:
                 self.service.add_label_to_card(card, tag_title)
 
+        # Create acceptance criteria checklist if task has acceptance criteria
+        if task.acceptance_criteria:
+            self._sync_checklist(card, task.acceptance_criteria, task.checked_criteria)
+
         logger.info(f"Created card for {task.id}: {card_name}")
         return card
 
@@ -399,8 +411,43 @@ class TrelloSyncManager:
             if tag_title in BPS_LABELS:
                 self.service.add_label_to_card(card, tag_title)
 
+        # Sync acceptance criteria checklist
+        if task.acceptance_criteria:
+            self._sync_checklist(card, task.acceptance_criteria, task.checked_criteria)
+
         logger.info(f"Updated card for {task.id}")
         return card
+
+    def _sync_checklist(
+        self,
+        card: Any,
+        acceptance_criteria: List[str],
+        checked_criteria: Optional[List[str]] = None,
+        checklist_name: str = "Acceptance Criteria"
+    ) -> Optional[Dict[str, Any]]:
+        """Sync acceptance criteria to a card checklist.
+
+        Args:
+            card: Trello card object
+            acceptance_criteria: List of acceptance criteria strings
+            checked_criteria: List of criteria that should be checked
+            checklist_name: Name for the checklist
+
+        Returns:
+            Checklist dict or None if failed
+        """
+        if not acceptance_criteria:
+            return None
+
+        checked_criteria = checked_criteria or []
+
+        # Use service.ensure_checklist to create or update
+        return self.service.ensure_checklist(
+            card=card,
+            name=checklist_name,
+            items=acceptance_criteria,
+            checked_items=checked_criteria
+        )
 
     def sync_tasks(
         self,
@@ -534,6 +581,88 @@ class TrelloToLocalSync:
         """
         return LIST_TO_STATUS.get(list_name)
 
+    def _sync_checklist_to_task(
+        self,
+        card: Any,
+        task: Any,
+        checklist_name: str = "Acceptance Criteria"
+    ) -> Optional[Dict[str, Any]]:
+        """Sync checklist state from Trello card back to task body.
+
+        Updates checkbox items in the task body based on Trello checklist state.
+
+        Args:
+            card: Trello card object
+            task: Task object
+            checklist_name: Name of the checklist to sync
+
+        Returns:
+            Dict with changes made, or None if no changes
+        """
+        # Get the checklist from the card
+        checklist = self.service.get_checklist_by_name(card, checklist_name)
+        if not checklist:
+            return None
+
+        # Build a map of item name -> checked state
+        checklist_state = {}
+        for item in checklist.get('items', []):
+            item_name = item.get('name', '').strip()
+            item_checked = item.get('checked', False)
+            checklist_state[item_name] = item_checked
+
+        if not checklist_state:
+            return None
+
+        # Get the task body
+        body = getattr(task, 'body', '') or ''
+        if not body:
+            return None
+
+        # Track changes
+        changes = {"items_updated": []}
+        new_lines = []
+        body_changed = False
+
+        for line in body.split('\n'):
+            stripped = line.strip()
+
+            # Check if this is a checkbox line
+            if stripped.startswith('- [ ]') or stripped.startswith('- [x]') or stripped.startswith('- [X]'):
+                # Extract the item text
+                item_text = re.sub(r'^- \[[ xX]\]\s*', '', stripped)
+
+                # Check if this item is in our checklist
+                if item_text in checklist_state:
+                    is_checked_in_trello = checklist_state[item_text]
+                    is_checked_locally = stripped.startswith('- [x]') or stripped.startswith('- [X]')
+
+                    if is_checked_in_trello != is_checked_locally:
+                        # Update the checkbox state
+                        # Preserve original indentation
+                        indent = line[:len(line) - len(line.lstrip())]
+                        if is_checked_in_trello:
+                            new_line = f"{indent}- [x] {item_text}"
+                        else:
+                            new_line = f"{indent}- [ ] {item_text}"
+                        new_lines.append(new_line)
+                        changes["items_updated"].append({
+                            "item": item_text,
+                            "from": "checked" if is_checked_locally else "unchecked",
+                            "to": "checked" if is_checked_in_trello else "unchecked"
+                        })
+                        body_changed = True
+                        continue
+
+            new_lines.append(line)
+
+        # Update task body if changed
+        if body_changed:
+            task.body = '\n'.join(new_lines)
+            return changes
+
+        return None
+
     def sync_card_to_task(self, card: Any, detect_conflicts: bool = True) -> SyncResult:
         """Sync a single Trello card back to local task.
 
@@ -595,6 +724,11 @@ class TrelloToLocalSync:
                 changes["due_date"] = {"from": task_due, "to": card_due}
                 if hasattr(task, 'due_date'):
                     task.due_date = card_due
+
+        # Sync checklist state back to task body
+        checklist_changes = self._sync_checklist_to_task(card, task)
+        if checklist_changes:
+            changes["checklist"] = checklist_changes
 
         # Save task if there were changes
         if changes:
