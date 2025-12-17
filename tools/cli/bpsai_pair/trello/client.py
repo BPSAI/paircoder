@@ -223,6 +223,48 @@ class TrelloService:
 
         return True
 
+    # ========== Board Structure Methods ==========
+
+    def get_board_structure(self) -> Dict[str, Any]:
+        """Fetch complete board configuration.
+
+        Discovers and returns all lists, custom field definitions, and labels
+        from the current board. This should be called before sync operations
+        to ensure we have the correct IDs and names.
+
+        Returns:
+            Dict with 'lists', 'custom_fields', and 'labels' mappings
+
+        Raises:
+            ValueError: If no board is set
+        """
+        if not self.board:
+            raise ValueError("Board not set. Call set_board() first.")
+
+        # Get lists with exact names
+        lists = {lst.name: lst.id for lst in self.board.all_lists()}
+
+        # Get custom field definitions with IDs and options
+        custom_fields = {}
+        for field in self.get_custom_fields():
+            custom_fields[field.name] = {
+                "id": field.id,
+                "type": field.field_type,
+                "options": field.options,
+            }
+
+        # Get labels with IDs
+        labels = {}
+        for lbl in self.get_labels():
+            if lbl['name']:  # Skip unnamed labels
+                labels[lbl['name']] = lbl['id']
+
+        return {
+            "lists": lists,
+            "custom_fields": custom_fields,
+            "labels": labels,
+        }
+
     # ========== Custom Field Methods ==========
 
     def get_custom_fields(self) -> List[CustomFieldDefinition]:
@@ -326,6 +368,37 @@ class TrelloService:
         except Exception as e:
             logger.error(f"Failed to set custom field '{field.name}': {e}")
             return False
+
+    def set_card_status(
+        self,
+        card: Any,
+        status: str,
+        status_field_name: str = "Status"
+    ) -> bool:
+        """Set the Status custom field on a card.
+
+        This triggers Butler automation to move the card to the correct list.
+        Instead of moving cards directly, set the Status field and let Butler
+        handle the movement based on its automation rules.
+
+        Args:
+            card: Trello card object
+            status: Status value (e.g., 'Enqueued', 'In Progress', 'Done')
+            status_field_name: Name of the status custom field (default: "Status")
+
+        Returns:
+            True if successful, False otherwise
+        """
+        field = self.get_custom_field_by_name(status_field_name)
+        if not field:
+            logger.warning(f"Status field '{status_field_name}' not found on board")
+            return False
+
+        if field.field_type != 'list':
+            logger.warning(f"Status field must be a list type, got {field.field_type}")
+            return False
+
+        return self.set_custom_field_value(card, field, status)
 
     def set_card_custom_fields(
         self,

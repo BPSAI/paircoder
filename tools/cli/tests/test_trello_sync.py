@@ -12,6 +12,8 @@ from bpsai_pair.trello.sync import (
     TaskData,
     BPS_LABELS,
     STACK_KEYWORDS,
+    TASK_STATUS_TO_TRELLO_STATUS,
+    TRELLO_STATUS_TO_TASK_STATUS,
     create_sync_manager,
 )
 
@@ -84,9 +86,11 @@ class TestTaskSyncConfig:
         assert config.project_field == "Project"
         assert config.stack_field == "Stack"
         assert config.effort_field == "Effort"
-        assert config.default_list == "Backlog"
+        assert config.default_list == "Intake / Backlog"
         assert config.create_missing_labels is True
         assert config.preserve_manual_edits is True
+        assert config.use_butler_workflow is True
+        assert config.status_mapping == TASK_STATUS_TO_TRELLO_STATUS
 
     def test_from_config_empty(self):
         """Test loading from empty config uses defaults."""
@@ -171,6 +175,67 @@ class TestTaskSyncConfig:
         assert result["sync"]["effort_mapping"]["S"] == [0, 25]
         assert result["sync"]["effort_mapping"]["M"] == [26, 50]
         assert result["sync"]["effort_mapping"]["L"] == [51, 100]
+        assert "status_mapping" in result["sync"]
+        assert "use_butler_workflow" in result["sync"]
+
+    def test_get_trello_status_mapped(self):
+        """Test get_trello_status returns mapped value."""
+        config = TaskSyncConfig()
+        assert config.get_trello_status("pending") == "Enqueued"
+        assert config.get_trello_status("in_progress") == "In Progress"
+        assert config.get_trello_status("done") == "Done"
+        assert config.get_trello_status("blocked") == "Blocked"
+        assert config.get_trello_status("review") == "Testing"
+
+    def test_get_trello_status_unmapped(self):
+        """Test get_trello_status falls back to title case for unknown status."""
+        config = TaskSyncConfig()
+        assert config.get_trello_status("unknown_status") == "Unknown Status"
+        assert config.get_trello_status("custom") == "Custom"
+
+    def test_get_trello_status_custom_mapping(self):
+        """Test get_trello_status with custom mapping."""
+        config = TaskSyncConfig(
+            status_mapping={
+                "pending": "New",
+                "in_progress": "Working",
+                "done": "Complete",
+            }
+        )
+        assert config.get_trello_status("pending") == "New"
+        assert config.get_trello_status("in_progress") == "Working"
+        assert config.get_trello_status("done") == "Complete"
+
+    def test_from_config_with_status_mapping(self):
+        """Test loading custom status mapping from config."""
+        yaml_config = {
+            "sync": {
+                "status_mapping": {
+                    "pending": "New",
+                    "in_progress": "Working",
+                    "done": "Finished",
+                }
+            }
+        }
+        config = TaskSyncConfig.from_config(yaml_config)
+        assert config.get_trello_status("pending") == "New"
+        assert config.get_trello_status("in_progress") == "Working"
+        assert config.get_trello_status("done") == "Finished"
+
+    def test_from_config_with_butler_workflow(self):
+        """Test loading butler workflow setting from config."""
+        yaml_config = {
+            "sync": {
+                "use_butler_workflow": False,
+            }
+        }
+        config = TaskSyncConfig.from_config(yaml_config)
+        assert config.use_butler_workflow is False
+
+    def test_from_config_default_list_intake(self):
+        """Test default list is Intake / Backlog for Butler workflow."""
+        config = TaskSyncConfig.from_config({})
+        assert config.default_list == "Intake / Backlog"
 
 
 class TestCustomFieldDefinition:
@@ -722,6 +787,168 @@ class TestStackKeywords:
         for stack, keywords in STACK_KEYWORDS.items():
             for kw in keywords:
                 assert kw == kw.lower(), f"Keyword '{kw}' for {stack} is not lowercase"
+
+
+class TestTaskStatusToTrelloStatus:
+    """Tests for task status to Trello status mapping."""
+
+    def test_all_task_statuses_mapped(self):
+        """Test all standard task statuses have Trello mappings."""
+        expected_statuses = ["pending", "in_progress", "review", "blocked", "done"]
+        for status in expected_statuses:
+            assert status in TASK_STATUS_TO_TRELLO_STATUS, f"Status '{status}' not mapped"
+
+    def test_mapping_values(self):
+        """Test exact mapping values for Butler automation."""
+        assert TASK_STATUS_TO_TRELLO_STATUS["pending"] == "Enqueued"
+        assert TASK_STATUS_TO_TRELLO_STATUS["in_progress"] == "In Progress"
+        assert TASK_STATUS_TO_TRELLO_STATUS["review"] == "Testing"
+        assert TASK_STATUS_TO_TRELLO_STATUS["blocked"] == "Blocked"
+        assert TASK_STATUS_TO_TRELLO_STATUS["done"] == "Done"
+
+    def test_reverse_mapping_exists(self):
+        """Test reverse mapping (Trello to task status) exists."""
+        assert len(TRELLO_STATUS_TO_TASK_STATUS) == len(TASK_STATUS_TO_TRELLO_STATUS)
+
+    def test_reverse_mapping_consistent(self):
+        """Test that forward and reverse mappings are consistent."""
+        for task_status, trello_status in TASK_STATUS_TO_TRELLO_STATUS.items():
+            assert TRELLO_STATUS_TO_TASK_STATUS[trello_status] == task_status
+
+    def test_trello_to_task_status_values(self):
+        """Test reverse mapping values."""
+        assert TRELLO_STATUS_TO_TASK_STATUS["Enqueued"] == "pending"
+        assert TRELLO_STATUS_TO_TASK_STATUS["In Progress"] == "in_progress"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Testing"] == "review"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Blocked"] == "blocked"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Done"] == "done"
+
+
+class TestSyncManagerStatusMapping:
+    """Tests for TrelloSyncManager using status mapping."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create a mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.get_custom_fields.return_value = []
+        service.get_labels.return_value = []
+        return service
+
+    def test_create_card_uses_status_mapping(self, mock_service):
+        """Test that _create_card uses the status mapping for custom fields."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+        mock_service.add_label_to_card.return_value = True
+
+        manager = TrelloSyncManager(mock_service)
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            status="pending",  # Should map to "Enqueued"
+            complexity=25,
+        )
+
+        manager._create_card(task, "Backlog")
+
+        # Verify create_card_with_custom_fields was called with mapped status
+        call_args = mock_service.create_card_with_custom_fields.call_args
+        custom_fields = call_args[1]["custom_fields"]
+        assert custom_fields["Status"] == "Enqueued"
+
+    def test_create_card_maps_in_progress(self, mock_service):
+        """Test in_progress status is mapped correctly."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+
+        manager = TrelloSyncManager(mock_service)
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            status="in_progress",  # Should map to "In Progress"
+            complexity=25,
+        )
+
+        manager._create_card(task, "Backlog")
+
+        call_args = mock_service.create_card_with_custom_fields.call_args
+        custom_fields = call_args[1]["custom_fields"]
+        assert custom_fields["Status"] == "In Progress"
+
+    def test_create_card_maps_done(self, mock_service):
+        """Test done status is mapped correctly."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+
+        manager = TrelloSyncManager(mock_service)
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            status="done",  # Should map to "Done"
+            complexity=25,
+        )
+
+        manager._create_card(task, "Backlog")
+
+        call_args = mock_service.create_card_with_custom_fields.call_args
+        custom_fields = call_args[1]["custom_fields"]
+        assert custom_fields["Status"] == "Done"
+
+    def test_update_card_uses_status_mapping(self, mock_service):
+        """Test that _update_card uses the status mapping for custom fields."""
+        mock_card = Mock()
+        mock_card.description = "Created by: PairCoder"
+        mock_service.set_card_custom_fields.return_value = {}
+        mock_service.set_effort_field.return_value = True
+
+        manager = TrelloSyncManager(mock_service)
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            status="review",  # Should map to "Testing"
+            complexity=25,
+        )
+
+        manager._update_card(mock_card, task)
+
+        # Verify set_card_custom_fields was called with mapped status
+        call_args = mock_service.set_card_custom_fields.call_args
+        custom_fields = call_args[0][1]
+        assert custom_fields["Status"] == "Testing"
+
+    def test_sync_manager_with_custom_status_mapping(self, mock_service):
+        """Test TrelloSyncManager with custom status mapping."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+
+        config = TaskSyncConfig(
+            status_mapping={
+                "pending": "New",
+                "in_progress": "Working",
+                "done": "Complete",
+            }
+        )
+        manager = TrelloSyncManager(mock_service, config)
+        task = TaskData(
+            id="TASK-001",
+            title="Test task",
+            status="pending",  # Should map to "New" with custom config
+            complexity=25,
+        )
+
+        manager._create_card(task, "Backlog")
+
+        call_args = mock_service.create_card_with_custom_fields.call_args
+        custom_fields = call_args[1]["custom_fields"]
+        assert custom_fields["Status"] == "New"
 
 
 # Import reverse sync classes

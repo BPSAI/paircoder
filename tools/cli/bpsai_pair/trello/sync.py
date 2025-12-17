@@ -25,6 +25,26 @@ BPS_LABELS = {
     "AI/ML": "black",
 }
 
+# Task status to Trello Status custom field mapping
+# Maps local task status values to Trello Status dropdown options
+# These values should match the options in the board's Status custom field
+TASK_STATUS_TO_TRELLO_STATUS = {
+    "pending": "Enqueued",
+    "in_progress": "In Progress",
+    "review": "Testing",
+    "blocked": "Blocked",
+    "done": "Done",
+}
+
+# Trello Status to task status mapping (reverse of above)
+TRELLO_STATUS_TO_TASK_STATUS = {
+    "Enqueued": "pending",
+    "In Progress": "in_progress",
+    "Testing": "review",
+    "Blocked": "blocked",
+    "Done": "done",
+}
+
 # Keywords to infer stack from task title/tags
 STACK_KEYWORDS = {
     "Frontend": ["frontend", "ui", "react", "vue", "angular", "css", "html", "component"],
@@ -51,17 +71,23 @@ class TaskSyncConfig:
     # Effort mapping ranges
     effort_mapping: EffortMapping = field(default_factory=EffortMapping)
 
+    # Status mapping (task status -> Trello Status dropdown value)
+    status_mapping: Dict[str, str] = field(default_factory=lambda: TASK_STATUS_TO_TRELLO_STATUS.copy())
+
     # Whether to create missing labels
     create_missing_labels: bool = True
 
-    # Default list for new cards
-    default_list: str = "Backlog"
+    # Default list for new cards (Intake/Backlog for Butler workflow)
+    default_list: str = "Intake / Backlog"
 
     # Card description template (None uses default BPS template)
     card_template: Optional[str] = None
 
     # Whether to preserve manually edited card descriptions
     preserve_manual_edits: bool = True
+
+    # Whether to use Butler workflow (set Status field instead of moving cards)
+    use_butler_workflow: bool = True
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "TaskSyncConfig":
@@ -105,6 +131,13 @@ class TaskSyncConfig:
         else:
             effort_mapping = EffortMapping()
 
+        # Parse status mapping if provided
+        status_config = sync_config.get("status_mapping", {})
+        if status_config:
+            status_mapping = status_config.copy()
+        else:
+            status_mapping = TASK_STATUS_TO_TRELLO_STATUS.copy()
+
         return cls(
             project_field=custom_fields.get("project", "Project"),
             stack_field=custom_fields.get("stack", "Stack"),
@@ -112,10 +145,12 @@ class TaskSyncConfig:
             effort_field=custom_fields.get("effort", "Effort"),
             deployment_tag_field=custom_fields.get("deployment_tag", "Deployment Tag"),
             effort_mapping=effort_mapping,
+            status_mapping=status_mapping,
             create_missing_labels=sync_config.get("create_missing_labels", True),
-            default_list=sync_config.get("default_list", "Backlog"),
+            default_list=sync_config.get("default_list", "Intake / Backlog"),
             card_template=sync_config.get("card_template"),
             preserve_manual_edits=sync_config.get("preserve_manual_edits", True),
+            use_butler_workflow=sync_config.get("use_butler_workflow", True),
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -138,11 +173,24 @@ class TaskSyncConfig:
                     "M": list(self.effort_mapping.medium),
                     "L": list(self.effort_mapping.large),
                 },
+                "status_mapping": self.status_mapping.copy(),
                 "default_list": self.default_list,
                 "create_missing_labels": self.create_missing_labels,
                 "preserve_manual_edits": self.preserve_manual_edits,
+                "use_butler_workflow": self.use_butler_workflow,
             }
         }
+
+    def get_trello_status(self, task_status: str) -> str:
+        """Map task status to Trello Status custom field value.
+
+        Args:
+            task_status: Local task status (e.g., 'pending', 'in_progress')
+
+        Returns:
+            Trello Status dropdown value (e.g., 'Enqueued', 'In Progress')
+        """
+        return self.status_mapping.get(task_status, task_status.replace('_', ' ').title())
 
 
 @dataclass
@@ -334,8 +382,8 @@ class TrelloSyncManager:
         if stack:
             custom_fields[self.config.stack_field] = stack
 
-        # Status field
-        custom_fields[self.config.status_field] = task.status.replace('_', ' ').title()
+        # Status field - use proper mapping for Butler workflow
+        custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
 
         # Create card
         card = self.service.create_card_with_custom_fields(
@@ -397,7 +445,8 @@ class TrelloSyncManager:
         if stack:
             custom_fields[self.config.stack_field] = stack
 
-        custom_fields[self.config.status_field] = task.status.replace('_', ' ').title()
+        # Status field - use proper mapping for Butler workflow
+        custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
 
         self.service.set_card_custom_fields(card, custom_fields)
         self.service.set_effort_field(card, task.complexity, self.config.effort_field)

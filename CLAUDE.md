@@ -7,6 +7,7 @@
 1. **Read** `.paircoder/capabilities.yaml` — understand what you can do
 2. **Read** `.paircoder/context/state.md` — understand current status
 3. **Check** if a flow applies to the user's request
+4. **If starting a task**: Run `bpsai-pair task update TASK-XXX --status in_progress`
 
 ## Key Files
 
@@ -53,10 +54,11 @@ When you see these patterns, suggest the corresponding flow:
 
 ## After Completing Work
 
-Always update `.paircoder/context/state.md`:
-- Mark tasks as done
-- Note what was accomplished
-- Update "What's Next"
+1. Run `bpsai-pair task update <id> --status done`  ← ADD THIS LINE
+2. Update `.paircoder/context/state.md`:
+   - Mark tasks as done
+   - Note what was accomplished
+   - Update "What's Next"
 
 ## Project-Specific Notes
 
