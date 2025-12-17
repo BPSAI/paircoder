@@ -45,8 +45,8 @@ Key deliverables:
 |------|-------|--------|----------|------------|
 | TASK-081 | Sync Trello custom fields | done | P0 | 35 |
 | TASK-082 | Sync Trello labels with exact BPS colors | done | P0 | 25 |
-| TASK-083 | Card description templates (BPS format) | pending | P1 | 25 |
-| TASK-084 | Effort → Trello Effort field mapping | pending | P1 | 20 |
+| TASK-083 | Card description templates (BPS format) | done | P1 | 25 |
+| TASK-084 | Effort → Trello Effort field mapping | done | P1 | 20 |
 | TASK-085 | Two-way sync (Trello → local) | pending | P1 | 45 |
 | TASK-086 | Support checklists in cards | pending | P1 | 30 |
 | TASK-087 | Due date sync | pending | P2 | 20 |
@@ -64,25 +64,76 @@ Tasks moved to `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-17 - TASK-082 Complete
+### Session: 2025-12-17 - TASK-084 Complete
+
+**Effort Field Mapping (TASK-084)** - DONE
+
+The effort mapping was already implemented in TASK-081. This task added:
+
+**Config file support:**
+- `TaskSyncConfig.from_config()` - Load sync settings from config.yaml
+- `TaskSyncConfig.to_dict()` - Export config for saving
+- CLI command now loads effort_mapping from config.yaml
+
+**Config.yaml structure:**
+```yaml
+trello:
+  sync:
+    effort_mapping:
+      S: [0, 25]
+      M: [26, 50]
+      L: [51, 100]
+```
+
+**New tests:**
+- Edge case tests: boundary values (25/26, 50/51), negative values, over 100
+- Custom range tests
+- Config loading tests: empty config, custom effort mapping, custom fields, full config, to_dict
+
+**Test Coverage:** 485 tests passing (up from 475)
+
+### Previous: 2025-12-17 - TASK-083 Complete
+
+**Card Description Templates (TASK-083)** - DONE
+
+Created `trello/templates.py`:
+- `CardDescriptionData` dataclass for template rendering data
+- `CardDescriptionTemplate` class with:
+  - `extract_sections()` - Parse task body for sections (Objective, Implementation Plan, etc.)
+  - `extract_objective()` - Get objective from explicit section or first paragraph
+  - `extract_implementation_plan()` - Get plan from section or bullet points
+  - `format_acceptance_criteria()` - Render as checkboxes
+  - `format_links()` - Render task/PR links section
+  - `format_metadata()` - Render footer with complexity/priority/plan
+  - `render()` - Full BPS-formatted card description
+  - `from_task_data()` - Convenience method for TaskData
+- `should_preserve_description()` - Detect manually edited cards
+- `DEFAULT_BPS_TEMPLATE` constant with full BPS format
+
+Updated `trello/sync.py`:
+- Import new template classes
+- Added `card_template` and `preserve_manual_edits` to `TaskSyncConfig`
+- Refactored `build_card_description()` to use `CardDescriptionTemplate`
+- Added `should_update_description()` to preserve manual edits
+- Updated `_update_card()` to check before overwriting descriptions
+
+Created `tests/test_trello_templates.py`:
+- 26 tests covering all template functionality
+- Tests for BPS format compliance, section extraction, links, metadata
+
+**Test Coverage:** 475 tests passing (up from 449)
+
+### Previous: 2025-12-17 - TASK-082 Complete
 
 **Trello Labels with BPS Colors (TASK-082)** - DONE
 
 Verified and completed the label sync implementation:
 - `BPS_LABELS` in `trello/sync.py` defines exact color mappings
 - `ensure_bps_labels()` creates missing labels with correct colors before sync
-- `_create_card()` and `_update_card()` add labels based on:
-  - Inferred stack from title/tags (via `STACK_KEYWORDS`)
-  - Direct tag matches against BPS label names
+- Labels added based on inferred stack and tag matches
 - Multiple labels supported per card
-- CLI command `plan sync-trello` properly wires in label creation
 
-Added 3 new tests:
-- `test_sync_task_adds_multiple_labels` - verifies multiple labels per card
-- `test_exact_bps_color_mapping` - verifies exact BPS color definitions
-- `test_ensure_bps_labels_uses_correct_colors` - verifies colors passed to API
-
-**Test Coverage:** 449 tests passing (up from 445)
+Added 3 new tests for label sync verification.
 
 ### Previous: 2025-12-16 - TASK-081 Complete
 
@@ -129,7 +180,7 @@ Created `tests/test_trello_sync.py`:
 
 - [x] `plan sync-trello` creates cards with all custom fields populated
 - [x] Labels match exact BPS colors
-- [ ] Card description follows BPS template
+- [x] Card description follows BPS template
 - [ ] Moving card in Trello updates local task status
 - [ ] Checklist items created from acceptance criteria
 - [x] All tests passing
@@ -161,17 +212,16 @@ Created `tests/test_trello_sync.py`:
 
 ## What's Next
 
-1. **TASK-083**: Card description templates (BPS format)
-   - Enhance `build_card_description()` in sync.py
-   - Follow BPS formatting standards
-
-2. **TASK-084**: Effort → Trello Effort field mapping
-   - Map complexity scores to S/M/L effort values
-   - Already partially implemented, verify integration
-
-3. **TASK-085**: Two-way sync (Trello → local)
+1. **TASK-085**: Two-way sync (Trello → local)
    - Moving cards in Trello updates local task status
    - Webhook or polling approach
+
+2. **TASK-086**: Support checklists in cards
+   - Create checklists from acceptance criteria
+   - Sync checklist state
+
+3. **TASK-087**: Due date sync
+   - Sync due dates between tasks and cards
 
 ## Blockers
 
@@ -179,5 +229,5 @@ None currently.
 
 ## Test Coverage
 
-- **Total tests**: 449 passing
+- **Total tests**: 485 passing
 - **Test command**: `pytest -v`

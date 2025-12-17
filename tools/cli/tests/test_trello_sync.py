@@ -40,6 +40,138 @@ class TestEffortMapping:
         assert mapping.get_effort(75) == "L"
         assert mapping.get_effort(100) == "L"
 
+    def test_boundary_values(self):
+        """Test exact boundary values."""
+        mapping = EffortMapping()
+        # Exact boundaries
+        assert mapping.get_effort(25) == "S"  # Upper bound of S
+        assert mapping.get_effort(26) == "M"  # Lower bound of M
+        assert mapping.get_effort(50) == "M"  # Upper bound of M
+        assert mapping.get_effort(51) == "L"  # Lower bound of L
+
+    def test_negative_values(self):
+        """Test negative complexity values default to S."""
+        mapping = EffortMapping()
+        assert mapping.get_effort(-1) == "S"
+        assert mapping.get_effort(-100) == "S"
+
+    def test_over_100_values(self):
+        """Test values over 100 map to L."""
+        mapping = EffortMapping()
+        assert mapping.get_effort(101) == "L"
+        assert mapping.get_effort(200) == "L"
+        assert mapping.get_effort(1000) == "L"
+
+    def test_custom_ranges(self):
+        """Test custom effort mapping ranges."""
+        mapping = EffortMapping(
+            small=(0, 10),
+            medium=(11, 30),
+            large=(31, 100)
+        )
+        assert mapping.get_effort(10) == "S"
+        assert mapping.get_effort(11) == "M"
+        assert mapping.get_effort(30) == "M"
+        assert mapping.get_effort(31) == "L"
+
+
+class TestTaskSyncConfig:
+    """Tests for TaskSyncConfig class."""
+
+    def test_default_values(self):
+        """Test default configuration values."""
+        config = TaskSyncConfig()
+        assert config.project_field == "Project"
+        assert config.stack_field == "Stack"
+        assert config.effort_field == "Effort"
+        assert config.default_list == "Backlog"
+        assert config.create_missing_labels is True
+        assert config.preserve_manual_edits is True
+
+    def test_from_config_empty(self):
+        """Test loading from empty config uses defaults."""
+        config = TaskSyncConfig.from_config({})
+        assert config.project_field == "Project"
+        assert config.effort_field == "Effort"
+        assert config.effort_mapping.get_effort(25) == "S"
+
+    def test_from_config_with_effort_mapping(self):
+        """Test loading custom effort mapping from config."""
+        yaml_config = {
+            "sync": {
+                "effort_mapping": {
+                    "S": [0, 15],
+                    "M": [16, 40],
+                    "L": [41, 100],
+                }
+            }
+        }
+        config = TaskSyncConfig.from_config(yaml_config)
+        assert config.effort_mapping.get_effort(15) == "S"
+        assert config.effort_mapping.get_effort(16) == "M"
+        assert config.effort_mapping.get_effort(40) == "M"
+        assert config.effort_mapping.get_effort(41) == "L"
+
+    def test_from_config_with_custom_fields(self):
+        """Test loading custom field names from config."""
+        yaml_config = {
+            "sync": {
+                "custom_fields": {
+                    "project": "CustomProject",
+                    "effort": "Size",
+                }
+            }
+        }
+        config = TaskSyncConfig.from_config(yaml_config)
+        assert config.project_field == "CustomProject"
+        assert config.effort_field == "Size"
+        # Non-specified fields use defaults
+        assert config.stack_field == "Stack"
+
+    def test_from_config_full(self):
+        """Test loading full configuration."""
+        yaml_config = {
+            "sync": {
+                "custom_fields": {
+                    "project": "MyProject",
+                    "stack": "Technology",
+                    "status": "State",
+                    "effort": "Size",
+                },
+                "effort_mapping": {
+                    "S": [0, 20],
+                    "M": [21, 60],
+                    "L": [61, 100],
+                },
+                "default_list": "Todo",
+                "create_missing_labels": False,
+                "preserve_manual_edits": False,
+            }
+        }
+        config = TaskSyncConfig.from_config(yaml_config)
+        assert config.project_field == "MyProject"
+        assert config.stack_field == "Technology"
+        assert config.effort_field == "Size"
+        assert config.default_list == "Todo"
+        assert config.create_missing_labels is False
+        assert config.preserve_manual_edits is False
+        assert config.effort_mapping.get_effort(20) == "S"
+        assert config.effort_mapping.get_effort(21) == "M"
+
+    def test_to_dict(self):
+        """Test converting config to dictionary."""
+        config = TaskSyncConfig(
+            project_field="Project",
+            effort_field="Effort",
+            effort_mapping=EffortMapping(small=(0, 25), medium=(26, 50), large=(51, 100)),
+        )
+        result = config.to_dict()
+        assert "sync" in result
+        assert result["sync"]["custom_fields"]["project"] == "Project"
+        assert result["sync"]["effort_mapping"]["S"] == [0, 25]
+        assert result["sync"]["effort_mapping"]["M"] == [26, 50]
+        assert result["sync"]["effort_mapping"]["L"] == [51, 100]
+
 
 class TestCustomFieldDefinition:
     """Tests for CustomFieldDefinition dataclass."""
@@ -300,9 +432,11 @@ class TestTrelloSyncManager:
     def test_sync_task_updates_existing_card(self, mock_service, sync_manager):
         """Test syncing a task updates existing card."""
         mock_card = Mock()
+        mock_card.description = "Created by: PairCoder"  # Auto-generated, should be updated
         mock_service.find_card_with_prefix.return_value = (mock_card, Mock())
         mock_service.set_card_custom_fields.return_value = {}
         mock_service.set_effort_field.return_value = True
+        mock_service.add_label_to_card.return_value = True
 
         task = TaskData(
             id="TASK-001",

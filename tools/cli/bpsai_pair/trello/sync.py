@@ -8,6 +8,7 @@ import logging
 import re
 
 from .client import TrelloService, EffortMapping
+from .templates import CardDescriptionTemplate, CardDescriptionData, should_preserve_description
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,93 @@ class TaskSyncConfig:
 
     # Default list for new cards
     default_list: str = "Backlog"
+
+    # Card description template (None uses default BPS template)
+    card_template: Optional[str] = None
+
+    # Whether to preserve manually edited card descriptions
+    preserve_manual_edits: bool = True
+
+    @classmethod
+    def from_config(cls, config: Dict[str, Any]) -> "TaskSyncConfig":
+        """Create TaskSyncConfig from a config dictionary.
+
+        Expected config structure (from config.yaml):
+        ```yaml
+        trello:
+          sync:
+            custom_fields:
+              project: "Project"
+              stack: "Stack"
+              status: "Status"
+              effort: "Effort"
+            effort_mapping:
+              S: [0, 25]
+              M: [26, 50]
+              L: [51, 100]
+            default_list: "Backlog"
+            create_missing_labels: true
+            preserve_manual_edits: true
+        ```
+
+        Args:
+            config: Configuration dictionary (usually from config.yaml's trello.sync section)
+
+        Returns:
+            Configured TaskSyncConfig instance
+        """
+        sync_config = config.get("sync", {})
+        custom_fields = sync_config.get("custom_fields", {})
+
+        # Parse effort mapping if provided
+        effort_config = sync_config.get("effort_mapping", {})
+        if effort_config:
+            effort_mapping = EffortMapping(
+                small=(effort_config.get("S", [0, 25])[0], effort_config.get("S", [0, 25])[1]),
+                medium=(effort_config.get("M", [26, 50])[0], effort_config.get("M", [26, 50])[1]),
+                large=(effort_config.get("L", [51, 100])[0], effort_config.get("L", [51, 100])[1]),
+            )
+        else:
+            effort_mapping = EffortMapping()
+
+        return cls(
+            project_field=custom_fields.get("project", "Project"),
+            stack_field=custom_fields.get("stack", "Stack"),
+            status_field=custom_fields.get("status", "Status"),
+            effort_field=custom_fields.get("effort", "Effort"),
+            deployment_tag_field=custom_fields.get("deployment_tag", "Deployment Tag"),
+            effort_mapping=effort_mapping,
+            create_missing_labels=sync_config.get("create_missing_labels", True),
+            default_list=sync_config.get("default_list", "Backlog"),
+            card_template=sync_config.get("card_template"),
+            preserve_manual_edits=sync_config.get("preserve_manual_edits", True),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to config dictionary format.
+
+        Returns:
+            Dictionary suitable for saving to config.yaml
+        """
+        return {
+            "sync": {
+                "custom_fields": {
+                    "project": self.project_field,
+                    "stack": self.stack_field,
+                    "status": self.status_field,
+                    "effort": self.effort_field,
+                    "deployment_tag": self.deployment_tag_field,
+                },
+                "effort_mapping": {
+                    "S": list(self.effort_mapping.small),
+                    "M": list(self.effort_mapping.medium),
+                    "L": list(self.effort_mapping.large),
+                },
+                "default_list": self.default_list,
+                "create_missing_labels": self.create_missing_labels,
+                "preserve_manual_edits": self.preserve_manual_edits,
+            }
+        }
 
 
 @dataclass
@@ -143,32 +231,25 @@ class TrelloSyncManager:
         Returns:
             Formatted description string
         """
-        sections = []
+        # Use the CardDescriptionTemplate for proper BPS formatting
+        return CardDescriptionTemplate.from_task_data(
+            task,
+            template=self.config.card_template
+        )
 
-        # Objective section
-        if task.description:
-            # Use first paragraph as objective
-            paragraphs = task.description.split('\n\n')
-            objective = paragraphs[0].strip()
-            if objective and not objective.startswith('#'):
-                sections.append(f"## Objective\n{objective}")
+    def should_update_description(self, existing_desc: str) -> bool:
+        """Check if we should update an existing card description.
 
-        # Acceptance criteria as checkboxes
-        if task.acceptance_criteria:
-            criteria_lines = [f"- [ ] {item}" for item in task.acceptance_criteria]
-            sections.append("## Acceptance Criteria\n" + "\n".join(criteria_lines))
+        Args:
+            existing_desc: Current card description
 
-        # Metadata footer
-        footer_parts = [
-            f"Complexity: {task.complexity}",
-            f"Priority: {task.priority}",
-        ]
-        if task.plan_title:
-            footer_parts.append(f"Plan: {task.plan_title}")
+        Returns:
+            True if we should update, False to preserve manual edits
+        """
+        if not self.config.preserve_manual_edits:
+            return True
 
-        sections.append("---\n" + " | ".join(footer_parts) + "\nCreated by: PairCoder")
-
-        return "\n\n".join(sections)
+        return not should_preserve_description(existing_desc)
 
     def ensure_bps_labels(self) -> Dict[str, bool]:
         """Ensure all BPS labels exist on the board.
@@ -286,9 +367,13 @@ class TrelloSyncManager:
         Returns:
             Updated card
         """
-        # Update description with BPS format
-        description = self.build_card_description(task)
-        card.set_description(description)
+        # Check if we should update the description or preserve manual edits
+        existing_desc = getattr(card, 'description', '') or ''
+        if self.should_update_description(existing_desc):
+            description = self.build_card_description(task)
+            card.set_description(description)
+        else:
+            logger.info(f"Preserving manual edits for {task.id}")
 
         # Update custom fields
         custom_fields = {}

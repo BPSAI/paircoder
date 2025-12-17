@@ -529,15 +529,17 @@ def plan_sync_trello(
         service.set_board(board_id)
         results["board_id"] = board_id
 
-        # Create sync manager with BPS configuration
-        sync_config = TaskSyncConfig(
-            project_field="Project",
-            stack_field="Stack",
-            status_field="Status",
-            effort_field="Effort",
-            default_list="Backlog",
-            create_missing_labels=True,
-        )
+        # Load sync configuration from config.yaml if available
+        import yaml
+        config_file = paircoder_dir / "config.yaml"
+        trello_config = {}
+        if config_file.exists():
+            with open(config_file) as f:
+                full_config = yaml.safe_load(f) or {}
+                trello_config = full_config.get("trello", {})
+
+        # Create sync config from file or use defaults
+        sync_config = TaskSyncConfig.from_config(trello_config)
         sync_manager = TrelloSyncManager(service, sync_config)
 
         console.print(f"\n[bold]Syncing plan:[/bold] {plan_id}")
