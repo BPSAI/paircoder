@@ -44,7 +44,7 @@ Key deliverables:
 | Task | Title | Status | Priority | Complexity |
 |------|-------|--------|----------|------------|
 | TASK-081 | Sync Trello custom fields | done | P0 | 35 |
-| TASK-082 | Sync Trello labels with exact BPS colors | pending | P0 | 25 |
+| TASK-082 | Sync Trello labels with exact BPS colors | done | P0 | 25 |
 | TASK-083 | Card description templates (BPS format) | pending | P1 | 25 |
 | TASK-084 | Effort → Trello Effort field mapping | pending | P1 | 20 |
 | TASK-085 | Two-way sync (Trello → local) | pending | P1 | 45 |
@@ -64,7 +64,27 @@ Tasks moved to `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-16 - TASK-081 Complete
+### Session: 2025-12-17 - TASK-082 Complete
+
+**Trello Labels with BPS Colors (TASK-082)** - DONE
+
+Verified and completed the label sync implementation:
+- `BPS_LABELS` in `trello/sync.py` defines exact color mappings
+- `ensure_bps_labels()` creates missing labels with correct colors before sync
+- `_create_card()` and `_update_card()` add labels based on:
+  - Inferred stack from title/tags (via `STACK_KEYWORDS`)
+  - Direct tag matches against BPS label names
+- Multiple labels supported per card
+- CLI command `plan sync-trello` properly wires in label creation
+
+Added 3 new tests:
+- `test_sync_task_adds_multiple_labels` - verifies multiple labels per card
+- `test_exact_bps_color_mapping` - verifies exact BPS color definitions
+- `test_ensure_bps_labels_uses_correct_colors` - verifies colors passed to API
+
+**Test Coverage:** 449 tests passing (up from 445)
+
+### Previous: 2025-12-16 - TASK-081 Complete
 
 **Trello Custom Fields Sync (TASK-081)** - DONE
 
@@ -107,12 +127,12 @@ Created `tests/test_trello_sync.py`:
 
 ## Sprint 14 Definition of Done
 
-- [ ] `plan sync-trello` creates cards with all custom fields populated
-- [ ] Labels match exact BPS colors
+- [x] `plan sync-trello` creates cards with all custom fields populated
+- [x] Labels match exact BPS colors
 - [ ] Card description follows BPS template
 - [ ] Moving card in Trello updates local task status
 - [ ] Checklist items created from acceptance criteria
-- [ ] All tests passing
+- [x] All tests passing
 
 ## BPS Trello Requirements
 
@@ -141,14 +161,17 @@ Created `tests/test_trello_sync.py`:
 
 ## What's Next
 
-1. **TASK-081**: Implement custom field sync
-   - Add `get_custom_fields()` and `set_custom_field_value()` to TrelloClient
-   - Create field mapping config
-   - Update `plan sync-trello` to set custom fields
+1. **TASK-083**: Card description templates (BPS format)
+   - Enhance `build_card_description()` in sync.py
+   - Follow BPS formatting standards
 
-2. **TASK-082**: Label color sync
-   - Ensure labels exist with correct BPS colors
-   - Apply labels based on task tags
+2. **TASK-084**: Effort → Trello Effort field mapping
+   - Map complexity scores to S/M/L effort values
+   - Already partially implemented, verify integration
+
+3. **TASK-085**: Two-way sync (Trello → local)
+   - Moving cards in Trello updates local task status
+   - Webhook or polling approach
 
 ## Blockers
 
@@ -156,5 +179,5 @@ None currently.
 
 ## Test Coverage
 
-- **Total tests**: 445 passing
+- **Total tests**: 449 passing
 - **Test command**: `pytest -v`

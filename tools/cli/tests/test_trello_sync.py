@@ -267,6 +267,36 @@ class TestTrelloSyncManager:
         mock_service.create_card_with_custom_fields.assert_called_once()
         mock_service.set_effort_field.assert_called_once_with(mock_card, 35, "Effort")
 
+    def test_sync_task_adds_multiple_labels(self, mock_service, sync_manager):
+        """Test that multiple labels can be added to a single card."""
+        mock_service.find_card_with_prefix.return_value = (None, None)
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+        mock_service.add_label_to_card.return_value = True
+
+        # Task with title that infers "Backend" and tags that match BPS labels
+        task = TaskData(
+            id="TASK-001",
+            title="Add API endpoint",
+            complexity=35,
+            tags=["backend", "documentation"]  # Both are BPS labels
+        )
+
+        result = sync_manager.sync_task_to_card(task, "Backlog")
+
+        assert result == mock_card
+        # Should add: 1 for inferred stack (Backend) + 2 for matching tags
+        # But Backend is both inferred and in tags, so it's called once for inference
+        # and once for each tag (Backend, Documentation)
+        # Actually, the code adds inferred label first, then tags that match BPS_LABELS
+        label_calls = mock_service.add_label_to_card.call_args_list
+        labels_added = [call[0][1] for call in label_calls]
+
+        # Should have inferred "Backend" and tag "Documentation"
+        assert "Backend" in labels_added
+        assert "Documentation" in labels_added
+
     def test_sync_task_updates_existing_card(self, mock_service, sync_manager):
         """Test syncing a task updates existing card."""
         mock_card = Mock()
@@ -506,6 +536,43 @@ class TestBPSLabels:
         valid_colors = {"green", "yellow", "orange", "red", "purple", "blue", "sky", "lime", "pink", "black"}
         for label, color in BPS_LABELS.items():
             assert color in valid_colors, f"Invalid color {color} for label {label}"
+
+    def test_exact_bps_color_mapping(self):
+        """Test BPS labels have exact expected colors."""
+        expected_colors = {
+            "Frontend": "green",
+            "Backend": "blue",
+            "Worker/Function": "purple",
+            "Deployment": "red",
+            "Bug/Issue": "orange",
+            "Security/Admin": "yellow",
+            "Documentation": "sky",
+            "AI/ML": "black",
+        }
+        for label, expected_color in expected_colors.items():
+            assert BPS_LABELS[label] == expected_color, f"Label {label} should be {expected_color}, got {BPS_LABELS[label]}"
+
+    def test_ensure_bps_labels_uses_correct_colors(self):
+        """Test ensure_bps_labels passes correct colors to ensure_label_exists."""
+        mock_service = Mock(spec=TrelloService)
+        mock_service.ensure_label_exists.return_value = {"id": "lbl1"}
+
+        manager = TrelloSyncManager(mock_service)
+        manager.ensure_bps_labels()
+
+        # Verify each label was created with the correct color
+        calls = {
+            call[0][0]: call[0][1]
+            for call in mock_service.ensure_label_exists.call_args_list
+        }
+        assert calls["Frontend"] == "green"
+        assert calls["Backend"] == "blue"
+        assert calls["Worker/Function"] == "purple"
+        assert calls["Deployment"] == "red"
+        assert calls["Bug/Issue"] == "orange"
+        assert calls["Security/Admin"] == "yellow"
+        assert calls["Documentation"] == "sky"
+        assert calls["AI/ML"] == "black"
 
 
 class TestStackKeywords:
