@@ -23,6 +23,17 @@ This will:
 - Start timer (when implemented)
 - Update state.md current focus
 
+## During Work (Progress Updates)
+
+```bash
+bpsai-pair ttask comment TASK-XXX "Completed API endpoints, starting tests"
+```
+
+This adds a comment to the Trello card without changing status. Use for:
+- Milestone updates
+- Noting decisions
+- Progress visibility for team
+
 ## Completing a Task
 
 ```bash
@@ -37,6 +48,10 @@ This will:
 
 ## Quick Reference
 
+### Local Task Commands (`task`)
+
+Use these for status changes - they trigger all hooks.
+
 | Action | Command |
 |--------|---------|
 | Start task | `bpsai-pair task update TASK-XXX --status in_progress` |
@@ -46,6 +61,29 @@ This will:
 | Auto-assign next | `bpsai-pair task auto-next` |
 | List all tasks | `bpsai-pair task list` |
 | Show task details | `bpsai-pair task show TASK-XXX` |
+
+### Trello Card Commands (`ttask`)
+
+Use these for direct Trello operations.
+
+| Action | Command |
+|--------|---------|
+| Add progress comment | `bpsai-pair ttask comment TASK-XXX "message"` |
+| Start card directly | `bpsai-pair ttask start TASK-XXX` |
+| Complete card directly | `bpsai-pair ttask done TASK-XXX --summary "what was done"` |
+| Block card | `bpsai-pair ttask block TASK-XXX --reason "why"` |
+| Move card to list | `bpsai-pair ttask move TASK-XXX "List Name"` |
+| List Trello cards | `bpsai-pair ttask list` |
+| Show card details | `bpsai-pair ttask show TASK-XXX` |
+
+### When to Use `task` vs `ttask`
+
+| Scenario | Use |
+|----------|-----|
+| Changing task status | `task update` (fires hooks) |
+| Adding progress notes | `ttask comment` |
+| Working with Trello-only cards | `ttask` commands |
+| Need timers/metrics to trigger | `task update` |
 
 ## Task Status Values
 
@@ -64,6 +102,10 @@ This will:
 2. Verify Trello card moved
 3. Read the task file for implementation plan
 4. Begin work
+
+### During Work
+1. Add progress comments: `bpsai-pair ttask comment TASK-XXX "status update"`
+2. Commit frequently with task ID in message
 
 ### When Completing a Task
 1. Ensure tests pass: `pytest -v`
