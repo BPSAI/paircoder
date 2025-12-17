@@ -442,7 +442,7 @@ def plan_status(
 def plan_sync_trello(
     plan_id: str = typer.Argument(..., help="Plan ID to sync"),
     board_id: Optional[str] = typer.Option(None, "--board", "-b", help="Target Trello board ID"),
-    create_lists: bool = typer.Option(True, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
+    create_lists: bool = typer.Option(False, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
     link_cards: bool = typer.Option(True, "--link/--no-link", help="Store card IDs in task files"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without making changes"),
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
@@ -557,16 +557,17 @@ def plan_sync_trello(
             console.print(f"\n  [cyan]{sprint_name}[/cyan]:")
 
             # Get or create list
+            target_list = "Planned/Ready"
             board_lists = service.get_board_lists()
-            if sprint_name not in board_lists:
+            if target_list not in board_lists:
                 if create_lists:
-                    service.board.add_list(sprint_name)
+                    service.board.add_list(target_list)
                     service.lists = {lst.name: lst for lst in service.board.all_lists()}
-                    results["lists_created"].append(sprint_name)
-                    console.print(f"    [green]+ Created list[/green]")
+                    results["lists_created"].append(target_list)
+                    console.print(f"    [green]+ Created list: {target_list}[/green]")
                 else:
-                    results["errors"].append(f"List not found: {sprint_name}")
-                    console.print(f"    [red]✗ List not found[/red]")
+                    results["errors"].append(f"List not found: {target_list}")
+                    console.print(f"    [red]✗ List not found: {target_list}[/red]")
                     continue
 
             # Sync cards for tasks using TrelloSyncManager

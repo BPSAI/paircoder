@@ -43,7 +43,7 @@ def register_trello_tools(server: Any) -> None:
     async def paircoder_trello_sync_plan(
         plan_id: str,
         board_id: Optional[str] = None,
-        create_lists: bool = True,
+        create_lists: bool = False,
         link_cards: bool = True,
         dry_run: bool = False,
     ) -> dict:
