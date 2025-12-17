@@ -4,22 +4,24 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-12-sprint-14-trello-deep`
-**Status:** in_progress
-**Current Sprint:** sprint-14 (Trello Deep Integration)
+**Plan:** `plan-2025-12-sprint-15-security-sandboxing`
+**Status:** planned
+**Current Sprint:** sprint-15 (Security & Sandboxing)
+
+**Previous:** `plan-2025-12-sprint-14-trello-deep` (nearly complete, 2 tasks remaining)
 
 ## Current Focus
 
-Sprint 14: Make Trello cards created by PairCoder look exactly like Mike would create manually.
+Sprint 15: Safe autonomous execution without `--dangerously-skip-permissions`.
 
 **Key Objectives:**
-- Sync custom fields (Project, Stack, Effort, Status)
-- Labels with exact BPS colors
-- Card description templates following BPS format
-- Two-way sync (Trello changes update local tasks)
-- Checklists from acceptance criteria
-- Due date sync
-- Activity log comments
+- Security agent definition with SOC2 focus
+- Command allowlist system (safe vs unsafe commands)
+- Pre-execution security review
+- Docker sandbox for isolated execution
+- Git checkpoint/rollback for safety nets
+- Secret detection before commits
+- Dependency vulnerability scanning
 
 ## Task Status
 
@@ -39,7 +41,21 @@ Key deliverables:
 - Daily standup generation
 - Hook reliability (always fires on status change)
 
-### Sprint 14: Trello Deep Integration - IN PROGRESS
+### Sprint 15: Security & Sandboxing - PLANNED
+
+| Task | Title | Status | Priority | Complexity |
+|------|-------|--------|----------|------------|
+| TASK-089 | Security agent definition | pending | P0 | 30 |
+| TASK-090 | Command allowlist system | pending | P0 | 35 |
+| TASK-091 | Pre-execution security review | pending | P0 | 45 |
+| TASK-092 | Docker sandbox runner | pending | P1 | 50 |
+| TASK-093 | Git checkpoint/rollback | pending | P0 | 35 |
+| TASK-094 | Secret detection | pending | P0 | 30 |
+| TASK-095 | Dependency vulnerability scan | pending | P1 | 25 |
+
+**Total complexity:** 250 points | **Estimated:** 4-5 days
+
+### Sprint 14: Trello Deep Integration - NEARLY COMPLETE
 
 | Task | Title | Status | Priority | Complexity |
 |------|-------|--------|----------|------------|
@@ -49,8 +65,8 @@ Key deliverables:
 | TASK-084 | Effort → Trello Effort field mapping | done | P1 | 20 |
 | TASK-085 | Two-way sync (Trello → local) | done | P0 | 45 |
 | TASK-086 | Support checklists in cards | done | P1 | 30 |
-| TASK-087 | Due date sync | pending | P2 | 20 |
-| TASK-088 | Activity log comments | pending | P2 | 25 |
+| TASK-087 | Due date sync | done | P2 | 20 |
+| TASK-088 | Activity log comments | done | P2 | 25 |
 
 ### Backlog (Deprioritized)
 
@@ -64,7 +80,29 @@ Tasks moved to `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-17 - TASK-086 Complete
+### Session: 2025-12-17 - Sprint 15 Created
+
+**Sprint 15: Security & Sandboxing** - PLANNED
+
+Created plan and 7 task files for Sprint 15:
+
+**Plan file:** `.paircoder/plans/sprint-15-security-sandboxing.plan.yaml`
+
+**Tasks created:**
+- TASK-089: Security agent definition (SOC2 focus)
+- TASK-090: Command allowlist system (safe vs unsafe commands)
+- TASK-091: Pre-execution security review (hooks integration)
+- TASK-092: Docker sandbox runner (isolated execution)
+- TASK-093: Git checkpoint/rollback (safety nets)
+- TASK-094: Secret detection (pre-commit scanning)
+- TASK-095: Dependency vulnerability scan (CVE checking)
+
+**Trello sync:**
+- Created `sprint-15` list on board
+- 7 cards created with Security/Admin label
+- BPS labels ensured (8 labels)
+
+### Previous: 2025-12-17 - TASK-086 Complete
 
 **Checklist Support (TASK-086)** - DONE
 
@@ -274,11 +312,43 @@ Created `tests/test_trello_sync.py`:
 
 ## What's Next
 
-1. **TASK-087**: Due date sync
-   - Sync due dates between tasks and cards
+### Sprint 15 Tasks (in priority order)
 
-2. **TASK-088**: Activity log comments
-   - Post progress updates as Trello comments
+1. **TASK-089**: Security agent definition (P0)
+   - Create `.claude/agents/security.md` with SOC2 focus
+   - Define security checklist and blocking conditions
+
+2. **TASK-090**: Command allowlist system (P0)
+   - Implement `.paircoder/security/allowlist.yaml`
+   - Create AllowlistManager class
+
+3. **TASK-093**: Git checkpoint/rollback (P0)
+   - Auto-checkpoint before risky operations
+   - CLI for rollback management
+
+4. **TASK-094**: Secret detection (P0)
+   - Scan for leaked credentials before commit
+   - Pattern matching for AWS, GitHub, Slack tokens
+
+5. **TASK-091**: Pre-execution security review (P0)
+   - Hook security agent into command execution
+   - Code change review before commits
+
+6. **TASK-092**: Docker sandbox runner (P1)
+   - Isolated container execution
+   - Resource limits and network isolation
+
+7. **TASK-095**: Dependency vulnerability scan (P1)
+   - CVE scanning for Python and npm dependencies
+   - Integration with CI/CD
+
+## Sprint 15 Success Criteria
+
+- [ ] Can run autonomous session without `--dangerously-skip-permissions`
+- [ ] Dangerous commands blocked with explanation
+- [ ] Security agent reviews all PRs before creation
+- [ ] Rollback works when things break
+- [ ] No secrets in any commits
 
 ## Blockers
 
