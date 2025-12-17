@@ -722,3 +722,272 @@ class TestStackKeywords:
         for stack, keywords in STACK_KEYWORDS.items():
             for kw in keywords:
                 assert kw == kw.lower(), f"Keyword '{kw}' for {stack} is not lowercase"
+
+
+# Import reverse sync classes
+from bpsai_pair.trello.sync import (
+    TrelloToLocalSync,
+    SyncConflict,
+    SyncResult,
+    LIST_TO_STATUS,
+    create_reverse_sync,
+)
+from pathlib import Path
+import tempfile
+
+
+class TestListToStatusMapping:
+    """Tests for list name to status mapping."""
+
+    def test_backlog_lists_map_to_pending(self):
+        """Test backlog list names map to pending status."""
+        assert LIST_TO_STATUS["Intake / Backlog"] == "pending"
+        assert LIST_TO_STATUS["Backlog"] == "pending"
+        assert LIST_TO_STATUS["Planned / Ready"] == "pending"
+        assert LIST_TO_STATUS["Ready"] == "pending"
+
+    def test_progress_lists_map_to_in_progress(self):
+        """Test in-progress list names map to in_progress status."""
+        assert LIST_TO_STATUS["In Progress"] == "in_progress"
+        assert LIST_TO_STATUS["Review / Testing"] == "in_progress"
+        assert LIST_TO_STATUS["In Review"] == "in_progress"
+
+    def test_done_lists_map_to_done(self):
+        """Test done list names map to done status."""
+        assert LIST_TO_STATUS["Deployed / Done"] == "done"
+        assert LIST_TO_STATUS["Done"] == "done"
+
+    def test_blocked_lists_map_to_blocked(self):
+        """Test blocked list names map to blocked status."""
+        assert LIST_TO_STATUS["Issues / Tech Debt"] == "blocked"
+        assert LIST_TO_STATUS["Blocked"] == "blocked"
+
+
+class TestSyncConflict:
+    """Tests for SyncConflict dataclass."""
+
+    def test_default_resolution(self):
+        """Test default conflict resolution is trello_wins."""
+        conflict = SyncConflict(
+            task_id="TASK-001",
+            field="status",
+            local_value="pending",
+            trello_value="in_progress"
+        )
+        assert conflict.resolution == "trello_wins"
+
+    def test_custom_resolution(self):
+        """Test custom conflict resolution."""
+        conflict = SyncConflict(
+            task_id="TASK-001",
+            field="description",
+            local_value="Local desc",
+            trello_value="Trello desc",
+            resolution="local_wins"
+        )
+        assert conflict.resolution == "local_wins"
+
+
+class TestSyncResult:
+    """Tests for SyncResult dataclass."""
+
+    def test_default_values(self):
+        """Test default values for SyncResult."""
+        result = SyncResult(task_id="TASK-001", action="updated")
+        assert result.changes == {}
+        assert result.conflicts == []
+        assert result.error is None
+
+    def test_with_changes(self):
+        """Test SyncResult with changes."""
+        result = SyncResult(
+            task_id="TASK-001",
+            action="updated",
+            changes={"status": {"from": "pending", "to": "in_progress"}}
+        )
+        assert "status" in result.changes
+        assert result.changes["status"]["to"] == "in_progress"
+
+    def test_with_error(self):
+        """Test SyncResult with error."""
+        result = SyncResult(
+            task_id="TASK-001",
+            action="error",
+            error="Task not found"
+        )
+        assert result.action == "error"
+        assert result.error == "Task not found"
+
+
+class TestTrelloToLocalSync:
+    """Tests for TrelloToLocalSync class."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.board = Mock()
+        return service
+
+    @pytest.fixture
+    def temp_tasks_dir(self):
+        """Create temporary tasks directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    @pytest.fixture
+    def sync_manager(self, mock_service, temp_tasks_dir):
+        """Create TrelloToLocalSync with mocks."""
+        return TrelloToLocalSync(mock_service, temp_tasks_dir)
+
+    def test_extract_task_id_valid(self, sync_manager):
+        """Test extracting task ID from valid card name."""
+        assert sync_manager.extract_task_id("[TASK-001] Implement feature") == "TASK-001"
+        assert sync_manager.extract_task_id("[TASK-123] Bug fix") == "TASK-123"
+
+    def test_extract_task_id_no_brackets(self, sync_manager):
+        """Test extracting task ID from card name without brackets."""
+        assert sync_manager.extract_task_id("Implement feature") is None
+        assert sync_manager.extract_task_id("TASK-001 without brackets") is None
+
+    def test_extract_task_id_incomplete_brackets(self, sync_manager):
+        """Test extracting task ID from card name with incomplete brackets."""
+        assert sync_manager.extract_task_id("[TASK-001 missing close") is None
+        assert sync_manager.extract_task_id("TASK-001] missing open") is None
+
+    def test_get_list_status_valid(self, sync_manager):
+        """Test getting status from valid list name."""
+        assert sync_manager.get_list_status("In Progress") == "in_progress"
+        assert sync_manager.get_list_status("Done") == "done"
+        assert sync_manager.get_list_status("Backlog") == "pending"
+
+    def test_get_list_status_unknown(self, sync_manager):
+        """Test getting status from unknown list name."""
+        assert sync_manager.get_list_status("Custom List") is None
+        assert sync_manager.get_list_status("My Tasks") is None
+
+    def test_sync_card_no_task_id(self, sync_manager):
+        """Test sync card without task ID in name."""
+        mock_card = Mock()
+        mock_card.name = "Card without task ID"
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert result.action == "skipped"
+        assert "Could not extract task ID" in result.error
+
+    def test_sync_card_task_not_found(self, sync_manager):
+        """Test sync card when task not found locally."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-999] Non-existent task"
+
+        # Mock task parser to return None
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = None
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert result.task_id == "TASK-999"
+        assert result.action == "skipped"
+        assert "not found locally" in result.error
+
+    def test_sync_card_status_change(self, sync_manager):
+        """Test sync card with status change."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_list = Mock()
+        mock_list.name = "In Progress"
+        mock_card.get_list.return_value = mock_list
+
+        # Mock task with pending status
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "pending"
+
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert result.task_id == "TASK-001"
+        assert result.action == "updated"
+        assert "status" in result.changes
+        assert result.changes["status"]["from"] == "pending"
+        assert result.changes["status"]["to"] == "in_progress"
+
+    def test_sync_card_no_changes(self, sync_manager):
+        """Test sync card when no changes needed."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_card.due_date = None  # Explicitly set to None to avoid Mock truthy behavior
+        mock_list = Mock()
+        mock_list.name = "In Progress"
+        mock_card.get_list.return_value = mock_list
+
+        # Mock task already in_progress
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "in_progress"
+
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert result.task_id == "TASK-001"
+        assert result.action == "skipped"
+        assert result.changes == {}
+
+    def test_sync_all_cards_empty(self, sync_manager):
+        """Test sync all cards from empty board."""
+        sync_manager.service.board.get_cards.return_value = []
+
+        results = sync_manager.sync_all_cards()
+
+        assert results == []
+
+    def test_sync_all_cards_filters_list(self, sync_manager):
+        """Test sync all cards filters by list name."""
+        mock_card1 = Mock()
+        mock_card1.name = "[TASK-001] Task 1"
+        mock_card1.get_list.return_value.name = "In Progress"
+
+        mock_card2 = Mock()
+        mock_card2.name = "[TASK-002] Task 2"
+        mock_card2.get_list.return_value.name = "Done"
+
+        sync_manager.service.board.get_cards.return_value = [mock_card1, mock_card2]
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = None
+
+        # Filter to only "Done" list
+        results = sync_manager.sync_all_cards(list_filter=["Done"])
+
+        # Should only process card2 (in Done list)
+        assert len(results) == 1
+        assert results[0].task_id == "TASK-002"
+
+    def test_get_sync_preview(self, sync_manager):
+        """Test getting sync preview."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_list = Mock()
+        mock_list.name = "Done"
+        mock_card.get_list.return_value = mock_list
+
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "in_progress"
+
+        sync_manager.service.board.get_cards.return_value = [mock_card]
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        preview = sync_manager.get_sync_preview()
+
+        assert len(preview) == 1
+        assert preview[0]["task_id"] == "TASK-001"
+        assert preview[0]["action"] == "update"
+        assert preview[0]["field"] == "status"
+        assert preview[0]["from"] == "in_progress"
+        assert preview[0]["to"] == "done"

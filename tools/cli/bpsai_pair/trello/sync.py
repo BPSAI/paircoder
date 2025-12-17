@@ -450,3 +450,292 @@ def create_sync_manager(
     service.set_board(board_id)
 
     return TrelloSyncManager(service, config)
+
+
+# List name to status mapping for reverse sync
+LIST_TO_STATUS = {
+    "Intake / Backlog": "pending",
+    "Backlog": "pending",
+    "Planned / Ready": "pending",
+    "Ready": "pending",
+    "In Progress": "in_progress",
+    "Review / Testing": "in_progress",
+    "In Review": "in_progress",
+    "Deployed / Done": "done",
+    "Done": "done",
+    "Issues / Tech Debt": "blocked",
+    "Blocked": "blocked",
+}
+
+
+@dataclass
+class SyncConflict:
+    """Represents a sync conflict between Trello and local."""
+    task_id: str
+    field: str
+    local_value: Any
+    trello_value: Any
+    resolution: str = "trello_wins"  # or "local_wins", "skip"
+
+
+@dataclass
+class SyncResult:
+    """Result of a sync operation."""
+    task_id: str
+    action: str  # "updated", "skipped", "conflict", "error"
+    changes: Dict[str, Any] = field(default_factory=dict)
+    conflicts: List[SyncConflict] = field(default_factory=list)
+    error: Optional[str] = None
+
+
+class TrelloToLocalSync:
+    """Syncs changes from Trello back to local task files."""
+
+    def __init__(self, service: TrelloService, tasks_dir: Path):
+        """Initialize the reverse sync manager.
+
+        Args:
+            service: TrelloService instance with board set
+            tasks_dir: Path to .paircoder/tasks directory
+        """
+        self.service = service
+        self.tasks_dir = tasks_dir
+        self._task_parser = None
+
+    @property
+    def task_parser(self):
+        """Lazy load TaskParser."""
+        if self._task_parser is None:
+            from ..planning.parser import TaskParser
+            self._task_parser = TaskParser(self.tasks_dir)
+        return self._task_parser
+
+    def extract_task_id(self, card_name: str) -> Optional[str]:
+        """Extract task ID from card name like '[TASK-066] Title'.
+
+        Args:
+            card_name: Card name with potential task ID prefix
+
+        Returns:
+            Task ID or None if not found
+        """
+        if card_name.startswith("[") and "]" in card_name:
+            return card_name[1:card_name.index("]")]
+        return None
+
+    def get_list_status(self, list_name: str) -> Optional[str]:
+        """Map Trello list name to task status.
+
+        Args:
+            list_name: Trello list name
+
+        Returns:
+            Task status string or None if no mapping
+        """
+        return LIST_TO_STATUS.get(list_name)
+
+    def sync_card_to_task(self, card: Any, detect_conflicts: bool = True) -> SyncResult:
+        """Sync a single Trello card back to local task.
+
+        Args:
+            card: Trello card object
+            detect_conflicts: Whether to detect and report conflicts
+
+        Returns:
+            SyncResult with details of the sync operation
+        """
+        card_name = card.name
+        task_id = self.extract_task_id(card_name)
+
+        if not task_id:
+            return SyncResult(
+                task_id="unknown",
+                action="skipped",
+                error=f"Could not extract task ID from: {card_name}"
+            )
+
+        # Load local task
+        task = self.task_parser.get_task_by_id(task_id)
+        if not task:
+            return SyncResult(
+                task_id=task_id,
+                action="skipped",
+                error=f"Task not found locally: {task_id}"
+            )
+
+        changes = {}
+        conflicts = []
+
+        # Get card's current list
+        list_name = card.get_list().name if hasattr(card, 'get_list') else None
+        if list_name:
+            new_status = self.get_list_status(list_name)
+            if new_status:
+                old_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
+                if old_status != new_status:
+                    if detect_conflicts:
+                        conflicts.append(SyncConflict(
+                            task_id=task_id,
+                            field="status",
+                            local_value=old_status,
+                            trello_value=new_status,
+                            resolution="trello_wins"
+                        ))
+                    changes["status"] = {"from": old_status, "to": new_status}
+
+                    # Apply the change (Trello wins for status)
+                    from ..planning.models import TaskStatus
+                    task.status = TaskStatus(new_status)
+
+        # Check due date if present
+        if hasattr(card, 'due_date') and card.due_date:
+            card_due = card.due_date
+            task_due = getattr(task, 'due_date', None)
+            if card_due != task_due:
+                changes["due_date"] = {"from": task_due, "to": card_due}
+                if hasattr(task, 'due_date'):
+                    task.due_date = card_due
+
+        # Save task if there were changes
+        if changes:
+            try:
+                self.task_parser.save(task)
+                return SyncResult(
+                    task_id=task_id,
+                    action="updated",
+                    changes=changes,
+                    conflicts=conflicts
+                )
+            except Exception as e:
+                return SyncResult(
+                    task_id=task_id,
+                    action="error",
+                    error=str(e)
+                )
+
+        return SyncResult(
+            task_id=task_id,
+            action="skipped",
+            changes={}
+        )
+
+    def sync_all_cards(self, list_filter: Optional[List[str]] = None) -> List[SyncResult]:
+        """Sync all cards from Trello board to local tasks.
+
+        Args:
+            list_filter: Optional list of list names to sync from
+
+        Returns:
+            List of SyncResults for each card processed
+        """
+        results = []
+
+        # Get all cards from board
+        try:
+            cards = self.service.board.get_cards()
+        except Exception as e:
+            logger.error(f"Failed to get cards from board: {e}")
+            return [SyncResult(task_id="board", action="error", error=str(e))]
+
+        for card in cards:
+            # Filter by list if specified
+            if list_filter:
+                try:
+                    card_list = card.get_list()
+                    if card_list.name not in list_filter:
+                        continue
+                except Exception:
+                    continue
+
+            # Skip cards without task IDs
+            task_id = self.extract_task_id(card.name)
+            if not task_id:
+                continue
+
+            result = self.sync_card_to_task(card)
+            results.append(result)
+
+        return results
+
+    def get_sync_preview(self) -> List[Dict[str, Any]]:
+        """Preview what would be synced without making changes.
+
+        Returns:
+            List of dicts describing potential changes
+        """
+        preview = []
+
+        try:
+            cards = self.service.board.get_cards()
+        except Exception as e:
+            logger.error(f"Failed to get cards: {e}")
+            return []
+
+        for card in cards:
+            task_id = self.extract_task_id(card.name)
+            if not task_id:
+                continue
+
+            task = self.task_parser.get_task_by_id(task_id)
+            if not task:
+                preview.append({
+                    "task_id": task_id,
+                    "card_name": card.name,
+                    "action": "skip",
+                    "reason": "Task not found locally"
+                })
+                continue
+
+            # Check for status difference
+            try:
+                list_name = card.get_list().name
+                trello_status = self.get_list_status(list_name)
+                local_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
+
+                if trello_status and trello_status != local_status:
+                    preview.append({
+                        "task_id": task_id,
+                        "card_name": card.name,
+                        "action": "update",
+                        "field": "status",
+                        "from": local_status,
+                        "to": trello_status
+                    })
+                else:
+                    preview.append({
+                        "task_id": task_id,
+                        "card_name": card.name,
+                        "action": "skip",
+                        "reason": "No changes"
+                    })
+            except Exception as e:
+                preview.append({
+                    "task_id": task_id,
+                    "card_name": card.name,
+                    "action": "error",
+                    "reason": str(e)
+                })
+
+        return preview
+
+
+def create_reverse_sync(
+    api_key: str,
+    token: str,
+    board_id: str,
+    tasks_dir: Path
+) -> TrelloToLocalSync:
+    """Create a TrelloToLocalSync instance.
+
+    Args:
+        api_key: Trello API key
+        token: Trello API token
+        board_id: Board ID to sync from
+        tasks_dir: Path to .paircoder/tasks directory
+
+    Returns:
+        Configured TrelloToLocalSync instance
+    """
+    service = TrelloService(api_key, token)
+    service.set_board(board_id)
+    return TrelloToLocalSync(service, tasks_dir)

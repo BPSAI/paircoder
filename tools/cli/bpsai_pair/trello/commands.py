@@ -342,6 +342,130 @@ def progress_comment(
         raise typer.Exit(1)
 
 
+@app.command("sync")
+def trello_sync(
+    from_trello: bool = typer.Option(False, "--from-trello", help="Sync changes FROM Trello to local tasks"),
+    preview: bool = typer.Option(False, "--preview", "-p", help="Preview changes without applying"),
+    list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Only sync cards from specific list"),
+):
+    """Sync tasks between Trello and local files.
+
+    By default, previews what would be synced. Use --from-trello to pull
+    changes from Trello cards and update local task files.
+
+    Examples:
+        # Preview what would be synced
+        bpsai-pair trello sync --preview
+
+        # Pull changes from Trello to local
+        bpsai-pair trello sync --from-trello
+
+        # Only sync cards from a specific list
+        bpsai-pair trello sync --from-trello --list "In Progress"
+    """
+    from pathlib import Path
+    from rich.table import Table
+    from .sync import TrelloToLocalSync
+    from .auth import load_token
+
+    paircoder_dir = Path.cwd() / ".paircoder"
+    if not paircoder_dir.exists():
+        console.print("[red]Not in a PairCoder project directory[/red]")
+        raise typer.Exit(1)
+
+    config = _load_config()
+    board_id = config.get("trello", {}).get("board_id")
+    if not board_id:
+        console.print("[red]No board configured. Run: bpsai-pair trello use-board <id>[/red]")
+        raise typer.Exit(1)
+
+    token_data = load_token()
+    if not token_data:
+        console.print("[red]Not connected to Trello. Run: bpsai-pair trello connect[/red]")
+        raise typer.Exit(1)
+
+    # Create sync instance
+    try:
+        from .client import TrelloService
+        service = TrelloService(token_data["api_key"], token_data["token"])
+        service.set_board(board_id)
+        sync_manager = TrelloToLocalSync(service, paircoder_dir / "tasks")
+    except Exception as e:
+        console.print(f"[red]Failed to connect to Trello: {e}[/red]")
+        raise typer.Exit(1)
+
+    if preview or not from_trello:
+        # Preview mode
+        console.print("\n[bold]Sync Preview (Trello → Local)[/bold]\n")
+
+        preview_results = sync_manager.get_sync_preview()
+        if not preview_results:
+            console.print("[dim]No cards with task IDs found on board[/dim]")
+            return
+
+        table = Table()
+        table.add_column("Task ID", style="cyan")
+        table.add_column("Action", style="yellow")
+        table.add_column("Details")
+
+        updates_pending = 0
+        for item in preview_results:
+            task_id = item["task_id"]
+            action = item["action"]
+
+            if action == "update":
+                details = f"{item['field']}: {item['from']} → {item['to']}"
+                table.add_row(task_id, "[green]update[/green]", details)
+                updates_pending += 1
+            elif action == "skip":
+                reason = item.get("reason", "No changes")
+                table.add_row(task_id, "[dim]skip[/dim]", f"[dim]{reason}[/dim]")
+            elif action == "error":
+                table.add_row(task_id, "[red]error[/red]", item.get("reason", "Unknown error"))
+
+        console.print(table)
+        console.print(f"\n[bold]{updates_pending}[/bold] task(s) would be updated")
+
+        if updates_pending > 0 and not from_trello:
+            console.print("\n[dim]Run with --from-trello to apply changes[/dim]")
+
+    else:
+        # Apply changes
+        console.print("\n[bold]Syncing from Trello → Local[/bold]\n")
+
+        list_filter = [list_name] if list_name else None
+        results = sync_manager.sync_all_cards(list_filter=list_filter)
+
+        if not results:
+            console.print("[dim]No cards with task IDs found on board[/dim]")
+            return
+
+        updated = 0
+        skipped = 0
+        errors = 0
+
+        for result in results:
+            if result.action == "updated":
+                updated += 1
+                changes_str = ", ".join(
+                    f"{k}: {v['from']} → {v['to']}"
+                    for k, v in result.changes.items()
+                )
+                console.print(f"  [green]✓[/green] {result.task_id}: {changes_str}")
+
+                # Show conflicts if any
+                for conflict in result.conflicts:
+                    console.print(f"    [yellow]⚠ Conflict: {conflict.field} ({conflict.resolution})[/yellow]")
+
+            elif result.action == "skipped":
+                skipped += 1
+            elif result.action == "error":
+                errors += 1
+                console.print(f"  [red]✗[/red] {result.task_id}: {result.error}")
+
+        console.print(f"\n[bold]Summary:[/bold] {updated} updated, {skipped} skipped, {errors} errors")
+
+
 # Register webhook subcommands
 from .webhook_commands import app as webhook_app
 app.add_typer(webhook_app, name="webhook")

@@ -47,7 +47,7 @@ Key deliverables:
 | TASK-082 | Sync Trello labels with exact BPS colors | done | P0 | 25 |
 | TASK-083 | Card description templates (BPS format) | done | P1 | 25 |
 | TASK-084 | Effort → Trello Effort field mapping | done | P1 | 20 |
-| TASK-085 | Two-way sync (Trello → local) | pending | P1 | 45 |
+| TASK-085 | Two-way sync (Trello → local) | done | P0 | 45 |
 | TASK-086 | Support checklists in cards | pending | P1 | 30 |
 | TASK-087 | Due date sync | pending | P2 | 20 |
 | TASK-088 | Activity log comments | pending | P2 | 25 |
@@ -64,7 +64,38 @@ Tasks moved to `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-17 - TASK-084 Complete
+### Session: 2025-12-17 - TASK-085 Complete
+
+**Two-way Sync (TASK-085)** - DONE
+
+Implemented reverse sync from Trello to local task files:
+
+**New classes in `trello/sync.py`:**
+- `LIST_TO_STATUS` - Mapping of Trello list names to task statuses
+- `SyncConflict` dataclass - Represents sync conflicts with resolution strategy
+- `SyncResult` dataclass - Result of sync operation with changes/errors
+- `TrelloToLocalSync` class:
+  - `extract_task_id()` - Extract task ID from card name
+  - `get_list_status()` - Map list name to status
+  - `sync_card_to_task()` - Sync single card back to local task
+  - `sync_all_cards()` - Sync all cards from board
+  - `get_sync_preview()` - Preview changes without applying
+- `create_reverse_sync()` - Factory function
+
+**New CLI command in `trello/commands.py`:**
+- `bpsai-pair trello sync --from-trello` - Pull changes from Trello
+- `bpsai-pair trello sync --preview` - Preview what would change
+- `bpsai-pair trello sync --from-trello --list "Done"` - Filter by list
+
+**Conflict resolution:**
+- Trello wins for status changes
+- Conflicts detected and reported in output
+- No data loss (skips when task not found locally)
+
+**New tests:** 21 tests for reverse sync functionality
+**Test Coverage:** 506 tests passing (up from 485)
+
+### Previous: 2025-12-17 - TASK-084 Complete
 
 **Effort Field Mapping (TASK-084)** - DONE
 
@@ -181,7 +212,7 @@ Created `tests/test_trello_sync.py`:
 - [x] `plan sync-trello` creates cards with all custom fields populated
 - [x] Labels match exact BPS colors
 - [x] Card description follows BPS template
-- [ ] Moving card in Trello updates local task status
+- [x] Moving card in Trello updates local task status
 - [ ] Checklist items created from acceptance criteria
 - [x] All tests passing
 
@@ -212,16 +243,15 @@ Created `tests/test_trello_sync.py`:
 
 ## What's Next
 
-1. **TASK-085**: Two-way sync (Trello → local)
-   - Moving cards in Trello updates local task status
-   - Webhook or polling approach
-
-2. **TASK-086**: Support checklists in cards
+1. **TASK-086**: Support checklists in cards
    - Create checklists from acceptance criteria
    - Sync checklist state
 
-3. **TASK-087**: Due date sync
+2. **TASK-087**: Due date sync
    - Sync due dates between tasks and cards
+
+3. **TASK-088**: Activity log comments
+   - Post progress updates as Trello comments
 
 ## Blockers
 
@@ -229,5 +259,5 @@ None currently.
 
 ## Test Coverage
 
-- **Total tests**: 485 passing
+- **Total tests**: 506 passing
 - **Test command**: `pytest -v`
