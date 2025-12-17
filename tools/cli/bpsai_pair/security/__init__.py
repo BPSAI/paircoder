@@ -12,9 +12,17 @@ from .allowlist import (
     CommandDecision,
     CheckResult,
 )
+from .review import (
+    ReviewResult,
+    SecurityReviewHook,
+    CodeChangeReviewer,
+)
 
 __all__ = [
     "AllowlistManager",
     "CommandDecision",
     "CheckResult",
+    "ReviewResult",
+    "SecurityReviewHook",
+    "CodeChangeReviewer",
 ]
