@@ -3,6 +3,7 @@ Trello sync module for syncing tasks to Trello cards with custom fields.
 """
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import logging
 import re
@@ -11,6 +12,52 @@ from .client import TrelloService, EffortMapping
 from .templates import CardDescriptionTemplate, CardDescriptionData, should_preserve_description
 
 logger = logging.getLogger(__name__)
+
+
+# ==================== DUE DATE CONFIGURATION ====================
+
+@dataclass
+class DueDateConfig:
+    """Configuration for calculating due dates from effort levels."""
+    # Days to add for each effort level
+    effort_days: Dict[str, int] = field(default_factory=lambda: {"S": 1, "M": 2, "L": 4})
+
+    def get_days_for_effort(self, effort: str) -> int:
+        """Get the number of days for an effort level.
+
+        Args:
+            effort: Effort level (S, M, L) - case insensitive
+
+        Returns:
+            Number of days to add, defaults to M (2 days) if unknown
+        """
+        effort_upper = effort.upper()
+        return self.effort_days.get(effort_upper, self.effort_days.get("M", 2))
+
+
+def calculate_due_date_from_effort(
+    effort: str,
+    base_date: Optional[datetime] = None,
+    config: Optional[DueDateConfig] = None
+) -> datetime:
+    """Calculate a due date based on effort level.
+
+    Args:
+        effort: Effort level (S, M, L)
+        base_date: Starting date (defaults to now in UTC)
+        config: DueDateConfig instance (uses defaults if not provided)
+
+    Returns:
+        Due date as datetime
+    """
+    if config is None:
+        config = DueDateConfig()
+
+    if base_date is None:
+        base_date = datetime.now(timezone.utc)
+
+    days = config.get_days_for_effort(effort)
+    return base_date + timedelta(days=days)
 
 
 # BPS Label color mapping
@@ -206,6 +253,7 @@ class TaskData:
     acceptance_criteria: List[str] = field(default_factory=list)
     checked_criteria: List[str] = field(default_factory=list)  # Items that are checked
     plan_title: Optional[str] = None
+    due_date: Optional[datetime] = None
 
     @classmethod
     def from_task(cls, task: Any) -> "TaskData":
@@ -238,6 +286,7 @@ class TaskData:
             acceptance_criteria=acceptance_criteria,
             checked_criteria=checked_criteria,
             plan_title=getattr(task, 'plan', None),
+            due_date=getattr(task, 'due_date', None),
         )
 
 
@@ -414,6 +463,14 @@ class TrelloSyncManager:
         if task.acceptance_criteria:
             self._sync_checklist(card, task.acceptance_criteria, task.checked_criteria)
 
+        # Set due date - use explicit date if provided, otherwise calculate from effort
+        due_date = task.due_date
+        if due_date is None:
+            # Calculate due date from effort/complexity
+            effort = self.config.effort_mapping.get_effort(task.complexity)
+            due_date = calculate_due_date_from_effort(effort)
+        self.service.set_due_date(card, due_date)
+
         logger.info(f"Created card for {task.id}: {card_name}")
         return card
 
@@ -463,6 +520,10 @@ class TrelloSyncManager:
         # Sync acceptance criteria checklist
         if task.acceptance_criteria:
             self._sync_checklist(card, task.acceptance_criteria, task.checked_criteria)
+
+        # Sync due date
+        if task.due_date is not None:
+            self.service.set_due_date(card, task.due_date)
 
         logger.info(f"Updated card for {task.id}")
         return card

@@ -40,7 +40,7 @@ class PlanType(str, Enum):
 class Task:
     """
     Represents a single task within a plan.
-    
+
     Tasks are stored as .task.md files with YAML frontmatter.
     """
     id: str
@@ -57,6 +57,7 @@ class Task:
     files_touched: list[str] = field(default_factory=list)
     verification: list[str] = field(default_factory=list)
     source_path: Optional[Path] = None
+    due_date: Optional[datetime] = None
     
     @property
     def status_emoji(self) -> str:
@@ -71,7 +72,7 @@ class Task:
     
     def to_dict(self) -> dict:
         """Convert to dictionary for YAML serialization."""
-        return {
+        result = {
             "id": self.id,
             "title": self.title,
             "plan": self.plan_id,
@@ -82,6 +83,9 @@ class Task:
             "sprint": self.sprint,
             "tags": self.tags,
         }
+        if self.due_date is not None:
+            result["due_date"] = self.due_date.isoformat()
+        return result
     
     @classmethod
     def from_dict(cls, data: dict, body: str = "", source_path: Optional[Path] = None) -> "Task":
@@ -92,7 +96,15 @@ class Task:
                 status = TaskStatus(status)
             except ValueError:
                 status = TaskStatus.PENDING
-        
+
+        # Parse due_date if present
+        due_date = data.get("due_date")
+        if isinstance(due_date, str):
+            try:
+                due_date = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+            except ValueError:
+                due_date = None
+
         return cls(
             id=data.get("id", "UNKNOWN"),
             title=data.get("title", "Untitled Task"),
@@ -108,6 +120,7 @@ class Task:
             files_touched=data.get("files_touched", []),
             verification=data.get("verification", []),
             source_path=source_path,
+            due_date=due_date,
         )
 
 

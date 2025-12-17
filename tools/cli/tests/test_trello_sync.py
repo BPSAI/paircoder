@@ -1753,3 +1753,428 @@ class TestTrelloServiceChecklist:
             assert result is not None
             # Should add missing "New Item"
             assert service.client.fetch_json.called
+
+
+# ==================== DUE DATE TESTS ====================
+
+from datetime import datetime, timedelta, timezone
+from bpsai_pair.trello.sync import (
+    DueDateConfig,
+    calculate_due_date_from_effort,
+)
+
+
+class TestDueDateConfig:
+    """Tests for DueDateConfig class."""
+
+    def test_default_effort_days(self):
+        """Test default days for each effort level."""
+        config = DueDateConfig()
+        assert config.effort_days == {"S": 1, "M": 2, "L": 4}
+
+    def test_custom_effort_days(self):
+        """Test custom days for each effort level."""
+        config = DueDateConfig(effort_days={"S": 2, "M": 5, "L": 10})
+        assert config.effort_days["S"] == 2
+        assert config.effort_days["M"] == 5
+        assert config.effort_days["L"] == 10
+
+    def test_get_days_for_effort(self):
+        """Test getting days for effort level."""
+        config = DueDateConfig()
+        assert config.get_days_for_effort("S") == 1
+        assert config.get_days_for_effort("M") == 2
+        assert config.get_days_for_effort("L") == 4
+
+    def test_get_days_for_effort_case_insensitive(self):
+        """Test getting days is case insensitive."""
+        config = DueDateConfig()
+        assert config.get_days_for_effort("s") == 1
+        assert config.get_days_for_effort("m") == 2
+        assert config.get_days_for_effort("l") == 4
+
+    def test_get_days_for_unknown_effort(self):
+        """Test getting days for unknown effort defaults to M."""
+        config = DueDateConfig()
+        assert config.get_days_for_effort("XL") == 2  # default to M days
+        assert config.get_days_for_effort("unknown") == 2
+
+
+class TestCalculateDueDateFromEffort:
+    """Tests for calculate_due_date_from_effort function."""
+
+    def test_small_effort_one_day(self):
+        """Test S effort adds 1 day."""
+        base_date = datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc)
+        result = calculate_due_date_from_effort("S", base_date=base_date)
+        expected = datetime(2025, 12, 18, 10, 0, 0, tzinfo=timezone.utc)
+        assert result == expected
+
+    def test_medium_effort_two_days(self):
+        """Test M effort adds 2 days."""
+        base_date = datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc)
+        result = calculate_due_date_from_effort("M", base_date=base_date)
+        expected = datetime(2025, 12, 19, 10, 0, 0, tzinfo=timezone.utc)
+        assert result == expected
+
+    def test_large_effort_four_days(self):
+        """Test L effort adds 4 days."""
+        base_date = datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc)
+        result = calculate_due_date_from_effort("L", base_date=base_date)
+        expected = datetime(2025, 12, 21, 10, 0, 0, tzinfo=timezone.utc)
+        assert result == expected
+
+    def test_uses_current_time_as_default(self):
+        """Test uses current time if no base_date provided."""
+        before = datetime.now(timezone.utc)
+        result = calculate_due_date_from_effort("S")
+        after = datetime.now(timezone.utc)
+
+        # Result should be ~1 day from now
+        expected_min = before + timedelta(days=1)
+        expected_max = after + timedelta(days=1)
+        assert expected_min <= result <= expected_max
+
+    def test_custom_config(self):
+        """Test with custom DueDateConfig."""
+        config = DueDateConfig(effort_days={"S": 3, "M": 7, "L": 14})
+        base_date = datetime(2025, 12, 17, 10, 0, 0, tzinfo=timezone.utc)
+        result = calculate_due_date_from_effort("S", base_date=base_date, config=config)
+        expected = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+        assert result == expected
+
+
+class TestTaskModelDueDate:
+    """Tests for Task model due_date field."""
+
+    def test_task_has_due_date_field(self):
+        """Test Task model has due_date field."""
+        from bpsai_pair.planning.models import Task
+        task = Task(
+            id="TASK-001",
+            title="Test Task",
+            plan_id="plan-1"
+        )
+        assert hasattr(task, 'due_date')
+        assert task.due_date is None  # Default is None
+
+    def test_task_with_due_date(self):
+        """Test Task can be created with due_date."""
+        from bpsai_pair.planning.models import Task
+        due = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+        task = Task(
+            id="TASK-001",
+            title="Test Task",
+            plan_id="plan-1",
+            due_date=due
+        )
+        assert task.due_date == due
+
+    def test_task_to_dict_includes_due_date(self):
+        """Test Task.to_dict includes due_date when set."""
+        from bpsai_pair.planning.models import Task
+        due = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+        task = Task(
+            id="TASK-001",
+            title="Test Task",
+            plan_id="plan-1",
+            due_date=due
+        )
+        result = task.to_dict()
+        assert "due_date" in result
+        assert result["due_date"] == due.isoformat()
+
+    def test_task_to_dict_excludes_none_due_date(self):
+        """Test Task.to_dict excludes due_date when None."""
+        from bpsai_pair.planning.models import Task
+        task = Task(
+            id="TASK-001",
+            title="Test Task",
+            plan_id="plan-1"
+        )
+        result = task.to_dict()
+        assert "due_date" not in result or result.get("due_date") is None
+
+    def test_task_from_dict_with_due_date(self):
+        """Test Task.from_dict parses due_date."""
+        from bpsai_pair.planning.models import Task
+        data = {
+            "id": "TASK-001",
+            "title": "Test Task",
+            "plan": "plan-1",
+            "due_date": "2025-12-20T10:00:00+00:00"
+        }
+        task = Task.from_dict(data)
+        assert task.due_date is not None
+        assert task.due_date.year == 2025
+        assert task.due_date.month == 12
+        assert task.due_date.day == 20
+
+
+class TestTaskDataDueDate:
+    """Tests for TaskData due_date handling."""
+
+    def test_taskdata_has_due_date(self):
+        """Test TaskData has due_date field."""
+        task_data = TaskData(
+            id="TASK-001",
+            title="Test Task"
+        )
+        assert hasattr(task_data, 'due_date')
+        assert task_data.due_date is None
+
+    def test_taskdata_with_due_date(self):
+        """Test TaskData can be created with due_date."""
+        due = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+        task_data = TaskData(
+            id="TASK-001",
+            title="Test Task",
+            due_date=due
+        )
+        assert task_data.due_date == due
+
+    def test_taskdata_from_task_copies_due_date(self):
+        """Test TaskData.from_task copies due_date from Task."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Test Task"
+        mock_task.status = "pending"
+        mock_task.body = ""
+        mock_task.priority = "P1"
+        mock_task.complexity = 30
+        mock_task.tags = []
+        mock_task.plan = None
+        mock_task.due_date = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+
+        task_data = TaskData.from_task(mock_task)
+        assert task_data.due_date == mock_task.due_date
+
+    def test_taskdata_from_task_handles_missing_due_date(self):
+        """Test TaskData.from_task handles missing due_date."""
+        mock_task = Mock()
+        mock_task.id = "TASK-001"
+        mock_task.title = "Test Task"
+        mock_task.status = "pending"
+        mock_task.body = ""
+        mock_task.priority = "P1"
+        mock_task.complexity = 30
+        mock_task.tags = []
+        mock_task.plan = None
+        del mock_task.due_date  # Remove attribute
+
+        task_data = TaskData.from_task(mock_task)
+        assert task_data.due_date is None
+
+
+class TestTrelloServiceDueDate:
+    """Tests for TrelloService due date methods."""
+
+    def test_set_due_date(self):
+        """Test setting due date on a card."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+            due = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+
+            result = service.set_due_date(mock_card, due)
+
+            assert result is True
+            mock_card.set_due.assert_called_once()
+
+    def test_set_due_date_none(self):
+        """Test clearing due date on a card."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.id = "card123"
+
+            result = service.set_due_date(mock_card, None)
+
+            assert result is True
+            # Should call API to clear due date
+            mock_card.set_due.assert_called_once_with(None)
+
+    def test_get_due_date(self):
+        """Test getting due date from a card."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.due_date = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+
+            result = service.get_due_date(mock_card)
+
+            assert result == mock_card.due_date
+
+    def test_get_due_date_none(self):
+        """Test getting due date from card without due date."""
+        with patch("trello.TrelloClient"):
+            service = TrelloService("key", "token")
+
+            mock_card = Mock()
+            mock_card.due_date = None
+
+            result = service.get_due_date(mock_card)
+
+            assert result is None
+
+
+class TestTrelloSyncManagerDueDate:
+    """Tests for TrelloSyncManager due date sync."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.get_custom_fields.return_value = []
+        service.get_labels.return_value = []
+        return service
+
+    @pytest.fixture
+    def sync_manager(self, mock_service):
+        """Create TrelloSyncManager with mock service."""
+        return TrelloSyncManager(mock_service)
+
+    def test_create_card_sets_explicit_due_date(self, mock_service, sync_manager):
+        """Test _create_card sets explicit due_date."""
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+        mock_service.set_due_date.return_value = True
+
+        due = datetime(2025, 12, 20, 10, 0, 0, tzinfo=timezone.utc)
+        task = TaskData(
+            id="TASK-001",
+            title="Test Task",
+            complexity=30,
+            due_date=due
+        )
+
+        sync_manager._create_card(task, "Backlog")
+
+        mock_service.set_due_date.assert_called_once_with(mock_card, due)
+
+    def test_create_card_calculates_due_date_from_effort(self, mock_service, sync_manager):
+        """Test _create_card calculates due_date from effort if not explicit."""
+        mock_card = Mock()
+        mock_service.create_card_with_custom_fields.return_value = mock_card
+        mock_service.set_effort_field.return_value = True
+        mock_service.set_due_date.return_value = True
+
+        # S effort = complexity 0-25 = +1 day
+        task = TaskData(
+            id="TASK-001",
+            title="Test Task",
+            complexity=20,  # S effort
+            due_date=None  # No explicit due date
+        )
+
+        sync_manager._create_card(task, "Backlog")
+
+        # Should have called set_due_date with a calculated date
+        assert mock_service.set_due_date.called
+        call_args = mock_service.set_due_date.call_args
+        calculated_due = call_args[0][1]
+        # Should be about 1 day from now (S effort)
+        now = datetime.now(timezone.utc)
+        expected_min = now + timedelta(days=1) - timedelta(minutes=1)
+        expected_max = now + timedelta(days=1) + timedelta(minutes=1)
+        assert expected_min <= calculated_due <= expected_max
+
+    def test_update_card_syncs_due_date(self, mock_service, sync_manager):
+        """Test _update_card syncs due_date."""
+        mock_card = Mock()
+        mock_card.description = "Created by: PairCoder"
+        mock_service.set_card_custom_fields.return_value = {}
+        mock_service.set_effort_field.return_value = True
+        mock_service.set_due_date.return_value = True
+
+        due = datetime(2025, 12, 25, 10, 0, 0, tzinfo=timezone.utc)
+        task = TaskData(
+            id="TASK-001",
+            title="Test Task",
+            complexity=30,
+            due_date=due
+        )
+
+        sync_manager._update_card(mock_card, task)
+
+        mock_service.set_due_date.assert_called_once_with(mock_card, due)
+
+
+class TestTrelloToLocalSyncDueDate:
+    """Tests for TrelloToLocalSync due date sync."""
+
+    @pytest.fixture
+    def mock_service(self):
+        """Create mock TrelloService."""
+        service = Mock(spec=TrelloService)
+        service.board = Mock()
+        return service
+
+    @pytest.fixture
+    def temp_tasks_dir(self):
+        """Create temporary tasks directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    @pytest.fixture
+    def sync_manager(self, mock_service, temp_tasks_dir):
+        """Create TrelloToLocalSync with mocks."""
+        return TrelloToLocalSync(mock_service, temp_tasks_dir)
+
+    def test_sync_card_due_date_to_task(self, sync_manager, mock_service):
+        """Test syncing due date from card to task."""
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_card.due_date = datetime(2025, 12, 25, 10, 0, 0, tzinfo=timezone.utc)
+        mock_list = Mock()
+        mock_list.name = "In Progress"
+        mock_card.get_list.return_value = mock_list
+
+        mock_service.get_checklist_by_name.return_value = None
+        mock_service.get_due_date.return_value = mock_card.due_date
+
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "in_progress"
+        mock_task.body = ""
+        mock_task.due_date = None  # No due date locally
+
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert "due_date" in result.changes
+        assert result.changes["due_date"]["to"] == mock_card.due_date
+
+    def test_sync_card_due_date_no_change(self, sync_manager, mock_service):
+        """Test no change when due dates match."""
+        due = datetime(2025, 12, 25, 10, 0, 0, tzinfo=timezone.utc)
+
+        mock_card = Mock()
+        mock_card.name = "[TASK-001] Test task"
+        mock_card.due_date = due
+        mock_list = Mock()
+        mock_list.name = "In Progress"
+        mock_card.get_list.return_value = mock_list
+
+        mock_service.get_checklist_by_name.return_value = None
+        mock_service.get_due_date.return_value = due
+
+        mock_task = Mock()
+        mock_task.status = Mock()
+        mock_task.status.value = "in_progress"
+        mock_task.body = ""
+        mock_task.due_date = due  # Same due date
+
+        sync_manager._task_parser = Mock()
+        sync_manager._task_parser.get_task_by_id.return_value = mock_task
+
+        result = sync_manager.sync_card_to_task(mock_card)
+
+        assert "due_date" not in result.changes

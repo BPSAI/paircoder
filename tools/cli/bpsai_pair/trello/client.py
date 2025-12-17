@@ -809,3 +809,33 @@ class TrelloService:
                 self.add_checklist_item(card, checklist['id'], item_name, checked)
 
             return checklist
+
+    # ========== Due Date Methods ==========
+
+    def get_due_date(self, card: Any) -> Optional[Any]:
+        """Get the due date from a card.
+
+        Args:
+            card: Trello card object
+
+        Returns:
+            Due date as datetime or None if not set
+        """
+        return getattr(card, 'due_date', None)
+
+    def set_due_date(self, card: Any, due_date: Optional[Any]) -> bool:
+        """Set the due date on a card.
+
+        Args:
+            card: Trello card object
+            due_date: Due date as datetime, or None to clear
+
+        Returns:
+            True if successful
+        """
+        try:
+            card.set_due(due_date)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set due date: {e}")
+            return False
