@@ -6,6 +6,7 @@ This module provides security controls for autonomous execution:
 - Secret detection
 - Dependency vulnerability scanning
 - Docker sandbox isolation
+- Git checkpoint/rollback
 """
 
 from .allowlist import (
@@ -25,6 +26,15 @@ from .sandbox import (
     FileChange,
     MountConfig,
 )
+from .checkpoint import (
+    GitCheckpoint,
+    CheckpointError,
+    NotAGitRepoError,
+    CheckpointNotFoundError,
+    NoCheckpointsError,
+    format_checkpoint_list,
+    format_rollback_preview,
+)
 
 __all__ = [
     "AllowlistManager",
@@ -38,4 +48,11 @@ __all__ = [
     "SandboxResult",
     "FileChange",
     "MountConfig",
+    "GitCheckpoint",
+    "CheckpointError",
+    "NotAGitRepoError",
+    "CheckpointNotFoundError",
+    "NoCheckpointsError",
+    "format_checkpoint_list",
+    "format_rollback_preview",
 ]
