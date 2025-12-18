@@ -717,7 +717,7 @@ def plan_add_task(
     )
 
     # Save task
-    task_path = task_parser.save(task, plan.slug)
+    task_path = task_parser.save(task)
 
     console.print(f"[green]Created task:[/green] {task_id}")
     console.print(f"  Path: {task_path}")
@@ -1533,9 +1533,20 @@ def standup_post(
     board_id = config.get("trello", {}).get("board_id")
 
     if not board_id:
-        console.print("[red]No Trello board configured[/red]")
-        console.print("[dim]Run: bpsai-pair trello use-board <id>[/dim]")
-        raise typer.Exit(1)
+        import yaml
+        config_file = paircoder_dir / "config.yaml"
+        if config_file.exists():
+            with open(config_file) as f:
+                full_config = yaml.safe_load(f) or {}
+                board_id = full_config.get("trello", {}).get("board_id")
+
+        if not board_id:
+            console.print("[red]Board ID required. Use --board <board-id> or configure default board.[/red]")
+            console.print("[dim]List boards: bpsai-pair trello boards[/dim]")
+            console.print("[dim]Set default: bpsai-pair trello use-board <board-id>[/dim]")
+            raise typer.Exit(1)
+        else:
+            console.print(f"[dim]Using board from config: {board_id}[/dim]")
 
     generator = StandupGenerator(paircoder_dir)
     summary = generator.generate(since_hours=since, plan_id=plan_id)
