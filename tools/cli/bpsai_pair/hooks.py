@@ -69,6 +69,7 @@ class HookRunner:
             "check_unblocked": self._check_unblocked,
             "log_trello_activity": self._log_trello_activity,
             "record_task_completion": self._record_task_completion,
+            "record_velocity": self._record_velocity,
         }
 
     @property
@@ -498,6 +499,46 @@ class HookRunner:
         except Exception as e:
             logger.warning(f"Task completion recording failed: {e}")
             return {"comparison_recorded": False, "error": str(e)}
+
+    def _record_velocity(self, ctx: HookContext) -> dict:
+        """Record task completion for velocity tracking.
+
+        Records complexity points to velocity-completions.jsonl for velocity metrics.
+        """
+        try:
+            from .metrics import VelocityTracker
+
+            # Get task details
+            if not ctx.task:
+                return {
+                    "velocity_recorded": False,
+                    "reason": "No task object in context",
+                }
+
+            complexity = ctx.task.complexity
+            sprint = ctx.task.sprint or ""
+
+            # Record the completion
+            history_dir = self.paircoder_dir / "history"
+            history_dir.mkdir(exist_ok=True)
+
+            tracker = VelocityTracker(history_dir)
+            record = tracker.record_completion(
+                task_id=ctx.task_id,
+                complexity=complexity,
+                sprint=sprint,
+            )
+
+            return {
+                "velocity_recorded": True,
+                "task_id": record.task_id,
+                "complexity": record.complexity,
+                "sprint": record.sprint,
+            }
+
+        except Exception as e:
+            logger.warning(f"Velocity recording failed: {e}")
+            return {"velocity_recorded": False, "error": str(e)}
 
 
 def load_config(paircoder_dir: Path) -> dict:

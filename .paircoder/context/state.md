@@ -18,13 +18,13 @@ Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 - TASK-102: Complexity to hours mapping ✓
 - TASK-103: Auto-timer that actually works ✓
 - TASK-104: Actual vs estimated tracking ✓
-- TASK-105: Velocity calculation (pending)
+- TASK-105: Velocity calculation ✓
 - TASK-106: Sprint burndown chart data (pending)
 - TASK-107: Estimation accuracy report (pending)
 - TASK-133: Token estimation model (pending)
 - TASK-138: Token estimation feedback loop (pending)
 
-**Progress:** 3/8 tasks complete (85/230 points)
+**Progress:** 4/8 tasks complete (110/230 points)
 
 ## Task Status
 
@@ -78,6 +78,47 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-18 (evening) - TASK-105: Velocity Calculation
+
+**TASK-105: Velocity Calculation** - DONE
+
+Implemented velocity tracking for project planning:
+
+**New file:** `tools/cli/bpsai_pair/metrics/velocity.py`
+- `TaskCompletionRecord` dataclass - records task completion with complexity/sprint
+- `VelocityStats` dataclass - comprehensive velocity statistics
+- `VelocityTracker` class - tracks and calculates velocity metrics
+
+**Features:**
+- `record_completion()` - record task completion with complexity points
+- `get_points_this_week()` - points completed in current week (Monday-based)
+- `get_points_for_sprint()` - points completed in a specific sprint
+- `get_weekly_velocity_average()` - rolling N-week average
+- `get_sprint_velocity_average()` - average velocity per sprint
+- `get_velocity_stats()` - comprehensive stats object
+- `get_weekly_breakdown()` - week-by-week breakdown
+- `get_sprint_breakdown()` - sprint-by-sprint breakdown
+
+**CLI command:**
+- `bpsai-pair metrics velocity` - show velocity metrics
+- Options: `--weeks` (default 4), `--sprints` (default 3), `--json`
+
+**Hook integration:**
+- Added `record_velocity` hook to record completions automatically
+- Configured in presets and config templates
+
+**Updated files:**
+- `metrics/__init__.py` - exports VelocityTracker, VelocityStats, TaskCompletionRecord
+- `cli.py` - added `metrics velocity` command
+- `hooks.py` - added `record_velocity` hook handler
+- `presets.py` - added record_velocity to on_task_complete hooks
+- `.paircoder/config.yaml` - added record_velocity hook
+- Cookiecutter template config updated
+
+**Tests:** 20 tests in `test_velocity.py`
+
+---
 
 ### Session: 2025-12-18 (afternoon) - Trello Workflow Fixes
 
@@ -504,7 +545,6 @@ Also created:
 ## What's Next
 
 **Sprint 17 Remaining Tasks:**
-- TASK-105: Velocity calculation
 - TASK-106: Sprint burndown chart data
 - TASK-107: Estimation accuracy report
 - TASK-133: Token estimation model
@@ -514,7 +554,7 @@ Also created:
 - [x] Complexity → hours mapping working
 - [x] Auto-timer starts/stops with task status
 - [x] Actual vs estimated tracking recorded
-- [ ] Velocity calculation available
+- [x] Velocity calculation available
 - [ ] Burndown chart data generated
 - [ ] Estimation accuracy report available
 - [ ] Token estimation model implemented

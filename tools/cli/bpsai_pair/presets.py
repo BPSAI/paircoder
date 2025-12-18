@@ -350,7 +350,7 @@ PRESETS: Dict[str, Preset] = {
         hooks_config={
             "enabled": True,
             "on_task_start": ["start_timer", "sync_trello", "update_state"],
-            "on_task_complete": ["stop_timer", "record_metrics", "sync_trello", "check_unblocked"],
+            "on_task_complete": ["stop_timer", "record_metrics", "record_velocity", "sync_trello", "check_unblocked"],
             "on_task_block": ["sync_trello"],
         },
     ),

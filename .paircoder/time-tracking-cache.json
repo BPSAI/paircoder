@@ -35,5 +35,11 @@
       }
     ],
     "total_seconds": 519.908956
+  },
+  "_active": {
+    "task_id": "TASK-105",
+    "timer_id": "local-20251218115735",
+    "description": "TASK-105: Velocity calculation",
+    "start": "2025-12-18T11:57:35.947617"
   }
 }

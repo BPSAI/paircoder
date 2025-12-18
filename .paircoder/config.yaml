@@ -115,6 +115,7 @@ hooks:
   - stop_timer
   - record_task_completion
   - record_metrics
+  - record_velocity
   - sync_trello
   - update_state
   - check_unblocked

@@ -31,7 +31,7 @@ try:
     from .planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
     from .orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
-    from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
+    from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig, VelocityTracker
     from .integrations import TimeTrackingManager, TimeTrackingConfig
     from .benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
     from .context import ContextCache, ContextLoader
@@ -52,7 +52,7 @@ except ImportError:
     from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
     from bpsai_pair.orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
-    from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
+    from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig, VelocityTracker
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
     from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
     from bpsai_pair.context import ContextCache, ContextLoader
@@ -725,6 +725,83 @@ def metrics_export(
     else:
         console.print(f"[red]Unsupported format: {format_type}[/red]")
         raise typer.Exit(1)
+
+
+def _get_velocity_tracker() -> VelocityTracker:
+    """Get a velocity tracker instance."""
+    root = repo_root()
+    history_dir = root / ".paircoder" / "history"
+    return VelocityTracker(history_dir)
+
+
+@metrics_app.command("velocity")
+def metrics_velocity(
+    weeks: int = typer.Option(4, "--weeks", "-w", help="Number of weeks for rolling average"),
+    sprints: int = typer.Option(3, "--sprints", "-s", help="Number of sprints for average"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show velocity metrics for project planning."""
+    root = repo_root()
+    tracker = _get_velocity_tracker()
+
+    # Get current sprint from state.md if available
+    from .planning.state import StateManager
+    state_manager = StateManager(root / ".paircoder")
+    current_sprint = state_manager.state.active_sprint_id or ""
+
+    stats = tracker.get_velocity_stats(
+        current_sprint=current_sprint,
+        weeks_for_average=weeks,
+        sprints_for_average=sprints,
+    )
+
+    if json_out:
+        print_json(stats.to_dict())
+    else:
+        console.print("[bold]Velocity Metrics[/bold]")
+        console.print("")
+
+        console.print(f"Points completed this week:     {stats.points_this_week}")
+        if current_sprint:
+            console.print(f"Points completed this sprint:   {stats.points_this_sprint} ({current_sprint})")
+        else:
+            console.print(f"Points completed this sprint:   {stats.points_this_sprint}")
+        console.print("")
+
+        console.print(f"Average weekly velocity ({weeks} weeks): {stats.avg_weekly_velocity:.1f}")
+        console.print(f"Average sprint velocity ({sprints} sprints): {stats.avg_sprint_velocity:.1f}")
+        console.print("")
+
+        # Show weekly breakdown
+        breakdown = tracker.get_weekly_breakdown(weeks=weeks)
+        if breakdown and any(b["points"] > 0 for b in breakdown):
+            console.print("[bold]Weekly Breakdown:[/bold]")
+            table = Table()
+            table.add_column("Week Start", style="cyan")
+            table.add_column("Points", justify="right")
+
+            for entry in breakdown:
+                table.add_row(entry["week_start"], str(entry["points"]))
+
+            console.print(table)
+            console.print("")
+
+        # Show sprint breakdown
+        sprint_breakdown = tracker.get_sprint_breakdown()
+        if sprint_breakdown:
+            console.print("[bold]Sprint Breakdown:[/bold]")
+            table = Table()
+            table.add_column("Sprint", style="cyan")
+            table.add_column("Points", justify="right")
+
+            for sprint_id in sorted(sprint_breakdown.keys(), reverse=True):
+                table.add_row(sprint_id, str(sprint_breakdown[sprint_id]))
+
+            console.print(table)
+
+        if stats.weeks_tracked == 0 and stats.sprints_tracked == 0:
+            console.print("[dim]No velocity data recorded yet.[/dim]")
+            console.print("[dim]Velocity is tracked when tasks are completed.[/dim]")
 
 
 # --- Timer Commands ---

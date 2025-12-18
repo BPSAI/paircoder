@@ -9,6 +9,7 @@ from .estimation import (
     HoursEstimate,
     estimate_hours,
 )
+from .velocity import VelocityTracker, VelocityStats, TaskCompletionRecord
 
 __all__ = [
     "MetricsCollector",
@@ -23,4 +24,7 @@ __all__ = [
     "EstimationConfig",
     "HoursEstimate",
     "estimate_hours",
+    "VelocityTracker",
+    "VelocityStats",
+    "TaskCompletionRecord",
 ]
