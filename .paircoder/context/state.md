@@ -4,23 +4,27 @@
 
 ## Active Plan
 
-**Plan:** None (between sprints)
-**Status:** Planning Sprint 17
-**Current Sprint:** N/A
+**Plan:** `plan-2025-12-sprint-17-time-tokens-metrics`
+**Status:** In Progress
+**Current Sprint:** sprint-17
 
 **Previous:** `plan-2025-12-sprint-16-real-subagents` (complete)
 
 ## Current Focus
 
-Sprint 16 complete! Version 2.5.4 released.
+Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 
-**Completed in Sprint 16:**
-- Agent invocation framework (base class for invoking sub-agents) ✓
-- Planner agent implementation ✓
-- Reviewer agent implementation ✓
-- Security agent implementation ✓
-- Agent handoff protocol ✓
-- Agent selection logic ✓
+**Sprint 17 Tasks:**
+- TASK-102: Complexity to hours mapping ✓
+- TASK-103: Auto-timer that actually works (pending)
+- TASK-104: Actual vs estimated tracking (pending)
+- TASK-105: Velocity calculation (pending)
+- TASK-106: Sprint burndown chart data (pending)
+- TASK-107: Estimation accuracy report (pending)
+- TASK-133: Token estimation model (pending)
+- TASK-138: Token estimation feedback loop (pending)
+
+**Progress:** 1/8 tasks complete (20/230 points)
 
 ## Task Status
 
@@ -74,6 +78,38 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-18 - Sprint 17 Setup & TASK-102
+
+**Sprint 17 Plan Created and Synced to Trello:**
+- Created `sprint-17-time-tokens-metrics.plan.yaml`
+- Created 8 task files (TASK-102, 103, 104, 105, 106, 107, 133, 138)
+- Synced all 8 cards to PairCoder Trello board
+
+**TASK-102: Complexity to Hours Mapping** - DONE
+
+Implemented complexity-to-hours estimation for better project planning:
+
+**New file:** `tools/cli/bpsai_pair/metrics/estimation.py`
+- `HoursEstimate` dataclass - min, expected, max hours with size band
+- `EstimationConfig` - configurable complexity-to-hours mapping
+- `EstimationService` - main service for estimating hours from complexity
+- `estimate_hours()` convenience function
+
+**Features:**
+- Default mapping: XS (0-15), S (16-30), M (31-50), L (51-75), XL (76-100)
+- Each band has (min, expected, max) hours: XS(0.5,1,2), S(1,2,4), M(2,4,8), L(4,8,16), XL(8,16,32)
+- Configurable via `.paircoder/config.yaml` `estimation` section
+- Added `estimated_hours` and `estimated_hours_str` properties to Task model
+
+**Updated files:**
+- `metrics/__init__.py` - exports new classes
+- `.paircoder/config.yaml` - added `estimation.complexity_to_hours` config
+- `planning/models.py` - added `estimated_hours` property to Task
+
+**Tests:** 28 tests in `test_estimation.py`
+
+---
 
 ### Session: 2025-12-17 - TASK-098: Reviewer Agent Implementation
 

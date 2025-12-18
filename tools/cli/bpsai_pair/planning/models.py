@@ -7,8 +7,12 @@ Data classes for plans, tasks, and sprints.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..metrics.estimation import HoursEstimate
 
 
 class TaskStatus(str, Enum):
@@ -71,6 +75,27 @@ class Task:
             TaskStatus.BLOCKED: "🚫",
             TaskStatus.CANCELLED: "❌",
         }.get(self.status, "❓")
+
+    @property
+    def estimated_hours(self) -> "HoursEstimate":
+        """Get estimated hours based on complexity.
+
+        Returns:
+            HoursEstimate with min, expected, and max hours
+        """
+        from ..metrics.estimation import EstimationService
+        service = EstimationService()
+        return service.estimate_hours(self.complexity)
+
+    @property
+    def estimated_hours_str(self) -> str:
+        """Get formatted estimated hours string.
+
+        Returns:
+            String like "2.0h (S)"
+        """
+        estimate = self.estimated_hours
+        return f"{estimate.expected_hours:.1f}h ({estimate.size_band.upper()})"
     
     def to_dict(self) -> dict:
         """Convert to dictionary for YAML serialization."""
