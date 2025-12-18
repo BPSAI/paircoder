@@ -36,6 +36,55 @@ def get_trello_service():
     )
 
 
+def _check_all_acceptance_criteria_mcp(card, service, checklist_name: str = "Acceptance Criteria") -> int:
+    """Check off all items in the Acceptance Criteria checklist.
+
+    Args:
+        card: Trello card object
+        service: TrelloService instance
+        checklist_name: Name of the checklist to check off
+
+    Returns:
+        Number of items that were checked off
+    """
+    try:
+        card.fetch()  # Refresh to get checklists
+    except Exception:
+        pass
+
+    if not hasattr(card, 'checklists') or not card.checklists:
+        return 0
+
+    checked_count = 0
+
+    for checklist in card.checklists:
+        if checklist.name.lower() != checklist_name.lower():
+            continue
+
+        for item in checklist.items:
+            # Skip already checked items
+            if item.get("checked"):
+                continue
+
+            item_name = item.get("name", "")
+
+            # Use TrelloService's update_checklist_item method
+            try:
+                checklist_id = checklist.id
+                item_id = item.get("id")
+                if service.update_checklist_item(card, checklist_id, item_id, checked=True):
+                    checked_count += 1
+            except Exception:
+                # Try py-trello's method as fallback
+                try:
+                    checklist.set_checklist_item(item_name, checked=True)
+                    checked_count += 1
+                except Exception:
+                    pass  # Best effort - continue with other items
+
+    return checked_count
+
+
 def register_trello_tools(server: Any) -> None:
     """Register Trello tools with the MCP server."""
 
@@ -240,10 +289,15 @@ def register_trello_tools(server: Any) -> None:
                 service.add_comment(card, "🤖 Started by agent")
 
             elif action == "complete":
+                # Check off all acceptance criteria items first
+                checked_count = _check_all_acceptance_criteria_mcp(card, service)
+
                 service.move_card(card, "Done")
                 completion_msg = f"✅ Completed"
                 if comment:
                     completion_msg += f": {comment}"
+                if checked_count > 0:
+                    completion_msg += f" ({checked_count} acceptance criteria checked)"
                 service.add_comment(card, completion_msg)
 
             elif action == "block":

@@ -79,6 +79,64 @@ def log_activity(card, action: str, summary: str) -> None:
         console.print(f"[yellow]Warning: Could not add comment: {e}[/yellow]")
 
 
+def _check_all_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
+    """Check off all items in the Acceptance Criteria checklist.
+
+    Args:
+        card: Trello card object
+        client: TrelloService instance
+        checklist_name: Name of the checklist to check off (default: "Acceptance Criteria")
+
+    Returns:
+        Number of items that were checked off
+    """
+    import requests
+    from .auth import load_token
+
+    if not card.checklists:
+        return 0
+
+    checked_count = 0
+
+    for checklist in card.checklists:
+        if checklist.name.lower() != checklist_name.lower():
+            continue
+
+        for item in checklist.items:
+            # Skip already checked items
+            if item.get("checked"):
+                continue
+
+            item_name = item.get("name", "")
+
+            # Try py-trello's method first
+            try:
+                checklist.set_checklist_item(item_name, checked=True)
+                checked_count += 1
+            except AttributeError:
+                # Fallback: use direct API call
+                try:
+                    creds = load_token()
+                    check_item_id = item.get("id")
+                    url = f"https://api.trello.com/1/cards/{card.id}/checkItem/{check_item_id}"
+
+                    response = requests.put(
+                        url,
+                        params={
+                            "key": creds["api_key"],
+                            "token": creds["token"],
+                            "state": "complete"
+                        }
+                    )
+
+                    if response.status_code == 200:
+                        checked_count += 1
+                except Exception:
+                    pass  # Best effort - continue with other items
+
+    return checked_count
+
+
 @app.command("list")
 def task_list(
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Filter by list name"),
@@ -265,14 +323,31 @@ def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: In Review)"),
+    skip_checklist: bool = typer.Option(False, "--skip-checklist", help="Don't auto-check acceptance criteria"),
 ):
-    """Complete a task (moves to In Review or Done)."""
+    """Complete a task (moves to In Review or Done).
+
+    By default, all items in the 'Acceptance Criteria' checklist are marked as complete.
+    Use --skip-checklist to disable this behavior.
+    """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
 
     if not card:
         console.print(f"[red]Card not found: {card_id}[/red]")
         raise typer.Exit(1)
+
+    # Refresh card to get checklists
+    try:
+        card.fetch()
+    except Exception:
+        pass
+
+    # Check off all acceptance criteria items
+    if not skip_checklist:
+        checked_count = _check_all_acceptance_criteria(card, client)
+        if checked_count > 0:
+            console.print(f"[green]✓ Checked {checked_count} acceptance criteria item(s)[/green]")
 
     # Determine target list
     if list_name is None:
