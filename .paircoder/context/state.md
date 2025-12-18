@@ -19,12 +19,12 @@ Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 - TASK-103: Auto-timer that actually works ✓
 - TASK-104: Actual vs estimated tracking ✓
 - TASK-105: Velocity calculation ✓
-- TASK-106: Sprint burndown chart data (pending)
+- TASK-106: Sprint burndown chart data ✓
 - TASK-107: Estimation accuracy report (pending)
 - TASK-133: Token estimation model (pending)
 - TASK-138: Token estimation feedback loop (pending)
 
-**Progress:** 4/8 tasks complete (110/230 points)
+**Progress:** 5/8 tasks complete (140/230 points)
 
 ## Task Status
 
@@ -78,6 +78,38 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-18 (evening) - TASK-106: Sprint Burndown Chart Data
+
+**TASK-106: Sprint Burndown Chart Data** - DONE
+
+Implemented burndown chart data generation for sprint planning visualization:
+
+**New file:** `tools/cli/bpsai_pair/metrics/burndown.py`
+- `SprintConfig` dataclass - sprint configuration (id, dates, total points)
+- `BurndownDataPoint` dataclass - single day's data (date, remaining, ideal, completed)
+- `BurndownData` dataclass - complete burndown with config and data points
+- `BurndownGenerator` class - generates burndown data from velocity completions
+
+**Features:**
+- `generate()` - generate burndown data for a sprint config
+- `_calculate_ideal_remaining()` - linear ideal burndown calculation
+- `_get_completions_for_date()` - get completions for a specific date
+- `create_config_from_tasks()` - create config from task list
+- `to_json()` - JSON output for visualization tools
+
+**CLI command:**
+- `bpsai-pair metrics burndown --sprint <id>` - generate burndown data
+- Options: `--start`, `--end` (date range), `--json` (JSON output)
+- Shows daily remaining vs ideal progress with status indicators
+
+**Updated files:**
+- `metrics/__init__.py` - exports BurndownGenerator, BurndownData, BurndownDataPoint, SprintConfig
+- `cli.py` - added `metrics burndown` command
+
+**Tests:** 20 tests in `test_burndown.py`
+
+---
 
 ### Session: 2025-12-18 (evening) - TASK-105: Velocity Calculation
 
@@ -545,7 +577,6 @@ Also created:
 ## What's Next
 
 **Sprint 17 Remaining Tasks:**
-- TASK-106: Sprint burndown chart data
 - TASK-107: Estimation accuracy report
 - TASK-133: Token estimation model
 - TASK-138: Token estimation feedback loop
@@ -555,7 +586,7 @@ Also created:
 - [x] Auto-timer starts/stops with task status
 - [x] Actual vs estimated tracking recorded
 - [x] Velocity calculation available
-- [ ] Burndown chart data generated
+- [x] Burndown chart data generated
 - [ ] Estimation accuracy report available
 - [ ] Token estimation model implemented
 - [ ] Token feedback loop working

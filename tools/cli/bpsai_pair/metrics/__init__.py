@@ -10,6 +10,7 @@ from .estimation import (
     estimate_hours,
 )
 from .velocity import VelocityTracker, VelocityStats, TaskCompletionRecord
+from .burndown import BurndownGenerator, BurndownData, BurndownDataPoint, SprintConfig
 
 __all__ = [
     "MetricsCollector",
@@ -27,4 +28,8 @@ __all__ = [
     "VelocityTracker",
     "VelocityStats",
     "TaskCompletionRecord",
+    "BurndownGenerator",
+    "BurndownData",
+    "BurndownDataPoint",
+    "SprintConfig",
 ]

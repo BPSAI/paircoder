@@ -804,6 +804,128 @@ def metrics_velocity(
             console.print("[dim]Velocity is tracked when tasks are completed.[/dim]")
 
 
+def _get_burndown_generator():
+    """Get a burndown generator instance."""
+    from .metrics import BurndownGenerator
+    root = repo_root()
+    history_dir = root / ".paircoder" / "history"
+    return BurndownGenerator(history_dir)
+
+
+@metrics_app.command("burndown")
+def metrics_burndown(
+    sprint: str = typer.Option(None, "--sprint", "-s", help="Sprint ID (default: current sprint)"),
+    start_date: str = typer.Option(None, "--start", help="Sprint start date (YYYY-MM-DD)"),
+    end_date: str = typer.Option(None, "--end", help="Sprint end date (YYYY-MM-DD)"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Generate burndown chart data for a sprint."""
+    from .metrics import BurndownGenerator, SprintConfig
+    from .planning.state import StateManager
+    from .planning.parser import TaskParser
+
+    root = repo_root()
+    generator = _get_burndown_generator()
+
+    # Get sprint ID
+    if not sprint:
+        state_manager = StateManager(root / ".paircoder")
+        sprint = state_manager.state.active_sprint_id or ""
+        if not sprint:
+            console.print("[yellow]No sprint specified and no active sprint found.[/yellow]")
+            console.print("Use --sprint to specify a sprint ID.")
+            raise typer.Exit(1)
+
+    # Parse dates or use defaults
+    from datetime import datetime, timedelta
+
+    if start_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        except ValueError:
+            console.print(f"[red]Invalid date format: {start_date}. Use YYYY-MM-DD.[/red]")
+            raise typer.Exit(1)
+    else:
+        # Default to 2 weeks ago
+        start_dt = datetime.now() - timedelta(days=14)
+
+    if end_date:
+        try:
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        except ValueError:
+            console.print(f"[red]Invalid date format: {end_date}. Use YYYY-MM-DD.[/red]")
+            raise typer.Exit(1)
+    else:
+        # Default to today
+        end_dt = datetime.now()
+
+    # Get total points from tasks
+    task_parser = TaskParser(root / ".paircoder" / "tasks")
+    tasks = task_parser.parse_all()
+    sprint_tasks = [t for t in tasks if t.sprint == sprint]
+    total_points = sum(t.complexity for t in sprint_tasks)
+
+    if total_points == 0:
+        console.print(f"[yellow]No tasks found for sprint '{sprint}'.[/yellow]")
+        raise typer.Exit(1)
+
+    # Create config and generate burndown
+    config = SprintConfig(
+        sprint_id=sprint,
+        start_date=start_dt,
+        end_date=end_dt,
+        total_points=total_points,
+    )
+
+    data = generator.generate(config)
+
+    if json_out:
+        print_json(data.to_dict())
+    else:
+        console.print(f"[bold]Burndown Chart: {sprint}[/bold]")
+        console.print("")
+        console.print(f"Period: {config.start_date.strftime('%Y-%m-%d')} to {config.end_date.strftime('%Y-%m-%d')}")
+        console.print(f"Total Points: {config.total_points}")
+        console.print("")
+
+        if data.data_points:
+            table = Table()
+            table.add_column("Date", style="cyan")
+            table.add_column("Remaining", justify="right")
+            table.add_column("Ideal", justify="right")
+            table.add_column("Completed", justify="right")
+            table.add_column("Status")
+
+            for point in data.data_points:
+                # Determine status indicator
+                diff = point.remaining - point.ideal
+                if diff < -5:
+                    status = "[green]▲ Ahead[/green]"
+                elif diff > 5:
+                    status = "[red]▼ Behind[/red]"
+                else:
+                    status = "[yellow]● On Track[/yellow]"
+
+                table.add_row(
+                    point.date.strftime("%Y-%m-%d"),
+                    str(point.remaining),
+                    f"{point.ideal:.0f}",
+                    str(point.completed),
+                    status,
+                )
+
+            console.print(table)
+
+            # Show summary
+            last_point = data.data_points[-1]
+            console.print("")
+            console.print(f"Current Progress: {last_point.completed}/{config.total_points} points")
+            pct = (last_point.completed / config.total_points * 100) if config.total_points > 0 else 0
+            console.print(f"Completion: {pct:.0f}%")
+        else:
+            console.print("[dim]No data points generated. Check sprint dates.[/dim]")
+
+
 # --- Timer Commands ---
 
 def _get_time_manager() -> TimeTrackingManager:
