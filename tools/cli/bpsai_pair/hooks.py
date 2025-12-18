@@ -68,6 +68,7 @@ class HookRunner:
             "update_state": self._update_state,
             "check_unblocked": self._check_unblocked,
             "log_trello_activity": self._log_trello_activity,
+            "record_task_completion": self._record_task_completion,
         }
 
     @property
@@ -438,6 +439,65 @@ class HookRunner:
         except Exception as e:
             logger.warning(f"Activity logging failed: {e}")
             return {"activity_logged": False, "error": str(e)}
+
+    def _record_task_completion(self, ctx: HookContext) -> dict:
+        """Record task completion with estimated vs actual hours comparison.
+
+        Records to history/task-completions.jsonl for historical tracking.
+        """
+        try:
+            from .metrics import MetricsCollector
+            from .integrations.time_tracking import LocalTimeCache
+
+            # Get actual hours from time tracking cache
+            cache_path = self.paircoder_dir / "time-tracking-cache.json"
+            if not cache_path.exists():
+                return {
+                    "comparison_recorded": False,
+                    "reason": "No time tracking cache found",
+                }
+
+            cache = LocalTimeCache(cache_path)
+            total_time = cache.get_total(ctx.task_id)
+            actual_hours = total_time.total_seconds() / 3600
+
+            if actual_hours == 0:
+                return {
+                    "comparison_recorded": False,
+                    "reason": "No time tracked for task",
+                }
+
+            # Get estimated hours from task
+            if not ctx.task:
+                return {
+                    "comparison_recorded": False,
+                    "reason": "No task object in context",
+                }
+
+            estimated_hours = ctx.task.estimated_hours.expected_hours
+
+            # Record the completion
+            history_dir = self.paircoder_dir / "history"
+            history_dir.mkdir(exist_ok=True)
+
+            collector = MetricsCollector(history_dir)
+            data = collector.record_task_completion(
+                task_id=ctx.task_id,
+                estimated_hours=estimated_hours,
+                actual_hours=actual_hours,
+            )
+
+            return {
+                "comparison_recorded": True,
+                "estimated_hours": data["estimated_hours"],
+                "actual_hours": data["actual_hours"],
+                "variance_hours": data["variance_hours"],
+                "variance_percent": data["variance_percent"],
+            }
+
+        except Exception as e:
+            logger.warning(f"Task completion recording failed: {e}")
+            return {"comparison_recorded": False, "error": str(e)}
 
 
 def load_config(paircoder_dir: Path) -> dict:

@@ -96,7 +96,50 @@ class Task:
         """
         estimate = self.estimated_hours
         return f"{estimate.expected_hours:.1f}h ({estimate.size_band.upper()})"
-    
+
+    @property
+    def actual_hours(self) -> Optional[float]:
+        """Get actual hours from time tracking entries.
+
+        Note: This property returns None as it requires a paircoder_dir.
+        Use get_actual_hours(paircoder_dir) for actual values.
+
+        Returns:
+            None (use get_actual_hours instead)
+        """
+        return None
+
+    def get_actual_hours(self, paircoder_dir: Path) -> Optional[float]:
+        """Get actual hours spent from time tracking cache.
+
+        Args:
+            paircoder_dir: Path to .paircoder directory (or parent containing cache)
+
+        Returns:
+            Total hours spent on task, or None if no time tracking data
+        """
+        try:
+            from ..integrations.time_tracking import LocalTimeCache
+
+            # Look for time tracking cache
+            cache_path = paircoder_dir / "time-tracking-cache.json"
+            if not cache_path.exists():
+                # Try direct path (for testing)
+                cache_path = paircoder_dir / "time-cache.json"
+                if not cache_path.exists():
+                    return None
+
+            cache = LocalTimeCache(cache_path)
+            total = cache.get_total(self.id)
+
+            if total.total_seconds() == 0:
+                return None
+
+            return total.total_seconds() / 3600  # Convert to hours
+
+        except Exception:
+            return None
+
     def to_dict(self) -> dict:
         """Convert to dictionary for YAML serialization."""
         result = {

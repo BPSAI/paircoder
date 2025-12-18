@@ -266,3 +266,127 @@ class MetricsCollector:
             },
             "cost_usd": round(total_cost, 4),
         }
+
+    def _get_task_completions_log_path(self) -> Path:
+        """Get the task completions log file path."""
+        return self.history_dir / "task-completions.jsonl"
+
+    def record_task_completion(
+        self,
+        task_id: str,
+        estimated_hours: float,
+        actual_hours: float,
+        variance_hours: Optional[float] = None,
+        variance_percent: Optional[float] = None,
+        completed_at: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Record task completion with estimated vs actual comparison.
+
+        Args:
+            task_id: The task ID
+            estimated_hours: Estimated hours for the task
+            actual_hours: Actual hours spent on the task
+            variance_hours: Variance in hours (actual - estimated)
+            variance_percent: Variance as percentage
+            completed_at: Completion timestamp
+
+        Returns:
+            The recorded comparison data
+        """
+        completed_at = completed_at or datetime.now()
+
+        # Calculate variance if not provided
+        if variance_hours is None:
+            variance_hours = actual_hours - estimated_hours
+
+        if variance_percent is None:
+            if estimated_hours > 0:
+                variance_percent = (variance_hours / estimated_hours) * 100
+            else:
+                variance_percent = 0.0
+
+        data = {
+            "task_id": task_id,
+            "estimated_hours": round(estimated_hours, 2),
+            "actual_hours": round(actual_hours, 2),
+            "variance_hours": round(variance_hours, 2),
+            "variance_percent": round(variance_percent, 1),
+            "completed_at": completed_at.isoformat(),
+        }
+
+        try:
+            log_path = self._get_task_completions_log_path()
+            with open(log_path, "a") as f:
+                f.write(json.dumps(data) + "\n")
+            logger.info(f"Recorded task completion for {task_id}")
+        except Exception as e:
+            logger.warning(f"Failed to record task completion: {e}")
+
+        return data
+
+    def load_task_completions(
+        self, task_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Load task completion records.
+
+        Args:
+            task_id: Optional task ID to filter by
+
+        Returns:
+            List of task completion records
+        """
+        completions = []
+        log_path = self._get_task_completions_log_path()
+
+        if not log_path.exists():
+            return completions
+
+        try:
+            with open(log_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            data = json.loads(line)
+                            if task_id is None or data.get("task_id") == task_id:
+                                completions.append(data)
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            logger.warning(f"Failed to load task completions: {e}")
+
+        return completions
+
+    def get_estimation_accuracy(self) -> Dict[str, Any]:
+        """Get overall estimation accuracy statistics.
+
+        Returns:
+            Dictionary with accuracy metrics
+        """
+        completions = self.load_task_completions()
+
+        if not completions:
+            return {
+                "total_tasks": 0,
+                "avg_variance_percent": 0.0,
+                "under_estimates": 0,
+                "over_estimates": 0,
+                "accurate": 0,
+            }
+
+        total = len(completions)
+        variances = [c.get("variance_percent", 0) for c in completions]
+        avg_variance = sum(variances) / total if total > 0 else 0
+
+        # Count under/over/accurate (within 10%)
+        under = sum(1 for v in variances if v > 10)  # Took longer than estimated
+        over = sum(1 for v in variances if v < -10)  # Finished faster
+        accurate = total - under - over
+
+        return {
+            "total_tasks": total,
+            "avg_variance_percent": round(avg_variance, 1),
+            "under_estimates": under,
+            "over_estimates": over,
+            "accurate": accurate,
+        }

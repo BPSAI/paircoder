@@ -781,6 +781,42 @@ def task_list(
     console.print(table)
 
 
+def _show_time_tracking(task: Task, paircoder_dir: Path) -> None:
+    """Show estimated vs actual hours for a task.
+
+    Args:
+        task: The task to show time tracking for
+        paircoder_dir: Path to .paircoder directory
+    """
+    # Always show estimated hours
+    estimate = task.estimated_hours
+    console.print(f"\n[cyan]Estimated:[/cyan] {estimate.expected_hours:.1f}h ({estimate.size_band.upper()}) [{estimate.min_hours:.1f}h - {estimate.max_hours:.1f}h]")
+
+    # Try to get actual hours from time tracking
+    actual_hours = task.get_actual_hours(paircoder_dir)
+
+    if actual_hours is not None:
+        # Calculate variance
+        variance_hours = actual_hours - estimate.expected_hours
+        if estimate.expected_hours > 0:
+            variance_percent = (variance_hours / estimate.expected_hours) * 100
+        else:
+            variance_percent = 0.0
+
+        console.print(f"[cyan]Actual:[/cyan] {actual_hours:.1f}h")
+
+        # Show variance with color coding
+        sign = "+" if variance_hours > 0 else ""
+        if abs(variance_percent) <= 10:
+            color = "green"  # Accurate estimate
+        elif variance_hours > 0:
+            color = "red"  # Took longer than estimated
+        else:
+            color = "yellow"  # Finished early
+
+        console.print(f"[cyan]Variance:[/cyan] [{color}]{sign}{variance_hours:.1f}h ({sign}{variance_percent:.1f}%)[/{color}]")
+
+
 @task_app.command("show")
 def task_show(
     task_id: str = typer.Argument(..., help="Task ID"),
@@ -817,6 +853,9 @@ def task_show(
 
     if task.tags:
         console.print(f"[cyan]Tags:[/cyan] {', '.join(task.tags)}")
+
+    # Show estimated vs actual hours
+    _show_time_tracking(task, paircoder_dir)
 
     if task.body:
         console.print(f"\n{'-' * 60}")

@@ -113,6 +113,7 @@ hooks:
   - update_state
   on_task_complete:
   - stop_timer
+  - record_task_completion
   - record_metrics
   - sync_trello
   - update_state

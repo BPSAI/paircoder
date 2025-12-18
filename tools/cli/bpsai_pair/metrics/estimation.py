@@ -1,10 +1,14 @@
 """Estimation service for complexity-to-hours and token estimation."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from pathlib import Path
 import yaml
 import logging
+
+if TYPE_CHECKING:
+    from ..planning.models import Task
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,51 @@ class HoursEstimate:
             "complexity": self.complexity,
             "size_band": self.size_band,
         }
+
+
+@dataclass
+class TaskComparison:
+    """Comparison of estimated vs actual hours for a task."""
+
+    task_id: str
+    estimated_hours: float
+    actual_hours: float
+    completed_at: Optional[datetime] = None
+
+    @property
+    def variance_hours(self) -> float:
+        """Calculate variance (actual - estimated). Negative means under estimate."""
+        return self.actual_hours - self.estimated_hours
+
+    @property
+    def variance_percent(self) -> float:
+        """Calculate variance as percentage of estimated hours."""
+        if self.estimated_hours == 0:
+            return 0.0
+        return (self.variance_hours / self.estimated_hours) * 100
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for metrics JSONL storage."""
+        return {
+            "task_id": self.task_id,
+            "estimated_hours": self.estimated_hours,
+            "actual_hours": self.actual_hours,
+            "variance_hours": self.variance_hours,
+            "variance_percent": self.variance_percent,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+        }
+
+    @classmethod
+    def from_task(
+        cls, task: "Task", actual_hours: float, completed_at: Optional[datetime] = None
+    ) -> "TaskComparison":
+        """Create comparison from task object and actual hours."""
+        return cls(
+            task_id=task.id,
+            estimated_hours=task.estimated_hours.expected_hours,
+            actual_hours=actual_hours,
+            completed_at=completed_at or datetime.now(),
+        )
 
 
 @dataclass
@@ -200,6 +249,46 @@ class EstimationService:
         return (
             f"{estimate.expected_hours:.1f}h ({estimate.size_band.upper()}) "
             f"[{estimate.min_hours:.1f}h - {estimate.max_hours:.1f}h]"
+        )
+
+    def create_comparison(
+        self, task: Any, actual_hours: float, completed_at: Optional[datetime] = None
+    ) -> TaskComparison:
+        """Create a comparison between estimated and actual hours.
+
+        Args:
+            task: Task object with 'id' and 'complexity' attributes
+            actual_hours: Actual hours spent on the task
+            completed_at: Optional completion timestamp
+
+        Returns:
+            TaskComparison with variance calculations
+        """
+        task_id = getattr(task, "id", str(task))
+        complexity = getattr(task, "complexity", 30)
+        estimate = self.estimate_hours(complexity)
+
+        return TaskComparison(
+            task_id=task_id,
+            estimated_hours=estimate.expected_hours,
+            actual_hours=actual_hours,
+            completed_at=completed_at or datetime.now(),
+        )
+
+    def format_comparison(self, comparison: TaskComparison) -> str:
+        """Format a comparison for display.
+
+        Args:
+            comparison: TaskComparison to format
+
+        Returns:
+            Formatted string like "Est: 4.0h | Act: 3.5h (-12.5%)"
+        """
+        sign = "+" if comparison.variance_percent > 0 else ""
+        return (
+            f"Est: {comparison.estimated_hours:.1f}h | "
+            f"Act: {comparison.actual_hours:.1f}h "
+            f"({sign}{comparison.variance_percent:.1f}%)"
         )
 
 
