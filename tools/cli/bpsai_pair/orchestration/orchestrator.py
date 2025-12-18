@@ -20,6 +20,7 @@ from .codex import CodexAdapter, Flow, FlowResult, load_flow
 from .handoff import HandoffManager, HandoffPackage
 from .headless import HeadlessSession, HeadlessResponse
 from .planner import PlannerAgent, PlanOutput, should_trigger_planner
+from .reviewer import ReviewerAgent, ReviewOutput, should_trigger_reviewer
 
 logger = logging.getLogger(__name__)
 
@@ -413,15 +414,22 @@ class Orchestrator:
         assignment.status = "running"
 
         try:
-            # Check if this is a design/planning task that should use the planner agent
+            # Check if this is a design/planning or review task
             task = self.analyze_task(assignment.task_id)
+
             use_planner = should_trigger_planner(
+                task_type=task.task_type.value.upper(),
+                task_title=task.description,
+            )
+            use_reviewer = should_trigger_reviewer(
                 task_type=task.task_type.value.upper(),
                 task_title=task.description,
             )
 
             if use_planner and assignment.permission_mode == "plan":
                 result = self._execute_with_planner(assignment)
+            elif use_reviewer and assignment.permission_mode == "plan":
+                result = self._execute_with_reviewer(assignment)
             elif assignment.agent == "claude-code":
                 result = self._execute_with_claude(assignment)
             elif assignment.agent == "codex-cli":
@@ -526,6 +534,69 @@ class Orchestrator:
             "phases": len(plan.phases),
             "files_to_modify": plan.files_to_modify,
             "complexity": plan.estimated_complexity,
+        }
+
+    def _execute_with_reviewer(self, assignment: Assignment) -> dict[str, Any]:
+        """
+        Execute a code review task with the reviewer agent.
+
+        The reviewer operates in read-only mode and returns structured
+        review feedback including items by severity and verdict.
+
+        Args:
+            assignment: The task assignment
+
+        Returns:
+            Dictionary with review results
+        """
+        import subprocess
+
+        reviewer = ReviewerAgent(
+            agents_dir=self.project_root / ".claude" / "agents",
+            working_dir=self.project_root,
+        )
+
+        # Get git diff for current changes
+        try:
+            diff_result = subprocess.run(
+                ["git", "diff", "HEAD"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            diff = diff_result.stdout if diff_result.returncode == 0 else ""
+
+            # Get list of changed files
+            files_result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            changed_files = files_result.stdout.strip().split("\n") if files_result.returncode == 0 else []
+            changed_files = [f for f in changed_files if f]  # Filter empty strings
+
+        except Exception as e:
+            logger.warning(f"Could not get git diff: {e}")
+            diff = ""
+            changed_files = []
+
+        output = reviewer.review(
+            diff=diff,
+            changed_files=changed_files,
+            include_file_contents=True,
+        )
+
+        return {
+            "success": True,
+            "result": output.raw_output or output.summary,
+            "review": output.to_dict(),
+            "verdict": output.verdict.value,
+            "blockers": output.blocker_count,
+            "warnings": output.warning_count,
+            "has_blockers": output.has_blockers,
         }
 
     def _find_task_file(self, task_id: str) -> Optional[Path]:

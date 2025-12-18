@@ -206,7 +206,7 @@ class TestOrchestrationTools:
         mock_server.tool = capture_tool
 
         orchestration.register_orchestration_tools(mock_server)
-        assert len(captured_funcs) == 3  # analyze, handoff, and plan
+        assert len(captured_funcs) == 4  # analyze, handoff, plan, and review
 
 
 class TestTaskTools:

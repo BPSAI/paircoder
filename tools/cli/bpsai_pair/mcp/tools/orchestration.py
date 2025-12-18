@@ -5,6 +5,7 @@ Implements orchestration tools:
 - paircoder_orchestrate_analyze: Analyze task and get model recommendation
 - paircoder_orchestrate_handoff: Create handoff package for agent transitions
 - paircoder_orchestrate_plan: Invoke planner agent for design tasks
+- paircoder_orchestrate_review: Invoke reviewer agent for code review
 """
 
 from pathlib import Path
@@ -225,6 +226,103 @@ def register_orchestration_tools(server: Any) -> None:
                 "complexity": plan.estimated_complexity,
                 "risks": plan.risks,
                 "raw_output": plan.raw_output,
+            }
+        except FileNotFoundError:
+            return {"error": {"code": "NOT_FOUND", "message": "No .paircoder directory found"}}
+        except Exception as e:
+            return {"error": {"code": "ERROR", "message": str(e)}}
+
+    @server.tool()
+    async def paircoder_orchestrate_review(
+        diff: Optional[str] = None,
+        changed_files: Optional[list] = None,
+        include_file_contents: bool = True,
+    ) -> dict:
+        """
+        Invoke the reviewer agent for code review tasks.
+
+        The reviewer operates in read-only mode and returns structured
+        feedback with items categorized by severity and an overall verdict.
+
+        Args:
+            diff: Git diff to review (if not provided, uses current git diff)
+            changed_files: List of changed file paths (auto-detected if not provided)
+            include_file_contents: Whether to include full file contents in context
+
+        Returns:
+            Structured review with verdict, items by severity, and positive notes
+        """
+        import subprocess
+
+        try:
+            from ...orchestration import ReviewerAgent
+
+            project_root = get_project_root()
+
+            reviewer = ReviewerAgent(
+                agents_dir=project_root / ".claude" / "agents",
+                working_dir=project_root,
+            )
+
+            # Auto-detect diff if not provided
+            if diff is None:
+                try:
+                    diff_result = subprocess.run(
+                        ["git", "diff", "HEAD"],
+                        cwd=project_root,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    diff = diff_result.stdout if diff_result.returncode == 0 else ""
+                except Exception:
+                    diff = ""
+
+            # Auto-detect changed files if not provided
+            if changed_files is None:
+                try:
+                    files_result = subprocess.run(
+                        ["git", "diff", "--name-only", "HEAD"],
+                        cwd=project_root,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    if files_result.returncode == 0:
+                        changed_files = [f for f in files_result.stdout.strip().split("\n") if f]
+                    else:
+                        changed_files = []
+                except Exception:
+                    changed_files = []
+
+            output = reviewer.review(
+                diff=diff,
+                changed_files=changed_files,
+                include_file_contents=include_file_contents,
+            )
+
+            return {
+                "status": "success",
+                "verdict": output.verdict.value,
+                "summary": output.summary,
+                "items": [
+                    {
+                        "severity": item.severity.value,
+                        "file_path": item.file_path,
+                        "line_number": item.line_number,
+                        "message": item.message,
+                        "suggestion": item.suggestion,
+                    }
+                    for item in output.items
+                ],
+                "counts": {
+                    "blocker": output.blocker_count,
+                    "warning": output.warning_count,
+                    "info": output.info_count,
+                },
+                "has_blockers": output.has_blockers,
+                "positive_notes": output.positive_notes,
+                "raw_output": output.raw_output,
             }
         except FileNotFoundError:
             return {"error": {"code": "NOT_FOUND", "message": "No .paircoder directory found"}}

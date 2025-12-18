@@ -54,12 +54,12 @@ All 7 tasks completed (250/250 points).
 |------|-------|--------|----------|------------|
 | TASK-096 | Agent invocation framework | **done** | P0 | 45 |
 | TASK-097 | Planner agent implementation | **done** | P1 | 35 |
-| TASK-098 | Reviewer agent implementation | pending | P1 | 35 |
+| TASK-098 | Reviewer agent implementation | **done** | P1 | 35 |
 | TASK-099 | Security agent implementation | pending | P0 | 40 |
 | TASK-100 | Agent handoff protocol | pending | P1 | 40 |
 | TASK-101 | Agent selection logic | pending | P0 | 30 |
 
-**Progress:** 2/6 tasks complete (80/225 points)
+**Progress:** 3/6 tasks complete (115/225 points)
 
 ### Backlog (Deprioritized)
 
@@ -72,6 +72,40 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-17 - TASK-098: Reviewer Agent Implementation
+
+**TASK-098: Reviewer Agent Implementation** - DONE
+
+Created the ReviewerAgent for code review tasks:
+
+**New file:** `tools/cli/bpsai_pair/orchestration/reviewer.py`
+- `ReviewSeverity` enum - INFO, WARNING, BLOCKER severity levels
+- `ReviewVerdict` enum - APPROVE, APPROVE_WITH_COMMENTS, REQUEST_CHANGES
+- `ReviewItem` dataclass - individual review finding with file, line, message
+- `ReviewOutput` dataclass - structured output with verdict, items, counts
+- `ReviewOutput.from_raw_text()` - parses markdown output into structured data
+- `ReviewerAgent` class - invokes reviewer via AgentInvoker framework
+- `should_trigger_reviewer()` - trigger conditions for routing
+- `extract_changed_files()` - extract files from git diff
+- `extract_line_changes()` - extract line additions/deletions from diff
+- `invoke_reviewer()` - convenience function for one-shot reviews
+
+**Features:**
+- Loads `.claude/agents/reviewer.md` via AgentInvoker
+- Always operates in read-only `plan` permission mode
+- Builds context from git diff + changed file contents
+- Returns structured `ReviewOutput` with verdict and items by severity
+- Auto-detects git diff and changed files
+
+**Updated files:**
+- `orchestration/__init__.py` - exports reviewer classes
+- `orchestration/orchestrator.py` - added `_execute_with_reviewer()` method
+- `mcp/tools/orchestration.py` - added `paircoder_orchestrate_review` MCP tool
+
+**Tests:** 30 tests in `test_reviewer_agent.py`
+
+---
 
 ### Session: 2025-12-17 - TASK-097: Planner Agent Implementation
 

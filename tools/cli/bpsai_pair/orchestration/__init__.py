@@ -8,6 +8,7 @@ This module provides:
 - Orchestrator: Task routing and agent coordination
 - AgentInvoker: Invoke specialized agents from .claude/agents/
 - PlannerAgent: Design and planning specialist agent
+- ReviewerAgent: Code review specialist agent
 """
 
 from .headless import HeadlessSession, HeadlessResponse
@@ -16,6 +17,17 @@ from .codex import CodexAdapter
 from .orchestrator import Orchestrator
 from .invoker import AgentDefinition, AgentInvoker, InvocationResult, invoke_agent
 from .planner import PlannerAgent, PlanOutput, PlanPhase, invoke_planner, should_trigger_planner
+from .reviewer import (
+    ReviewerAgent,
+    ReviewOutput,
+    ReviewItem,
+    ReviewSeverity,
+    ReviewVerdict,
+    invoke_reviewer,
+    should_trigger_reviewer,
+    extract_changed_files,
+    extract_line_changes,
+)
 
 __all__ = [
     "HeadlessSession",
@@ -33,4 +45,13 @@ __all__ = [
     "PlanPhase",
     "invoke_planner",
     "should_trigger_planner",
+    "ReviewerAgent",
+    "ReviewOutput",
+    "ReviewItem",
+    "ReviewSeverity",
+    "ReviewVerdict",
+    "invoke_reviewer",
+    "should_trigger_reviewer",
+    "extract_changed_files",
+    "extract_line_changes",
 ]
