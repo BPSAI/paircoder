@@ -2135,6 +2135,61 @@ def scan_secrets_shortcut(
     scan_secrets(path=path, staged=staged, diff_ref=diff_ref, verbose=verbose, json_out=json_out)
 
 
+@security_app.command("scan-deps")
+def scan_deps(
+    path: Optional[str] = typer.Argument(None, help="Directory to scan for dependencies"),
+    fail_on: Optional[str] = typer.Option(None, "--fail-on", "-f", help="Fail if severity >= value (low, medium, high, critical)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable caching of scan results"),
+):
+    """Scan dependencies for known vulnerabilities.
+
+    Scans Python (pip-audit) and npm (npm audit) dependencies for CVEs.
+
+    Examples:
+
+        bpsai-pair security scan-deps             # Scan all dependencies
+
+        bpsai-pair security scan-deps --fail-on high  # Fail on high+ severity
+
+        bpsai-pair security scan-deps --verbose   # Show detailed CVE info
+    """
+    from .security import DependencyScanner, Severity, format_scan_report
+
+    root = Path(path) if path else repo_root()
+    scanner = DependencyScanner()
+
+    report = scanner.scan_all(root, use_cache=not no_cache)
+
+    if json_out:
+        print_json(report.to_dict())
+    else:
+        console.print(format_scan_report(report, verbose=verbose))
+
+        if fail_on:
+            min_severity = Severity.from_string(fail_on)
+            if report.has_severity(min_severity):
+                console.print(f"\n[red]FAILED: Found vulnerabilities with severity >= {fail_on}[/red]")
+                raise typer.Exit(1)
+
+        if report.has_critical():
+            console.print("\n[yellow]Warning: Critical vulnerabilities found![/yellow]")
+
+
+# Also add scan-deps as a top-level command for convenience
+@app.command("scan-deps")
+def scan_deps_shortcut(
+    path: Optional[str] = typer.Argument(None, help="Directory to scan for dependencies"),
+    fail_on: Optional[str] = typer.Option(None, "--fail-on", "-f", help="Fail if severity >= value"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable caching"),
+):
+    """Scan dependencies for vulnerabilities (shortcut for 'security scan-deps')."""
+    scan_deps(path=path, fail_on=fail_on, verbose=verbose, json_out=json_out, no_cache=no_cache)
+
+
 # Export for entry point
 def run():
     """Entry point for the CLI."""

@@ -42,6 +42,13 @@ from .secrets import (
     AllowlistConfig,
     format_scan_results,
 )
+from .dependencies import (
+    DependencyScanner,
+    Vulnerability,
+    ScanReport,
+    Severity,
+    format_scan_report,
+)
 
 __all__ = [
     # Allowlist
@@ -72,4 +79,10 @@ __all__ = [
     "SecretType",
     "AllowlistConfig",
     "format_scan_results",
+    # Dependencies
+    "DependencyScanner",
+    "Vulnerability",
+    "ScanReport",
+    "Severity",
+    "format_scan_report",
 ]
