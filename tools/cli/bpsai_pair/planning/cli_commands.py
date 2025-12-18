@@ -442,12 +442,17 @@ def plan_status(
 def plan_sync_trello(
     plan_id: str = typer.Argument(..., help="Plan ID to sync"),
     board_id: Optional[str] = typer.Option(None, "--board", "-b", help="Target Trello board ID"),
+    target_list: Optional[str] = typer.Option(None, "--target-list", "-t", help="Target list for cards (default: Intake/Backlog, use 'Planned/Ready' for sprint planning)"),
     create_lists: bool = typer.Option(False, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
     link_cards: bool = typer.Option(True, "--link/--no-link", help="Store card IDs in task files"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without making changes"),
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
-    """Sync plan tasks to Trello board as cards."""
+    """Sync plan tasks to Trello board as cards.
+
+    By default, cards are created in 'Intake/Backlog'. For sprint planning,
+    use --target-list "Planned/Ready" to place cards directly in the ready queue.
+    """
     paircoder_dir = find_paircoder_dir()
     plan_parser = PlanParser(paircoder_dir / "plans")
     task_parser = TaskParser(paircoder_dir / "tasks")
@@ -544,6 +549,10 @@ def plan_sync_trello(
 
         console.print(f"\n[bold]Syncing plan:[/bold] {plan_id}")
         console.print(f"[bold]Target board:[/bold] {service.board.name}")
+        if target_list:
+            console.print(f"[bold]Target list:[/bold] {target_list}")
+        else:
+            console.print(f"[dim]Target list:[/dim] {sync_config.default_list} (default - use --target-list 'Planned/Ready' for sprint planning)")
 
         # Ensure BPS labels exist on the board
         console.print("\n[dim]Ensuring BPS labels exist...[/dim]")
@@ -556,19 +565,19 @@ def plan_sync_trello(
         for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
             console.print(f"\n  [cyan]{sprint_name}[/cyan]:")
 
-            # Ensure Intake/Backlog list exists for new cards
-            # Butler automation will move cards based on Status field
-            intake_list = sync_config.default_list
+            # Determine which list to use for new cards
+            # Use --target-list if provided, otherwise fall back to config default
+            effective_list = target_list or sync_config.default_list
             board_lists = service.get_board_lists()
-            if intake_list not in board_lists:
+            if effective_list not in board_lists:
                 if create_lists:
-                    service.board.add_list(intake_list)
+                    service.board.add_list(effective_list)
                     service.lists = {lst.name: lst for lst in service.board.all_lists()}
-                    results["lists_created"].append(intake_list)
-                    console.print(f"    [green]+ Created list: {intake_list}[/green]")
+                    results["lists_created"].append(effective_list)
+                    console.print(f"    [green]+ Created list: {effective_list}[/green]")
                 else:
-                    results["errors"].append(f"List not found: {intake_list}")
-                    console.print(f"    [red]✗ List not found: {intake_list}[/red]")
+                    results["errors"].append(f"List not found: {effective_list}")
+                    console.print(f"    [red]✗ List not found: {effective_list}[/red]")
                     continue
 
             # Sync cards for tasks using TrelloSyncManager
@@ -581,14 +590,14 @@ def plan_sync_trello(
                     # Check if card already exists
                     existing_card, _ = service.find_card_with_prefix(task.id)
 
-                    # For new cards: use Intake/Backlog, Butler moves based on Status
+                    # For new cards: use the effective list (from --target-list or default)
                     # For existing cards: pass None to update in place without moving
-                    target_list = None if existing_card else intake_list
+                    card_target_list = None if existing_card else effective_list
 
                     # Sync using TrelloSyncManager (handles custom fields, labels, descriptions)
                     card = sync_manager.sync_task_to_card(
                         task=task_data,
-                        list_name=target_list,
+                        list_name=card_target_list,
                         update_existing=True
                     )
 

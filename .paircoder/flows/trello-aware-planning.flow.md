@@ -158,9 +158,10 @@ bpsai-pair plan new feature-name --type feature --title "Feature Title"
 # Add tasks
 bpsai-pair plan add-task feature-name --id TASK-001 --title "First task"
 bpsai-pair plan add-task feature-name --id TASK-002 --title "Second task"
-```
 
-Then create corresponding Trello cards manually.
+# Sync to Trello (directly to Planned/Ready for sprint planning)
+bpsai-pair plan sync-trello feature-name --target-list "Planned/Ready"
+```
 
 ---
 
@@ -180,18 +181,23 @@ Sprint Days × Hours/Day × Team Size = Available Hours
 Available Hours × 0.7 = Realistic Capacity (70% efficiency)
 ```
 
-### Step 5.3: Move to Sprint
+### Step 5.3: Move to Planned/Ready
+
+After syncing, move planned tasks from Intake/Backlog to Planned/Ready:
 
 ```bash
-# Move priority items to Sprint list
-bpsai-pair ttask move TRELLO-123 --list "Sprint"
-bpsai-pair ttask move TRELLO-124 --list "Sprint"
+# Move priority items to Planned/Ready list
+bpsai-pair ttask move TRELLO-123 --list "Planned/Ready"
+bpsai-pair ttask move TRELLO-124 --list "Planned/Ready"
 ```
 
-### Step 5.4: Verify Sprint
+**IMPORTANT:** The `plan sync-trello` command creates cards in "Intake/Backlog".
+You MUST move sprint tasks to "Planned/Ready" to indicate they are selected for upcoming work.
+
+### Step 5.4: Verify Planned Tasks
 
 ```bash
-# Review sprint contents
+# Review sprint contents (maps to Planned/Ready list)
 bpsai-pair ttask list --status sprint
 ```
 

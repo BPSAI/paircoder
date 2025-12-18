@@ -36,12 +36,18 @@ This adds a comment to the Trello card without changing status. Use for:
 
 ## Completing a Task
 
+### ⚠️ CRITICAL: Two-Step Completion Process
+
+**You MUST use `ttask done` before `task update` to check acceptance criteria!**
+
+---
+
 **Step 1:** Find the Trello card ID:
 ```bash
 bpsai-pair ttask list
 ```
 
-**Step 2:** Complete using `ttask done` (REQUIRED - this checks acceptance criteria):
+**Step 2:** Complete on Trello using `ttask done` (**REQUIRED**):
 ```bash
 bpsai-pair ttask done TRELLO-XX --summary "What was accomplished" --list "Deployed/Done"
 ```
@@ -60,7 +66,17 @@ This will:
 - Update task file status
 - Log completion in state.md
 
-⚠️ **WARNING**: Using only `task update --status done` will NOT check acceptance criteria on Trello. Always use `ttask done` first!
+---
+
+### ❌ COMMON MISTAKE: Skipping `ttask done`
+
+**WRONG:** Only using `task update --status done`
+- This updates local file but does NOT check acceptance criteria on Trello
+- The Trello card will have unchecked acceptance criteria items
+
+**RIGHT:** Using both commands in order:
+1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` (checks AC)
+2. `bpsai-pair task update TASK-XXX --status done` (updates local file)
 
 ## Quick Reference
 
@@ -126,13 +142,18 @@ Use these for direct Trello operations.
 2. Commit frequently with task ID in message
 
 ### When Completing a Task
+
+**⚠️ CRITICAL: Follow ALL steps in order. Skipping step 4 leaves acceptance criteria unchecked!**
+
 1. Ensure tests pass: `pytest -v`
 2. Update state.md with what was done
 3. Find card ID: `bpsai-pair ttask list` (note the TRELLO-XX id)
-4. Complete on Trello: `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
+4. **REQUIRED:** Complete on Trello: `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
    - This moves card AND checks all acceptance criteria ✓
 5. Update local file: `bpsai-pair task update TASK-XXX --status done`
 6. Commit changes with task ID in message
+
+**DO NOT skip step 4!** Using only `task update` will NOT check acceptance criteria on Trello.
 
 ## Trello Sync Commands
 

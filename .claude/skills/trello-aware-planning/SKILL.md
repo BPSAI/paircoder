@@ -74,12 +74,26 @@ Use throughput-based sizing:
 ### Phase 2: Trello Sync
 
 1. **Sync Plan to Trello**
+
+   **Option A: Direct to Planned/Ready** (Recommended for sprint planning)
+   ```bash
+   bpsai-pair plan sync-trello <plan-id> --target-list "Planned/Ready" [--board <board-id>]
+   ```
+
+   **Option B: To Intake/Backlog then move** (Default behavior)
    ```bash
    bpsai-pair plan sync-trello <plan-id> [--board <board-id>]
    ```
+   Then move each card:
+   ```bash
+   bpsai-pair ttask move TRELLO-XX --list "Planned/Ready"
+   ```
+
+   ⚠️ **IMPORTANT:** Sprint tasks should be in "Planned/Ready", not "Intake/Backlog".
+   Cards in "Intake/Backlog" are just ideas, not selected for work.
 
 2. **Verify Card Creation**
-   - Cards should be in "Planned / Ready" list
+   - Cards should be in "Planned / Ready" list (not Intake/Backlog)
    - Title format: `[Stack] Task Name`
    - Description includes objective and acceptance criteria
    - Labels match stack
