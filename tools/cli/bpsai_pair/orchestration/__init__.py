@@ -13,7 +13,15 @@ This module provides:
 """
 
 from .headless import HeadlessSession, HeadlessResponse
-from .handoff import HandoffManager, HandoffPackage
+from .handoff import (
+    HandoffManager,
+    HandoffPackage,
+    EnhancedHandoffPackage,
+    HandoffChain,
+    HandoffSerializer,
+    prepare_handoff,
+    receive_handoff,
+)
 from .codex import CodexAdapter
 from .orchestrator import Orchestrator
 from .invoker import AgentDefinition, AgentInvoker, InvocationResult, invoke_agent
@@ -43,6 +51,11 @@ __all__ = [
     "HeadlessResponse",
     "HandoffManager",
     "HandoffPackage",
+    "EnhancedHandoffPackage",
+    "HandoffChain",
+    "HandoffSerializer",
+    "prepare_handoff",
+    "receive_handoff",
     "CodexAdapter",
     "Orchestrator",
     "AgentDefinition",
