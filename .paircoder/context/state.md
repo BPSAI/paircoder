@@ -54,10 +54,10 @@ All 8 tasks completed:
 | TASK-091 | Pre-execution security review | **done** | P0 | 45 |
 | TASK-092 | Docker sandbox runner | **done** | P1 | 50 |
 | TASK-093 | Git checkpoint/rollback | **done** | P0 | 35 |
-| TASK-094 | Secret detection | pending | P0 | 30 |
+| TASK-094 | Secret detection | **done** | P0 | 30 |
 | TASK-095 | Dependency vulnerability scan | pending | P1 | 25 |
 
-**Progress:** 5/7 tasks complete (195/250 points)
+**Progress:** 6/7 tasks complete (225/250 points)
 
 ### Backlog (Deprioritized)
 
@@ -70,6 +70,54 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-17 - TASK-094: Secret Detection
+
+**TASK-094: Secret Detection** - DONE
+
+Implemented pre-commit secret scanning:
+
+**New file:** `tools/cli/bpsai_pair/security/secrets.py`
+- `SecretScanner` class with comprehensive pattern matching
+- `SecretMatch` dataclass for detected secrets with redaction
+- `SecretType` enum for categorizing secrets
+- `AllowlistConfig` for false positive suppression
+
+**Secret patterns supported:**
+- AWS credentials (access keys, secret keys)
+- GitHub tokens (PAT, OAuth, fine-grained)
+- Slack tokens and webhooks
+- Private keys (RSA, SSH, EC, DSA, PGP)
+- JWT tokens
+- Database connection strings
+- Stripe keys (live and test)
+- SendGrid keys
+- Google API keys
+- Generic patterns (api_key, password, secret, token)
+
+**Scanning modes:**
+- `scan_file()` - Scan individual files
+- `scan_diff()` - Scan git diff output
+- `scan_staged()` - Scan staged git changes
+- `scan_commit_range()` - Scan commits since reference
+- `scan_directory()` - Recursive directory scanning
+
+**CLI commands:**
+- `bpsai-pair scan-secrets [path]` - Scan files/directories
+- `bpsai-pair scan-secrets --staged` - Scan staged changes
+- `bpsai-pair scan-secrets --diff HEAD~1` - Scan since commit
+- `bpsai-pair security pre-commit` - Pre-commit hook mode
+- `bpsai-pair security install-hook` - Install git hook
+
+**Configuration:**
+- `.paircoder/security/secret-allowlist.yaml` - Allowlist config
+- Supports pattern-based allowlisting
+- File path exclusions
+- Ignore patterns for false positives
+
+**Tests:** 52 tests in `test_security_secrets.py`
+
+---
 
 ### Session: 2025-12-17 - Documentation Audit & Changelog Update
 
@@ -210,12 +258,7 @@ Also created:
 
 ### Remaining Sprint 15 Tasks
 
-1. **TASK-094**: Secret detection (P0)
-   - Pre-commit secret scanning
-   - Pattern matching for AWS, GitHub, Slack tokens
-   - Integration with git hooks
-
-2. **TASK-095**: Dependency vulnerability scan (P1)
+1. **TASK-095**: Dependency vulnerability scan (P1)
    - CVE scanning for Python packages
    - npm audit integration
    - CI/CD pipeline integration
@@ -227,17 +270,18 @@ Also created:
 - [x] Docker sandbox provides isolated execution
 - [x] Git checkpoints enable rollback
 - [ ] Can run autonomous session without `--dangerously-skip-permissions`
-- [ ] No secrets in any commits
+- [x] No secrets in any commits (secret scanning implemented)
 - [ ] Dependencies scanned for vulnerabilities
 
 ## Test Coverage
 
-- **Total tests**: 129 security tests + existing tests
+- **Total tests**: 181 security tests + existing tests
 - **Security module tests**:
   - test_security_allowlist.py: 39 tests
   - test_security_review.py: 35 tests
   - test_security_sandbox.py: 35 tests
   - test_security_checkpoint.py: 20 tests
+  - test_security_secrets.py: 52 tests
 - **Test command**: `pytest -v`
 
 ## Blockers

@@ -1945,6 +1945,196 @@ def flow_validate(
                 console.print(f"  File: {flow.source_path}")
 
 
+# ============================================================================
+# Security commands - Secret scanning
+# ============================================================================
+
+security_app = typer.Typer(
+    help="Security tools for secret scanning and vulnerability detection",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(security_app, name="security")
+
+
+def _get_secret_scanner():
+    """Get a SecretScanner instance with project allowlist."""
+    from .security import SecretScanner, AllowlistConfig
+
+    root = repo_root()
+    allowlist_path = root / ".paircoder" / "security" / "secret-allowlist.yaml"
+    allowlist = AllowlistConfig.load(allowlist_path)
+    return SecretScanner(allowlist), root
+
+
+@security_app.command("scan-secrets")
+def scan_secrets(
+    path: Optional[str] = typer.Argument(None, help="File or directory to scan"),
+    staged: bool = typer.Option(False, "--staged", "-s", help="Scan staged git changes only"),
+    diff_ref: Optional[str] = typer.Option(None, "--diff", "-d", help="Scan diff since git reference (e.g., HEAD~1)"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Scan for secrets and credentials in code.
+
+    By default, scans all files in the current directory.
+
+    Examples:
+
+        bpsai-pair security scan-secrets              # Scan all files
+
+        bpsai-pair security scan-secrets --staged    # Scan staged changes
+
+        bpsai-pair security scan-secrets --diff HEAD~1  # Scan since last commit
+
+        bpsai-pair security scan-secrets src/        # Scan specific directory
+    """
+    from .security import SecretScanner, AllowlistConfig, format_scan_results
+
+    scanner, root = _get_secret_scanner()
+
+    matches = []
+
+    if staged:
+        # Scan staged changes
+        matches = scanner.scan_staged(root)
+        scan_target = "staged changes"
+    elif diff_ref:
+        # Scan since reference
+        matches = scanner.scan_commit_range(diff_ref, root)
+        scan_target = f"changes since {diff_ref}"
+    elif path:
+        # Scan specific path
+        target = Path(path)
+        if target.is_file():
+            matches = scanner.scan_file(target)
+            scan_target = str(target)
+        elif target.is_dir():
+            matches = scanner.scan_directory(target)
+            scan_target = f"directory {target}"
+        else:
+            console.print(f"[red]Path not found: {path}[/red]")
+            raise typer.Exit(1)
+    else:
+        # Scan entire project
+        matches = scanner.scan_directory(root)
+        scan_target = "project"
+
+    if json_out:
+        result = {
+            "target": scan_target,
+            "secrets_found": len(matches),
+            "matches": [m.to_dict() for m in matches],
+        }
+        print_json(result)
+    else:
+        if matches:
+            console.print(f"[red]Found {len(matches)} potential secret(s) in {scan_target}[/red]\n")
+            console.print(format_scan_results(matches, verbose=verbose))
+            console.print("\n[dim]Review these findings and remove any real secrets before committing.[/dim]")
+            raise typer.Exit(1)
+        else:
+            console.print(f"[green]No secrets detected in {scan_target}[/green]")
+
+
+@security_app.command("pre-commit")
+def pre_commit_hook(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Run secret scan as a pre-commit hook.
+
+    This command is designed to be used in git hooks:
+
+        # .git/hooks/pre-commit
+        #!/bin/bash
+        bpsai-pair security pre-commit
+
+    Exit codes:
+        0 - No secrets found
+        1 - Secrets found (blocks commit)
+    """
+    from .security import format_scan_results
+
+    scanner, root = _get_secret_scanner()
+    matches = scanner.scan_staged(root)
+
+    if json_out:
+        print_json({
+            "blocked": len(matches) > 0,
+            "secrets_found": len(matches),
+            "matches": [m.to_dict() for m in matches],
+        })
+    else:
+        if matches:
+            console.print("[red]BLOCKED: Secrets detected in staged changes[/red]\n")
+            console.print(format_scan_results(matches, verbose=True))
+            console.print("\n[yellow]Remove secrets before committing.[/yellow]")
+            console.print("[dim]Use environment variables or a secrets manager instead.[/dim]")
+            raise typer.Exit(1)
+        else:
+            console.print("[green]Pre-commit secret scan passed[/green]")
+
+
+@security_app.command("install-hook")
+def install_hook(
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing hook"),
+):
+    """Install pre-commit hook for secret scanning.
+
+    Creates .git/hooks/pre-commit to run secret scanning
+    before each commit.
+    """
+    root = repo_root()
+    hooks_dir = root / ".git" / "hooks"
+    hook_path = hooks_dir / "pre-commit"
+
+    hook_content = '''#!/bin/bash
+# PairCoder secret scanning pre-commit hook
+# Installed by: bpsai-pair security install-hook
+
+set -e
+
+echo "Running secret scan on staged changes..."
+bpsai-pair security pre-commit
+
+# Add other pre-commit checks below if needed
+'''
+
+    if hook_path.exists() and not force:
+        console.print("[yellow]Pre-commit hook already exists[/yellow]")
+        console.print("[dim]Use --force to overwrite[/dim]")
+
+        # Check if our hook is already in there
+        existing = hook_path.read_text()
+        if "bpsai-pair security pre-commit" in existing:
+            console.print("[green]Secret scanning already configured in hook[/green]")
+            return
+
+        console.print("\n[dim]You can manually add this line to your existing hook:[/dim]")
+        console.print("  bpsai-pair security pre-commit")
+        raise typer.Exit(1)
+
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    hook_path.write_text(hook_content)
+    hook_path.chmod(0o755)
+
+    console.print("[green]Installed pre-commit hook for secret scanning[/green]")
+    console.print(f"  Location: {hook_path}")
+
+
+# Also add scan-secrets as a top-level command for convenience
+@app.command("scan-secrets")
+def scan_secrets_shortcut(
+    path: Optional[str] = typer.Argument(None, help="File or directory to scan"),
+    staged: bool = typer.Option(False, "--staged", "-s", help="Scan staged git changes only"),
+    diff_ref: Optional[str] = typer.Option(None, "--diff", "-d", help="Scan diff since git reference"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Scan for secrets and credentials (shortcut for 'security scan-secrets')."""
+    # Call the security sub-command
+    scan_secrets(path=path, staged=staged, diff_ref=diff_ref, verbose=verbose, json_out=json_out)
+
+
 # Export for entry point
 def run():
     """Entry point for the CLI."""

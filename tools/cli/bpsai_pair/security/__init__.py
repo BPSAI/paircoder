@@ -35,19 +35,30 @@ from .checkpoint import (
     format_checkpoint_list,
     format_rollback_preview,
 )
+from .secrets import (
+    SecretScanner,
+    SecretMatch,
+    SecretType,
+    AllowlistConfig,
+    format_scan_results,
+)
 
 __all__ = [
+    # Allowlist
     "AllowlistManager",
     "CommandDecision",
     "CheckResult",
+    # Review
     "ReviewResult",
     "SecurityReviewHook",
     "CodeChangeReviewer",
+    # Sandbox
     "SandboxConfig",
     "SandboxRunner",
     "SandboxResult",
     "FileChange",
     "MountConfig",
+    # Checkpoint
     "GitCheckpoint",
     "CheckpointError",
     "NotAGitRepoError",
@@ -55,4 +66,10 @@ __all__ = [
     "NoCheckpointsError",
     "format_checkpoint_list",
     "format_rollback_preview",
+    # Secrets
+    "SecretScanner",
+    "SecretMatch",
+    "SecretType",
+    "AllowlistConfig",
+    "format_scan_results",
 ]
