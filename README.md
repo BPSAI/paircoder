@@ -6,20 +6,20 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Planning System** | Plans, sprints, tasks with YAML+MD format |
-| **Flow Engine** | Workflow definitions (.flow.md) |
-| **Skills** | Claude Code native skills (.claude/skills/) |
-| **Orchestration** | Multi-agent coordination, model routing by complexity |
-| **Autonomous Workflow** | Auto-session for hands-off task execution |
-| **Presets** | 8 built-in presets (python-cli, bps, autonomous, etc.) |
-| **GitHub Integration** | Auto-PR creation, task-linked PRs, archive on merge |
-| **Trello Integration** | Board/card management, progress comments, webhooks |
-| **Standup Generation** | Daily summaries in markdown/slack/trello formats |
-| **Metrics** | Token tracking, cost estimation, budget enforcement |
-| **Time Tracking** | Built-in timer with Toggl integration |
-| **MCP Server** | 13 tools for autonomous agent operation |
+| Feature | Description                                             |
+|---------|---------------------------------------------------------|
+| **Planning System** | Plans, sprints, tasks with YAML+MD format               |
+| **Flow Engine** | Workflow definitions (.flow.md)                         |
+| **Skills** | Claude Code native skills (.claude/skills/)             |
+| **Orchestration** | Multi-agent coordination, model routing by complexity   |
+| **Autonomous Workflow** | Auto-session for hands-off task execution               |
+| **Presets** | 8 built-in presets (python-cli, bps, autonomous, etc.)  |
+| **GitHub Integration** | Auto-PR creation, task-linked PRs, archive on merge     |
+| **Trello Integration** | Board/card management, progress comments, webhooks      |
+| **Standup Generation** | Daily summaries in markdown/slack/trello formats        |
+| **Metrics** | Token tracking, cost estimation, budget enforcement     |
+| **Time Tracking** | Built-in timer with Toggle integration                  |
+| **MCP Server** | 13 tools for autonomous agent operation                 |
 | **Auto-Hooks** | Automatic Trello sync and state updates on task changes |
 
 ## Quick Start
