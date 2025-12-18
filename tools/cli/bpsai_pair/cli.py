@@ -30,6 +30,7 @@ try:
     from .flows.parser_v2 import FlowParser as FlowParserV2
     from .planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
+    from .orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
     from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from .integrations import TimeTrackingManager, TimeTrackingConfig
     from .benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
@@ -50,6 +51,7 @@ except ImportError:
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
     from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
+    from bpsai_pair.orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
     from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig
     from bpsai_pair.integrations import TimeTrackingManager, TimeTrackingConfig
     from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
@@ -320,6 +322,17 @@ def orchestrate_analyze(
     task = orchestrator.analyze_task(task_id)
     decision = orchestrator.select_agent(task)
 
+    # Also get specialized agent recommendation
+    task_title, task_tags = _load_task_metadata(root, task_id)
+    specialized_match = select_agent_for_task(
+        task_type=task.task_type.value,
+        task_title=task_title or task.description[:100],
+        task_tags=task_tags,
+        complexity={"low": 25, "medium": 50, "high": 75}.get(task.complexity.value, 50),
+        agents_dir=root / ".claude" / "agents",
+        working_dir=root,
+    )
+
     if json_out:
         print_json({
             "task_id": task.task_id,
@@ -328,6 +341,12 @@ def orchestrate_analyze(
             "recommended_agent": decision.agent,
             "score": decision.score,
             "reasoning": decision.reasoning,
+            "specialized_agent": {
+                "agent": specialized_match.agent_name,
+                "score": specialized_match.score,
+                "reasons": specialized_match.reasons,
+                "permission_mode": specialized_match.permission_mode,
+            },
         })
     else:
         console.print(f"[bold]Task:[/bold] {task.task_id}")
@@ -339,6 +358,112 @@ def orchestrate_analyze(
             console.print(f"[bold]Reasoning:[/bold]")
             for reason in decision.reasoning:
                 console.print(f"  • {reason}")
+
+        # Show specialized agent recommendation
+        if specialized_match.agent_name != "claude-code":
+            console.print()
+            console.print(f"[bold cyan]Specialized Agent:[/bold cyan] {specialized_match.agent_name}")
+            console.print(f"[bold cyan]Score:[/bold cyan] {specialized_match.score:.2f}")
+            console.print(f"[bold cyan]Mode:[/bold cyan] {specialized_match.permission_mode}")
+            if specialized_match.reasons:
+                console.print(f"[bold cyan]Reasons:[/bold cyan]")
+                for reason in specialized_match.reasons:
+                    console.print(f"  • {reason}")
+
+
+def _load_task_metadata(root: Path, task_id: str) -> tuple[str, list[str]]:
+    """Load task title and tags from task file."""
+    import yaml as yaml_mod
+
+    task_file = root / ".paircoder" / "tasks" / f"{task_id}.task.md"
+    if not task_file.exists():
+        return "", []
+
+    try:
+        content = task_file.read_text()
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                frontmatter = yaml_mod.safe_load(parts[1])
+                title = frontmatter.get("title", "")
+                tags = frontmatter.get("tags", [])
+                return title, tags if isinstance(tags, list) else []
+    except Exception:
+        pass
+
+    return "", []
+
+
+@orchestrate_app.command("select-agent")
+def orchestrate_select_agent(
+    task_id: str = typer.Argument(..., help="Task ID to analyze"),
+    prefer: Optional[str] = typer.Option(None, "--prefer", help="Preferred agent"),
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Select the best specialized agent for a task.
+
+    Uses the AgentSelector to route tasks to specialized agents:
+    - planner: For design/planning tasks
+    - reviewer: For code review/PR tasks
+    - security: For security/auth-related tasks
+    - claude-code: Default for general tasks
+    """
+    root = repo_root()
+
+    # Load task metadata
+    task_title, task_tags = _load_task_metadata(root, task_id)
+
+    # Get task characteristics for complexity
+    orchestrator = Orchestrator(project_root=root)
+    task = orchestrator.analyze_task(task_id)
+
+    # Create selector and select agent
+    selector = AgentSelector(
+        agents_dir=root / ".claude" / "agents",
+        working_dir=root,
+    )
+
+    criteria = SelectionCriteria(
+        task_type=task.task_type.value,
+        task_title=task_title or task.description[:100],
+        task_tags=task_tags,
+        complexity={"low": 25, "medium": 50, "high": 75}.get(task.complexity.value, 50),
+        preferred_agent=prefer,
+    )
+
+    match = selector.select(criteria)
+    all_matches = selector.get_all_matches(criteria)
+
+    if json_out:
+        print_json({
+            "task_id": task_id,
+            "selected_agent": match.agent_name,
+            "score": match.score,
+            "reasons": match.reasons,
+            "permission_mode": match.permission_mode,
+            "all_matches": [m.to_dict() for m in all_matches],
+        })
+    else:
+        console.print(f"[bold]Task:[/bold] {task_id}")
+        if task_title:
+            console.print(f"[bold]Title:[/bold] {task_title}")
+        if task_tags:
+            console.print(f"[bold]Tags:[/bold] {', '.join(task_tags)}")
+        console.print()
+        console.print(f"[bold green]Selected Agent:[/bold green] {match.agent_name}")
+        console.print(f"[bold]Score:[/bold] {match.score:.2f}")
+        console.print(f"[bold]Permission Mode:[/bold] {match.permission_mode}")
+        if match.reasons:
+            console.print(f"[bold]Reasons:[/bold]")
+            for reason in match.reasons:
+                console.print(f"  • {reason}")
+
+        # Show other candidates if available
+        if len(all_matches) > 1:
+            console.print()
+            console.print("[bold]Other Candidates:[/bold]")
+            for m in all_matches[1:4]:  # Show top 3 alternatives
+                console.print(f"  • {m.agent_name}: {m.score:.2f}")
 
 
 @orchestrate_app.command("handoff")

@@ -45,6 +45,12 @@ from .security import (
     invoke_security,
     should_trigger_security,
 )
+from .agent_selector import (
+    AgentSelector,
+    AgentMatch,
+    SelectionCriteria,
+    select_agent_for_task,
+)
 
 __all__ = [
     "HeadlessSession",
@@ -82,4 +88,8 @@ __all__ = [
     "SecurityAction",
     "invoke_security",
     "should_trigger_security",
+    "AgentSelector",
+    "AgentMatch",
+    "SelectionCriteria",
+    "select_agent_for_task",
 ]
