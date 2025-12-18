@@ -99,6 +99,16 @@ estimation:
     xl:
       range: [76, 100]
       hours: [8.0, 16.0, 32.0] # XL - 2-4 days
+token_estimates:
+  base_context: 15000        # Skills, state, project context
+  per_complexity_point: 500  # Rough: 50 complexity = 25k tokens
+  by_task_type:
+    feature: 1.2   # More back-and-forth
+    bugfix: 0.8    # Usually focused
+    docs: 0.6      # Less code generation
+    refactor: 1.5  # Lots of reading existing code
+    chore: 0.9     # Moderate complexity
+  per_file_touched: 2000     # Each file adds context
 hooks:
   enabled: true
   on_task_ready:

@@ -8,6 +8,11 @@ from .estimation import (
     EstimationConfig,
     HoursEstimate,
     estimate_hours,
+    TokenEstimate,
+    TokenEstimationConfig,
+    TokenEstimator,
+    TokenComparison,
+    TokenFeedbackTracker,
 )
 from .velocity import VelocityTracker, VelocityStats, TaskCompletionRecord
 from .burndown import BurndownGenerator, BurndownData, BurndownDataPoint, SprintConfig
@@ -31,6 +36,11 @@ __all__ = [
     "EstimationConfig",
     "HoursEstimate",
     "estimate_hours",
+    "TokenEstimate",
+    "TokenEstimationConfig",
+    "TokenEstimator",
+    "TokenComparison",
+    "TokenFeedbackTracker",
     "VelocityTracker",
     "VelocityStats",
     "TaskCompletionRecord",

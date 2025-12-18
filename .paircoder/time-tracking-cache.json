@@ -49,5 +49,33 @@
       }
     ],
     "total_seconds": 407.632817
+  },
+  "TASK-133": {
+    "entries": [
+      {
+        "id": "local-20251218123116",
+        "task_id": "TASK-133",
+        "description": "TASK-133: Token estimation model",
+        "start": "2025-12-18T12:31:16.563415",
+        "end": "2025-12-18T12:37:14.377434",
+        "duration_seconds": 357.814019,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 357.814019
+  },
+  "TASK-138": {
+    "entries": [
+      {
+        "id": "local-20251218124133",
+        "task_id": "TASK-138",
+        "description": "TASK-138: Token estimation feedback loop",
+        "start": "2025-12-18T12:41:33.043545",
+        "end": "2025-12-18T12:46:59.429988",
+        "duration_seconds": 326.386443,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 326.386443
   }
 }

@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..metrics.estimation import HoursEstimate
+    from ..metrics.estimation import HoursEstimate, TokenEstimate
 
 
 class TaskStatus(str, Enum):
@@ -96,6 +96,26 @@ class Task:
         """
         estimate = self.estimated_hours
         return f"{estimate.expected_hours:.1f}h ({estimate.size_band.upper()})"
+
+    @property
+    def estimated_tokens(self) -> "TokenEstimate":
+        """Get estimated token usage based on complexity, type, and files.
+
+        Returns:
+            TokenEstimate with breakdown and total
+        """
+        from ..metrics.estimation import TokenEstimator
+        estimator = TokenEstimator()
+        return estimator.estimate_for_task(self)
+
+    @property
+    def estimated_tokens_str(self) -> str:
+        """Get formatted estimated tokens string.
+
+        Returns:
+            String like "~45K tokens"
+        """
+        return str(self.estimated_tokens)
 
     @property
     def actual_hours(self) -> Optional[float]:

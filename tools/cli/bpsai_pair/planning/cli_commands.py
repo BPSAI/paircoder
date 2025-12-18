@@ -856,6 +856,7 @@ def task_show(
     console.print(f"[cyan]Priority:[/cyan] {task.priority}")
     console.print(f"[cyan]Complexity:[/cyan] {task.complexity}")
     console.print(f"[cyan]Status:[/cyan] {task.status.value}")
+    console.print(f"[cyan]Est. Tokens:[/cyan] {task.estimated_tokens_str}")
 
     if task.sprint:
         console.print(f"[cyan]Sprint:[/cyan] {task.sprint}")

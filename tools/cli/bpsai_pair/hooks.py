@@ -70,6 +70,7 @@ class HookRunner:
             "log_trello_activity": self._log_trello_activity,
             "record_task_completion": self._record_task_completion,
             "record_velocity": self._record_velocity,
+            "record_token_usage": self._record_token_usage,
         }
 
     @property
@@ -539,6 +540,66 @@ class HookRunner:
         except Exception as e:
             logger.warning(f"Velocity recording failed: {e}")
             return {"velocity_recorded": False, "error": str(e)}
+
+    def _record_token_usage(self, ctx: HookContext) -> dict:
+        """Record token usage comparison for feedback loop.
+
+        Records estimated vs actual tokens for improving token estimation accuracy.
+        Requires actual_tokens to be present in context.extra.
+        """
+        try:
+            from .metrics import TokenFeedbackTracker
+
+            # Get task details
+            if not ctx.task:
+                return {
+                    "token_usage_recorded": False,
+                    "reason": "No task object in context",
+                }
+
+            # Get actual tokens from context extra
+            extra = ctx.extra or {}
+            actual_tokens = extra.get("actual_tokens")
+
+            if actual_tokens is None:
+                # Try to calculate from metrics events
+                actual_tokens = extra.get("total_tokens", 0)
+
+            if not actual_tokens:
+                return {
+                    "token_usage_recorded": False,
+                    "reason": "No actual_tokens in context",
+                }
+
+            # Get estimated tokens from task
+            estimated = ctx.task.estimated_tokens.total_tokens
+            task_type = ctx.task.type
+            complexity = ctx.task.complexity
+
+            # Record the comparison
+            history_dir = self.paircoder_dir / "history"
+            history_dir.mkdir(exist_ok=True)
+
+            tracker = TokenFeedbackTracker(history_dir)
+            data = tracker.record_usage(
+                task_id=ctx.task_id,
+                estimated_tokens=estimated,
+                actual_tokens=actual_tokens,
+                task_type=task_type,
+                complexity=complexity,
+            )
+
+            return {
+                "token_usage_recorded": True,
+                "task_id": ctx.task_id,
+                "estimated_tokens": estimated,
+                "actual_tokens": actual_tokens,
+                "ratio": data.get("ratio", 1.0),
+            }
+
+        except Exception as e:
+            logger.warning(f"Token usage recording failed: {e}")
+            return {"token_usage_recorded": False, "error": str(e)}
 
 
 def load_config(paircoder_dir: Path) -> dict:

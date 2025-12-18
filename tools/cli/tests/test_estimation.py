@@ -577,3 +577,592 @@ class TestMetricsCollectorTaskCompletion:
 
             assert stats["total_tasks"] == 0
             assert stats["avg_variance_percent"] == 0.0
+
+
+# ============================================================================
+# Token Estimation Tests
+# ============================================================================
+
+
+class TestTokenEstimate:
+    """Tests for TokenEstimate dataclass."""
+
+    def test_token_estimate_creation(self):
+        """Test creating a TokenEstimate."""
+        from bpsai_pair.metrics.estimation import TokenEstimate
+
+        estimate = TokenEstimate(
+            base_tokens=15000,
+            complexity_tokens=12500,
+            type_multiplier=1.2,
+            file_tokens=4000,
+            total_tokens=33000,
+            task_type="feature",
+        )
+        assert estimate.base_tokens == 15000
+        assert estimate.complexity_tokens == 12500
+        assert estimate.type_multiplier == 1.2
+        assert estimate.file_tokens == 4000
+        assert estimate.total_tokens == 33000
+        assert estimate.task_type == "feature"
+
+    def test_token_estimate_to_dict(self):
+        """Test converting TokenEstimate to dict."""
+        from bpsai_pair.metrics.estimation import TokenEstimate
+
+        estimate = TokenEstimate(
+            base_tokens=15000,
+            complexity_tokens=12500,
+            type_multiplier=1.0,
+            file_tokens=4000,
+            total_tokens=31500,
+            task_type="bugfix",
+        )
+        d = estimate.to_dict()
+        assert d["base_tokens"] == 15000
+        assert d["complexity_tokens"] == 12500
+        assert d["total_tokens"] == 31500
+        assert d["task_type"] == "bugfix"
+
+    def test_token_estimate_str(self):
+        """Test string representation of TokenEstimate."""
+        from bpsai_pair.metrics.estimation import TokenEstimate
+
+        estimate = TokenEstimate(
+            base_tokens=15000,
+            complexity_tokens=12500,
+            type_multiplier=1.0,
+            file_tokens=4000,
+            total_tokens=31500,
+            task_type="bugfix",
+        )
+        s = str(estimate)
+        assert "31K" in s or "31500" in s  # Format: ~31K tokens
+
+
+class TestTokenEstimationConfig:
+    """Tests for TokenEstimationConfig."""
+
+    def test_default_config(self):
+        """Test default token estimation config."""
+        from bpsai_pair.metrics.estimation import TokenEstimationConfig
+
+        config = TokenEstimationConfig()
+        assert config.base_context > 0
+        assert config.per_complexity_point > 0
+        assert "feature" in config.by_task_type
+        assert "bugfix" in config.by_task_type
+        assert config.per_file_touched > 0
+
+    def test_config_from_dict(self):
+        """Test creating config from dictionary."""
+        from bpsai_pair.metrics.estimation import TokenEstimationConfig
+
+        data = {
+            "base_context": 20000,
+            "per_complexity_point": 600,
+            "by_task_type": {
+                "feature": 1.5,
+                "bugfix": 0.7,
+            },
+            "per_file_touched": 2500,
+        }
+        config = TokenEstimationConfig.from_dict(data)
+        assert config.base_context == 20000
+        assert config.per_complexity_point == 600
+        assert config.by_task_type["feature"] == 1.5
+        assert config.per_file_touched == 2500
+
+    def test_config_from_dict_partial(self):
+        """Test config from partial dictionary uses defaults for missing."""
+        from bpsai_pair.metrics.estimation import TokenEstimationConfig
+
+        data = {"base_context": 10000}
+        config = TokenEstimationConfig.from_dict(data)
+        assert config.base_context == 10000
+        # Other values should be defaults
+        assert config.per_complexity_point > 0
+        assert "feature" in config.by_task_type
+
+
+class TestTokenEstimator:
+    """Tests for TokenEstimator."""
+
+    def test_estimator_creation(self):
+        """Test creating a TokenEstimator."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+        assert estimator.config is not None
+
+    def test_estimate_tokens_basic(self):
+        """Test basic token estimation."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+        estimate = estimator.estimate_tokens(
+            complexity=50,
+            task_type="feature",
+            file_count=2,
+        )
+
+        assert estimate.total_tokens > 0
+        assert estimate.base_tokens > 0
+        assert estimate.complexity_tokens > 0
+        assert estimate.file_tokens > 0
+
+    def test_estimate_tokens_formula(self):
+        """Test token estimation formula is correct."""
+        from bpsai_pair.metrics.estimation import TokenEstimator, TokenEstimationConfig
+
+        config = TokenEstimationConfig(
+            base_context=15000,
+            per_complexity_point=500,
+            by_task_type={"feature": 1.2, "bugfix": 0.8},
+            per_file_touched=2000,
+        )
+        estimator = TokenEstimator(config)
+
+        # Formula: tokens = base + (complexity * per_point) * multiplier + (files * per_file)
+        # 50 complexity, feature (1.2x), 2 files
+        # = 15000 + (50 * 500) * 1.2 + (2 * 2000)
+        # = 15000 + 30000 + 4000 = 49000
+        estimate = estimator.estimate_tokens(
+            complexity=50,
+            task_type="feature",
+            file_count=2,
+        )
+
+        assert estimate.base_tokens == 15000
+        assert estimate.complexity_tokens == 30000  # 50 * 500 * 1.2
+        assert estimate.file_tokens == 4000  # 2 * 2000
+        assert estimate.total_tokens == 49000
+
+    def test_different_task_types(self):
+        """Test different task types produce different estimates."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+
+        feature_est = estimator.estimate_tokens(50, "feature", 2)
+        bugfix_est = estimator.estimate_tokens(50, "bugfix", 2)
+        refactor_est = estimator.estimate_tokens(50, "refactor", 2)
+        docs_est = estimator.estimate_tokens(50, "docs", 2)
+
+        # Feature and refactor should be higher than bugfix
+        assert feature_est.total_tokens > bugfix_est.total_tokens
+        assert refactor_est.total_tokens > bugfix_est.total_tokens
+        # Docs should be lowest
+        assert docs_est.total_tokens < bugfix_est.total_tokens
+
+    def test_unknown_task_type_defaults_to_1(self):
+        """Test unknown task type uses multiplier of 1.0."""
+        from bpsai_pair.metrics.estimation import TokenEstimator, TokenEstimationConfig
+
+        config = TokenEstimationConfig(
+            base_context=10000,
+            per_complexity_point=100,
+            by_task_type={"feature": 1.5},
+            per_file_touched=1000,
+        )
+        estimator = TokenEstimator(config)
+
+        estimate = estimator.estimate_tokens(50, "unknown_type", 1)
+
+        # Should use multiplier of 1.0
+        # 10000 + (50 * 100) * 1.0 + (1 * 1000) = 16000
+        assert estimate.type_multiplier == 1.0
+        assert estimate.total_tokens == 16000
+
+    def test_zero_files(self):
+        """Test estimation with zero files."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+        estimate = estimator.estimate_tokens(50, "feature", 0)
+
+        assert estimate.file_tokens == 0
+        assert estimate.total_tokens > 0  # Still has base + complexity
+
+    def test_high_complexity(self):
+        """Test high complexity produces high token estimate."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+
+        low = estimator.estimate_tokens(10, "feature", 1)
+        high = estimator.estimate_tokens(100, "feature", 1)
+
+        assert high.total_tokens > low.total_tokens
+        assert high.complexity_tokens > low.complexity_tokens
+
+    def test_file_count_impact(self):
+        """Test more files increases token estimate."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        estimator = TokenEstimator()
+
+        few_files = estimator.estimate_tokens(50, "feature", 1)
+        many_files = estimator.estimate_tokens(50, "feature", 10)
+
+        assert many_files.total_tokens > few_files.total_tokens
+        assert many_files.file_tokens > few_files.file_tokens
+
+    def test_estimate_from_task(self):
+        """Test estimating tokens from a Task object."""
+        from bpsai_pair.metrics.estimation import TokenEstimator
+
+        task = Task(
+            id="TASK-1",
+            title="Test",
+            plan_id="plan-1",
+            type="feature",
+            complexity=40,
+            files_touched=["file1.py", "file2.py", "file3.py"],
+        )
+
+        estimator = TokenEstimator()
+        estimate = estimator.estimate_for_task(task)
+
+        assert estimate.task_type == "feature"
+        assert estimate.total_tokens > 0
+        # Should account for 3 files
+        assert estimate.file_tokens == estimator.config.per_file_touched * 3
+
+
+class TestTaskEstimatedTokens:
+    """Tests for Task.estimated_tokens property."""
+
+    def test_estimated_tokens_property(self):
+        """Test that Task has estimated_tokens property."""
+        task = Task(
+            id="TASK-1",
+            title="Test Task",
+            plan_id="plan-1",
+            type="feature",
+            complexity=50,
+        )
+        estimate = task.estimated_tokens
+        assert estimate is not None
+        assert estimate.total_tokens > 0
+
+    def test_estimated_tokens_str_property(self):
+        """Test estimated_tokens_str property."""
+        task = Task(
+            id="TASK-1",
+            title="Test Task",
+            plan_id="plan-1",
+            type="feature",
+            complexity=50,
+        )
+        s = task.estimated_tokens_str
+        # Should be formatted like "~45K tokens"
+        assert "tokens" in s.lower() or "k" in s.lower()
+
+    def test_estimated_tokens_varies_by_type(self):
+        """Test that different task types get different estimates."""
+        feature_task = Task(
+            id="T1", title="Feature", plan_id="p", type="feature", complexity=50
+        )
+        bugfix_task = Task(
+            id="T2", title="Bugfix", plan_id="p", type="bugfix", complexity=50
+        )
+
+        assert feature_task.estimated_tokens.total_tokens > bugfix_task.estimated_tokens.total_tokens
+
+    def test_estimated_tokens_varies_by_files(self):
+        """Test that file count affects token estimate."""
+        no_files = Task(
+            id="T1", title="No files", plan_id="p", complexity=50, files_touched=[]
+        )
+        with_files = Task(
+            id="T2",
+            title="With files",
+            plan_id="p",
+            complexity=50,
+            files_touched=["a.py", "b.py", "c.py", "d.py", "e.py"],
+        )
+
+        assert with_files.estimated_tokens.total_tokens > no_files.estimated_tokens.total_tokens
+
+
+# ============================================================================
+# Token Feedback Loop Tests
+# ============================================================================
+
+
+class TestTokenComparison:
+    """Tests for TokenComparison dataclass."""
+
+    def test_token_comparison_creation(self):
+        """Test creating a TokenComparison."""
+        from bpsai_pair.metrics.estimation import TokenComparison
+
+        comparison = TokenComparison(
+            task_id="TASK-100",
+            estimated_tokens=45000,
+            actual_tokens=50000,
+            task_type="feature",
+            complexity=50,
+        )
+        assert comparison.task_id == "TASK-100"
+        assert comparison.estimated_tokens == 45000
+        assert comparison.actual_tokens == 50000
+        assert comparison.ratio == pytest.approx(50000 / 45000)
+
+    def test_token_comparison_ratio_calculation(self):
+        """Test ratio calculation (actual/estimated)."""
+        from bpsai_pair.metrics.estimation import TokenComparison
+
+        comparison = TokenComparison(
+            task_id="TASK-101",
+            estimated_tokens=40000,
+            actual_tokens=50000,  # 25% more than estimated
+            task_type="feature",
+            complexity=50,
+        )
+        assert comparison.ratio == pytest.approx(1.25)
+
+    def test_token_comparison_zero_estimated(self):
+        """Test ratio when estimated is zero."""
+        from bpsai_pair.metrics.estimation import TokenComparison
+
+        comparison = TokenComparison(
+            task_id="TASK-102",
+            estimated_tokens=0,
+            actual_tokens=50000,
+            task_type="feature",
+            complexity=50,
+        )
+        assert comparison.ratio == 1.0  # Default to 1.0
+
+    def test_token_comparison_to_dict(self):
+        """Test converting TokenComparison to dict."""
+        from bpsai_pair.metrics.estimation import TokenComparison
+        from datetime import datetime
+
+        completed_at = datetime(2025, 12, 18, 15, 0, 0)
+        comparison = TokenComparison(
+            task_id="TASK-103",
+            estimated_tokens=45000,
+            actual_tokens=42000,
+            task_type="bugfix",
+            complexity=30,
+            completed_at=completed_at,
+        )
+        d = comparison.to_dict()
+        assert d["task_id"] == "TASK-103"
+        assert d["estimated_tokens"] == 45000
+        assert d["actual_tokens"] == 42000
+        assert d["ratio"] == pytest.approx(42000 / 45000)
+        assert d["task_type"] == "bugfix"
+
+
+class TestTokenFeedbackTracker:
+    """Tests for TokenFeedbackTracker."""
+
+    def test_tracker_creation(self, tmp_path):
+        """Test creating a TokenFeedbackTracker."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+        assert tracker.history_dir == history_dir
+
+    def test_record_token_usage(self, tmp_path):
+        """Test recording token usage comparison."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        tracker.record_usage(
+            task_id="TASK-100",
+            estimated_tokens=45000,
+            actual_tokens=50000,
+            task_type="feature",
+            complexity=50,
+        )
+
+        # Verify it was recorded
+        comparisons = tracker.load_comparisons()
+        assert len(comparisons) == 1
+        assert comparisons[0]["task_id"] == "TASK-100"
+        assert comparisons[0]["estimated_tokens"] == 45000
+        assert comparisons[0]["actual_tokens"] == 50000
+
+    def test_load_comparisons_empty(self, tmp_path):
+        """Test loading comparisons when none exist."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        comparisons = tracker.load_comparisons()
+        assert comparisons == []
+
+    def test_get_accuracy_stats(self, tmp_path):
+        """Test getting token accuracy statistics."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Record multiple usages
+        tracker.record_usage("T1", 40000, 45000, "feature", 50)  # 1.125x
+        tracker.record_usage("T2", 30000, 27000, "bugfix", 30)   # 0.9x
+        tracker.record_usage("T3", 50000, 55000, "feature", 60)  # 1.1x
+
+        stats = tracker.get_accuracy_stats()
+        assert stats["total_tasks"] == 3
+        assert "avg_ratio" in stats
+        assert "by_task_type" in stats
+
+    def test_get_accuracy_by_task_type(self, tmp_path):
+        """Test accuracy breakdown by task type."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Feature tasks tend to use more tokens
+        tracker.record_usage("T1", 40000, 48000, "feature", 50)  # 1.2x
+        tracker.record_usage("T2", 45000, 54000, "feature", 55)  # 1.2x
+        # Bugfix tasks are more accurate
+        tracker.record_usage("T3", 30000, 28500, "bugfix", 30)   # 0.95x
+        tracker.record_usage("T4", 25000, 26250, "bugfix", 25)   # 1.05x
+
+        stats = tracker.get_accuracy_stats()
+        by_type = stats["by_task_type"]
+
+        assert "feature" in by_type
+        assert "bugfix" in by_type
+        assert by_type["feature"]["avg_ratio"] > by_type["bugfix"]["avg_ratio"]
+
+    def test_get_recommended_adjustments(self, tmp_path):
+        """Test getting recommended coefficient adjustments."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Consistently underestimate features
+        tracker.record_usage("T1", 40000, 52000, "feature", 50)  # 1.3x
+        tracker.record_usage("T2", 45000, 58500, "feature", 55)  # 1.3x
+        tracker.record_usage("T3", 35000, 45500, "feature", 45)  # 1.3x
+
+        adjustments = tracker.get_recommended_adjustments()
+
+        # Should recommend increasing feature multiplier
+        assert "feature" in adjustments
+        assert adjustments["feature"] > 1.0  # Increase multiplier
+
+    def test_apply_learning(self, tmp_path):
+        """Test applying learning to adjust coefficients."""
+        from bpsai_pair.metrics.estimation import (
+            TokenFeedbackTracker,
+            TokenEstimationConfig,
+        )
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Consistently underestimate refactors
+        tracker.record_usage("T1", 50000, 75000, "refactor", 50)  # 1.5x
+        tracker.record_usage("T2", 55000, 82500, "refactor", 55)  # 1.5x
+        tracker.record_usage("T3", 45000, 67500, "refactor", 45)  # 1.5x
+
+        # Get current config
+        old_config = TokenEstimationConfig()
+        old_refactor_mult = old_config.by_task_type["refactor"]
+
+        # Apply learning
+        new_config = tracker.apply_learning(old_config)
+
+        # Refactor multiplier should have increased
+        assert new_config.by_task_type["refactor"] > old_refactor_mult
+
+    def test_learning_clamps_to_bounds(self, tmp_path):
+        """Test that learning clamps multipliers to reasonable bounds."""
+        from bpsai_pair.metrics.estimation import (
+            TokenFeedbackTracker,
+            TokenEstimationConfig,
+        )
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Extreme underestimation
+        tracker.record_usage("T1", 10000, 100000, "feature", 50)  # 10x
+        tracker.record_usage("T2", 10000, 100000, "feature", 50)  # 10x
+
+        old_config = TokenEstimationConfig()
+        new_config = tracker.apply_learning(old_config)
+
+        # Should be clamped to max reasonable value (e.g., 3.0x)
+        assert new_config.by_task_type["feature"] <= 3.0
+
+    def test_minimum_samples_for_learning(self, tmp_path):
+        """Test that learning requires minimum samples."""
+        from bpsai_pair.metrics.estimation import (
+            TokenFeedbackTracker,
+            TokenEstimationConfig,
+        )
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Only 1 sample - not enough for learning
+        tracker.record_usage("T1", 40000, 60000, "feature", 50)
+
+        old_config = TokenEstimationConfig()
+        new_config = tracker.apply_learning(old_config, min_samples=3)
+
+        # Should not change (not enough samples)
+        assert new_config.by_task_type["feature"] == old_config.by_task_type["feature"]
+
+
+class TestTokenAccuracyReport:
+    """Tests for token accuracy reporting."""
+
+    def test_generate_token_report(self, tmp_path):
+        """Test generating a token accuracy report."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        # Add some data
+        tracker.record_usage("T1", 40000, 44000, "feature", 50)
+        tracker.record_usage("T2", 30000, 28000, "bugfix", 30)
+        tracker.record_usage("T3", 60000, 90000, "refactor", 70)
+
+        report = tracker.generate_report()
+
+        assert "stats" in report
+        assert "by_task_type" in report
+        assert "recommendations" in report
+        assert report["stats"]["total_tasks"] == 3
+
+    def test_empty_report(self, tmp_path):
+        """Test report with no data."""
+        from bpsai_pair.metrics.estimation import TokenFeedbackTracker
+
+        history_dir = tmp_path / ".paircoder" / "history"
+        history_dir.mkdir(parents=True)
+        tracker = TokenFeedbackTracker(history_dir)
+
+        report = tracker.generate_report()
+
+        assert report["stats"]["total_tasks"] == 0
+        assert report["stats"]["avg_ratio"] == 1.0

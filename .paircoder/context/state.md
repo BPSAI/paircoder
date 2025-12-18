@@ -21,10 +21,10 @@ Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 - TASK-105: Velocity calculation ✓
 - TASK-106: Sprint burndown chart data ✓
 - TASK-107: Estimation accuracy report ✓
-- TASK-133: Token estimation model (pending)
-- TASK-138: Token estimation feedback loop (pending)
+- TASK-133: Token estimation model ✓
+- TASK-138: Token estimation feedback loop ✓
 
-**Progress:** 6/8 tasks complete (165/230 points)
+**Progress:** 8/8 tasks complete (230/230 points) - SPRINT COMPLETE!
 
 ## Task Status
 
@@ -78,6 +78,109 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-18 (evening) - TASK-138: Token Estimation Feedback Loop
+
+**TASK-138: Token Estimation Feedback Loop** - DONE
+
+Implemented self-improving token estimation based on actual usage data:
+
+**Enhanced:** `tools/cli/bpsai_pair/metrics/estimation.py`
+- `TokenComparison` dataclass - compares estimated vs actual tokens with ratio
+- `TokenFeedbackTracker` class - records usage, calculates stats, learns coefficients
+
+**Feedback loop flow:**
+1. Record estimated vs actual tokens on task completion
+2. Calculate accuracy statistics by task type
+3. Recommend coefficient adjustments based on data
+4. Apply learning with conservative adjustment (10% rate, bounds 0.3x-3.0x)
+
+**New CLI command:** `bpsai-pair metrics tokens`
+- Shows token estimation accuracy report
+- Displays actual/estimated ratio by task type
+- Provides coefficient adjustment recommendations
+- `--json` flag for programmatic access
+
+**Example output:**
+```
+Token Estimation Accuracy Report
+==================================
+
+Tasks Analyzed: 15
+Avg Ratio (actual/estimated): 1.18x
+Bias: Underestimating by ~18%
+
+By Task Type:
+- Feature: 1.25x (underestimate) (6 tasks)
+- Bugfix: 0.95x (5 tasks)
+- Refactor: 1.45x (underestimate) (4 tasks)
+
+Recommendations:
+- Increase feature multiplier by ~25%
+- Increase refactor multiplier by ~45%
+```
+
+**New hook:** `record_token_usage` in hooks.py
+- Records TokenComparison to token-comparisons.jsonl
+- Triggered on task completion with actual_tokens in context
+
+**Learning algorithm:**
+```
+new_multiplier = old_multiplier * (1 + 0.1 * (avg_ratio - 1))
+clamped to [0.3, 3.0]
+```
+
+**Updated files:**
+- `metrics/estimation.py` - added TokenComparison, TokenFeedbackTracker
+- `metrics/__init__.py` - exports new classes
+- `cli.py` - added `metrics tokens` command
+- `hooks.py` - added `record_token_usage` hook
+
+**Tests:** 15 new tests (76 total in test_estimation.py)
+
+---
+
+### Session: 2025-12-18 (evening) - TASK-133: Token Estimation Model
+
+**TASK-133: Token Estimation Model** - DONE
+
+Implemented token estimation model that predicts token usage based on task characteristics:
+
+**Enhanced:** `tools/cli/bpsai_pair/metrics/estimation.py`
+- `TokenEstimate` dataclass - token usage breakdown (base, complexity, files, total)
+- `TokenEstimationConfig` dataclass - configurable coefficients
+- `TokenEstimator` class - estimates tokens from complexity, type, file count
+
+**Formula:**
+```
+tokens = base_context +
+         (complexity * per_complexity_point) * type_multiplier +
+         (file_count * per_file_touched)
+```
+
+**Default coefficients:**
+- base_context: 15,000 tokens (skills, state, project context)
+- per_complexity_point: 500 tokens
+- by_task_type: feature(1.2x), bugfix(0.8x), docs(0.6x), refactor(1.5x)
+- per_file_touched: 2,000 tokens
+
+**Task model integration:**
+- `Task.estimated_tokens` property - returns TokenEstimate
+- `Task.estimated_tokens_str` property - returns formatted string like "~45K tokens"
+
+**CLI output:**
+- `bpsai-pair task show <id>` now displays `Est. Tokens: ~42K tokens`
+
+**Updated files:**
+- `metrics/estimation.py` - added TokenEstimate, TokenEstimationConfig, TokenEstimator
+- `metrics/__init__.py` - exports token estimation classes
+- `planning/models.py` - added estimated_tokens properties to Task
+- `planning/cli_commands.py` - task show displays token estimate
+- `.paircoder/config.yaml` - added token_estimates configuration section
+
+**Tests:** 19 new tests in `test_estimation.py`
+
+---
 
 ### Session: 2025-12-18 (evening) - TASK-107: Estimation Accuracy Report
 
@@ -632,8 +735,7 @@ Also created:
 ## What's Next
 
 **Sprint 17 Remaining Tasks:**
-- TASK-133: Token estimation model
-- TASK-138: Token estimation feedback loop
+None - Sprint 17 COMPLETE!
 
 **Sprint 17 Success Criteria:**
 - [x] Complexity → hours mapping working
@@ -642,8 +744,8 @@ Also created:
 - [x] Velocity calculation available
 - [x] Burndown chart data generated
 - [x] Estimation accuracy report available
-- [ ] Token estimation model implemented
-- [ ] Token feedback loop working
+- [x] Token estimation model implemented
+- [x] Token feedback loop working
 
 ## Sprint 16 Success Criteria
 

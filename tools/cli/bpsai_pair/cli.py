@@ -991,6 +991,77 @@ def metrics_accuracy(
         console.print(f"[bold]Recommendation:[/bold] {report['recommendation']}")
 
 
+def _get_token_tracker():
+    """Get a token feedback tracker instance."""
+    from .metrics.estimation import TokenFeedbackTracker
+    root = repo_root()
+    history_dir = root / ".paircoder" / "history"
+    return TokenFeedbackTracker(history_dir)
+
+
+@metrics_app.command("tokens")
+def metrics_tokens(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show token estimation accuracy report.
+
+    Analyzes how accurate token estimates have been compared to actual usage.
+    Shows overall accuracy ratio, breakdowns by task type, and recommendations
+    for adjusting estimation coefficients.
+    """
+    tracker = _get_token_tracker()
+    report = tracker.generate_report()
+    stats = report["stats"]
+
+    if json_out:
+        print_json(report)
+    else:
+        console.print("[bold]Token Estimation Accuracy Report[/bold]")
+        console.print("=" * 34)
+        console.print("")
+
+        if stats["total_tasks"] == 0:
+            console.print("[dim]No token usage data available.[/dim]")
+            console.print("[dim]Token accuracy is tracked when tasks are completed with metrics recording.[/dim]")
+            return
+
+        # Overall stats
+        accuracy_pct = int((1 / stats["avg_ratio"]) * 100) if stats["avg_ratio"] > 0 else 100
+        console.print(f"Tasks Analyzed: {stats['total_tasks']}")
+        console.print(f"Avg Ratio (actual/estimated): {stats['avg_ratio']:.2f}x")
+
+        if stats["avg_ratio"] > 1.1:
+            console.print(f"[yellow]Bias: Underestimating by ~{int((stats['avg_ratio'] - 1) * 100)}%[/yellow]")
+        elif stats["avg_ratio"] < 0.9:
+            console.print(f"[yellow]Bias: Overestimating by ~{int((1 - stats['avg_ratio']) * 100)}%[/yellow]")
+        else:
+            console.print("[green]Bias: Estimates are well-calibrated[/green]")
+        console.print("")
+
+        # By Task Type
+        by_type = report["by_task_type"]
+        if by_type:
+            console.print("[bold]By Task Type:[/bold]")
+            for task_type, type_stats in by_type.items():
+                ratio = type_stats["avg_ratio"]
+                ratio_str = f"{ratio:.2f}x"
+                if ratio > 1.1:
+                    ratio_str = f"[yellow]{ratio:.2f}x (underestimate)[/yellow]"
+                elif ratio < 0.9:
+                    ratio_str = f"[cyan]{ratio:.2f}x (overestimate)[/cyan]"
+                console.print(f"- {task_type.title()}: {ratio_str} ({type_stats['count']} tasks)")
+            console.print("")
+
+        # Recommendations
+        recommendations = report.get("recommendations", [])
+        if recommendations:
+            console.print("[bold]Recommendations:[/bold]")
+            for rec in recommendations:
+                console.print(f"- {rec}")
+        else:
+            console.print("[dim]No coefficient adjustments recommended yet.[/dim]")
+
+
 # --- Timer Commands ---
 
 def _get_time_manager() -> TimeTrackingManager:
