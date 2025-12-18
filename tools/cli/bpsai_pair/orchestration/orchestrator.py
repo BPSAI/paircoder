@@ -19,6 +19,7 @@ import yaml
 from .codex import CodexAdapter, Flow, FlowResult, load_flow
 from .handoff import HandoffManager, HandoffPackage
 from .headless import HeadlessSession, HeadlessResponse
+from .planner import PlannerAgent, PlanOutput, should_trigger_planner
 
 logger = logging.getLogger(__name__)
 
@@ -412,7 +413,16 @@ class Orchestrator:
         assignment.status = "running"
 
         try:
-            if assignment.agent == "claude-code":
+            # Check if this is a design/planning task that should use the planner agent
+            task = self.analyze_task(assignment.task_id)
+            use_planner = should_trigger_planner(
+                task_type=task.task_type.value.upper(),
+                task_title=task.description,
+            )
+
+            if use_planner and assignment.permission_mode == "plan":
+                result = self._execute_with_planner(assignment)
+            elif assignment.agent == "claude-code":
                 result = self._execute_with_claude(assignment)
             elif assignment.agent == "codex-cli":
                 result = self._execute_with_codex(assignment)
@@ -481,6 +491,42 @@ class Orchestrator:
             ) if False else {"success": False}
 
             return {"success": False, "result": "No flow found for task"}
+
+    def _execute_with_planner(self, assignment: Assignment) -> dict[str, Any]:
+        """
+        Execute a design/planning task with the planner agent.
+
+        The planner operates in read-only mode and returns structured
+        planning output including phases, files, and complexity estimates.
+
+        Args:
+            assignment: The task assignment
+
+        Returns:
+            Dictionary with planning results
+        """
+        planner = PlannerAgent(
+            agents_dir=self.project_root / ".claude" / "agents",
+            working_dir=self.project_root,
+        )
+
+        task_dir = self.project_root / ".paircoder"
+        context_dir = task_dir / "context"
+
+        plan = planner.plan(
+            task_id=assignment.task_id,
+            task_dir=task_dir,
+            context_dir=context_dir,
+        )
+
+        return {
+            "success": True,
+            "result": plan.raw_output or plan.summary,
+            "plan": plan.to_dict(),
+            "phases": len(plan.phases),
+            "files_to_modify": plan.files_to_modify,
+            "complexity": plan.estimated_complexity,
+        }
 
     def _find_task_file(self, task_id: str) -> Optional[Path]:
         """Find the task file for a given task ID."""

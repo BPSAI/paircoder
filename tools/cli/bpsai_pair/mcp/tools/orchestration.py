@@ -4,6 +4,7 @@ MCP Orchestration Tools
 Implements orchestration tools:
 - paircoder_orchestrate_analyze: Analyze task and get model recommendation
 - paircoder_orchestrate_handoff: Create handoff package for agent transitions
+- paircoder_orchestrate_plan: Invoke planner agent for design tasks
 """
 
 from pathlib import Path
@@ -156,6 +157,74 @@ def register_orchestration_tools(server: Any) -> None:
                 "package_path": str(package_path),
                 "files_included": files_in_progress or [],
                 "summary_length": len(full_summary),
+            }
+        except FileNotFoundError:
+            return {"error": {"code": "NOT_FOUND", "message": "No .paircoder directory found"}}
+        except Exception as e:
+            return {"error": {"code": "ERROR", "message": str(e)}}
+
+    @server.tool()
+    async def paircoder_orchestrate_plan(
+        task_id: str,
+        prompt: Optional[str] = None,
+        include_files: Optional[list] = None,
+    ) -> dict:
+        """
+        Invoke the planner agent for design and planning tasks.
+
+        The planner operates in read-only mode and returns a structured
+        implementation plan with phases, files to modify, and complexity estimates.
+
+        Args:
+            task_id: Task ID to plan (loads context from task file)
+            prompt: Optional additional prompt/instructions for planning
+            include_files: Optional list of relevant source files to include in context
+
+        Returns:
+            Structured plan with phases, files, complexity, and risks
+        """
+        try:
+            from ...orchestration import PlannerAgent
+
+            project_root = get_project_root()
+
+            planner = PlannerAgent(
+                agents_dir=project_root / ".claude" / "agents",
+                working_dir=project_root,
+            )
+
+            task_dir = project_root / ".paircoder"
+            context_dir = task_dir / "context"
+
+            # Prepare relevant files
+            relevant_files = None
+            if include_files:
+                relevant_files = [project_root / f for f in include_files]
+
+            plan = planner.plan(
+                task_id=task_id,
+                task_dir=task_dir,
+                context_dir=context_dir,
+                relevant_files=relevant_files,
+            )
+
+            return {
+                "status": "success",
+                "task_id": task_id,
+                "summary": plan.summary,
+                "phases": [
+                    {
+                        "name": phase.name,
+                        "description": phase.description,
+                        "tasks": phase.tasks,
+                        "files": phase.files,
+                    }
+                    for phase in plan.phases
+                ],
+                "files_to_modify": plan.files_to_modify,
+                "complexity": plan.estimated_complexity,
+                "risks": plan.risks,
+                "raw_output": plan.raw_output,
             }
         except FileNotFoundError:
             return {"error": {"code": "NOT_FOUND", "message": "No .paircoder directory found"}}

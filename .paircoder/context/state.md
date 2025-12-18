@@ -53,13 +53,13 @@ All 7 tasks completed (250/250 points).
 | Task | Title | Status | Priority | Complexity |
 |------|-------|--------|----------|------------|
 | TASK-096 | Agent invocation framework | **done** | P0 | 45 |
-| TASK-097 | Planner agent implementation | pending | P1 | 35 |
+| TASK-097 | Planner agent implementation | **done** | P1 | 35 |
 | TASK-098 | Reviewer agent implementation | pending | P1 | 35 |
 | TASK-099 | Security agent implementation | pending | P0 | 40 |
 | TASK-100 | Agent handoff protocol | pending | P1 | 40 |
 | TASK-101 | Agent selection logic | pending | P0 | 30 |
 
-**Progress:** 1/6 tasks complete (45/225 points)
+**Progress:** 2/6 tasks complete (80/225 points)
 
 ### Backlog (Deprioritized)
 
@@ -72,6 +72,36 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-17 - TASK-097: Planner Agent Implementation
+
+**TASK-097: Planner Agent Implementation** - DONE
+
+Created the PlannerAgent for design and planning tasks:
+
+**New file:** `tools/cli/bpsai_pair/orchestration/planner.py`
+- `PlanPhase` dataclass - represents a phase in the implementation plan
+- `PlanOutput` dataclass - structured plan with summary, phases, files, complexity, risks
+- `PlanOutput.from_raw_text()` - parses markdown output into structured data
+- `PlannerAgent` class - invokes planner via AgentInvoker framework
+- `should_trigger_planner()` - trigger conditions for routing
+- `invoke_planner()` - convenience function for one-shot planning
+
+**Features:**
+- Loads `.claude/agents/planner.md` via AgentInvoker
+- Always operates in read-only `plan` permission mode
+- Builds context from task description + project context + relevant files
+- Returns structured `PlanOutput` with phases, files, complexity
+- Parses markdown output into structured plan data
+
+**Updated files:**
+- `orchestration/__init__.py` - exports planner classes
+- `orchestration/orchestrator.py` - added `_execute_with_planner()` method
+- `mcp/tools/orchestration.py` - added `paircoder_orchestrate_plan` MCP tool
+
+**Tests:** 23 tests in `test_planner_agent.py`
+
+---
 
 ### Session: 2025-12-17 - TASK-096: Agent Invocation Framework
 
