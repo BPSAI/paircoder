@@ -36,15 +36,31 @@ This adds a comment to the Trello card without changing status. Use for:
 
 ## Completing a Task
 
+**Step 1:** Find the Trello card ID:
+```bash
+bpsai-pair ttask list
+```
+
+**Step 2:** Complete using `ttask done` (REQUIRED - this checks acceptance criteria):
+```bash
+bpsai-pair ttask done TRELLO-XX --summary "What was accomplished" --list "Deployed/Done"
+```
+
+This will:
+- Move Trello card to "Deployed/Done" list
+- **Auto-check ALL acceptance criteria items** ✓
+- Add completion summary to card
+
+**Step 3:** Update local task file:
 ```bash
 bpsai-pair task update TASK-XXX --status done
 ```
 
 This will:
 - Update task file status
-- Move Trello card to "Deployed / Done" list
-- Stop timer (when implemented)
 - Log completion in state.md
+
+⚠️ **WARNING**: Using only `task update --status done` will NOT check acceptance criteria on Trello. Always use `ttask done` first!
 
 ## Quick Reference
 
@@ -68,22 +84,24 @@ Use these for direct Trello operations.
 
 | Action | Command |
 |--------|---------|
-| Add progress comment | `bpsai-pair ttask comment TASK-XXX "message"` |
-| Start card directly | `bpsai-pair ttask start TASK-XXX` |
-| Complete card directly | `bpsai-pair ttask done TASK-XXX --summary "what was done"` |
-| Block card | `bpsai-pair ttask block TASK-XXX --reason "why"` |
-| Move card to list | `bpsai-pair ttask move TASK-XXX "List Name"` |
 | List Trello cards | `bpsai-pair ttask list` |
-| Show card details | `bpsai-pair ttask show TASK-XXX` |
+| Show card details | `bpsai-pair ttask show TRELLO-XX` |
+| Start card | `bpsai-pair ttask start TRELLO-XX` |
+| **Complete card** | `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` |
+| Check acceptance item | `bpsai-pair ttask check TRELLO-XX "item text"` |
+| Add progress comment | `bpsai-pair ttask comment TRELLO-XX "message"` |
+| Block card | `bpsai-pair ttask block TRELLO-XX --reason "why"` |
+| Move card to list | `bpsai-pair ttask move TRELLO-XX "List Name"` |
 
 ### When to Use `task` vs `ttask`
 
 | Scenario | Use |
 |----------|-----|
-| Changing task status | `task update` (fires hooks) |
+| Starting a task | `task update --status in_progress` |
 | Adding progress notes | `ttask comment` |
+| **Completing a task** | **`ttask done` then `task update`** |
+| Checking acceptance criteria | `ttask check` |
 | Working with Trello-only cards | `ttask` commands |
-| Need timers/metrics to trigger | `task update` |
 
 ## Task Status Values
 
@@ -110,9 +128,11 @@ Use these for direct Trello operations.
 ### When Completing a Task
 1. Ensure tests pass: `pytest -v`
 2. Update state.md with what was done
-3. Run: `bpsai-pair task update TASK-XXX --status done`
-4. Verify Trello card moved
-5. Commit changes with task ID in message
+3. Find card ID: `bpsai-pair ttask list` (note the TRELLO-XX id)
+4. Complete on Trello: `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
+   - This moves card AND checks all acceptance criteria ✓
+5. Update local file: `bpsai-pair task update TASK-XXX --status done`
+6. Commit changes with task ID in message
 
 ## Trello Sync Commands
 
