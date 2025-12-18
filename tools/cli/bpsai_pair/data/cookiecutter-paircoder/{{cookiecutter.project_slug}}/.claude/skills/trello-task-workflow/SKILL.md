@@ -1,242 +1,246 @@
 ---
 name: trello-task-workflow
-description: Work on tasks from Trello board. Use when user wants to start, complete, or check status of Trello tasks. Triggers on phrases like "work on task", "start TRELLO-", "finish task", "next task", "I'm blocked".
-allowed-tools: Read, Grep, Glob, Bash, Edit, Write
+description: |
+  Work on tasks from Trello board. Automatically claims tasks, 
+  updates status, and logs activity back to Trello. Use when
+  starting work, completing tasks, or checking what to work on next.
+triggers:
+  - work on task
+  - start task
+  - what should I work on
+  - next task
+  - pick up task
+  - claim task
+  - finish task
+  - complete task
+  - mark done
+  - I'm blocked
+model_invoked: true
+roles:
+  driver:
+    primary: true
+    description: Execute task implementation
+  navigator:
+    primary: false
+    description: Help understand task requirements
 ---
 
 # Trello Task Workflow
 
-Work on tasks managed in Trello, keeping the board in sync with your progress.
-
-## When This Skill Activates
-
-This skill is invoked when:
-- User asks to work on a Trello task (e.g., "work on TRELLO-123")
-- User asks for the next task to work on
-- User reports being blocked
-- User wants to complete/finish a task
-- Keywords: trello, TRELLO-*, start task, finish task, blocked, next task
+This skill integrates with your project's Trello board for task management, enabling seamless coordination between AI agents and human developers.
 
 ## Prerequisites
 
-Before using this skill:
-1. Connect to Trello: `bpsai-pair trello connect`
-2. Set active board: `bpsai-pair trello use-board <board-id>`
-3. Verify connection: `bpsai-pair trello status`
+Check if Trello integration is enabled:
+
+```bash
+# Check connection status
+bpsai-pair trello status
+
+# If not connected
+bpsai-pair trello connect
+```
+
+Check your project's task backend:
+
+```bash
+# View current config
+cat .paircoder/config.yaml | grep -A 10 "tasks:"
+```
+
+If `tasks.backend` is not `trello`, this skill operates in read-only mode (can view but not update Trello).
 
 ## Finding Your Next Task
 
-### List Available Tasks
+### Option 1: Get Next Available Task
+
 ```bash
-# Show tasks in Sprint and In Progress
-bpsai-pair ttask list
-
-# Show only AI-ready tasks (if your board uses "Agent Task" field)
-bpsai-pair ttask list --agent
-
-# Filter by status
-bpsai-pair ttask list --status sprint
-bpsai-pair ttask list --status in_progress
+# Show tasks marked for AI processing, sorted by priority
+bpsai-pair task list --agent --status sprint
 ```
 
-### View Task Details
+This shows cards with:
+- "Agent Task" checkbox checked
+- In the "Sprint" list
+- Sorted by Priority (Highest first)
+- Excluding blocked tasks (unchecked dependencies)
+
+### Option 2: View All Active Tasks
+
 ```bash
-bpsai-pair ttask show TRELLO-123
+# Show everything in progress
+bpsai-pair task list --status in_progress
+
+# Show sprint backlog
+bpsai-pair task list --list "Sprint"
+```
+
+### Option 3: Show Specific Task
+
+```bash
+bpsai-pair task show TRELLO-123
 ```
 
 ## Starting Work
 
-### 1. Claim the Task
+When you begin a task:
+
 ```bash
-bpsai-pair ttask start TRELLO-123 --summary "Starting implementation"
+bpsai-pair task start TRELLO-123
 ```
 
-This will:
-- Move the card to "In Progress"
-- Add a comment with timestamp and agent identifier
-- Return the card URL for reference
+**What happens:**
+1. Card moves from "Sprint" → "In Progress"
+2. Comment added: "🧠 [claude] started: Beginning work"
+3. Local state updated for `bpsai-pair status`
 
-### 2. Read the Requirements
-After claiming:
-1. Review the card description
-2. Check any checklists
-3. Note acceptance criteria
-4. Identify dependencies
+**Important:** Only start one task at a time. Complete or block before starting another.
 
-### 3. Begin Implementation
-Use appropriate workflow:
-- For new features: `design-plan-implement` skill
-- For bug fixes: `tdd-implement` skill
-- For refactoring: `tdd-implement` skill
+## During Implementation
 
-## During Work
+### Reference Task in Commits
 
-### Progress Updates
+Always include the task ID in commit messages:
+
 ```bash
-# Add progress comment
-bpsai-pair ttask comment TRELLO-123 "Completed authentication module"
+git commit -m "feat(auth): add JWT validation (TRELLO-123)"
 ```
 
-### Encountering Blockers
+### Update Progress (Optional)
+
+For long-running tasks, add progress updates:
+
 ```bash
-# Mark as blocked with reason
-bpsai-pair ttask block TRELLO-123 --reason "Waiting for API credentials"
+bpsai-pair task comment TRELLO-123 "Completed API endpoints, starting frontend integration"
 ```
 
-This will:
-- Move card to "Blocked" list
-- Add comment explaining the blocker
-- Make the impediment visible to team
+### Check Task Requirements
+
+If you need to review the task details:
+
+```bash
+bpsai-pair task show TRELLO-123
+```
+
+Look for:
+- **Description**: Full requirements
+- **Checklists**: Acceptance criteria, implementation steps
+- **Labels**: Category, priority, type
 
 ## Completing Work
 
-### When Task is Done
-```bash
-# Complete the task (moves to "In Review")
-bpsai-pair ttask done TRELLO-123 --summary "Implemented feature with tests"
-
-# Or move directly to Done
-bpsai-pair ttask done TRELLO-123 --summary "Complete" --list "Done"
-```
-
-### Completion Checklist
-
-Before marking done:
-- [ ] All acceptance criteria met
-- [ ] Tests pass: `pytest`
-- [ ] No lint errors: `ruff check .`
-- [ ] Code committed with proper message
-- [ ] Card checklists completed
-
-## Card ID Formats
-
-The following formats are accepted:
-- `TRELLO-123` (recommended)
-- `123` (short ID)
-- Full Trello card ID
-
-## Comment Format
-
-All automated comments include an agent identifier:
-```
-[claude] started: Beginning work
-[claude] progress: Completed authentication module
-[claude] completed: Implemented feature with tests
-[claude] blocked: Waiting for API credentials
-```
-
-## Quick Reference
-
-### Common Commands
-```bash
-# Status
-bpsai-pair trello status          # Check connection
-bpsai-pair ttask list             # List active tasks
-
-# Work on task
-bpsai-pair ttask show TRELLO-123  # View details
-bpsai-pair ttask start TRELLO-123 # Start work
-bpsai-pair ttask comment TRELLO-123 "message"  # Progress update
-bpsai-pair ttask done TRELLO-123 -s "Summary"  # Complete
-
-# Issues
-bpsai-pair ttask block TRELLO-123 -r "Reason"  # Report blocker
-bpsai-pair ttask move TRELLO-123 -l "Sprint"   # Move to list
-```
-
-### Typical Flow
-```
-1. bpsai-pair ttask list --status sprint    # Find work
-2. bpsai-pair ttask show TRELLO-123         # Review task
-3. bpsai-pair ttask start TRELLO-123        # Claim task
-4. [implement the feature/fix]              # Do the work
-5. bpsai-pair ttask comment TRELLO-123 "Progress..."  # Update
-6. bpsai-pair ttask done TRELLO-123 -s "Complete"     # Finish
-```
-
-## Configuration
-
-Customize list names in `.paircoder/config.yaml`:
-
-```yaml
-trello:
-  lists:
-    sprint: "Sprint"
-    in_progress: "In Progress"
-    review: "In Review"
-    done: "Done"
-    blocked: "Blocked"
-  agent_identity: "claude"
-```
-
-View/update with:
-```bash
-bpsai-pair trello config --show
-bpsai-pair trello config --set-list "in_progress=Working"
-bpsai-pair trello config --agent codex
-```
-
-## Recording Your Work
-
-### Starting a Task
-When beginning work, both local and Trello are updated:
+When implementation is done:
 
 ```bash
-# Starts task and syncs to Trello
-bpsai-pair ttask start TRELLO-123 --summary "Starting implementation"
+bpsai-pair task done TRELLO-123 --summary "Implemented JWT auth with refresh tokens, added unit tests"
 ```
 
-**Via MCP (if available):**
-```json
-Tool: paircoder_task_start
-Input: {"task_id": "TRELLO-123", "agent": "claude-code"}
-```
+**What happens:**
+1. Card moves to "In Review" (or "Done" if no review needed)
+2. Comment added with completion summary
+3. Activity logged for dashboard visibility
 
-Auto-hooks (if enabled) will also:
-- Start time tracking
-- Update state.md
-- Sync card status to Trello
+### Include Meaningful Summary
 
-### Progress Updates
-Add comments to keep Trello in sync:
+Good summaries help reviewers:
+- ✅ "Added user authentication with JWT, bcrypt password hashing, and 15 unit tests"
+- ❌ "Done"
+
+## Handling Blockers
+
+If you can't proceed:
 
 ```bash
-bpsai-pair ttask comment TRELLO-123 "Completed module X"
+bpsai-pair task block TRELLO-123 --reason "Waiting for API credentials from DevOps"
 ```
 
-### Completing a Task
-When done, sync completion to Trello:
+**What happens:**
+1. Card moves to "Blocked" list
+2. Comment added with block reason
+3. Task becomes visible in "blocked" status queries
+
+### Common Block Reasons
+
+- Missing credentials or API keys
+- Dependency on another task
+- Unclear requirements (needs clarification)
+- External service unavailable
+- Waiting for code review
+
+## Workflow Summary
+
+```
+┌─────────┐    start     ┌─────────────┐    done    ┌───────────┐
+│ Sprint  │ ──────────►  │ In Progress │ ────────►  │ In Review │
+└─────────┘              └─────────────┘            └───────────┘
+                               │
+                               │ block
+                               ▼
+                         ┌─────────┐
+                         │ Blocked │
+                         └─────────┘
+```
+
+## Best Practices
+
+### 1. One Task at a Time
+Focus on completing one task before picking up another. This keeps the board accurate.
+
+### 2. Check Dependencies First
+Before starting, verify no blockers:
 
 ```bash
-bpsai-pair ttask done TRELLO-123 -s "Implemented with 5 tests"
+bpsai-pair task show TRELLO-123 | grep -A 5 "dependencies"
 ```
 
-**Via MCP (if available):**
-```json
-Tool: paircoder_task_complete
-Input: {
-  "task_id": "TRELLO-123",
-  "summary": "Implemented feature with tests",
-  "input_tokens": 15000,
-  "output_tokens": 3000
-}
+### 3. Update Status Promptly
+Move cards as soon as status changes. Stale boards confuse the team.
+
+### 4. Meaningful Comments
+Add comments for significant milestones, not every small change.
+
+### 5. Link to PRs
+When creating a PR, include the Trello link:
+
+```markdown
+## Related
+- Trello: https://trello.com/c/abc123
 ```
 
-Auto-hooks will:
-- Stop timer and record duration
-- Record token metrics
-- Update Trello card to Done
-- Check if other tasks are unblocked
+## Troubleshooting
 
-### Syncing Local Changes to Trello
-If you made local task changes that need to sync:
+### "Not connected to Trello"
 
-**Via MCP:**
-```json
-Tool: paircoder_trello_update_card
-Input: {
-  "task_id": "TRELLO-123",
-  "action": "complete",
-  "comment": "Implemented feature X"
-}
+```bash
+bpsai-pair trello connect
+# Follow prompts for API key and token
 ```
+
+### "Board not configured"
+
+```bash
+bpsai-pair trello boards                    # List available boards
+bpsai-pair trello use-board <board-id>      # Set board for project
+```
+
+### "Task not found"
+
+The task ID format is `TRELLO-<short_id>`. Find the short ID:
+- From URL: `trello.com/c/abc123` → `TRELLO-abc123`
+- From card: Look at the card number in Trello
+
+### "Permission denied"
+
+Your Trello token may lack permissions. Regenerate with `read,write,account` scopes:
+1. Go to https://trello.com/app-key
+2. Generate new token
+3. Run `bpsai-pair trello connect` with new credentials
+
+## Integration with Other Skills
+
+This skill works alongside:
+
+- **design-plan-implement**: Creates tasks during planning phase
+- **tdd-implement**: Use for bug fix tasks
+- **code-review**: Use when reviewing PR linked to task
+- **finish-branch**: Automatically marks task done when branch merges

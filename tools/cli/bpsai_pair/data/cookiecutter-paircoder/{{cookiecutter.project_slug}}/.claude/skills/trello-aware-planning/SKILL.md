@@ -1,289 +1,175 @@
----
-name: trello-aware-planning
-description: Create and organize tasks in Trello during planning. Use when user wants to plan features, break down work, or organize a sprint. Triggers on phrases like "plan feature", "break down", "create tasks", "organize sprint".
-allowed-tools: Read, Grep, Glob, Bash, Edit, Write
----
+# Trello-Aware Planning Skill
 
-# Trello-Aware Planning
+## Purpose
+Create and manage development plans with automatic Trello synchronization following BPS AI Software project management guidelines.
 
-Plan features and create tasks directly in Trello, integrated with PairCoder's planning system.
+## Triggers
+- "plan feature", "create plan", "new project"
+- "create tasks", "break down", "sprint planning"
+- "sync to trello", "create board"
 
-## When This Skill Activates
+## BPS Trello Guidelines
 
-This skill is invoked when:
-- User asks to plan a new feature
-- User wants to break down work into tasks
-- User asks to organize or update the sprint
-- User wants to create Trello cards for planned work
-- Keywords: plan, feature, breakdown, tasks, sprint, organize, cards
+### Board Structure (7 Lists Max)
+1. **Intake / Backlog** - New ideas, bugs, tickets
+2. **Planned / Ready** - Selected for upcoming work (1-2 weeks)
+3. **In Progress** - Active development
+4. **Review / Testing** - Under review or verification
+5. **Deployed / Done** - Completed and live
+6. **Issues / Tech Debt** - Bugs, regressions, improvements
+7. **Notes / Ops Log** - Deployment notes, decisions
 
-## Prerequisites
-
-Ensure Trello is configured:
-```bash
-bpsai-pair trello status
-# Should show: Connected, Board configured
+### Card Title Format
 ```
+[Stack] Task Name
+```
+Examples:
+- `[CLI] Implement MCP server core`
+- `[Docs] Update README with v2.4 features`
+- `[Flask] Add authentication middleware`
 
-## Planning Workflow
+### Effort Estimation (Not Story Points)
+Use throughput-based sizing:
+- **S (Small)** - Few hours, single file changes (complexity 0-25)
+- **M (Medium)** - Half day to full day (complexity 26-50)
+- **L (Large)** - Multiple days, cross-cutting (complexity 51+)
 
-### Phase 1: Design
+### Labels by Stack
+| Label | Color | Use For |
+|-------|-------|---------|
+| Frontend | 🟩 Green | React, UI, UX |
+| Backend | 🟦 Blue | Flask, API, Python |
+| Worker | 🟪 Purple | Background jobs, AI pipelines |
+| Deployment | 🟥 Red | CI/CD, infrastructure |
+| Bug / Issue | 🟧 Orange | Bugs, runtime issues |
+| Security | 🟨 Yellow | Auth, compliance |
+| Documentation | 🟫 Brown | Docs, guides |
+| AI / ML | ⚫ Black | Models, LLM, MCP |
 
-Before creating cards, understand the work:
+## Workflow
 
-1. **Clarify Requirements**
-   - What is the user trying to accomplish?
+### Phase 1: Planning
+
+1. **Understand Requirements**
+   - What problem are we solving?
+   - What's the scope?
    - What are the acceptance criteria?
-   - What are the non-goals?
 
-2. **Identify Components**
-   - What parts of the codebase are affected?
-   - What new files/modules are needed?
-   - What existing code needs modification?
+2. **Break Down into Tasks**
+   - Each task = one unit of work
+   - Tasks should be completable in 1-2 days max
+   - Identify dependencies
 
-3. **Consider Approaches**
-   - What are the implementation options?
-   - What are the tradeoffs?
-   - Which approach is recommended?
+3. **Create Plan File**
+   ```bash
+   bpsai-pair plan new <slug> --type feature --title "Title"
+   ```
 
-### Phase 2: Task Breakdown
+4. **Add Tasks to Plan**
+   For each task:
+   - Assign effort (S/M/L based on complexity)
+   - Identify stack for labeling
+   - Note dependencies
 
-Break the work into discrete tasks:
+### Phase 2: Trello Sync
 
-#### Task Sizing Guidelines
+1. **Sync Plan to Trello**
 
-| Size | Duration | Description |
-|------|----------|-------------|
-| Small | 15-30 min | Single function, simple change |
-| Medium | 30-60 min | Module, multiple related changes |
-| Large | 1-2 hours | Feature component, significant work |
+   **Option A: Direct to Planned/Ready** (Recommended for sprint planning)
+   ```bash
+   bpsai-pair plan sync-trello <plan-id> --target-list "Planned/Ready" [--board <board-id>]
+   ```
 
-**Avoid tasks larger than 2 hours** - break them down further.
+   **Option B: To Intake/Backlog then move** (Default behavior)
+   ```bash
+   bpsai-pair plan sync-trello <plan-id> [--board <board-id>]
+   ```
+   Then move each card:
+   ```bash
+   bpsai-pair ttask move TRELLO-XX --list "Planned/Ready"
+   ```
 
-#### Task Template
+   ⚠️ **IMPORTANT:** Sprint tasks should be in "Planned/Ready", not "Intake/Backlog".
+   Cards in "Intake/Backlog" are just ideas, not selected for work.
 
-For each task, capture:
-- **Title**: Clear, action-oriented (e.g., "Add user validation to signup form")
-- **Description**: What needs to be done
-- **Acceptance Criteria**: How to verify completion
-- **Priority**: P0 (must), P1 (should), P2 (could)
-- **Dependencies**: What must be done first
+2. **Verify Card Creation**
+   - Cards should be in "Planned / Ready" list (not Intake/Backlog)
+   - Title format: `[Stack] Task Name`
+   - Description includes objective and acceptance criteria
+   - Labels match stack
+   - Effort field set
 
-### Phase 3: Create in Trello
+### Phase 3: Execution Tracking
 
-#### Option A: Manual Creation
-Guide the user to create cards in Trello directly, providing:
-1. Suggested card titles
-2. Description content
-3. Checklist items for acceptance criteria
-
-#### Option B: File-Based Sync
-Create task files that can be synced:
-
+When starting a task:
 ```bash
-# Create plan file
-bpsai-pair plan new feature-name --type feature --title "Feature Title"
-
-# Add tasks to plan
-bpsai-pair plan add-task feature-name --id TASK-001 --title "Task title"
+bpsai-pair task update <task-id> --status in_progress
+# Or via MCP: paircoder_task_start
 ```
+- Card moves to "In Progress"
+- Timer starts automatically (if hooks enabled)
 
-Then user manually creates corresponding Trello cards.
-
-### Phase 4: Sprint Organization
-
-#### Prioritizing the Sprint
-
-Help organize which tasks go into the sprint:
-
-1. **Must Have (P0)**: Required for feature to work
-2. **Should Have (P1)**: Important but can ship without
-3. **Nice to Have (P2)**: Future enhancement
-
-#### Sprint Capacity
-
-Consider sprint capacity:
-```
-Sprint Days × Hours/Day × Team Size = Available Hours
-Available Hours × 0.7 = Realistic Capacity (70% efficiency)
-```
-
-Recommend task selection based on:
-- Priority ordering
-- Dependency ordering
-- Realistic capacity
-
-### Phase 5: Review Board State
-
-After planning, verify:
-
+When completing a task:
 ```bash
-# List all board lists
-bpsai-pair trello lists
+bpsai-pair task update <task-id> --status done
+# Or via MCP: paircoder_task_complete
+```
+- Card moves to "Deployed / Done"
+- Metrics recorded
+- Timer stopped
 
-# Show sprint tasks
-bpsai-pair ttask list --status sprint
+## Recording Your Work
 
-# Check for blocked items
-bpsai-pair ttask list --status blocked
+### Before Planning Session
+```bash
+# Check current plans
+bpsai-pair plan list
+
+# Check what's already in progress
+bpsai-pair task list --status in_progress
 ```
 
-## Planning Templates
+### After Creating Plan
+```bash
+# Verify plan created
+bpsai-pair plan status <plan-id>
 
-### Feature Planning Prompt
+# Sync to Trello
+bpsai-pair plan sync-trello <plan-id> --dry-run  # Preview first
+bpsai-pair plan sync-trello <plan-id>            # Actually sync
+```
 
-When user asks to plan a feature, gather:
+### Via MCP (if available)
+```json
+Tool: paircoder_plan_status
+Input: {"plan_id": "plan-2025-01-feature-xyz"}
 
-1. **What**: Describe the feature in 2-3 sentences
-2. **Why**: What problem does it solve?
-3. **Who**: Who benefits from this feature?
-4. **How**: High-level approach
-5. **When**: Priority/timeline expectations
+Tool: paircoder_trello_sync_plan
+Input: {"plan_id": "plan-2025-01-feature-xyz", "create_lists": true}
+```
 
-### Task Creation Prompt
+## Weekly Summary
 
-For each task, confirm:
+At end of each week, create summary in "Notes / Ops Log":
 
 ```markdown
-**Title**: [Action verb] [component] [outcome]
-**Description**:
-[What needs to be done]
-[Where in codebase]
-[Any special considerations]
+### Week {N} Summary ({date range})
+✅ {X} Completed
+⚙️ {Y} In Progress
+🐞 {Z} Issues
 
-**Acceptance Criteria**:
-- [ ] Criterion 1
-- [ ] Criterion 2
+**Highlights:**
+- Completed feature X
+- Fixed critical bug Y
 
-**Priority**: P0/P1/P2
-**Depends On**: None / TASK-XXX
+**Blockers:**
+- Waiting on API access for Z
 ```
 
 ## Best Practices
 
-### DO
-- Keep tasks small and focused
-- Include clear acceptance criteria
-- Set realistic priorities
-- Consider dependencies
-- Use consistent naming
-
-### DON'T
-- Create vague tasks ("fix stuff")
-- Skip acceptance criteria
-- Overload the sprint
-- Ignore dependencies
-- Create duplicate tasks
-
-## Quick Reference
-
-### Planning Commands
-```bash
-# Check board state
-bpsai-pair trello lists
-bpsai-pair ttask list --status backlog
-
-# PairCoder planning (file-based)
-bpsai-pair plan new feature-x --type feature --title "Feature X"
-bpsai-pair plan add-task feature-x --id TASK-001 --title "Task 1"
-bpsai-pair task list --plan feature-x
-```
-
-### Sprint Management
-```bash
-# Move tasks between lists
-bpsai-pair ttask move TRELLO-123 --list "Sprint"
-bpsai-pair ttask move TRELLO-124 --list "Backlog"
-
-# Review sprint
-bpsai-pair ttask list --status sprint
-```
-
-## Integration with PairCoder Flows
-
-This skill works alongside other skills:
-
-1. **trello-aware-planning** (this skill)
-   - Create the plan and tasks
-
-2. **trello-task-workflow**
-   - Work on individual tasks
-
-3. **tdd-implement**
-   - Implement each task with TDD
-
-4. **code-review**
-   - Review completed work
-
-5. **finish-branch**
-   - Complete and merge
-
-## Recording Your Work
-
-### Creating Plans
-When creating a new plan:
-
-```bash
-# Create plan with goals
-bpsai-pair plan new feature-x --type feature --title "Feature X" --goal "Improve Y"
-
-# Add tasks to plan
-bpsai-pair plan add-task feature-x --id TASK-001 --title "Task title"
-```
-
-### Syncing to Trello
-After creating tasks, sync them to Trello:
-
-```bash
-# Sync plan tasks to Trello board as cards
-bpsai-pair plan sync-trello plan-2025-01-feature-x --board <board-id>
-
-# Dry run to preview
-bpsai-pair plan sync-trello plan-2025-01-feature-x --board <board-id> --dry-run
-```
-
-**Via MCP (if available):**
-```json
-Tool: paircoder_trello_sync_plan
-Input: {
-  "plan_id": "plan-2025-01-feature-x",
-  "board_id": "BOARD_ID",
-  "create_lists": true,
-  "link_cards": true
-}
-```
-
-This will:
-- Create lists for each sprint if missing
-- Create cards for each task
-- Link task files to Trello cards
-- Set card descriptions with objectives
-
-### Viewing Plan Status
-Check progress on the plan:
-
-```bash
-bpsai-pair plan status plan-2025-01-feature-x
-```
-
-**Via MCP:**
-```json
-Tool: paircoder_plan_status
-Input: {"plan_id": "plan-2025-01-feature-x"}
-```
-
-### Recording Planning Time
-If tracking time spent planning:
-
-**Via MCP:**
-```json
-Tool: paircoder_metrics_record
-Input: {
-  "task_id": "planning",
-  "agent": "claude-code",
-  "model": "claude-sonnet-4-5",
-  "input_tokens": 8000,
-  "output_tokens": 2000,
-  "action_type": "planning"
-}
-```
+1. **Keep tasks small** - If > 2 days, break it down further
+2. **Clear titles** - Anyone should understand from title alone
+3. **Track throughput** - Count cards completed, not points estimated
+4. **Update daily** - 5 min to move cards and add notes
+5. **Weekly review** - 15 min to summarize and plan ahead
