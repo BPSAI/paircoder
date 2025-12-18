@@ -316,3 +316,197 @@ class TestGetHookRunner:
             # Both should be HookRunner instances
             assert isinstance(runner1, HookRunner)
             assert isinstance(runner2, HookRunner)
+
+
+class TestTimerHooksIntegration:
+    """Integration tests for timer hooks with actual time tracking."""
+
+    @pytest.fixture
+    def runner_with_timer_hooks(self, tmp_path):
+        """Create a hook runner configured for timer hooks."""
+        config = {
+            "hooks": {
+                "enabled": True,
+                "on_task_start": ["start_timer"],
+                "on_task_complete": ["stop_timer"],
+            },
+            "time_tracking": {
+                "provider": "none",
+                "auto_start": True,
+                "auto_stop": True,
+            },
+        }
+        return HookRunner(config, tmp_path)
+
+    def test_start_timer_creates_active_timer(self, runner_with_timer_hooks, tmp_path):
+        """Test that start_timer hook actually creates an active timer."""
+        task = Mock()
+        task.title = "Test Task"
+        ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_start",
+        )
+
+        result = runner_with_timer_hooks._start_timer(ctx)
+
+        assert result["timer_started"] is True
+        assert "timer_id" in result
+
+        # Verify the timer is persisted in the cache
+        cache_path = tmp_path / "time-tracking-cache.json"
+        assert cache_path.exists()
+
+        import json
+        with open(cache_path) as f:
+            cache_data = json.load(f)
+        assert "_active" in cache_data
+        assert cache_data["_active"]["task_id"] == "TASK-001"
+
+    def test_stop_timer_records_duration(self, runner_with_timer_hooks, tmp_path):
+        """Test that stop_timer hook records duration correctly."""
+        import time
+
+        task = Mock()
+        task.title = "Test Task"
+
+        # Start the timer
+        start_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_start",
+        )
+        start_result = runner_with_timer_hooks._start_timer(start_ctx)
+        assert start_result["timer_started"] is True
+
+        # Wait a bit
+        time.sleep(0.05)
+
+        # Stop the timer
+        stop_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_complete",
+        )
+        stop_result = runner_with_timer_hooks._stop_timer(stop_ctx)
+
+        assert stop_result["timer_stopped"] is True
+        assert stop_result["duration_seconds"] > 0
+        assert "formatted_duration" in stop_result
+        assert "total_seconds" in stop_result
+
+    def test_stop_timer_fails_for_wrong_task(self, runner_with_timer_hooks, tmp_path):
+        """Test that stop_timer fails if called for different task."""
+        task = Mock()
+        task.title = "Test Task"
+
+        # Start timer for TASK-001
+        start_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_start",
+        )
+        runner_with_timer_hooks._start_timer(start_ctx)
+
+        # Try to stop for TASK-002
+        stop_ctx = HookContext(
+            task_id="TASK-002",
+            task=task,
+            event="on_task_complete",
+        )
+        stop_result = runner_with_timer_hooks._stop_timer(stop_ctx)
+
+        assert stop_result["timer_stopped"] is False
+        assert "TASK-001" in stop_result.get("reason", "")
+
+    def test_stop_timer_no_active_timer(self, runner_with_timer_hooks, tmp_path):
+        """Test that stop_timer handles no active timer."""
+        task = Mock()
+        task.title = "Test Task"
+
+        # Try to stop without starting
+        stop_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_complete",
+        )
+        stop_result = runner_with_timer_hooks._stop_timer(stop_ctx)
+
+        assert stop_result["timer_stopped"] is False
+        assert "No active timer" in stop_result.get("reason", "")
+
+    def test_timer_persists_across_runner_instances(self, tmp_path):
+        """Test that timer survives creating new HookRunner instances."""
+        import time
+
+        config = {
+            "hooks": {
+                "enabled": True,
+                "on_task_start": ["start_timer"],
+                "on_task_complete": ["stop_timer"],
+            },
+        }
+
+        task = Mock()
+        task.title = "Test Task"
+
+        # First runner: start timer
+        runner1 = HookRunner(config, tmp_path)
+        start_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_start",
+        )
+        start_result = runner1._start_timer(start_ctx)
+        assert start_result["timer_started"] is True
+
+        time.sleep(0.05)
+
+        # Second runner: stop timer (simulating new CLI session)
+        runner2 = HookRunner(config, tmp_path)
+        stop_ctx = HookContext(
+            task_id="TASK-001",
+            task=task,
+            event="on_task_complete",
+        )
+        stop_result = runner2._stop_timer(stop_ctx)
+
+        assert stop_result["timer_stopped"] is True
+        assert stop_result["duration_seconds"] > 0
+
+    def test_multiple_sessions_accumulate_time(self, runner_with_timer_hooks, tmp_path):
+        """Test that multiple start/stop cycles accumulate time correctly."""
+        import time
+
+        task = Mock()
+        task.title = "Test Task"
+
+        # Run 3 work sessions
+        for i in range(3):
+            start_ctx = HookContext(
+                task_id="TASK-001",
+                task=task,
+                event="on_task_start",
+            )
+            runner_with_timer_hooks._start_timer(start_ctx)
+
+            time.sleep(0.02)
+
+            stop_ctx = HookContext(
+                task_id="TASK-001",
+                task=task,
+                event="on_task_complete",
+            )
+            runner_with_timer_hooks._stop_timer(stop_ctx)
+
+        # Check total time via cache
+        import json
+        cache_path = tmp_path / "time-tracking-cache.json"
+        with open(cache_path) as f:
+            cache_data = json.load(f)
+
+        # Should have 3 entries
+        assert len(cache_data.get("TASK-001", {}).get("entries", [])) == 3
+        # Total should be at least 60ms (3 x 20ms)
+        total_seconds = cache_data.get("TASK-001", {}).get("total_seconds", 0)
+        assert total_seconds >= 0.06

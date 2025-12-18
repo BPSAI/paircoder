@@ -143,14 +143,34 @@ class LocalTimeCache:
         """Get all task IDs with time entries."""
         return list(self._data.keys())
 
-    def set_active_timer(self, task_id: str, timer_id: str) -> None:
-        """Set the currently active timer."""
-        self._data["_active"] = {"task_id": task_id, "timer_id": timer_id}
+    def set_active_timer(
+        self,
+        task_id: str,
+        timer_id: str,
+        description: str = "",
+        start: Optional[datetime] = None,
+    ) -> None:
+        """Set the currently active timer with full state for persistence."""
+        self._data["_active"] = {
+            "task_id": task_id,
+            "timer_id": timer_id,
+            "description": description,
+            "start": (start or datetime.now()).isoformat(),
+        }
         self._save()
 
-    def get_active_timer(self) -> Optional[Dict[str, str]]:
-        """Get the currently active timer info."""
-        return self._data.get("_active")
+    def get_active_timer(self) -> Optional[Dict[str, Any]]:
+        """Get the currently active timer info.
+
+        Returns dict with: task_id, timer_id, description, start (as datetime)
+        """
+        active = self._data.get("_active")
+        if active and "start" in active:
+            # Convert start back to datetime if stored as string
+            if isinstance(active["start"], str):
+                active = active.copy()
+                active["start"] = datetime.fromisoformat(active["start"])
+        return active
 
     def clear_active_timer(self) -> None:
         """Clear the active timer."""
@@ -165,18 +185,33 @@ class NullProvider(TimeTrackingProvider):
     def __init__(self, cache: LocalTimeCache):
         self.cache = cache
         self._current_timer: Optional[Dict[str, Any]] = None
+        # Restore active timer from cache (for session persistence)
+        self._restore_active_timer()
+
+    def _restore_active_timer(self) -> None:
+        """Restore active timer from cache if one exists."""
+        active = self.cache.get_active_timer()
+        if active and all(k in active for k in ("timer_id", "task_id", "start")):
+            self._current_timer = {
+                "id": active["timer_id"],
+                "task_id": active["task_id"],
+                "description": active.get("description", ""),
+                "start": active["start"],  # Already a datetime from cache
+            }
 
     def start_timer(self, task_id: str, description: str,
                     project_id: Optional[str] = None) -> str:
         """Start a local-only timer."""
-        timer_id = f"local-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        start_time = datetime.now()
+        timer_id = f"local-{start_time.strftime('%Y%m%d%H%M%S')}"
         self._current_timer = {
             "id": timer_id,
             "task_id": task_id,
             "description": description,
-            "start": datetime.now(),
+            "start": start_time,
         }
-        self.cache.set_active_timer(task_id, timer_id)
+        # Store full timer data for session persistence
+        self.cache.set_active_timer(task_id, timer_id, description, start_time)
         return timer_id
 
     def stop_timer(self, timer_id: str) -> TimerEntry:

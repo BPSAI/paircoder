@@ -130,11 +130,30 @@ class HookRunner:
     def _start_timer(self, ctx: HookContext) -> dict:
         """Start time tracking for task."""
         try:
-            from .time_tracking import TimeTrackingManager
+            from .integrations.time_tracking import (
+                TimeTrackingManager,
+                TimeTrackingConfig,
+            )
 
-            manager = TimeTrackingManager(self.paircoder_dir.parent)
-            manager.start_task(ctx.task_id, auto_start=True)
-            return {"timer_started": True}
+            # Get task title from task object if available
+            task_title = getattr(ctx.task, "title", ctx.task_id) if ctx.task else ctx.task_id
+
+            # Load time tracking config from config.yaml
+            time_config = self.config.get("time_tracking", {})
+            config = TimeTrackingConfig(
+                provider=time_config.get("provider", "none"),
+                auto_start=time_config.get("auto_start", True),
+                auto_stop=time_config.get("auto_stop", True),
+                task_pattern=time_config.get("task_pattern", "{task_id}: {task_title}"),
+            )
+
+            cache_path = self.paircoder_dir / "time-tracking-cache.json"
+            manager = TimeTrackingManager(config, cache_path)
+            timer_id = manager.start_task(ctx.task_id, task_title)
+
+            if timer_id:
+                return {"timer_started": True, "timer_id": timer_id}
+            return {"timer_started": False, "reason": "auto_start disabled"}
         except Exception as e:
             logger.warning(f"Timer start failed: {e}")
             return {"timer_started": False, "error": str(e)}
@@ -142,11 +161,51 @@ class HookRunner:
     def _stop_timer(self, ctx: HookContext) -> dict:
         """Stop time tracking and get duration."""
         try:
-            from .time_tracking import TimeTrackingManager
+            from .integrations.time_tracking import (
+                TimeTrackingManager,
+                TimeTrackingConfig,
+                LocalTimeCache,
+            )
 
-            manager = TimeTrackingManager(self.paircoder_dir.parent)
-            duration = manager.stop_task(ctx.task_id)
-            return {"timer_stopped": True, "duration_seconds": duration}
+            cache_path = self.paircoder_dir / "time-tracking-cache.json"
+
+            # Check if there's an active timer
+            cache = LocalTimeCache(cache_path)
+            active = cache.get_active_timer()
+
+            if not active:
+                return {"timer_stopped": False, "reason": "No active timer"}
+
+            # Verify the active timer is for this task
+            if active.get("task_id") != ctx.task_id:
+                return {
+                    "timer_stopped": False,
+                    "reason": f"Active timer is for {active.get('task_id')}, not {ctx.task_id}",
+                }
+
+            # Load config and create manager
+            time_config = self.config.get("time_tracking", {})
+            config = TimeTrackingConfig(
+                provider=time_config.get("provider", "none"),
+                auto_start=time_config.get("auto_start", True),
+                auto_stop=time_config.get("auto_stop", True),
+                task_pattern=time_config.get("task_pattern", "{task_id}: {task_title}"),
+            )
+
+            manager = TimeTrackingManager(config, cache_path)
+            entry = manager.stop_task(active["timer_id"])
+
+            if entry:
+                duration_seconds = entry.duration.total_seconds() if entry.duration else 0
+                total = manager.get_task_time(ctx.task_id)
+                return {
+                    "timer_stopped": True,
+                    "duration_seconds": duration_seconds,
+                    "total_seconds": total.total_seconds(),
+                    "formatted_duration": manager.format_duration(entry.duration) if entry.duration else "0m",
+                    "formatted_total": manager.format_duration(total),
+                }
+            return {"timer_stopped": False, "reason": "Failed to stop timer"}
         except Exception as e:
             logger.warning(f"Timer stop failed: {e}")
             return {"timer_stopped": False, "error": str(e)}

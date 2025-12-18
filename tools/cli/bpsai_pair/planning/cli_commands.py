@@ -928,10 +928,16 @@ def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) 
                     target_list = result.result.get("target_list", "")
                     console.print(f"  [dim]→ Trello: moved to '{target_list}'[/dim]")
                 elif result.result and result.result.get("timer_started"):
+                    timer_id = result.result.get("timer_id", "")
                     console.print(f"  [dim]→ Timer started[/dim]")
                 elif result.result and result.result.get("timer_stopped"):
-                    duration = result.result.get("duration_seconds", 0)
-                    console.print(f"  [dim]→ Timer stopped ({duration:.0f}s)[/dim]")
+                    formatted_duration = result.result.get("formatted_duration", "")
+                    formatted_total = result.result.get("formatted_total", "")
+                    if formatted_duration and formatted_total:
+                        console.print(f"  [dim]→ Timer stopped: {formatted_duration} (total: {formatted_total})[/dim]")
+                    else:
+                        duration = result.result.get("duration_seconds", 0)
+                        console.print(f"  [dim]→ Timer stopped ({duration:.0f}s)[/dim]")
             else:
                 if result.error and "Not connected" not in result.error:
                     console.print(f"  [yellow]→ {result.hook}: {result.error}[/yellow]")

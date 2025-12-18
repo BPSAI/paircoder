@@ -126,6 +126,51 @@ class TestLocalTimeCache:
             cache.clear_active_timer()
             assert cache.get_active_timer() is None
 
+    def test_active_timer_with_full_state(self):
+        """Test active timer with full state (for session persistence)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_path = Path(tmpdir) / "time.json"
+            cache = LocalTimeCache(cache_path)
+
+            start_time = datetime(2025, 1, 15, 10, 0, 0)
+            cache.set_active_timer(
+                "TASK-001",
+                "timer-123",
+                description="Working on feature",
+                start=start_time,
+            )
+
+            active = cache.get_active_timer()
+            assert active["task_id"] == "TASK-001"
+            assert active["timer_id"] == "timer-123"
+            assert active["description"] == "Working on feature"
+            assert active["start"] == start_time
+
+    def test_active_timer_persistence_across_sessions(self):
+        """Test that active timer persists across cache instances."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_path = Path(tmpdir) / "time.json"
+
+            # First session: start a timer
+            cache1 = LocalTimeCache(cache_path)
+            start_time = datetime(2025, 1, 15, 10, 0, 0)
+            cache1.set_active_timer(
+                "TASK-001",
+                "timer-123",
+                description="Working on feature",
+                start=start_time,
+            )
+
+            # Second session: load from disk
+            cache2 = LocalTimeCache(cache_path)
+            active = cache2.get_active_timer()
+
+            assert active is not None
+            assert active["task_id"] == "TASK-001"
+            assert active["timer_id"] == "timer-123"
+            assert active["description"] == "Working on feature"
+            assert active["start"] == start_time
+
     def test_persistence(self):
         """Test that cache persists to disk."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -225,6 +270,62 @@ class TestNullProvider:
 
             total = provider.get_total("TASK-001")
             assert total.total_seconds() > 0
+
+    def test_session_persistence(self):
+        """Test that timer survives provider recreation (session persistence)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache_path = Path(tmpdir) / "time.json"
+
+            # First session: start a timer
+            cache1 = LocalTimeCache(cache_path)
+            provider1 = NullProvider(cache1)
+            timer_id = provider1.start_timer("TASK-001", "Working on feature")
+
+            # Second session: create new cache and provider
+            cache2 = LocalTimeCache(cache_path)
+            provider2 = NullProvider(cache2)
+
+            # Timer should be restored
+            current = provider2.get_current_timer()
+            assert current is not None
+            assert current.task_id == "TASK-001"
+            assert current.description == "Working on feature"
+
+            # Should be able to stop the timer
+            entry = provider2.stop_timer(timer_id)
+            assert entry.task_id == "TASK-001"
+            assert entry.duration is not None
+
+    def test_multiple_start_stop_cycles_accumulate(self):
+        """Test that multiple start/stop cycles accumulate time correctly."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = LocalTimeCache(Path(tmpdir) / "time.json")
+            provider = NullProvider(cache)
+
+            # Simulate 3 work sessions
+            import time
+            for i in range(3):
+                timer_id = provider.start_timer("TASK-001", f"Session {i+1}")
+                time.sleep(0.02)  # 20ms each
+                provider.stop_timer(timer_id)
+
+            # Check all entries were recorded
+            entries = provider.get_entries("TASK-001")
+            assert len(entries) == 3
+
+            # Check total time accumulated
+            total = provider.get_total("TASK-001")
+            # Should be at least 60ms (3 x 20ms)
+            assert total.total_seconds() >= 0.06
+
+    def test_stop_timer_fails_if_no_active_timer(self):
+        """Test that stopping a non-existent timer raises an error."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cache = LocalTimeCache(Path(tmpdir) / "time.json")
+            provider = NullProvider(cache)
+
+            with pytest.raises(ValueError, match="not found"):
+                provider.stop_timer("nonexistent-timer-id")
 
 
 class TestTimeTrackingManager:
