@@ -322,7 +322,7 @@ bpsai-pair --help
 ```bash
 cd tools/cli
 pip install -e .
-pytest -v  # 412 tests
+pytest -v  # 541+ tests
 ```
 
 ## Documentation

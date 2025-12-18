@@ -71,6 +71,23 @@ Tasks in `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
+### Session: 2025-12-17 - Documentation Audit & Changelog Update
+
+**Documentation Audit Complete:**
+- Audited README.md, CONTRIBUTING.md, USER_GUIDE.md, FEATURE_MATRIX.md, docs/SECURITY.md
+- Fixed outdated reference to `scripts/ci_local.sh` → `bpsai-pair ci` in CONTRIBUTING.md
+- Updated test counts from 412 to 541+ across all documentation
+- Added Sprint 14 and Sprint 15 features to FEATURE_MATRIX.md
+- Updated docs/SECURITY.md to mark completed Sprint 15 tasks
+- Updated ROADMAP-SPRINTS-14-20.md with current status
+
+**CHANGELOG.md Updated:**
+- v2.5.1: Sprint 14 (Trello Deep Integration) - 8 tasks
+- v2.5.2: Sprint 15 (Security & Sandboxing) - 5 tasks done
+- v2.5.3: Unreleased (remaining Sprint 15 tasks)
+
+---
+
 ### Session: 2025-12-17 - Sprint 15 Progress (5 tasks complete)
 
 **TASK-093: Git Checkpoint/Rollback** - DONE

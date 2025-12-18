@@ -5,6 +5,87 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.5.3] - Unreleased (Sprint 15 Final)
+
+### Planned
+- **Secret Detection** (TASK-094) — Pre-commit secret scanning with pattern matching for AWS, GitHub, Slack tokens
+- **Dependency Vulnerability Scan** (TASK-095) — CVE scanning for Python packages, npm audit integration
+
+---
+
+## [v2.5.2] - 2025-12-17 (Sprint 15: Security & Sandboxing)
+
+### Added
+- **Security Agent Definition** (TASK-089) — Pre-execution security gatekeeper with SOC2 compliance focus
+  - `.claude/agents/security.md` with block/warn/allow decision framework
+  - Security checklist for code, commands, and git operations
+  - SOC2 control references (CC6.1, CC6.6, CC7.1, etc.)
+- **Command Allowlist System** (TASK-090) — Safe vs unsafe command classification
+  - `AllowlistManager` with ALLOW, REVIEW, BLOCK decisions
+  - Default classifications: always allowed (git status, pytest), require review (git push), always blocked (rm -rf /)
+  - Configurable via `.paircoder/security/allowlist.yaml`
+  - 39 tests in `test_security_allowlist.py`
+- **Pre-execution Security Review** (TASK-091) — Security hooks for command and code review
+  - `SecurityReviewHook` class for pre-execution command review
+  - `CodeChangeReviewer` for scanning staged code changes
+  - Secret detection patterns: API keys, AWS credentials, GitHub/Slack tokens, JWTs, private keys
+  - Injection vulnerability detection: SQL injection, command injection, path traversal
+  - 35 tests in `test_security_review.py`
+- **Docker Sandbox Runner** (TASK-092) — Isolated container execution for untrusted commands
+  - `SandboxRunner` with configurable containers (image, memory, CPU limits)
+  - Network isolation (default: none) for security
+  - File change tracking via `container.diff()`
+  - Non-root `sandbox` user for defense in depth
+  - 35 tests in `test_security_sandbox.py`
+- **Git Checkpoint/Rollback** (TASK-093) — Automatic safety nets for code changes
+  - `GitCheckpoint` class with full checkpoint management
+  - `create_checkpoint()`, `rollback_to()`, `rollback_to_last()`, `list_checkpoints()`
+  - `preview_rollback()` for safe review before rollback
+  - Retention policy with `cleanup_old_checkpoints()`
+  - 20 tests in `test_security_checkpoint.py`
+
+### Changed
+- Test count increased from 412 to 541+ (129 new security tests)
+- Documentation updated with Sprint 15 security features
+
+---
+
+## [v2.5.1] - 2025-12-17 (Sprint 14: Trello Deep Integration)
+
+### Added
+- **Trello Custom Fields Sync** (TASK-081) — Sync PairCoder fields to Trello custom fields
+  - Project, Stack, Status, Effort, Deployment Tag mapping
+  - Automatic field creation on board if missing
+- **BPS Label Colors** (TASK-082) — Exact color matching for Trello labels
+  - Frontend (green #61bd4f), Backend (blue #0079bf), Worker (purple #c377e0)
+  - Deployment (red #eb5a46), Bug (orange #ff9f1a), Security (yellow #f2d600)
+  - Documentation (sky #00c2e0), AI/ML (black #344563)
+- **Card Description Templates** (TASK-083) — BPS-formatted card descriptions
+  - Consistent structure for task cards
+  - Template expansion with task metadata
+- **Effort Field Mapping** (TASK-084) — Complexity to Trello Effort conversion
+  - complexity 0-20 → XS, 21-40 → S, 41-60 → M, 61-80 → L, 81-100 → XL
+- **Two-way Sync** (TASK-085) — Trello card movements update local task status
+  - Webhook-driven or poll-based sync options
+  - Card in "In Progress" → task status: in_progress
+- **Checklist Support** (TASK-086) — Create checklists from acceptance criteria
+  - Task acceptance criteria automatically create checklist items
+  - Check/uncheck synced bidirectionally
+- **Due Date Sync** (TASK-087) — Sync plan due dates to Trello cards
+  - Sprint end dates propagate to card due dates
+- **Activity Log Comments** (TASK-088) — Automated progress tracking via comments
+  - Task status changes logged as card comments
+  - Agent progress updates visible in Trello activity
+- **Check/Uncheck Checklist Items** — New commands with partial text matching
+  - `bpsai-pair trello check TASK-001 "implement"` — checks items containing "implement"
+  - `bpsai-pair trello uncheck TASK-001 "test"` — unchecks items containing "test"
+
+### Changed
+- Trello integration now creates cards indistinguishable from manually-created BPS cards
+- Enhanced credential persistence across sessions
+
+---
+
 ## [v2.5.0] - 2025-12-16
 
 ### Added

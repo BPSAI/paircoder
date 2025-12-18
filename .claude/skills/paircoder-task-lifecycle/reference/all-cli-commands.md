@@ -1,22 +1,30 @@
 # PairCoder CLI Complete Reference
 
+> Updated: 2025-12-17 | Version: 2.5.2 | 88+ commands
+
 ## Overview
 
 PairCoder CLI (`bpsai-pair`) manages tasks, plans, Trello integration, and development workflow.
 
 ## Command Groups
 
-| Group | Purpose |
-|-------|---------|
-| `task` | Manage local task files |
-| `ttask` | Manage Trello cards directly |
-| `plan` | Manage plans and sprints |
-| `trello` | Trello board configuration |
-| `feature` | Create feature branches |
-| `pack` | Create context packs for agents |
-| `context-sync` | Sync development context |
-| `standup` | Generate standup summaries |
-| `init` | Initialize project structure |
+| Group | Purpose | Count |
+|-------|---------|-------|
+| `task` | Manage local task files | 11 |
+| `ttask` | Manage Trello cards directly | 7 |
+| `plan` | Manage plans and sprints | 7 |
+| `trello` | Trello board configuration | 12 |
+| `orchestrate` | Multi-agent orchestration | 6 |
+| `github` | GitHub PR integration | 7 |
+| `metrics` | Token/cost tracking | 5 |
+| `timer` | Time tracking | 5 |
+| `benchmark` | Agent benchmarking | 4 |
+| `cache` | Context caching | 3 |
+| `mcp` | MCP server for Claude Desktop | 3 |
+| `intent` | Natural language intent detection | 3 |
+| `preset` | Project presets | 3 |
+| `standup` | Generate standup summaries | 2 |
+| Core | init, feature, pack, status, validate, ci, context-sync | 7 |
 
 ---
 
@@ -334,13 +342,34 @@ Show Trello configuration.
 bpsai-pair trello config
 ```
 
-### bpsai-pair trello progress
+### bpsai-pair trello progress TASK-ID
 
-Generate progress reports.
+Post progress comments to Trello cards.
 
 ```bash
-bpsai-pair trello progress
-bpsai-pair trello progress --type weekly
+bpsai-pair trello progress TASK-082 "Completed API endpoints"
+bpsai-pair trello progress TASK-082 --started       # Report task started
+bpsai-pair trello progress TASK-082 --blocked "Waiting for API"
+bpsai-pair trello progress TASK-082 --step "Database complete"
+bpsai-pair trello progress TASK-082 --completed "Feature done"
+bpsai-pair trello progress TASK-082 --review        # Request review
+```
+
+### bpsai-pair trello check TASK-ID "TEXT"
+
+Check (complete) checklist items containing text.
+
+```bash
+bpsai-pair trello check TASK-082 "implement"    # Checks items containing "implement"
+bpsai-pair trello check TASK-082 "test"         # Checks items containing "test"
+```
+
+### bpsai-pair trello uncheck TASK-ID "TEXT"
+
+Uncheck checklist items containing text.
+
+```bash
+bpsai-pair trello uncheck TASK-082 "review"     # Unchecks items containing "review"
 ```
 
 ### bpsai-pair trello webhook serve
@@ -539,6 +568,238 @@ Show current timer status.
 
 ```bash
 bpsai-pair timer status
+```
+
+### bpsai-pair timer show TASK-ID
+
+Show time entries for a task.
+
+```bash
+bpsai-pair timer show TASK-082
+```
+
+### bpsai-pair timer summary
+
+Show time summary across tasks.
+
+```bash
+bpsai-pair timer summary
+bpsai-pair timer summary --plan plan-2025-12-sprint-15
+```
+
+---
+
+## MCP Commands
+
+MCP (Model Context Protocol) server for Claude Desktop integration.
+
+### bpsai-pair mcp serve
+
+Start MCP server (stdio transport).
+
+```bash
+bpsai-pair mcp serve
+```
+
+### bpsai-pair mcp tools
+
+List available MCP tools.
+
+```bash
+bpsai-pair mcp tools
+```
+
+**Available tools (13):**
+- `paircoder_task_list`, `paircoder_task_next`, `paircoder_task_start`, `paircoder_task_complete`
+- `paircoder_context_read`, `paircoder_plan_status`, `paircoder_plan_list`
+- `paircoder_orchestrate_analyze`, `paircoder_orchestrate_handoff`
+- `paircoder_metrics_record`, `paircoder_metrics_summary`
+- `paircoder_trello_sync_plan`, `paircoder_trello_update_card`
+
+### bpsai-pair mcp test TOOL-NAME
+
+Test an MCP tool locally.
+
+```bash
+bpsai-pair mcp test paircoder_task_list
+bpsai-pair mcp test paircoder_task_next
+```
+
+---
+
+## Cache Commands
+
+Context caching for efficiency.
+
+### bpsai-pair cache stats
+
+Show cache statistics.
+
+```bash
+bpsai-pair cache stats
+```
+
+### bpsai-pair cache clear
+
+Clear entire context cache.
+
+```bash
+bpsai-pair cache clear
+```
+
+### bpsai-pair cache invalidate FILE
+
+Invalidate a specific cached file.
+
+```bash
+bpsai-pair cache invalidate .paircoder/context/state.md
+```
+
+---
+
+## Benchmark Commands
+
+Agent benchmarking and comparison.
+
+### bpsai-pair benchmark run
+
+Run benchmark suite.
+
+```bash
+bpsai-pair benchmark run
+bpsai-pair benchmark run --suite default
+```
+
+### bpsai-pair benchmark results
+
+View benchmark results.
+
+```bash
+bpsai-pair benchmark results
+bpsai-pair benchmark results --latest
+```
+
+### bpsai-pair benchmark compare
+
+Compare two agents.
+
+```bash
+bpsai-pair benchmark compare claude-code codex
+```
+
+### bpsai-pair benchmark list
+
+List available benchmarks.
+
+```bash
+bpsai-pair benchmark list
+```
+
+---
+
+## Intent Commands
+
+Natural language intent detection for workflow suggestions.
+
+### bpsai-pair intent detect TEXT
+
+Detect work intent from text.
+
+```bash
+bpsai-pair intent detect "fix the login bug"       # → bugfix
+bpsai-pair intent detect "add user authentication" # → feature
+bpsai-pair intent detect "refactor the database"   # → refactor
+```
+
+### bpsai-pair intent should-plan TEXT
+
+Check if task needs planning.
+
+```bash
+bpsai-pair intent should-plan "refactor the database layer"  # → true
+bpsai-pair intent should-plan "fix typo in readme"           # → false
+```
+
+### bpsai-pair intent suggest-flow TEXT
+
+Suggest appropriate workflow.
+
+```bash
+bpsai-pair intent suggest-flow "review the PR for security"  # → code-review
+bpsai-pair intent suggest-flow "implement dark mode"         # → design-plan-implement
+```
+
+---
+
+## Preset Commands
+
+Project initialization presets.
+
+### bpsai-pair preset list
+
+List available presets.
+
+```bash
+bpsai-pair preset list
+```
+
+**Available presets:** python-cli, python-api, react, fullstack, library, minimal, autonomous, bps
+
+### bpsai-pair preset show NAME
+
+Show preset details.
+
+```bash
+bpsai-pair preset show bps
+bpsai-pair preset show autonomous
+```
+
+### bpsai-pair preset preview NAME
+
+Preview generated config.
+
+```bash
+bpsai-pair preset preview bps
+```
+
+---
+
+## Flow Commands
+
+Workflow definitions and execution.
+
+### bpsai-pair flow list
+
+List available flows.
+
+```bash
+bpsai-pair flow list
+```
+
+### bpsai-pair flow show NAME
+
+Show flow details.
+
+```bash
+bpsai-pair flow show tdd-implement
+bpsai-pair flow show design-plan-implement
+```
+
+### bpsai-pair flow run NAME
+
+Run a flow.
+
+```bash
+bpsai-pair flow run tdd-implement
+bpsai-pair flow run code-review
+```
+
+### bpsai-pair flow validate NAME
+
+Validate flow definition.
+
+```bash
+bpsai-pair flow validate tdd-implement
 ```
 
 ---

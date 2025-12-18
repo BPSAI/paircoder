@@ -11,7 +11,7 @@ Thanks for contributing! This repo is optimized for AI pair coding and human rev
 ## Local Dev & CI
 - Run the local CI bundle before pushing:
   ```bash
-  scripts/ci_local.sh
+  bpsai-pair ci
   ```
 - Add or update tests before implementing behavior changes.
 - Keep diffs small and focused; open PRs early.

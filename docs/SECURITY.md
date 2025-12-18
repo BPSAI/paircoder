@@ -194,11 +194,29 @@ If you discover a security vulnerability in PairCoder:
 3. Include steps to reproduce
 4. Allow time for a fix before disclosure
 
-## Future Enhancements (Sprint 15)
+## Sprint 15 Security Features
 
-- [ ] Command allowlist system (TASK-090)
-- [ ] Pre-execution security hooks (TASK-091)
-- [ ] Docker sandbox execution (TASK-092)
-- [ ] Git checkpoint/rollback (TASK-093)
-- [ ] Secret detection CLI (TASK-094)
-- [ ] Dependency vulnerability scanning (TASK-095)
+### Completed ✅
+
+- [x] **Security Agent Definition** (TASK-089) — `.claude/agents/security.md` with SOC2 focus
+- [x] **Command Allowlist System** (TASK-090) — `tools/cli/bpsai_pair/security/allowlist.py`
+  - Safe vs unsafe command classification
+  - Configurable via `.paircoder/security/allowlist.yaml`
+  - Decisions: ALLOW, REVIEW, BLOCK
+- [x] **Pre-execution Security Review** (TASK-091) — `tools/cli/bpsai_pair/security/review.py`
+  - `SecurityReviewHook` for command review before execution
+  - `CodeChangeReviewer` for vulnerability scanning
+  - Secret detection patterns (API keys, AWS, GitHub tokens, etc.)
+- [x] **Docker Sandbox Runner** (TASK-092) — `tools/cli/bpsai_pair/security/sandbox.py`
+  - Execute commands in isolated containers
+  - Network isolation, resource limits
+  - File change tracking
+- [x] **Git Checkpoint/Rollback** (TASK-093) — `tools/cli/bpsai_pair/security/checkpoint.py`
+  - `GitCheckpoint` class for automatic checkpointing
+  - Rollback support with stash handling
+  - Retention policy enforcement
+
+### Pending
+
+- [ ] **Secret Detection CLI** (TASK-094) — Pre-commit secret scanning
+- [ ] **Dependency Vulnerability Scan** (TASK-095) — CVE scanning for dependencies

@@ -83,7 +83,7 @@ pip install 'bpsai-pair[mcp]'
 git clone https://github.com/yourusername/paircoder.git
 cd paircoder/tools/cli
 pip install -e .
-pytest -v  # 412 tests
+pytest -v  # 541+ tests
 ```
 
 ### Verify Installation

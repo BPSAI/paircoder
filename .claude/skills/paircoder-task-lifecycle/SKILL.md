@@ -23,25 +23,16 @@ This will:
 - Start timer (when implemented)
 - Update state.md current focus
 
-## During Work
+## During Work (Progress Updates)
 
-### Progress Comments
 ```bash
 bpsai-pair ttask comment TASK-XXX "Completed API endpoints, starting tests"
 ```
 
-### Checking Off Acceptance Criteria
-
-**IMPORTANT:** As you complete each acceptance criterion, check it off immediately:
-
-```bash
-bpsai-pair ttask check TASK-XXX "No hardcoded credentials"
-bpsai-pair ttask check TASK-XXX "SQL injection"
-```
-
-- Use partial text matching (just enough to identify the item)
-- Check items as you complete them, not all at the end
-- This provides real-time progress visibility in Trello
+This adds a comment to the Trello card without changing status. Use for:
+- Milestone updates
+- Noting decisions
+- Progress visibility for team
 
 ## Completing a Task
 
@@ -77,8 +68,6 @@ Use these for direct Trello operations.
 
 | Action | Command |
 |--------|---------|
-| **Check off item** | `bpsai-pair ttask check TASK-XXX "item text"` |
-| Uncheck item | `bpsai-pair ttask uncheck TASK-XXX "item text"` |
 | Add progress comment | `bpsai-pair ttask comment TASK-XXX "message"` |
 | Start card directly | `bpsai-pair ttask start TASK-XXX` |
 | Complete card directly | `bpsai-pair ttask done TASK-XXX --summary "what was done"` |
@@ -92,7 +81,6 @@ Use these for direct Trello operations.
 | Scenario | Use |
 |----------|-----|
 | Changing task status | `task update` (fires hooks) |
-| Checking off acceptance criteria | `ttask check` |
 | Adding progress notes | `ttask comment` |
 | Working with Trello-only cards | `ttask` commands |
 | Need timers/metrics to trigger | `task update` |
@@ -112,29 +100,19 @@ Use these for direct Trello operations.
 ### When Starting a Task
 1. Run: `bpsai-pair task update TASK-XXX --status in_progress`
 2. Verify Trello card moved
-3. Read the task file for acceptance criteria
+3. Read the task file for implementation plan
 4. Begin work
 
 ### During Work
-1. **Check off criteria as you complete them:**
-   ```bash
-   bpsai-pair ttask check TASK-XXX "first criterion"
-   # ... do work ...
-   bpsai-pair ttask check TASK-XXX "second criterion"
-   ```
-2. Add progress comments for major milestones:
-   ```bash
-   bpsai-pair ttask comment TASK-XXX "Completed security scan, no issues found"
-   ```
-3. Commit frequently with task ID in message
+1. Add progress comments: `bpsai-pair ttask comment TASK-XXX "status update"`
+2. Commit frequently with task ID in message
 
 ### When Completing a Task
-1. Ensure all acceptance criteria are checked off
-2. Ensure tests pass: `pytest -v`
-3. Update state.md with what was done
-4. Run: `bpsai-pair task update TASK-XXX --status done`
-5. Verify Trello card moved
-6. Commit changes with task ID in message
+1. Ensure tests pass: `pytest -v`
+2. Update state.md with what was done
+3. Run: `bpsai-pair task update TASK-XXX --status done`
+4. Verify Trello card moved
+5. Commit changes with task ID in message
 
 ## Trello Sync Commands
 

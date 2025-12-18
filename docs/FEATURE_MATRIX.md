@@ -1,6 +1,6 @@
 # PairCoder v2.5 Feature Matrix
 
-> Generated from Sprint 1-13 audit on 2025-12-16
+> Generated from Sprint 1-15 audit on 2025-12-17
 
 ## CLI Commands Summary
 
@@ -119,6 +119,30 @@
 | PR merge archive | `github archive-merged` | ✅ Works | Archive task on merge |
 | Daily standup | `standup generate/post` | ✅ Works | markdown/slack/trello formats |
 | Hook reliability | - | ✅ Works | Always fires on status change |
+
+### Sprint 14: Trello Deep Integration (v2.5.1)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Custom fields sync | `trello config` | ✅ Works | Project, Stack, Status, Effort |
+| BPS label colors | - | ✅ Works | Exact color hex matching |
+| Card description templates | - | ✅ Works | BPS format templates |
+| Effort field mapping | - | ✅ Works | complexity → S/M/L/XL |
+| Two-way sync | `ttask sync` | ✅ Works | Trello → local status |
+| Card checklists | - | ✅ Works | From acceptance criteria |
+| Due date sync | - | ✅ Works | Plan due dates |
+| Activity log comments | `ttask comment` | ✅ Works | Progress tracking |
+| Check/uncheck items | `trello check/uncheck` | ✅ Works | Partial text matching |
+
+### Sprint 15: Security & Sandboxing (v2.5.2) — In Progress
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Security agent | `.claude/agents/security.md` | ✅ Done | SOC2-focused gatekeeper |
+| Command allowlist | `security/allowlist.py` | ✅ Done | ALLOW/REVIEW/BLOCK decisions |
+| Pre-execution review | `security/review.py` | ✅ Done | Command + code review hooks |
+| Docker sandbox | `security/sandbox.py` | ✅ Done | Isolated container execution |
+| Git checkpoint/rollback | `security/checkpoint.py` | ✅ Done | Auto-checkpoint + rollback |
+| Secret detection | - | ⏳ Pending | Pre-commit scanning (TASK-094) |
+| Dependency vuln scan | - | ⏳ Pending | CVE scanning (TASK-095) |
 
 ## MCP Tools (13 total)
 
@@ -262,4 +286,9 @@ hooks:
 | Standup | 10+ | ✅ Pass |
 | Presets | 27 | ✅ Pass |
 | MCP | 29 | ✅ Pass |
-| **Total** | **412** | ✅ Pass |
+| **Security (Sprint 15)** | **129** | ✅ Pass |
+| - Allowlist | 39 | ✅ Pass |
+| - Review | 35 | ✅ Pass |
+| - Sandbox | 35 | ✅ Pass |
+| - Checkpoint | 20 | ✅ Pass |
+| **Total** | **541+** | ✅ Pass |

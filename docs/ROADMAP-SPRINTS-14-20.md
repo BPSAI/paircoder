@@ -10,8 +10,8 @@
 
 | Sprint | Theme | Tasks | Est. Effort | Priority        |
 |--------|-------|-------|-------------|-----------------|
-| 14 | Trello Deep Integration | 8 tasks | 3-4 days | Complete|
-| 15 | Security & Sandboxing | 7 tasks | 4-5 days | **Current**|
+| 14 | Trello Deep Integration | 8 tasks | 3-4 days | ✅ Complete |
+| 15 | Security & Sandboxing | 7 tasks | 4-5 days | **Current** (5/7 done) |
 | 16 | Real Sub-agents | 6 tasks | 3-4 days | Medium          |
 | 17 | Time, Tokens & Metrics | 8 tasks | 3-4 days | Medium          |
 | 18 | Methodology, Sessions & Recovery | 12 tasks | 4-5 days | Medium          |
@@ -49,7 +49,7 @@
 
 ---
 
-## Sprint 14: Trello Deep Integration - Complete
+## Sprint 14: Trello Deep Integration - ✅ COMPLETE
 
 > **Goal:** Cards created by PairCoder look exactly like Mike would create manually.
 
@@ -58,13 +58,13 @@
 | ID | Title | Status | Complexity |
 |----|-------|--------|------------|
 | TASK-081 | Sync Trello custom fields | ✅ done | 35 |
-| TASK-082 | Sync Trello labels with exact BPS colors | pending | 25 |
-| TASK-083 | Card description templates (BPS format) | pending | 25 |
-| TASK-084 | Effort → Trello Effort field mapping | pending | 20 |
-| TASK-085 | Two-way sync (Trello → local) | pending | 45 |
-| TASK-086 | Support checklists in cards | pending | 30 |
-| TASK-087 | Due date sync | pending | 20 |
-| TASK-088 | Activity log comments | pending | 25 |
+| TASK-082 | Sync Trello labels with exact BPS colors | ✅ done | 25 |
+| TASK-083 | Card description templates (BPS format) | ✅ done | 25 |
+| TASK-084 | Effort → Trello Effort field mapping | ✅ done | 20 |
+| TASK-085 | Two-way sync (Trello → local) | ✅ done | 45 |
+| TASK-086 | Support checklists in cards | ✅ done | 30 |
+| TASK-087 | Due date sync | ✅ done | 20 |
+| TASK-088 | Activity log comments | ✅ done | 25 |
 
 
 ### BPS Trello Requirements
@@ -91,30 +91,30 @@
 | AI/ML | Black | #344563 |
 
 ### Success Criteria
-- [ ] `plan sync-trello` creates cards with all custom fields populated
-- [ ] Labels match exact BPS colors (created on board)
-- [ ] Card description follows BPS template
-- [ ] Moving card in Trello updates local task status
-- [ ] Checklist items created from acceptance criteria
-- [ ] Credentials persist across sessions
+- [x] `plan sync-trello` creates cards with all custom fields populated
+- [x] Labels match exact BPS colors (created on board)
+- [x] Card description follows BPS template
+- [x] Moving card in Trello updates local task status
+- [x] Checklist items created from acceptance criteria
+- [x] Credentials persist across sessions
 
 ---
 
-## Sprint 15: Security & Sandboxing
+## Sprint 15: Security & Sandboxing - IN PROGRESS (5/7 done)
 
 > **Goal:** Safe autonomous execution without `--dangerously-skip-permissions`.
 
 ### Tasks
 
-| ID | Title | Description | Complexity |
-|----|-------|-------------|------------|
-| TASK-089 | Security agent definition | Create .claude/agents/security.md with SOC2 focus | 30 |
-| TASK-090 | Command allowlist system | Define safe vs unsafe commands | 35 |
-| TASK-091 | Pre-execution security review | Security agent reviews commands before running | 45 |
-| TASK-092 | Docker sandbox runner | Execute agent work in isolated container | 50 |
-| TASK-093 | Git checkpoint/rollback | Auto-checkpoint before changes, rollback on failure | 35 |
-| TASK-094 | Secret detection | Scan for leaked credentials before commit | 30 |
-| TASK-095 | Dependency vulnerability scan | Check for known CVEs in dependencies | 25 |
+| ID | Title | Description | Complexity | Status |
+|----|-------|-------------|------------|--------|
+| TASK-089 | Security agent definition | Create .claude/agents/security.md with SOC2 focus | 30 | ✅ done |
+| TASK-090 | Command allowlist system | Define safe vs unsafe commands | 35 | ✅ done |
+| TASK-091 | Pre-execution security review | Security agent reviews commands before running | 45 | ✅ done |
+| TASK-092 | Docker sandbox runner | Execute agent work in isolated container | 50 | ✅ done |
+| TASK-093 | Git checkpoint/rollback | Auto-checkpoint before changes, rollback on failure | 35 | ✅ done |
+| TASK-094 | Secret detection | Scan for leaked credentials before commit | 30 | pending |
+| TASK-095 | Dependency vulnerability scan | Check for known CVEs in dependencies | 25 | pending |
 
 ### Security Agent Scope
 
@@ -176,10 +176,10 @@ commands:
 
 ### Success Criteria
 - [ ] Can run autonomous session without `--dangerously-skip-permissions`
-- [ ] Dangerous commands are blocked with explanation
-- [ ] Security agent reviews all PRs before creation
-- [ ] Rollback works when things break
-- [ ] No secrets in any commits
+- [x] Dangerous commands are blocked with explanation
+- [x] Security agent reviews all PRs before creation
+- [x] Rollback works when things break
+- [ ] No secrets in any commits (TASK-094 pending)
 
 ---
 
