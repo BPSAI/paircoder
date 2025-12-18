@@ -86,7 +86,7 @@ class TestTaskSyncConfig:
         assert config.project_field == "Project"
         assert config.stack_field == "Stack"
         assert config.effort_field == "Effort"
-        assert config.default_list == "Intake / Backlog"
+        assert config.default_list == "Intake/Backlog"
         assert config.create_missing_labels is True
         assert config.preserve_manual_edits is True
         assert config.use_butler_workflow is True
@@ -183,7 +183,7 @@ class TestTaskSyncConfig:
         config = TaskSyncConfig()
         assert config.get_trello_status("pending") == "Enqueued"
         assert config.get_trello_status("in_progress") == "In Progress"
-        assert config.get_trello_status("done") == "Done"
+        assert config.get_trello_status("done") == "Deployed/Done"
         assert config.get_trello_status("blocked") == "Blocked"
         assert config.get_trello_status("review") == "Testing"
 
@@ -804,11 +804,12 @@ class TestTaskStatusToTrelloStatus:
         assert TASK_STATUS_TO_TRELLO_STATUS["in_progress"] == "In Progress"
         assert TASK_STATUS_TO_TRELLO_STATUS["review"] == "Testing"
         assert TASK_STATUS_TO_TRELLO_STATUS["blocked"] == "Blocked"
-        assert TASK_STATUS_TO_TRELLO_STATUS["done"] == "Done"
+        assert TASK_STATUS_TO_TRELLO_STATUS["done"] == "Deployed/Done"
 
     def test_reverse_mapping_exists(self):
         """Test reverse mapping (Trello to task status) exists."""
-        assert len(TRELLO_STATUS_TO_TASK_STATUS) == len(TASK_STATUS_TO_TRELLO_STATUS)
+        # Reverse mapping has 6 entries (includes both "Done" and "Deployed/Done" -> "done")
+        assert len(TRELLO_STATUS_TO_TASK_STATUS) == 6
 
     def test_reverse_mapping_consistent(self):
         """Test that forward and reverse mappings are consistent."""
@@ -898,7 +899,7 @@ class TestSyncManagerStatusMapping:
 
         call_args = mock_service.create_card_with_custom_fields.call_args
         custom_fields = call_args[1]["custom_fields"]
-        assert custom_fields["Status"] == "Done"
+        assert custom_fields["Status"] == "Deployed/Done"
 
     def test_update_card_uses_status_mapping(self, mock_service):
         """Test that _update_card uses the status mapping for custom fields."""
@@ -976,8 +977,11 @@ class TestListToStatusMapping:
     def test_progress_lists_map_to_in_progress(self):
         """Test in-progress list names map to in_progress status."""
         assert LIST_TO_STATUS["In Progress"] == "in_progress"
-        assert LIST_TO_STATUS["Review / Testing"] == "in_progress"
-        assert LIST_TO_STATUS["In Review"] == "in_progress"
+
+    def test_review_lists_map_to_review(self):
+        """Test review list names map to review status."""
+        assert LIST_TO_STATUS["Review / Testing"] == "review"
+        assert LIST_TO_STATUS["In Review"] == "review"
 
     def test_done_lists_map_to_done(self):
         """Test done list names map to done status."""

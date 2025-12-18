@@ -76,8 +76,9 @@ class TestListStatusMap:
     def test_in_progress_maps_to_in_progress(self):
         assert LIST_STATUS_MAP["In Progress"] == "in_progress"
 
-    def test_review_maps_to_in_progress(self):
-        assert LIST_STATUS_MAP["Review / Testing"] == "in_progress"
+    def test_review_maps_to_review(self):
+        """Test review/testing maps to review status."""
+        assert LIST_STATUS_MAP["Review / Testing"] == "review"
 
     def test_done_maps_to_done(self):
         assert LIST_STATUS_MAP["Deployed / Done"] == "done"
