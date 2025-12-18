@@ -115,12 +115,20 @@ refactor(flows): extract common validation
 
 ## Context Updates
 
-Keep `.paircoder/context/state.md` updated:
+### ⚠️ NON-NEGOTIABLE: Update state.md After EVERY Task Completion
 
+**IMMEDIATELY after completing any task**, update `.paircoder/context/state.md`:
+
+1. Mark the task as done in the task list (add ✓)
+2. Add a session entry under "What Was Just Done" describing what was accomplished
+3. Update "What's Next" if applicable
+
+**Also update state.md:**
 - When starting a new task
-- When completing a task
 - When encountering blockers
 - At end of session
+
+**You are NOT done with a task until state.md reflects the completion.**
 
 ## Working with AI Agents
 
@@ -133,9 +141,13 @@ When using Claude Code, Codex CLI, or similar:
 
 ## Definition of Done
 
-A task is complete when:
+**A task is NOT complete until ALL of these are done:**
 
 - [ ] Code compiles/runs without errors
 - [ ] Tests pass (if applicable)
-- [ ] State updated in `state.md`
+- [ ] Trello card updated (if exists): `ttask done` to check AC and move card
+- [ ] Local task file updated: `task update --status done`
+- [ ] **state.md updated** with task completion and session notes ← NON-NEGOTIABLE
 - [ ] Committed with proper message
+
+**⚠️ Skipping the state.md update is a workflow violation.**

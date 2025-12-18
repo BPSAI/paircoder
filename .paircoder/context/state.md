@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2025-12-18
+> Last updated: 2025-12-18 (afternoon session)
 
 ## Active Plan
 
@@ -16,15 +16,15 @@ Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 
 **Sprint 17 Tasks:**
 - TASK-102: Complexity to hours mapping ✓
-- TASK-103: Auto-timer that actually works (pending)
-- TASK-104: Actual vs estimated tracking (pending)
+- TASK-103: Auto-timer that actually works ✓
+- TASK-104: Actual vs estimated tracking ✓
 - TASK-105: Velocity calculation (pending)
 - TASK-106: Sprint burndown chart data (pending)
 - TASK-107: Estimation accuracy report (pending)
 - TASK-133: Token estimation model (pending)
 - TASK-138: Token estimation feedback loop (pending)
 
-**Progress:** 1/8 tasks complete (20/230 points)
+**Progress:** 3/8 tasks complete (85/230 points)
 
 ## Task Status
 
@@ -79,7 +79,82 @@ Tasks in `.paircoder/tasks/backlog/`:
 
 ## What Was Just Done
 
-### Session: 2025-12-18 - Sprint 17 Setup & TASK-102
+### Session: 2025-12-18 (afternoon) - Trello Workflow Fixes
+
+**Fixed Trello Workflow Issues:**
+
+Investigated and fixed two workflow compliance issues:
+
+1. **Cards not moved to "Planned/Ready" after sprint planning**
+   - Root cause: `plan sync-trello` creates cards in "Intake/Backlog" by default
+   - Fix: Added `--target-list` option to `plan sync-trello` command
+   - Updated skill/flow documentation to be explicit about moving cards
+
+2. **Acceptance Criteria not checked off on task completion**
+   - Root cause: Two-step completion process (`ttask done` then `task update`) wasn't being followed
+   - Fix: Made skill documentation more prominent with CRITICAL warnings
+
+**Files Updated:**
+- `tools/cli/bpsai_pair/planning/cli_commands.py` - added `--target-list` option
+- `.claude/skills/paircoder-task-lifecycle/SKILL.md` - added prominent warnings
+- `.claude/skills/trello-aware-planning/SKILL.md` - documented `--target-list` option
+- `.paircoder/flows/trello-aware-planning.flow.md` - fixed list naming consistency
+
+**New Command Usage:**
+```bash
+# Sync directly to Planned/Ready for sprint planning
+bpsai-pair plan sync-trello <plan-id> --target-list "Planned/Ready"
+```
+
+---
+
+### Session: 2025-12-18 (morning) - TASK-103 & TASK-104
+
+**TASK-104: Actual vs Estimated Tracking** - DONE
+
+Implemented task completion tracking and estimation accuracy:
+
+**Enhanced:** `tools/cli/bpsai_pair/metrics/estimation.py`
+- `TaskComparison` dataclass - variance calculations (hours, percent)
+- `record_task_completion()` - log estimated vs actual hours
+- `load_task_completions()` - retrieve completion history
+- `get_estimation_accuracy()` - statistics across all completions
+
+**Enhanced:** `tools/cli/bpsai_pair/metrics/collector.py`
+- Added task completion storage in `task-completions.jsonl`
+
+**Enhanced:** `tools/cli/bpsai_pair/planning/cli_commands.py`
+- `task show` displays estimated vs actual hours with variance
+
+**Enhanced:** `tools/cli/bpsai_pair/hooks.py`
+- Records task completion on task_complete event
+
+**Tests:** 258+ new tests in `test_estimation.py`
+
+---
+
+**TASK-103: Auto-Timer That Actually Works** - DONE
+
+Enhanced timer persistence and automatic start/stop:
+
+**Enhanced:** `tools/cli/bpsai_pair/integrations/time_tracking.py`
+- Full active timer state persistence (task ID, timer ID, description, start time)
+- Session restoration for active timers
+
+**Enhanced:** `tools/cli/bpsai_pair/hooks.py`
+- Timer auto-starts on `task update --status in_progress`
+- Timer auto-stops on `task update --status done`
+- Validates task ID consistency between start/stop
+
+**CLI Output:**
+- Shows formatted timer duration on stop
+- Shows accumulated total time for task
+
+**Tests:** 194 new tests in `test_hooks.py`, 101 new tests in `test_time_tracking.py`
+
+---
+
+### Session: 2025-12-18 (early morning) - Sprint 17 Setup & TASK-102
 
 **Sprint 17 Plan Created and Synced to Trello:**
 - Created `sprint-17-time-tokens-metrics.plan.yaml`
@@ -428,13 +503,22 @@ Also created:
 
 ## What's Next
 
-**Sprint 17 Planning**
+**Sprint 17 Remaining Tasks:**
+- TASK-105: Velocity calculation
+- TASK-106: Sprint burndown chart data
+- TASK-107: Estimation accuracy report
+- TASK-133: Token estimation model
+- TASK-138: Token estimation feedback loop
 
-Potential focus areas:
-- Remote orchestration API (TASK-114)
-- VS Code extension
-- Dashboard UI
-- Multi-project support
+**Sprint 17 Success Criteria:**
+- [x] Complexity → hours mapping working
+- [x] Auto-timer starts/stops with task status
+- [x] Actual vs estimated tracking recorded
+- [ ] Velocity calculation available
+- [ ] Burndown chart data generated
+- [ ] Estimation accuracy report available
+- [ ] Token estimation model implemented
+- [ ] Token feedback loop working
 
 ## Sprint 16 Success Criteria
 
@@ -448,7 +532,7 @@ Potential focus areas:
 
 ## Test Coverage
 
-- **Total tests**: 1247
+- **Total tests**: 1300
 - **Orchestration module tests**:
   - test_invoker.py: 48 tests
   - test_planner_agent.py: 26 tests

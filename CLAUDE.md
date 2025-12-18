@@ -2,6 +2,34 @@
 
 > **PairCoder v2** — AI-augmented pair programming framework
 
+---
+
+## ⚠️ NON-NEGOTIABLE REQUIREMENTS
+
+These requirements MUST be followed. Failure to follow them is a serious workflow violation.
+
+### 1. Update state.md After EVERY Task Completion
+
+**IMMEDIATELY after completing any task**, you MUST update `.paircoder/context/state.md`:
+- Mark the task as done in the task list
+- Add a session entry under "What Was Just Done" describing what was accomplished
+- Update "What's Next" if applicable
+
+**DO NOT:**
+- Proceed to other work before updating state.md
+- Batch multiple task completions before updating
+- Claim a task is complete without documenting it in state.md
+
+### 2. Follow Trello Two-Step Completion
+
+When completing tasks with Trello cards:
+1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` (checks AC)
+2. `bpsai-pair task update TASK-XXX --status done` (updates local file)
+
+**DO NOT** skip `ttask done` - this checks acceptance criteria on Trello.
+
+---
+
 ## Before Doing Anything
 
 1. **Read** `.paircoder/capabilities.yaml` — understand what you can do
@@ -54,11 +82,16 @@ When you see these patterns, suggest the corresponding flow:
 
 ## After Completing Work
 
-1. Run `bpsai-pair task update <id> --status done`  ← ADD THIS LINE
-2. Update `.paircoder/context/state.md`:
-   - Mark tasks as done
-   - Note what was accomplished
+**⚠️ This is a NON-NEGOTIABLE requirement. See top of this document.**
+
+1. **Trello** (if card exists): `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
+2. **Local file**: `bpsai-pair task update <id> --status done`
+3. **IMMEDIATELY update** `.paircoder/context/state.md`:
+   - Mark task as done in task list (✓)
+   - Add session entry under "What Was Just Done"
    - Update "What's Next"
+
+**You are NOT done until state.md is updated.**
 
 ## Project-Specific Notes
 

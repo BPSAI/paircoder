@@ -80,6 +80,7 @@ capabilities:
     name: "Update task status"
     description: |
       Marks a task as in_progress, done, or blocked.
+      ⚠️ When marking done: You MUST also update state.md immediately.
     when_to_use:
       - After completing a task
       - When starting work on a task
@@ -87,9 +88,12 @@ capabilities:
     how_to_invoke:
       cli: "bpsai-pair task update <task-id> --status <status>"
       programmatic: |
-        1. Load task from .paircoder/tasks/<plan-slug>/<task-id>.task.md
-        2. Update status in YAML frontmatter
-        3. Update .paircoder/context/state.md
+        1. If done + Trello card: First run ttask done to check acceptance criteria
+        2. Load task from .paircoder/tasks/<plan-slug>/<task-id>.task.md
+        3. Update status in YAML frontmatter
+        4. IMMEDIATELY update .paircoder/context/state.md (NON-NEGOTIABLE)
+           - Mark task done in task list
+           - Add session entry under "What Was Just Done"
 
   # --------------------------------------------------------------------------
   # FLOW CAPABILITIES
@@ -275,9 +279,14 @@ roles:
 # ============================================================================
 
 notes:
+  # NON-NEGOTIABLE REQUIREMENTS
+  - "⚠️ CRITICAL: Update state.md IMMEDIATELY after EVERY task completion - this is non-negotiable"
+  - "⚠️ CRITICAL: Use ttask done before task update to check Trello acceptance criteria"
+
+  # Standard workflow
   - Always read state.md first to understand current context
   - If a flow applies to the user's request, suggest or run it
-  - Keep state.md updated after significant actions
   - Tasks should be small (2-20 minutes of work each)
   - Use verification gates to ensure quality
   - When unsure, ask clarifying questions (Navigator role)
+  - A task is NOT complete until state.md is updated
