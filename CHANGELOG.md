@@ -5,6 +5,63 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.6.0] - 2025-12-18 (Release: Sprints 14-17 Consolidated)
+
+### Added
+
+#### Sprint 17: Time, Tokens & Metrics
+- **Complexity to Hours Mapping** (TASK-102) — Estimate task duration from complexity
+  - `HoursEstimate` with min/expected/max hours by size band (XS-XL)
+  - Configurable via `.paircoder/config.yaml` `estimation.complexity_to_hours`
+  - `Task.estimated_hours` property for automatic estimation
+- **Auto-Timer Start/Stop** (TASK-103) — Timer follows task status
+  - Timer auto-starts on `task update --status in_progress`
+  - Timer auto-stops on `task update --status done`
+  - Full state persistence across sessions
+- **Actual vs Estimated Tracking** (TASK-104) — Learn from real task completion data
+  - `TaskComparison` dataclass for variance calculations
+  - `record_task_completion()` logging to `task-completions.jsonl`
+  - Estimation accuracy statistics across all completions
+- **Velocity Calculation** (TASK-105) — Track team/individual velocity
+  - `VelocityTracker` with weekly and sprint-based metrics
+  - `bpsai-pair metrics velocity` command
+  - Auto-recording via `record_velocity` hook
+- **Sprint Burndown Chart Data** (TASK-106) — Visualization data generation
+  - `BurndownGenerator` with ideal vs actual remaining points
+  - `bpsai-pair metrics burndown --sprint <id>` command
+  - JSON output for integration with visualization tools
+- **Estimation Accuracy Report** (TASK-107) — Analyze estimation patterns
+  - Accuracy breakdown by task type and complexity band
+  - `bpsai-pair metrics accuracy` command
+  - Actionable recommendations for estimate calibration
+- **Token Estimation Model** (TASK-133) — Predict token usage per task
+  - `TokenEstimator` with configurable coefficients
+  - Formula: base_context + (complexity × per_point) × type_multiplier + (files × per_file)
+  - `Task.estimated_tokens` property
+- **Token Estimation Feedback Loop** (TASK-138) — Self-improving estimates
+  - `TokenFeedbackTracker` records actual vs estimated tokens
+  - Learning algorithm adjusts coefficients based on historical data
+  - `bpsai-pair metrics tokens` accuracy report
+
+#### Cookie Cutter Template Updates
+- Added `security.md` agent for pre-execution security review
+- Added `.claude/hooks/` directory with `security-review.md`
+- Added `.paircoder/security/` with allowlist, sandbox, and secret-allowlist configs
+- Added `paircoder-task-lifecycle` skill
+- Updated `config.yaml` with estimation and token settings
+
+### Changed
+- Version bumped to 2.6 (config.yaml)
+- Task storage now flat (all tasks in `.paircoder/tasks/`, no subdirectories)
+- `plan sync-trello` auto-loads `board_id` from config
+- Enhanced hooks: `record_velocity`, `record_token_usage` added to `on_task_complete`
+
+### Fixed
+- Trello list name matching (flexible spacing around slashes)
+- Task parser handles both flat and legacy nested structures
+
+---
+
 ## [v2.5.4] - 2025-12-18 (Sprint 16: Real Subagents)
 
 ### Added
