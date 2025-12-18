@@ -28,7 +28,7 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.5.0
+bpsai-pair --version  # Should show 2.5.4
 ```
 
 ### Initialize a Project
