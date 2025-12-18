@@ -419,7 +419,8 @@ class TrelloService:
         for field_name, value in field_values.items():
             field = self.get_custom_field_by_name(field_name)
             if not field:
-                logger.warning(f"Custom field '{field_name}' not found on board")
+                # Only debug log - missing fields are expected on some boards
+                logger.debug(f"Custom field '{field_name}' not found on board, skipping")
                 results[field_name] = False
                 continue
 
@@ -438,19 +439,23 @@ class TrelloService:
         Returns:
             True if successful
         """
-        effort_mapping = EffortMapping()
-        effort = effort_mapping.get_effort(complexity)
-
         field = self.get_custom_field_by_name(field_name)
         if not field:
             logger.warning(f"Effort field '{field_name}' not found on board")
             return False
 
-        if field.field_type != 'list':
-            logger.warning(f"Effort field must be a list type, got {field.field_type}")
+        # Handle both number and list type effort fields
+        if field.field_type == 'number':
+            # Pass complexity directly as numeric value
+            return self.set_custom_field_value(card, field, complexity)
+        elif field.field_type == 'list':
+            # Map complexity to S/M/L dropdown option
+            effort_mapping = EffortMapping()
+            effort = effort_mapping.get_effort(complexity)
+            return self.set_custom_field_value(card, field, effort)
+        else:
+            logger.warning(f"Effort field must be number or list type, got {field.field_type}")
             return False
-
-        return self.set_custom_field_value(card, field, effort)
 
     def create_card_with_custom_fields(
         self,

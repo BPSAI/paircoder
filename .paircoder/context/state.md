@@ -4,24 +4,23 @@
 
 ## Active Plan
 
-**Plan:** `plan-2025-12-sprint-15-security-sandboxing`
+**Plan:** `plan-2025-12-sprint-16-real-subagents`
 **Status:** in_progress
-**Current Sprint:** sprint-15 (Security & Sandboxing)
+**Current Sprint:** sprint-16 (Real Sub-agents)
 
-**Previous:** `plan-2025-12-sprint-14-trello-deep` (complete)
+**Previous:** `plan-2025-12-sprint-15-security-sandboxing` (complete)
 
 ## Current Focus
 
-Sprint 15: Safe autonomous execution without `--dangerously-skip-permissions`.
+Sprint 16: Real Sub-agents - making `bpsai-pair orchestrate task` route to appropriate agents.
 
 **Key Objectives:**
-- Security agent definition with SOC2 focus
-- Command allowlist system (safe vs unsafe commands)
-- Pre-execution security review
-- Docker sandbox for isolated execution
-- Git checkpoint/rollback for safety nets
-- Secret detection before commits
-- Dependency vulnerability scanning
+- Agent invocation framework (base class for invoking sub-agents)
+- Planner agent implementation
+- Reviewer agent implementation
+- Security agent implementation
+- Agent handoff protocol
+- Agent selection logic
 
 ## Task Status
 
@@ -45,19 +44,22 @@ All 8 tasks completed:
 - TASK-087: Due date sync ✓
 - TASK-088: Activity log comments ✓
 
-### Sprint 15: Security & Sandboxing - IN PROGRESS
+### Sprint 15: Security & Sandboxing - COMPLETE ✅
+
+All 7 tasks completed (250/250 points).
+
+### Sprint 16: Real Sub-agents - IN PROGRESS
 
 | Task | Title | Status | Priority | Complexity |
 |------|-------|--------|----------|------------|
-| TASK-089 | Security agent definition | **done** | P0 | 30 |
-| TASK-090 | Command allowlist system | **done** | P0 | 35 |
-| TASK-091 | Pre-execution security review | **done** | P0 | 45 |
-| TASK-092 | Docker sandbox runner | **done** | P1 | 50 |
-| TASK-093 | Git checkpoint/rollback | **done** | P0 | 35 |
-| TASK-094 | Secret detection | **done** | P0 | 30 |
-| TASK-095 | Dependency vulnerability scan | **done** | P1 | 25 |
+| TASK-096 | Agent invocation framework | **done** | P0 | 45 |
+| TASK-097 | Planner agent implementation | pending | P1 | 35 |
+| TASK-098 | Reviewer agent implementation | pending | P1 | 35 |
+| TASK-099 | Security agent implementation | pending | P0 | 40 |
+| TASK-100 | Agent handoff protocol | pending | P1 | 40 |
+| TASK-101 | Agent selection logic | pending | P0 | 30 |
 
-**Progress:** 7/7 tasks complete (250/250 points) - **SPRINT 15 COMPLETE!**
+**Progress:** 1/6 tasks complete (45/225 points)
 
 ### Backlog (Deprioritized)
 
@@ -70,6 +72,43 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-17 - TASK-096: Agent Invocation Framework
+
+**TASK-096: Agent Invocation Framework** - DONE
+
+Created the agent invocation framework for Sprint 16:
+
+**New file:** `tools/cli/bpsai_pair/orchestration/invoker.py`
+- `AgentDefinition` dataclass - parses YAML frontmatter from .claude/agents/*.md
+- `InvocationResult` dataclass - structured result with output, tokens, cost
+- `AgentInvoker` class - loads agent definitions and invokes via HeadlessSession
+- `invoke_agent()` convenience function for one-shot invocations
+
+**Features:**
+- Loads agent definitions from `.claude/agents/{name}.md`
+- Parses YAML frontmatter (name, description, model, permissionMode, tools)
+- Extracts system prompt from markdown body
+- Invokes agents via `HeadlessSession` with correct permission mode
+- Caches loaded agents for performance
+- Supports handoff context between agents
+
+**Updated:** `tools/cli/bpsai_pair/orchestration/__init__.py`
+- Exports `AgentDefinition`, `AgentInvoker`, `InvocationResult`, `invoke_agent`
+
+**Tests:** 24 tests in `test_invoker.py`
+
+---
+
+### Session: 2025-12-17 - Sprint 16 Plan Creation
+
+Created Sprint 16: Real Sub-agents plan and synced to Trello:
+- Created plan file: `sprint-16-real-subagents.plan.yaml`
+- Created task files: TASK-096 to TASK-101
+- Created sprint-16 list on Trello board
+- Synced 6 cards to Trello
+
+---
 
 ### Session: 2025-12-17 - TASK-095: Dependency Vulnerability Scan
 
@@ -287,12 +326,14 @@ Also created:
 
 ## What's Next
 
-**Sprint 15 Complete!** All security tasks are done.
+**Sprint 16 in progress!**
 
-Consider next:
-- Sprint 16: Advanced autonomous features
-- Integrate security scanning into CI/CD
-- Add more secret patterns based on user feedback
+Next tasks (in order):
+1. TASK-101: Agent selection logic - Route tasks to appropriate agent
+2. TASK-097: Planner agent implementation - Wire planner for design tasks
+3. TASK-098: Reviewer agent implementation - Wire reviewer for code review
+4. TASK-099: Security agent implementation - Wire security as gatekeeper
+5. TASK-100: Agent handoff protocol - Context passing between agents
 
 ## Sprint 15 Success Criteria
 

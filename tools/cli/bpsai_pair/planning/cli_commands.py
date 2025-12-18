@@ -239,7 +239,7 @@ def plan_tasks(
     plan_id: str = typer.Argument(..., help="Plan ID"),
     status: Optional[str] = typer.Option(
         None, "--status", "-s",
-        help="Filter: pending|in_progress|done|blocked"
+        help="Filter: pending|in_progress|review|done|blocked"
     ),
 ):
     """List tasks for a specific plan."""
@@ -556,18 +556,19 @@ def plan_sync_trello(
         for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
             console.print(f"\n  [cyan]{sprint_name}[/cyan]:")
 
-            # Get or create list
-            target_list = "Planned/Ready"
+            # Ensure Intake/Backlog list exists for new cards
+            # Butler automation will move cards based on Status field
+            intake_list = sync_config.default_list
             board_lists = service.get_board_lists()
-            if target_list not in board_lists:
+            if intake_list not in board_lists:
                 if create_lists:
-                    service.board.add_list(target_list)
+                    service.board.add_list(intake_list)
                     service.lists = {lst.name: lst for lst in service.board.all_lists()}
-                    results["lists_created"].append(target_list)
-                    console.print(f"    [green]+ Created list: {target_list}[/green]")
+                    results["lists_created"].append(intake_list)
+                    console.print(f"    [green]+ Created list: {intake_list}[/green]")
                 else:
-                    results["errors"].append(f"List not found: {target_list}")
-                    console.print(f"    [red]✗ List not found: {target_list}[/red]")
+                    results["errors"].append(f"List not found: {intake_list}")
+                    console.print(f"    [red]✗ List not found: {intake_list}[/red]")
                     continue
 
             # Sync cards for tasks using TrelloSyncManager
@@ -580,10 +581,14 @@ def plan_sync_trello(
                     # Check if card already exists
                     existing_card, _ = service.find_card_with_prefix(task.id)
 
+                    # For new cards: use Intake/Backlog, Butler moves based on Status
+                    # For existing cards: pass None to update in place without moving
+                    target_list = None if existing_card else intake_list
+
                     # Sync using TrelloSyncManager (handles custom fields, labels, descriptions)
                     card = sync_manager.sync_task_to_card(
                         task=task_data,
-                        list_name=sprint_name,
+                        list_name=target_list,
                         update_existing=True
                     )
 
@@ -725,7 +730,7 @@ def task_list(
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Filter by plan ID"),
     status: Optional[str] = typer.Option(
         None, "--status", "-s",
-        help="Filter: pending|in_progress|done|blocked"
+        help="Filter: pending|in_progress|review|done|blocked"
     ),
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -823,7 +828,7 @@ def task_update(
     task_id: str = typer.Argument(..., help="Task ID"),
     status: str = typer.Option(
         ..., "--status", "-s",
-        help="New status: pending|in_progress|done|blocked|cancelled"
+        help="New status: pending|in_progress|review|done|blocked|cancelled"
     ),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to narrow search"),
     no_hooks: bool = typer.Option(False, "--no-hooks", help="Skip running hooks"),
@@ -858,6 +863,7 @@ def task_update(
         emoji_map = {
             "pending": "\u23f3",
             "in_progress": "\U0001f504",
+            "review": "\U0001f50d",
             "done": "\u2705",
             "blocked": "\U0001f6ab",
             "cancelled": "\u274c",
@@ -894,6 +900,7 @@ def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) 
         # Map status to event name
         status_to_event = {
             "in_progress": "on_task_start",
+            "review": "on_task_review",
             "done": "on_task_complete",
             "blocked": "on_task_block",
         }

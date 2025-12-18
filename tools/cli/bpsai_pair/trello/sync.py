@@ -74,24 +74,29 @@ BPS_LABELS = {
 
 # Task status to Trello Status custom field mapping
 # Maps local task status values to Trello Status dropdown options
-# These values should match the options in the board's Status custom field
+# Valid options: To do, In progress, Done, In review, Approved, Not sure
 TASK_STATUS_TO_TRELLO_STATUS = {
-    "pending": "Enqueued",
-    "in_progress": "In Progress",
-    "review": "Testing",
-    "blocked": "Blocked",
-    "done": "Deployed/Done",
+    "pending": "To do",
+    "ready": "To do",
+    "planned": "To do",
+    "in_progress": "In progress",
+    "review": "In review",
+    "testing": "In review",
+    "blocked": "Not sure",
+    "done": "Done",
+    "deployed": "Done",
+    "approved": "Approved",
 }
 
 # Trello Status to task status mapping (reverse of above)
 # Maps Status custom field dropdown values back to task status
 TRELLO_STATUS_TO_TASK_STATUS = {
-    "Enqueued": "pending",
-    "In Progress": "in_progress",
-    "Testing": "review",
-    "Blocked": "blocked",
-    "Deployed/Done": "done",
-    "Done": "done",  # Alternative value some boards might use
+    "To do": "pending",
+    "In progress": "in_progress",
+    "In review": "review",
+    "Done": "done",
+    "Approved": "done",
+    "Not sure": "blocked",
 }
 
 # Keywords to infer stack from task title/tags
@@ -196,7 +201,7 @@ class TaskSyncConfig:
             effort_mapping=effort_mapping,
             status_mapping=status_mapping,
             create_missing_labels=sync_config.get("create_missing_labels", True),
-            default_list=sync_config.get("default_list", "Intake / Backlog"),
+            default_list=sync_config.get("default_list", "Intake/Backlog"),
             card_template=sync_config.get("card_template"),
             preserve_manual_edits=sync_config.get("preserve_manual_edits", True),
             use_butler_workflow=sync_config.get("use_butler_workflow", True),

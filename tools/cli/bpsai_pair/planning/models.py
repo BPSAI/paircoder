@@ -15,6 +15,7 @@ class TaskStatus(str, Enum):
     """Status of a task."""
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
+    REVIEW = "review"
     DONE = "done"
     BLOCKED = "blocked"
     CANCELLED = "cancelled"
@@ -65,6 +66,7 @@ class Task:
         return {
             TaskStatus.PENDING: "⏳",
             TaskStatus.IN_PROGRESS: "🔄",
+            TaskStatus.REVIEW: "🔍",
             TaskStatus.DONE: "✅",
             TaskStatus.BLOCKED: "🚫",
             TaskStatus.CANCELLED: "❌",
