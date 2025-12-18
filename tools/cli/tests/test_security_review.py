@@ -420,3 +420,175 @@ class TestSecretPatterns:
         findings = reviewer.scan_code(code)
         # Should not flag env var reads as secrets
         assert len(findings) == 0
+
+
+class TestAgentEnhancedReviewHook:
+    """Tests for AgentEnhancedReviewHook with security agent integration."""
+
+    def test_hook_creation(self):
+        """Test AgentEnhancedReviewHook can be created."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        hook = AgentEnhancedReviewHook()
+        assert hook is not None
+        assert hook.enable_agent is True
+
+    def test_hook_with_agent_disabled(self):
+        """Test hook can be created with agent disabled."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        hook = AgentEnhancedReviewHook(enable_agent=False)
+        assert hook.enable_agent is False
+
+    def test_pre_execute_safe_command_no_agent_call(self):
+        """Test safe commands don't trigger agent."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        hook = AgentEnhancedReviewHook(enable_agent=False)
+        result = hook.pre_execute("git status")
+        assert result.allowed is True
+
+    def test_pre_execute_blocked_command_no_agent_call(self):
+        """Test blocked commands don't trigger agent."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        hook = AgentEnhancedReviewHook(enable_agent=False)
+        result = hook.pre_execute("rm -rf /")
+        assert result.allowed is False
+
+    @patch("bpsai_pair.security.review.AgentEnhancedReviewHook._get_security_agent")
+    def test_pre_execute_review_command_uses_agent(self, mock_get_agent):
+        """Test commands requiring review trigger agent."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        # Setup mock agent
+        mock_agent = MagicMock()
+        mock_agent.review_command.return_value = SecurityDecision.warn(
+            reason="New dependency detected",
+            soc2_controls=["CC7.1"],
+        )
+        mock_get_agent.return_value = mock_agent
+
+        hook = AgentEnhancedReviewHook(enable_agent=True)
+        result = hook.pre_execute("pip install requests")
+
+        # Agent should have been called
+        mock_agent.review_command.assert_called_once_with("pip install requests")
+        # Result should have warnings
+        assert result.has_warnings or not result.allowed
+
+    @patch("bpsai_pair.security.review.AgentEnhancedReviewHook._get_security_agent")
+    def test_review_code_changes_uses_agent(self, mock_get_agent):
+        """Test code review triggers agent."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        mock_agent = MagicMock()
+        mock_agent.review_code.return_value = SecurityDecision.allow()
+        mock_get_agent.return_value = mock_agent
+
+        hook = AgentEnhancedReviewHook(enable_agent=True)
+        diff = "+def safe_function(): pass"
+        result = hook.review_code_changes(diff, changed_files=["safe.py"])
+
+        mock_agent.review_code.assert_called_once()
+        assert result.allowed is True
+
+    @patch("bpsai_pair.security.review.AgentEnhancedReviewHook._get_security_agent")
+    def test_review_pre_pr_adds_branch_warning(self, mock_get_agent):
+        """Test pre-PR review adds branch protection warning."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        mock_agent = MagicMock()
+        mock_agent.review_code.return_value = SecurityDecision.allow()
+        mock_get_agent.return_value = mock_agent
+
+        hook = AgentEnhancedReviewHook(enable_agent=True)
+        result = hook.review_pre_pr(
+            diff="+safe code",
+            changed_files=["file.py"],
+            branch_name="main",
+        )
+
+        # Should warn about protected branch
+        assert result.has_warnings
+        assert any("main" in w for w in result.warnings)
+
+    @patch("bpsai_pair.security.review.AgentEnhancedReviewHook._get_security_agent")
+    def test_agent_error_falls_back_to_base(self, mock_get_agent):
+        """Test agent errors fall back to base hook result."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        mock_agent = MagicMock()
+        mock_agent.review_command.side_effect = Exception("Agent error")
+        mock_get_agent.return_value = mock_agent
+
+        hook = AgentEnhancedReviewHook(enable_agent=True)
+        # pip install triggers review in base hook
+        result = hook.pre_execute("pip install requests")
+
+        # Should fall back gracefully
+        assert result is not None
+        # Should have the base hook's warning
+        assert result.has_warnings
+
+    def test_decision_to_result_block(self):
+        """Test conversion of blocked decision to result."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        hook = AgentEnhancedReviewHook()
+        decision = SecurityDecision.block(
+            reason="Dangerous command",
+            soc2_controls=["CC6.1"],
+            suggested_fixes=["Use safer alternative"],
+        )
+
+        result = hook._decision_to_result(decision)
+
+        assert result.is_blocked
+        assert "Dangerous" in result.reason
+        assert "Use safer alternative" in result.suggested_fixes
+
+    def test_decision_to_result_warn(self):
+        """Test conversion of warning decision to result."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        hook = AgentEnhancedReviewHook()
+        decision = SecurityDecision.warn(
+            reason="Needs review",
+            soc2_controls=["CC7.1"],
+        )
+
+        result = hook._decision_to_result(decision)
+
+        assert result.allowed
+        assert result.has_warnings
+        assert "Needs review" in result.warnings
+
+    def test_decision_to_result_allow(self):
+        """Test conversion of allowed decision to result."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+        from bpsai_pair.orchestration.security import SecurityDecision
+
+        hook = AgentEnhancedReviewHook()
+        decision = SecurityDecision.allow()
+
+        result = hook._decision_to_result(decision)
+
+        assert result.allowed
+        assert not result.has_warnings
+
+    def test_audit_log_property(self):
+        """Test audit log is accessible from enhanced hook."""
+        from bpsai_pair.security.review import AgentEnhancedReviewHook
+
+        hook = AgentEnhancedReviewHook(enable_logging=True, enable_agent=False)
+        hook.pre_execute("rm -rf /")
+
+        # Should have audit entry from base hook
+        assert len(hook.audit_log) > 0
+        assert hook.audit_log[-1]["command"] == "rm -rf /"

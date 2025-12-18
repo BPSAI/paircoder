@@ -4,14 +4,22 @@ This module provides:
 - ReviewResult: Result dataclass for security reviews
 - SecurityReviewHook: Pre-execution command review
 - CodeChangeReviewer: Code change security scanning
+- AgentEnhancedReviewHook: AI-powered security review using security agent
 """
 
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 from .allowlist import AllowlistManager, CommandDecision
+
+if TYPE_CHECKING:
+    from ..orchestration.security import SecurityDecision
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -402,3 +410,203 @@ class CodeChangeReviewer:
                 return ReviewResult.warn(findings)
 
         return ReviewResult.allow()
+
+
+class AgentEnhancedReviewHook:
+    """Security review hook enhanced with AI agent analysis.
+
+    Extends the basic SecurityReviewHook with deeper analysis
+    using the security agent for:
+    - Commands that require review (not in allowlist/blocklist)
+    - Code changes before commits
+    - Pre-PR security verification
+
+    The agent provides more nuanced decisions and SOC2 control
+    references for audit compliance.
+
+    Example:
+        >>> hook = AgentEnhancedReviewHook()
+        >>> result = hook.pre_execute("pip install requests")
+        >>> if result.has_warnings:
+        ...     print(result.format_message())
+
+        >>> # Review code changes
+        >>> result = hook.review_code_changes(diff="...", files=["auth.py"])
+        >>> if result.is_blocked:
+        ...     print(result.format_message())
+    """
+
+    def __init__(
+        self,
+        allowlist: Optional[AllowlistManager] = None,
+        enable_logging: bool = False,
+        enable_agent: bool = True,
+        agents_dir: Optional[Path] = None,
+        working_dir: Optional[Path] = None,
+    ):
+        """Initialize the agent-enhanced security review hook.
+
+        Args:
+            allowlist: Custom AllowlistManager (uses default if None)
+            enable_logging: Whether to enable audit logging
+            enable_agent: Whether to enable AI agent for deeper analysis
+            agents_dir: Directory containing agent definitions
+            working_dir: Working directory for agent invocation
+        """
+        self.base_hook = SecurityReviewHook(
+            allowlist=allowlist,
+            enable_logging=enable_logging,
+        )
+        self.enable_agent = enable_agent
+        self.agents_dir = agents_dir
+        self.working_dir = working_dir
+        self._security_agent = None
+
+    def _get_security_agent(self):
+        """Lazily initialize the security agent."""
+        if self._security_agent is None and self.enable_agent:
+            try:
+                from ..orchestration.security import SecurityAgent
+                self._security_agent = SecurityAgent(
+                    agents_dir=self.agents_dir or Path(".claude/agents"),
+                    working_dir=self.working_dir,
+                )
+            except ImportError:
+                logger.warning("Security agent not available")
+                self._security_agent = None
+        return self._security_agent
+
+    def _decision_to_result(self, decision: "SecurityDecision") -> ReviewResult:
+        """Convert SecurityDecision to ReviewResult for compatibility."""
+        from ..orchestration.security import SecurityAction
+
+        if decision.action == SecurityAction.BLOCK:
+            # Collect all suggested fixes from findings
+            fixes = []
+            for finding in decision.findings:
+                fixes.extend(finding.suggested_fixes)
+            return ReviewResult.block(
+                reason=decision.summary,
+                suggested_fixes=fixes,
+            )
+        elif decision.action == SecurityAction.WARN:
+            # Collect warning reasons
+            warnings = [f.reason for f in decision.findings]
+            if not warnings:
+                warnings = [decision.summary]
+            return ReviewResult.warn(warnings)
+        else:
+            return ReviewResult.allow()
+
+    def pre_execute(self, command: str) -> ReviewResult:
+        """Review a command before execution.
+
+        First checks the allowlist for quick decisions, then
+        uses the security agent for commands requiring review.
+
+        Args:
+            command: The command string to review
+
+        Returns:
+            ReviewResult indicating if execution should proceed
+        """
+        # First, use the basic allowlist check
+        base_result = self.base_hook.pre_execute(command)
+
+        # If clearly blocked or allowed, return immediately
+        if base_result.is_blocked:
+            return base_result
+
+        if not base_result.has_warnings:
+            return base_result
+
+        # For commands requiring review, use the agent if available
+        agent = self._get_security_agent()
+        if agent is None:
+            return base_result
+
+        try:
+            decision = agent.review_command(command)
+            return self._decision_to_result(decision)
+        except Exception as e:
+            logger.warning(f"Agent review failed, using base result: {e}")
+            return base_result
+
+    def review_code_changes(
+        self,
+        diff: str,
+        changed_files: Optional[list[str]] = None,
+    ) -> ReviewResult:
+        """Review code changes before commit using the agent.
+
+        Args:
+            diff: Git diff output
+            changed_files: List of changed file paths
+
+        Returns:
+            ReviewResult with findings
+        """
+        # First, do basic code scanning
+        code_reviewer = CodeChangeReviewer()
+        base_result = code_reviewer.review_diff(diff)
+
+        # If blocked by basic scan, return immediately
+        if base_result.is_blocked:
+            return base_result
+
+        # Use agent for deeper analysis
+        agent = self._get_security_agent()
+        if agent is None:
+            return base_result
+
+        try:
+            decision = agent.review_code(
+                diff=diff,
+                changed_files=changed_files,
+            )
+            return self._decision_to_result(decision)
+        except Exception as e:
+            logger.warning(f"Agent code review failed, using base result: {e}")
+            return base_result
+
+    def review_pre_pr(
+        self,
+        diff: str,
+        changed_files: Optional[list[str]] = None,
+        branch_name: str = "",
+    ) -> ReviewResult:
+        """Review before PR creation.
+
+        Performs comprehensive security review including:
+        - Code change analysis
+        - Secret detection
+        - Dependency analysis
+
+        Args:
+            diff: Complete diff for the PR
+            changed_files: All changed files
+            branch_name: Target branch name
+
+        Returns:
+            ReviewResult with findings
+        """
+        # Use the code change review as base
+        result = self.review_code_changes(diff, changed_files)
+
+        # Add branch protection warning if pushing to protected branch
+        protected_branches = ["main", "master", "production", "prod"]
+        if branch_name.lower() in protected_branches:
+            if result.is_blocked:
+                return result
+            # Add warning about protected branch
+            existing_warnings = result.warnings if result.has_warnings else []
+            return ReviewResult.warn(
+                existing_warnings + [f"Pushing to protected branch: {branch_name}"]
+            )
+
+        return result
+
+    @property
+    def audit_log(self) -> list[dict]:
+        """Access the audit log from the base hook."""
+        return self.base_hook.audit_log

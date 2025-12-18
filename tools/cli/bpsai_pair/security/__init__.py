@@ -18,6 +18,7 @@ from .review import (
     ReviewResult,
     SecurityReviewHook,
     CodeChangeReviewer,
+    AgentEnhancedReviewHook,
 )
 from .sandbox import (
     SandboxConfig,
@@ -59,6 +60,7 @@ __all__ = [
     "ReviewResult",
     "SecurityReviewHook",
     "CodeChangeReviewer",
+    "AgentEnhancedReviewHook",
     # Sandbox
     "SandboxConfig",
     "SandboxRunner",

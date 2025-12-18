@@ -9,6 +9,7 @@ This module provides:
 - AgentInvoker: Invoke specialized agents from .claude/agents/
 - PlannerAgent: Design and planning specialist agent
 - ReviewerAgent: Code review specialist agent
+- SecurityAgent: Pre-execution security gatekeeper agent
 """
 
 from .headless import HeadlessSession, HeadlessResponse
@@ -27,6 +28,14 @@ from .reviewer import (
     should_trigger_reviewer,
     extract_changed_files,
     extract_line_changes,
+)
+from .security import (
+    SecurityAgent,
+    SecurityDecision,
+    SecurityFinding,
+    SecurityAction,
+    invoke_security,
+    should_trigger_security,
 )
 
 __all__ = [
@@ -54,4 +63,10 @@ __all__ = [
     "should_trigger_reviewer",
     "extract_changed_files",
     "extract_line_changes",
+    "SecurityAgent",
+    "SecurityDecision",
+    "SecurityFinding",
+    "SecurityAction",
+    "invoke_security",
+    "should_trigger_security",
 ]
