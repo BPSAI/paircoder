@@ -1,26 +1,26 @@
 # Current State
 
-> Last updated: 2025-12-17
+> Last updated: 2025-12-18
 
 ## Active Plan
 
-**Plan:** `plan-2025-12-sprint-16-real-subagents`
-**Status:** in_progress
-**Current Sprint:** sprint-16 (Real Sub-agents)
+**Plan:** None (between sprints)
+**Status:** Planning Sprint 17
+**Current Sprint:** N/A
 
-**Previous:** `plan-2025-12-sprint-15-security-sandboxing` (complete)
+**Previous:** `plan-2025-12-sprint-16-real-subagents` (complete)
 
 ## Current Focus
 
-Sprint 16: Real Sub-agents - making `bpsai-pair orchestrate task` route to appropriate agents.
+Sprint 16 complete! Version 2.5.4 released.
 
-**Key Objectives:**
-- Agent invocation framework (base class for invoking sub-agents)
-- Planner agent implementation
-- Reviewer agent implementation
-- Security agent implementation
-- Agent handoff protocol
-- Agent selection logic
+**Completed in Sprint 16:**
+- Agent invocation framework (base class for invoking sub-agents) ✓
+- Planner agent implementation ✓
+- Reviewer agent implementation ✓
+- Security agent implementation ✓
+- Agent handoff protocol ✓
+- Agent selection logic ✓
 
 ## Task Status
 
@@ -48,18 +48,20 @@ All 8 tasks completed:
 
 All 7 tasks completed (250/250 points).
 
-### Sprint 16: Real Sub-agents - IN PROGRESS
+### Sprint 16: Real Sub-agents - COMPLETE ✅
+
+All 6 tasks completed (225/225 points).
 
 | Task | Title | Status | Priority | Complexity |
 |------|-------|--------|----------|------------|
 | TASK-096 | Agent invocation framework | **done** | P0 | 45 |
 | TASK-097 | Planner agent implementation | **done** | P1 | 35 |
 | TASK-098 | Reviewer agent implementation | **done** | P1 | 35 |
-| TASK-099 | Security agent implementation | pending | P0 | 40 |
-| TASK-100 | Agent handoff protocol | pending | P1 | 40 |
-| TASK-101 | Agent selection logic | pending | P0 | 30 |
+| TASK-099 | Security agent implementation | **done** | P0 | 40 |
+| TASK-100 | Agent handoff protocol | **done** | P1 | 40 |
+| TASK-101 | Agent selection logic | **done** | P0 | 30 |
 
-**Progress:** 3/6 tasks complete (115/225 points)
+**Progress:** 6/6 tasks complete (225/225 points)
 
 ### Backlog (Deprioritized)
 
@@ -390,28 +392,34 @@ Also created:
 
 ## What's Next
 
-**Sprint 16 in progress!**
+**Sprint 17 Planning**
 
-Next tasks (in order):
-1. TASK-101: Agent selection logic - Route tasks to appropriate agent
-2. TASK-097: Planner agent implementation - Wire planner for design tasks
-3. TASK-098: Reviewer agent implementation - Wire reviewer for code review
-4. TASK-099: Security agent implementation - Wire security as gatekeeper
-5. TASK-100: Agent handoff protocol - Context passing between agents
+Potential focus areas:
+- Remote orchestration API (TASK-114)
+- VS Code extension
+- Dashboard UI
+- Multi-project support
 
-## Sprint 15 Success Criteria
+## Sprint 16 Success Criteria
 
-- [x] Security agent reviews commands before execution
-- [x] Dangerous commands blocked with explanation
-- [x] Docker sandbox provides isolated execution
-- [x] Git checkpoints enable rollback
-- [ ] Can run autonomous session without `--dangerously-skip-permissions`
-- [x] No secrets in any commits (secret scanning implemented)
-- [x] Dependencies scanned for vulnerabilities
+- [x] Agent invocation framework created
+- [x] Planner agent routes design/planning tasks
+- [x] Reviewer agent routes code review tasks
+- [x] Security agent routes security-related tasks
+- [x] Agent handoff passes context between agents
+- [x] Agent selection uses scoring algorithm
+- [x] CLI `orchestrate select-agent` command available
 
 ## Test Coverage
 
-- **Total tests**: 218 security tests + existing tests
+- **Total tests**: 1247
+- **Orchestration module tests**:
+  - test_invoker.py: 48 tests
+  - test_planner_agent.py: 26 tests
+  - test_reviewer_agent.py: 26 tests
+  - test_security_agent.py: 37 tests
+  - test_handoff_protocol.py: 22 tests
+  - test_agent_selection.py: 27 tests
 - **Security module tests**:
   - test_security_allowlist.py: 39 tests
   - test_security_review.py: 35 tests

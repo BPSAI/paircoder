@@ -1,0 +1,36 @@
+id: plan-2025-12-sprint-15-security-sandboxing
+title: "Security & Sandboxing"
+type: feature
+status: planned
+created: 2025-12-17
+flow: design-plan-implement
+
+goals:
+  - Safe autonomous execution without --dangerously-skip-permissions
+  - Dangerous commands blocked with clear explanations
+  - Security agent reviews all PRs before creation
+  - Rollback works when things break
+  - No secrets in any commits
+
+sprints:
+  - id: sprint-15
+    name: "Security & Sandboxing"
+    goal: "Safe autonomous execution with command allowlists, sandboxing, and secret detection"
+    status: planned
+    tasks:
+      - TASK-089
+      - TASK-090
+      - TASK-091
+      - TASK-092
+      - TASK-093
+      - TASK-094
+      - TASK-095
+
+metrics:
+  total_complexity: 250
+  estimated_days: 4-5
+
+notes: |
+  Sprint 15 focuses on security fundamentals before expanding autonomous capabilities.
+  Key patterns: command allowlists, sandboxed execution, git checkpoints, and secret detection.
+  Enables removing --dangerously-skip-permissions from autonomous workflows.

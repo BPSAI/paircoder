@@ -1,0 +1,35 @@
+id: plan-2025-12-sprint-16-real-subagents
+title: "Real Sub-agents"
+type: feature
+status: planned
+created: 2025-12-17
+flow: design-plan-implement
+
+goals:
+  - bpsai-pair orchestrate task routes to appropriate agent
+  - Agent output captured and logged
+  - Handoff passes full context between agents
+  - Security agent can block unsafe operations
+  - All existing agent definitions are usable
+
+sprints:
+  - id: sprint-16
+    name: "Real Sub-agents"
+    goal: "bpsai-pair orchestrate task actually routes to appropriate agent and invokes it"
+    status: planned
+    tasks:
+      - TASK-096
+      - TASK-097
+      - TASK-098
+      - TASK-099
+      - TASK-100
+      - TASK-101
+
+metrics:
+  total_complexity: 225
+  estimated_days: 3-4
+
+notes: |
+  Sprint 16 builds on existing orchestration infrastructure to add real agent invocation.
+  Uses HeadlessSession to invoke agents defined in .claude/agents/*.md.
+  Enables specialized agents (planner, reviewer, security) for different task types.

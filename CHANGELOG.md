@@ -5,11 +5,79 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.5.3] - Unreleased (Sprint 15 Final)
+## [v2.5.4] - 2025-12-18 (Sprint 16: Real Subagents)
 
-### Planned
-- **Secret Detection** (TASK-094) — Pre-commit secret scanning with pattern matching for AWS, GitHub, Slack tokens
-- **Dependency Vulnerability Scan** (TASK-095) — CVE scanning for Python packages, npm audit integration
+### Added
+- **Agent Invocation Framework** (TASK-096) — Base framework for invoking specialized agents
+  - `AgentInvoker` class loads agent definitions from `.claude/agents/*.md`
+  - `AgentDefinition` dataclass parses YAML frontmatter (name, model, permission_mode, tools)
+  - `InvocationResult` with output, cost, tokens, and duration tracking
+  - Invokes agents via `HeadlessSession` with proper permission modes
+  - 48 tests in `test_invoker.py`
+- **Planner Agent Implementation** (TASK-097) — Design and planning specialist agent
+  - `PlannerAgent` class for architectural planning and design tasks
+  - `PlanOutput` with phases, files to modify, complexity estimates
+  - `invoke_planner()` convenience function
+  - `should_trigger_planner()` for automatic routing
+  - Permission mode: plan (read-only) for safe exploration
+  - 26 tests in `test_planner_agent.py`
+- **Reviewer Agent Implementation** (TASK-098) — Code review specialist agent
+  - `ReviewerAgent` class for code quality review
+  - `ReviewOutput` with items, severity levels (blocker, warning, suggestion, praise)
+  - `ReviewVerdict` enum (approve, request_changes, comment)
+  - `invoke_reviewer()` and `should_trigger_reviewer()` functions
+  - Git diff analysis with `extract_changed_files()` and `extract_line_changes()`
+  - 26 tests in `test_reviewer_agent.py`
+- **Security Agent Implementation** (TASK-099) — Pre-execution security gatekeeper
+  - `SecurityAgent` class for security review of commands and code
+  - `SecurityDecision` with ALLOW/WARN/BLOCK actions and SOC2 control references
+  - `SecurityFinding` dataclass for detailed security issues
+  - `AgentEnhancedReviewHook` for AI-powered security review integration
+  - `invoke_security()` and `should_trigger_security()` functions
+  - 37 tests in `test_security_agent.py`
+- **Enhanced Agent Handoff Protocol** (TASK-100) — Structured context passing between agents
+  - `EnhancedHandoffPackage` with full task context, acceptance criteria, files touched
+  - `HandoffChain` for tracking multi-agent workflow history
+  - `HandoffSerializer` for disk persistence in `.paircoder/handoffs/`
+  - `prepare_handoff()` and `receive_handoff()` functions
+  - Chain depth and previous handoff tracking for debugging
+  - Token budget estimation for handoffs
+  - 22 tests in `test_handoff_protocol.py`
+- **Agent Selection Logic** (TASK-101) — Intelligent task-to-agent routing
+  - `AgentSelector` class with scoring algorithm
+  - `SelectionCriteria` with auto-detection of security/review requirements
+  - `AgentMatch` with score, reasons, and permission mode
+  - Selection rules: design→planner, review→reviewer, security→security, default→claude-code
+  - `bpsai-pair orchestrate select-agent` command for agent recommendations
+  - Enhanced `bpsai-pair orchestrate analyze` shows specialized agent suggestions
+  - 27 tests in `test_agent_selection.py`
+
+### Changed
+- Test count increased from 541 to 1247 (706 new tests across all modules)
+- Orchestration module now exports all agent-related classes and functions
+- CLI enhanced with specialized agent selection commands
+
+---
+
+## [v2.5.3] - 2025-12-17 (Sprint 15 Final)
+
+### Added
+- **Secret Detection** (TASK-094) — Pre-commit secret scanning with pattern matching
+  - `SecretScanner` class with patterns for AWS keys, GitHub tokens, Slack tokens, private keys
+  - `scan_file()`, `scan_diff()`, `scan_staged()` methods
+  - Allowlist support for false positive suppression
+  - Integration with pre-commit hooks
+  - 15 tests in `test_security_secrets.py`
+- **Dependency Vulnerability Scan** (TASK-095) — CVE scanning for project dependencies
+  - `DependencyScanner` for Python (pip-audit) and npm (npm audit) dependencies
+  - `Vulnerability` dataclass with package, version, CVE ID, severity, fixed version
+  - `ScanReport` with critical/high severity detection
+  - `bpsai-pair scan-deps` command with `--fail-on` severity threshold
+  - 18 tests in `test_security_dependencies.py`
+
+### Changed
+- Sprint 15 security features complete (TASK-089 through TASK-095)
+- Test count increased from 541 to 574 (33 new security tests)
 
 ---
 
