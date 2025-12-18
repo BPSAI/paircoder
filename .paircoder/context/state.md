@@ -55,9 +55,9 @@ All 8 tasks completed:
 | TASK-092 | Docker sandbox runner | **done** | P1 | 50 |
 | TASK-093 | Git checkpoint/rollback | **done** | P0 | 35 |
 | TASK-094 | Secret detection | **done** | P0 | 30 |
-| TASK-095 | Dependency vulnerability scan | pending | P1 | 25 |
+| TASK-095 | Dependency vulnerability scan | **done** | P1 | 25 |
 
-**Progress:** 6/7 tasks complete (225/250 points)
+**Progress:** 7/7 tasks complete (250/250 points) - **SPRINT 15 COMPLETE!**
 
 ### Backlog (Deprioritized)
 
@@ -70,6 +70,37 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-17 - TASK-095: Dependency Vulnerability Scan
+
+**TASK-095: Dependency Vulnerability Scan** - DONE
+
+Implemented dependency vulnerability scanning:
+
+**New file:** `tools/cli/bpsai_pair/security/dependencies.py`
+- `DependencyScanner` class for scanning Python and npm dependencies
+- `Vulnerability` dataclass for detected CVEs
+- `ScanReport` dataclass with severity analysis
+- `Severity` enum with comparison operators
+
+**Features:**
+- Python scanning via pip-audit (requirements.txt, pyproject.toml)
+- npm scanning via npm audit (package.json)
+- Result caching for performance (configurable TTL)
+- Severity filtering (--fail-on option)
+- Verbose and JSON output formats
+
+**CLI commands:**
+- `bpsai-pair scan-deps [path]` - Scan dependencies
+- `bpsai-pair scan-deps --fail-on high` - Fail on high+ severity
+- `bpsai-pair scan-deps --verbose` - Show detailed CVE info
+- `bpsai-pair scan-deps --json` - JSON output for CI
+
+**Tests:** 37 tests in `test_security_dependencies.py`
+
+**Sprint 15 Complete!** All 7 security tasks done (250/250 points).
+
+---
 
 ### Session: 2025-12-17 - TASK-094: Secret Detection
 
@@ -256,12 +287,12 @@ Also created:
 
 ## What's Next
 
-### Remaining Sprint 15 Tasks
+**Sprint 15 Complete!** All security tasks are done.
 
-1. **TASK-095**: Dependency vulnerability scan (P1)
-   - CVE scanning for Python packages
-   - npm audit integration
-   - CI/CD pipeline integration
+Consider next:
+- Sprint 16: Advanced autonomous features
+- Integrate security scanning into CI/CD
+- Add more secret patterns based on user feedback
 
 ## Sprint 15 Success Criteria
 
@@ -271,17 +302,18 @@ Also created:
 - [x] Git checkpoints enable rollback
 - [ ] Can run autonomous session without `--dangerously-skip-permissions`
 - [x] No secrets in any commits (secret scanning implemented)
-- [ ] Dependencies scanned for vulnerabilities
+- [x] Dependencies scanned for vulnerabilities
 
 ## Test Coverage
 
-- **Total tests**: 181 security tests + existing tests
+- **Total tests**: 218 security tests + existing tests
 - **Security module tests**:
   - test_security_allowlist.py: 39 tests
   - test_security_review.py: 35 tests
   - test_security_sandbox.py: 35 tests
   - test_security_checkpoint.py: 20 tests
   - test_security_secrets.py: 52 tests
+  - test_security_dependencies.py: 37 tests
 - **Test command**: `pytest -v`
 
 ## Blockers
