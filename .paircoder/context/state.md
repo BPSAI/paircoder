@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2025-12-18 (afternoon session)
+> Last updated: 2025-12-18 (evening session)
 
 ## Active Plan
 
@@ -20,11 +20,11 @@ Sprint 17: Time, Tokens & Metrics - Know how much things cost.
 - TASK-104: Actual vs estimated tracking ✓
 - TASK-105: Velocity calculation ✓
 - TASK-106: Sprint burndown chart data ✓
-- TASK-107: Estimation accuracy report (pending)
+- TASK-107: Estimation accuracy report ✓
 - TASK-133: Token estimation model (pending)
 - TASK-138: Token estimation feedback loop (pending)
 
-**Progress:** 5/8 tasks complete (140/230 points)
+**Progress:** 6/8 tasks complete (165/230 points)
 
 ## Task Status
 
@@ -78,6 +78,61 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-18 (evening) - TASK-107: Estimation Accuracy Report
+
+**TASK-107: Estimation Accuracy Report** - DONE
+
+Implemented estimation accuracy reporting that analyzes historical estimates vs actuals:
+
+**New file:** `tools/cli/bpsai_pair/metrics/accuracy.py`
+- `AccuracyStats` dataclass - overall accuracy statistics (accuracy %, bias direction)
+- `TaskTypeAccuracy` dataclass - accuracy breakdown by task type (feature, bugfix, refactor)
+- `ComplexityBandAccuracy` dataclass - accuracy breakdown by complexity band (XS-XL)
+- `AccuracyAnalyzer` class - analyzes historical task completion data
+
+**Features:**
+- `load_completions()` - loads task completion records from task-completions.jsonl
+- `get_accuracy_stats()` - calculates overall accuracy and bias direction
+- `get_accuracy_by_task_type()` - groups accuracy by feature/bugfix/refactor
+- `get_accuracy_by_complexity_band()` - groups accuracy by XS/S/M/L/XL bands
+- `get_recommendation()` - generates actionable recommendation based on bias
+- `generate_report()` - full report with all breakdowns
+
+**CLI command:**
+- `bpsai-pair metrics accuracy` - show estimation accuracy report
+- `--json` flag for JSON output
+
+**Example output:**
+```
+Estimation Accuracy Report
+==========================
+
+Overall Accuracy: 82%
+Bias: Optimistic by 18%
+
+By Task Type:
+- Feature: 75% accurate (25% underestimate)
+- Bugfix: 90% accurate (10% overestimate)
+- Refactor: 65% accurate (35% underestimate)
+
+By Complexity:
+- XS (0-15): 95% accurate
+- S (16-30): 85% accurate
+- M (31-50): 78% accurate
+- L (51-75): 70% accurate
+- XL (76-100): 60% accurate
+
+Recommendation: Add 18% buffer to estimates to improve accuracy.
+```
+
+**Updated files:**
+- `metrics/__init__.py` - exports AccuracyAnalyzer, AccuracyStats, TaskTypeAccuracy, ComplexityBandAccuracy
+- `cli.py` - added `metrics accuracy` command
+
+**Tests:** 16 tests in `test_accuracy.py`
+
+---
 
 ### Session: 2025-12-18 (evening) - TASK-106: Sprint Burndown Chart Data
 
@@ -577,7 +632,6 @@ Also created:
 ## What's Next
 
 **Sprint 17 Remaining Tasks:**
-- TASK-107: Estimation accuracy report
 - TASK-133: Token estimation model
 - TASK-138: Token estimation feedback loop
 
@@ -587,7 +641,7 @@ Also created:
 - [x] Actual vs estimated tracking recorded
 - [x] Velocity calculation available
 - [x] Burndown chart data generated
-- [ ] Estimation accuracy report available
+- [x] Estimation accuracy report available
 - [ ] Token estimation model implemented
 - [ ] Token feedback loop working
 

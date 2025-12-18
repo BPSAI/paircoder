@@ -926,6 +926,71 @@ def metrics_burndown(
             console.print("[dim]No data points generated. Check sprint dates.[/dim]")
 
 
+def _get_accuracy_analyzer():
+    """Get an accuracy analyzer instance."""
+    from .metrics.accuracy import AccuracyAnalyzer
+    root = repo_root()
+    history_dir = root / ".paircoder" / "history"
+    return AccuracyAnalyzer(history_dir)
+
+
+@metrics_app.command("accuracy")
+def metrics_accuracy(
+    json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+):
+    """Show estimation accuracy report.
+
+    Analyzes how accurate task estimates have been compared to actual time spent.
+    Shows overall accuracy, bias direction, and breakdowns by task type and complexity.
+    """
+    analyzer = _get_accuracy_analyzer()
+    report = analyzer.generate_report()
+    stats = report["stats"]
+
+    if json_out:
+        print_json(report)
+    else:
+        console.print("[bold]Estimation Accuracy Report[/bold]")
+        console.print("=" * 26)
+        console.print("")
+
+        if stats["total_tasks"] == 0:
+            console.print("[dim]No historical data available.[/dim]")
+            console.print("[dim]Accuracy is tracked when tasks are completed with time tracking.[/dim]")
+            return
+
+        # Overall stats
+        console.print(f"Overall Accuracy: {stats['overall_accuracy']:.0f}%")
+        bias_str = f"Bias: {stats['bias_direction'].title()}"
+        if stats["bias_direction"] != "neutral":
+            bias_str += f" by {stats['bias_percent']:.0f}%"
+        console.print(bias_str)
+        console.print("")
+
+        # By Task Type
+        by_type = report["by_task_type"]
+        if by_type:
+            console.print("[bold]By Task Type:[/bold]")
+            for t in by_type:
+                bias_info = ""
+                if t["bias_direction"] != "neutral":
+                    direction = "under" if t["bias_direction"] == "optimistic" else "over"
+                    bias_info = f" ({t['bias_percent']:.0f}% {direction}estimate)"
+                console.print(f"- {t['task_type'].title()}: {t['accuracy_percent']:.0f}% accurate{bias_info}")
+            console.print("")
+
+        # By Complexity
+        by_band = report["by_complexity_band"]
+        if by_band:
+            console.print("[bold]By Complexity:[/bold]")
+            for b in by_band:
+                console.print(f"- {b['band']} ({b['complexity_range']}): {b['accuracy_percent']:.0f}% accurate")
+            console.print("")
+
+        # Recommendation
+        console.print(f"[bold]Recommendation:[/bold] {report['recommendation']}")
+
+
 # --- Timer Commands ---
 
 def _get_time_manager() -> TimeTrackingManager:

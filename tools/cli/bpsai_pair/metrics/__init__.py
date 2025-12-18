@@ -11,6 +11,12 @@ from .estimation import (
 )
 from .velocity import VelocityTracker, VelocityStats, TaskCompletionRecord
 from .burndown import BurndownGenerator, BurndownData, BurndownDataPoint, SprintConfig
+from .accuracy import (
+    AccuracyAnalyzer,
+    AccuracyStats,
+    TaskTypeAccuracy,
+    ComplexityBandAccuracy,
+)
 
 __all__ = [
     "MetricsCollector",
@@ -32,4 +38,8 @@ __all__ = [
     "BurndownData",
     "BurndownDataPoint",
     "SprintConfig",
+    "AccuracyAnalyzer",
+    "AccuracyStats",
+    "TaskTypeAccuracy",
+    "ComplexityBandAccuracy",
 ]
