@@ -17,10 +17,10 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 **Sprint 18 Tasks (Critical Fixes):**
 - TASK-150: Cookie cutter template full audit and sync (P0, 60 pts) ✓
 - TASK-151: Add missing config sections to all presets (P0, 30 pts) ✓
-- TASK-152: Fix Task model missing depends_on field (P1, 20 pts)
-- TASK-153: Fix plan list showing 0 tasks (P1, 15 pts)
+- TASK-152: Fix Task model missing depends_on field (P1, 20 pts) ✓
+- TASK-153: Fix plan list showing 0 tasks (P1, 15 pts) ✓
 
-**Progress:** 2/4 tasks complete (90/125 points)
+**Progress:** 4/4 tasks complete (125/125 points) ✅ Sprint 18 Complete!
 
 **Sprint 19 Tasks (Documentation & Structure):**
 - TASK-154: Document BPS Trello board conventions
@@ -91,6 +91,68 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-19 (afternoon) - TASK-153: Fix Plan List Task Count
+
+**TASK-153: Fix plan list showing 0 tasks** - DONE
+
+Fixed the `plan list` command to show accurate task counts instead of always showing 0.
+
+**Root Cause:**
+The command used `len(plan.tasks)` which counted task summaries embedded in the plan file, not actual task files with matching `plan_id`.
+
+**Fix:**
+Changed `cli_commands.py` to use `TaskParser.get_tasks_for_plan(plan.id)` which counts actual task files that have the matching `plan_id` in their frontmatter.
+
+**Changes:**
+- `tools/cli/bpsai_pair/planning/cli_commands.py` - Added `TaskParser` instance and used `get_tasks_for_plan()` to count actual tasks
+
+**Verification:**
+```
+$ bpsai-pair plan list
+                                   Plans (2)
+┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+┃ ID                    ┃ Title                 ┃ Type    ┃ Status     ┃ Tasks ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+│ plan-2025-12-backlog… │ Backlog Remediation   │ feature │ 📋 planned │    15 │
+│ plan-2025-12-sprint-… │ Time, Tokens & ...    │ feature │ 📋 planned │     8 │
+└───────────────────────┴───────────────────────┴─────────┴────────────┴───────┘
+```
+
+**Tests:** All 1282 tests pass (excluding pre-existing trello_sync failure)
+
+---
+
+### Session: 2025-12-19 (afternoon) - TASK-152: Fix depends_on Field
+
+**TASK-152: Fix Task model missing depends_on field** - DONE
+
+Fixed the `'Task' object has no attribute 'depends_on'` error that occurred during task completion.
+
+**Root Cause:**
+The `check_unblocked` hook tried to access `task.depends_on` but the Task model didn't have this field.
+
+**Changes:**
+
+1. **`planning/models.py`** - Task dataclass:
+   - Added `depends_on: list[str] = field(default_factory=list)` field
+   - Updated `to_dict()` to include `depends_on` in serialization
+   - Updated `from_dict()` to parse `depends_on` with default empty list
+
+2. **`hooks.py`** - `_check_unblocked` method:
+   - Changed from `task.depends_on` to `getattr(task, 'depends_on', None) or []`
+   - Provides backwards compatibility with old task objects
+
+**Tests:**
+- All 34 hooks tests pass
+- Manual verification: Task model correctly handles depends_on field
+- Manual verification: Task update completes without error
+
+**Files modified:**
+- `tools/cli/bpsai_pair/planning/models.py`
+- `tools/cli/bpsai_pair/hooks.py`
+
+---
 
 ### Session: 2025-12-19 (afternoon) - TASK-151: Add Missing Config Sections
 
@@ -892,17 +954,20 @@ Also created:
 
 ## What's Next
 
-**Sprint 18 - Critical Fixes (Next Up):**
-1. TASK-150: Cookie cutter template full audit and sync (P0, 60 pts)
-2. TASK-151: Add missing config sections to all presets (P0, 30 pts)
-3. TASK-152: Fix Task model missing depends_on field (P1, 20 pts)
-4. TASK-153: Fix plan list showing 0 tasks (P1, 15 pts)
+**Sprint 18 - COMPLETE ✅**
 
-**Sprint 18 Success Criteria:**
-- [ ] All cookie cutter template files audited and synced
-- [ ] All presets include Trello, estimation, hooks, security sections
-- [ ] Task model has depends_on field with default
-- [ ] Plan list shows accurate task count
+All 4 critical fixes completed (125/125 points):
+- [x] TASK-150: Cookie cutter template full audit and sync
+- [x] TASK-151: Add missing config sections to all presets
+- [x] TASK-152: Fix Task model missing depends_on field
+- [x] TASK-153: Fix plan list showing 0 tasks
+
+**Sprint 19 - Documentation & Structure (Next Up):**
+1. TASK-154: Document BPS Trello board conventions (P1, 25 pts)
+2. TASK-155: Add /commands directory to cookie cutter (P2, 15 pts)
+3. TASK-156: Reorganize docs/ vs .paircoder/docs/ (P2, 40 pts)
+4. TASK-157: Document Trello setup in quick start (P2, 20 pts)
+5. TASK-158: Clarify task update vs ttask workflow (P2, 20 pts)
 
 **Sprint 17 (Previous) - COMPLETE:**
 - [x] Complexity → hours mapping working

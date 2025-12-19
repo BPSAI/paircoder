@@ -143,6 +143,7 @@ def plan_list(
     """List all plans."""
     paircoder_dir = find_paircoder_dir()
     plan_parser = PlanParser(paircoder_dir / "plans")
+    task_parser = TaskParser(paircoder_dir / "tasks")
 
     plans = plan_parser.parse_all()
 
@@ -167,12 +168,14 @@ def plan_list(
     table.add_column("Tasks", justify="right")
 
     for plan in plans:
+        # Count actual task files with matching plan_id
+        task_count = len(task_parser.get_tasks_for_plan(plan.id))
         table.add_row(
             plan.id,
             plan.title,
             plan.type.value,
             f"{plan.status_emoji} {plan.status.value}",
-            str(len(plan.tasks)),
+            str(task_count),
         )
 
     console.print(table)

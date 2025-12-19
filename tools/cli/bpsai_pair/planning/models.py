@@ -61,6 +61,7 @@ class Task:
     body: str = ""  # Markdown body content
     files_touched: list[str] = field(default_factory=list)
     verification: list[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)  # Task IDs this task depends on
     source_path: Optional[Path] = None
     due_date: Optional[datetime] = None
     
@@ -172,6 +173,7 @@ class Task:
             "status": self.status.value,
             "sprint": self.sprint,
             "tags": self.tags,
+            "depends_on": self.depends_on,
         }
         if self.due_date is not None:
             result["due_date"] = self.due_date.isoformat()
@@ -209,6 +211,7 @@ class Task:
             body=body,
             files_touched=data.get("files_touched", []),
             verification=data.get("verification", []),
+            depends_on=data.get("depends_on", []),
             source_path=source_path,
             due_date=due_date,
         )

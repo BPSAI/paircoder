@@ -349,13 +349,16 @@ class HookRunner:
 
             unblocked = []
             for task in all_tasks:
-                if not task.depends_on:
+                # Use getattr for backwards compatibility with old task objects
+                # that may not have depends_on attribute
+                depends_on = getattr(task, 'depends_on', None) or []
+                if not depends_on:
                     continue
 
-                if ctx.task_id in task.depends_on:
+                if ctx.task_id in depends_on:
                     # Check if all dependencies are now complete
                     all_done = True
-                    for dep_id in task.depends_on:
+                    for dep_id in depends_on:
                         dep_task = parser.get_task_by_id(dep_id)
                         if dep_task and dep_task.status != TaskStatus.DONE:
                             all_done = False
