@@ -17,10 +17,11 @@ jobs:
       - name: Generate project tree
         run: |
           TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          echo "# Project Tree (snapshot)" > context/project_tree.md
-          echo "_Generated: ${TS}_" >> context/project_tree.md
-          echo "" >> context/project_tree.md
-          echo '```' >> context/project_tree.md
+          mkdir -p .paircoder/context
+          echo "# Project Tree (snapshot)" > .paircoder/context/project_tree.md
+          echo "_Generated: ${TS}_" >> .paircoder/context/project_tree.md
+          echo "" >> .paircoder/context/project_tree.md
+          echo '```' >> .paircoder/context/project_tree.md
 
           # Use find to create tree (cross-platform)
           find . \
@@ -30,22 +31,20 @@ jobs:
             -path './build' -prune -o \
             -path './.venv' -prune -o \
             -path './__pycache__' -prune -o \
-            -path './tools/cli/dist' -prune -o \
-            -path './tools/cli/build' -prune -o \
-            -path './**/*.egg-info' -prune -o \
+            -path './*.egg-info' -prune -o \
             -type f -print -o \
             -type d -print | \
             sed 's|^\./||' | \
             grep -v '^\.$' | \
-            sort >> context/project_tree.md
+            sort >> .paircoder/context/project_tree.md
 
-          echo '```' >> context/project_tree.md
+          echo '```' >> .paircoder/context/project_tree.md
 
       - name: Commit changes if any
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add context/project_tree.md || true
+          git add .paircoder/context/project_tree.md || true
           if ! git diff --cached --quiet; then
             git commit -m "chore(context): refresh project_tree snapshot [skip ci]"
             git push

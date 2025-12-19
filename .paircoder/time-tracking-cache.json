@@ -77,5 +77,19 @@
       }
     ],
     "total_seconds": 326.386443
+  },
+  "TASK-150": {
+    "entries": [
+      {
+        "id": "local-20251219143150",
+        "task_id": "TASK-150",
+        "description": "TASK-150: Cookie cutter template full audit and sync",
+        "start": "2025-12-19T14:31:50.364791",
+        "end": "2025-12-19T14:43:10.249072",
+        "duration_seconds": 679.884281,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 679.884281
   }
 }

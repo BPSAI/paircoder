@@ -1,11 +1,12 @@
 # Current State
 
-> Last updated: <!-- Update this date -->
+> Last updated: <!-- Update after each session -->
 
 ## Active Plan
 
 **Plan:** None yet
 **Status:** Ready to start
+**Current Sprint:** N/A
 
 ## Current Focus
 
@@ -13,17 +14,27 @@ Project initialized with PairCoder v2. Ready to create first plan.
 
 ## Task Status
 
+### Active Sprint
+
 No tasks yet. Create a plan to get started:
 
 ```bash
 bpsai-pair plan new my-first-feature --type feature --title "My First Feature"
 ```
 
+### Backlog
+
+Tasks deprioritized for later work will appear here.
+
 ## What Was Just Done
 
-- Initialized project with PairCoder
+### Session: <!-- Date --> - Project Initialization
+
+- Initialized project with PairCoder v2
 - Created `.paircoder/` directory structure
 - Set up initial configuration
+
+<!-- Add new session entries here as you complete work -->
 
 ## What's Next
 
@@ -34,7 +45,7 @@ bpsai-pair plan new my-first-feature --type feature --title "My First Feature"
 
 ## Blockers
 
-None
+None currently.
 
 ## Quick Commands
 
@@ -44,6 +55,16 @@ bpsai-pair status
 
 # Create a new plan
 bpsai-pair plan new my-feature --type feature
+
+# List tasks
+bpsai-pair task list
+
+# Start working on a task
+bpsai-pair task update TASK-XXX --status in_progress
+
+# Complete a task (with Trello)
+bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"
+bpsai-pair task update TASK-XXX --status done
 
 # List available flows
 bpsai-pair flow list
