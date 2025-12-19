@@ -1,30 +1,43 @@
 # Current State
 
-> Last updated: 2025-12-18 (evening session)
+> Last updated: 2025-12-19 (morning session)
 
 ## Active Plan
 
-**Plan:** `plan-2025-12-sprint-17-time-tokens-metrics`
-**Status:** In Progress
-**Current Sprint:** sprint-17
+**Plan:** `plan-2025-12-backlog-remediation`
+**Status:** Active
+**Current Sprint:** sprint-18
 
-**Previous:** `plan-2025-12-sprint-16-real-subagents` (complete)
+**Previous:** `plan-2025-12-sprint-17-time-tokens-metrics` (complete)
 
 ## Current Focus
 
-Sprint 17: Time, Tokens & Metrics - Know how much things cost.
+Backlog Remediation: Bugs, Missing Features & Documentation
 
-**Sprint 17 Tasks:**
-- TASK-102: Complexity to hours mapping ✓
-- TASK-103: Auto-timer that actually works ✓
-- TASK-104: Actual vs estimated tracking ✓
-- TASK-105: Velocity calculation ✓
-- TASK-106: Sprint burndown chart data ✓
-- TASK-107: Estimation accuracy report ✓
-- TASK-133: Token estimation model ✓
-- TASK-138: Token estimation feedback loop ✓
+**Sprint 18 Tasks (Critical Fixes):**
+- TASK-150: Cookie cutter template full audit and sync (P0, 60 pts)
+- TASK-151: Add missing config sections to all presets (P0, 30 pts)
+- TASK-152: Fix Task model missing depends_on field (P1, 20 pts)
+- TASK-153: Fix plan list showing 0 tasks (P1, 15 pts)
 
-**Progress:** 8/8 tasks complete (230/230 points) - SPRINT COMPLETE!
+**Progress:** 0/4 tasks complete (0/125 points)
+
+**Sprint 19 Tasks (Documentation & Structure):**
+- TASK-154: Document BPS Trello board conventions
+- TASK-155: Add /commands directory to cookie cutter
+- TASK-156: Reorganize docs/ vs .paircoder/docs/
+- TASK-157: Document Trello setup in quick start
+- TASK-158: Clarify task update vs ttask workflow
+
+**Sprint 20 Tasks (Enhancements):**
+- TASK-159: Trello board initialization from template
+- TASK-160: Sprint completion checklist enforcement
+- TASK-161: Config validate and update command
+- TASK-162: CLI commands for Trello custom fields
+- TASK-163: Preset-specific CI workflows
+- TASK-164: Document slash commands feature
+
+**Total:** 15 tasks across 3 sprints (445 complexity points)
 
 ## Task Status
 
@@ -78,6 +91,43 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-19 (morning) - Backlog Remediation Planning
+
+**Created:** `plan-2025-12-backlog-remediation`
+
+Analyzed and prioritized backlog from React SDK deployment session (docs/PAIRCODER-BACKLOG.md).
+
+**Plan created with 15 tasks across 3 sprints:**
+
+**Sprint 18 - Critical Fixes (125 pts):**
+- TASK-150: Cookie cutter template full audit and sync (P0, 60)
+- TASK-151: Add missing config sections to all presets (P0, 30)
+- TASK-152: Fix Task model missing depends_on field (P1, 20)
+- TASK-153: Fix plan list showing 0 tasks (P1, 15)
+
+**Sprint 19 - Documentation & Structure (120 pts):**
+- TASK-154: Document BPS Trello board conventions (P1, 25)
+- TASK-155: Add /commands directory to cookie cutter (P2, 15)
+- TASK-156: Reorganize docs/ vs .paircoder/docs/ (P2, 40)
+- TASK-157: Document Trello setup in quick start (P2, 20)
+- TASK-158: Clarify task update vs ttask workflow (P2, 20)
+
+**Sprint 20 - Enhancements (210 pts):**
+- TASK-159: Trello board initialization from template (P2, 45)
+- TASK-160: Sprint completion checklist enforcement (P2, 35)
+- TASK-161: Config validate and update command (P3, 40)
+- TASK-162: CLI commands for Trello custom fields (P2, 40)
+- TASK-163: Preset-specific CI workflows (P3, 35)
+- TASK-164: Document slash commands feature (P3, 15)
+
+**Trello Sync:** 15 cards created in Intake/Backlog list
+
+**Files created:**
+- `.paircoder/plans/plan-2025-12-backlog-remediation.plan.yaml`
+- `.paircoder/tasks/backlog-remediation/TASK-150.task.md` through TASK-164.task.md
+
+---
 
 ### Session: 2025-12-18 (evening) - TASK-138: Token Estimation Feedback Loop
 
@@ -734,10 +784,19 @@ Also created:
 
 ## What's Next
 
-**Sprint 17 Remaining Tasks:**
-None - Sprint 17 COMPLETE!
+**Sprint 18 - Critical Fixes (Next Up):**
+1. TASK-150: Cookie cutter template full audit and sync (P0, 60 pts)
+2. TASK-151: Add missing config sections to all presets (P0, 30 pts)
+3. TASK-152: Fix Task model missing depends_on field (P1, 20 pts)
+4. TASK-153: Fix plan list showing 0 tasks (P1, 15 pts)
 
-**Sprint 17 Success Criteria:**
+**Sprint 18 Success Criteria:**
+- [ ] All cookie cutter template files audited and synced
+- [ ] All presets include Trello, estimation, hooks, security sections
+- [ ] Task model has depends_on field with default
+- [ ] Plan list shows accurate task count
+
+**Sprint 17 (Previous) - COMPLETE:**
 - [x] Complexity → hours mapping working
 - [x] Auto-timer starts/stops with task status
 - [x] Actual vs estimated tracking recorded
