@@ -105,3 +105,4 @@ agent_pack.tgz
 *.pyc
 __pycache__/
 *.pyc
+/.paircoder/history/
