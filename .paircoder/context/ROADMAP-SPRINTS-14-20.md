@@ -100,7 +100,7 @@
 
 ---
 
-## Sprint 15: Security & Sandboxing - IN PROGRESS (5/7 done)
+## Sprint 15: Security & Sandboxing - IN PROGRESS (Complete)
 
 > **Goal:** Safe autonomous execution without `--dangerously-skip-permissions`.
 
@@ -183,7 +183,7 @@ commands:
 
 ---
 
-## Sprint 16: Real Sub-agents
+## Sprint 16: Real Sub-agents (Complete)
 
 > **Goal:** `bpsai-pair orchestrate task` actually routes to appropriate agent.
 
@@ -253,7 +253,7 @@ def select_agent(task: Task) -> str:
 
 ---
 
-## Sprint 17: Time, Tokens & Metrics
+## Sprint 17: Time, Tokens & Metrics (Complete)
 
 > **Goal:** Know how much things cost - time, tokens, accuracy of estimates.
 
@@ -350,6 +350,10 @@ Better estimates next sprint
 - [ ] Token estimates improve over time (feedback loop working)
 
 ---
+
+## Sprint 17.5: Methodology, Sessions & Recovery (In Process)
+
+> **Goal:** Address bugs from latest production testing 
 
 ## Sprint 18: Methodology, Sessions & Recovery
 

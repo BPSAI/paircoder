@@ -6,7 +6,7 @@
 
 **Plan:** `plan-2025-12-backlog-remediation`
 **Status:** Active
-**Current Sprint:** sprint-18
+**Current Sprint:** sprint-17.5
 
 **Previous:** `plan-2025-12-sprint-17-time-tokens-metrics` (complete)
 
@@ -14,22 +14,22 @@
 
 Backlog Remediation: Bugs, Missing Features & Documentation
 
-**Sprint 18 Tasks (Critical Fixes):**
+**Sprint 17.5 Tasks (Critical Fixes):**
 - TASK-150: Cookie cutter template full audit and sync (P0, 60 pts) ✓
 - TASK-151: Add missing config sections to all presets (P0, 30 pts) ✓
 - TASK-152: Fix Task model missing depends_on field (P1, 20 pts) ✓
 - TASK-153: Fix plan list showing 0 tasks (P1, 15 pts) ✓
 
-**Progress:** 4/4 tasks complete (125/125 points) ✅ Sprint 18 Complete!
+**Progress:** 4/4 tasks complete (125/125 points) ✅ Sprint 17.5 Phase1 Complete!
 
-**Sprint 19 Tasks (Documentation & Structure):**
+**Sprint 17.5 Tasks (Documentation & Structure):**
 - TASK-154: Document BPS Trello board conventions
 - TASK-155: Add /commands directory to cookie cutter
 - TASK-156: Reorganize docs/ vs .paircoder/docs/
 - TASK-157: Document Trello setup in quick start
 - TASK-158: Clarify task update vs ttask workflow
 
-**Sprint 20 Tasks (Enhancements):**
+**Sprint 17.5 Tasks (Enhancements):**
 - TASK-159: Trello board initialization from template
 - TASK-160: Sprint completion checklist enforcement
 - TASK-161: Config validate and update command
@@ -37,7 +37,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-163: Preset-specific CI workflows
 - TASK-164: Document slash commands feature
 
-**Total:** 15 tasks across 3 sprints (445 complexity points)
+**Total:** 15 tasks (445 complexity points)
 
 ## Task Status
 
