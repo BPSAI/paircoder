@@ -50,6 +50,15 @@ class Preset:
     # Hooks configuration (optional)
     hooks_config: Optional[Dict[str, Any]] = None
 
+    # Estimation configuration (optional)
+    estimation_config: Optional[Dict[str, Any]] = None
+
+    # Metrics configuration (optional)
+    metrics_config: Optional[Dict[str, Any]] = None
+
+    # Security configuration (optional)
+    security_config: Optional[Dict[str, Any]] = None
+
     def to_config_dict(self, project_name: str, primary_goal: str) -> Dict[str, Any]:
         """Convert preset to a config dictionary.
 
@@ -61,7 +70,7 @@ class Preset:
             Config dictionary ready for YAML serialization
         """
         config = {
-            "version": "2.4",
+            "version": "2.6",
             "project": {
                 "name": project_name,
                 "description": f"A {self.project_type} project",
@@ -85,17 +94,95 @@ class Preset:
             },
         }
 
-        # Add model routing if specified
-        if self.model_routing:
-            config["routing"] = self.model_routing
+        # Add model routing (with defaults if not specified)
+        config["routing"] = self.model_routing or {
+            "by_complexity": {
+                "trivial": {"max_score": 20, "model": "claude-haiku-4-5"},
+                "simple": {"max_score": 40, "model": "claude-haiku-4-5"},
+                "moderate": {"max_score": 60, "model": "claude-sonnet-4-5"},
+                "complex": {"max_score": 80, "model": "claude-opus-4-5"},
+                "epic": {"max_score": 100, "model": "claude-opus-4-5"},
+            }
+        }
 
-        # Add Trello configuration if specified
-        if self.trello_config:
-            config["trello"] = self.trello_config
+        # Add Trello configuration (with placeholder if not specified)
+        config["trello"] = self.trello_config or {
+            "board_id": "",  # Set via: bpsai-pair trello use-board <id>
+            "board_name": "",
+            "sync": {
+                "default_list": "Planned/Ready",
+                "use_butler_workflow": True,
+                "preserve_manual_edits": True,
+            },
+            "list_mappings": {
+                "pending": "Planned/Ready",
+                "in_progress": "In Progress",
+                "blocked": "Blocked",
+                "review": "In Review",
+                "done": "Deployed/Done",
+            },
+        }
 
-        # Add hooks configuration if specified
-        if self.hooks_config:
-            config["hooks"] = self.hooks_config
+        # Add estimation configuration (with defaults if not specified)
+        config["estimation"] = self.estimation_config or {
+            "complexity_to_hours": {
+                "XS": [0.5, 1, 2],    # [min, expected, max] hours
+                "S": [1, 2, 4],
+                "M": [2, 4, 8],
+                "L": [4, 8, 16],
+                "XL": [8, 16, 32],
+            },
+            "token_estimates": {
+                "base_context": 15000,
+                "per_complexity_point": 500,
+                "per_file_touched": 2000,
+                "by_task_type": {
+                    "feature": 1.2,
+                    "bugfix": 0.8,
+                    "docs": 0.6,
+                    "refactor": 1.5,
+                },
+            },
+        }
+
+        # Add metrics configuration (with defaults if not specified)
+        config["metrics"] = self.metrics_config or {
+            "enabled": True,
+            "store_path": ".paircoder/history/metrics.jsonl",
+        }
+
+        # Add hooks configuration (with Sprint 17 defaults if not specified)
+        config["hooks"] = self.hooks_config or {
+            "enabled": True,
+            "on_task_start": [
+                "start_timer",
+                "sync_trello",
+                "update_state",
+            ],
+            "on_task_complete": [
+                "stop_timer",
+                "record_metrics",
+                "record_velocity",
+                "record_token_usage",
+                "sync_trello",
+                "update_state",
+                "check_unblocked",
+            ],
+            "on_task_block": [
+                "sync_trello",
+                "update_state",
+            ],
+        }
+
+        # Add security configuration (with defaults if not specified)
+        config["security"] = self.security_config or {
+            "allowlist_path": ".paircoder/security/allowlist.yaml",
+            "secrets_allowlist_path": ".paircoder/security/secret-allowlist.yaml",
+            "sandbox": {
+                "enabled": False,
+                "config_path": ".paircoder/security/sandbox.yaml",
+            },
+        }
 
         return config
 
@@ -350,8 +437,16 @@ PRESETS: Dict[str, Preset] = {
         hooks_config={
             "enabled": True,
             "on_task_start": ["start_timer", "sync_trello", "update_state"],
-            "on_task_complete": ["stop_timer", "record_metrics", "record_velocity", "sync_trello", "check_unblocked"],
-            "on_task_block": ["sync_trello"],
+            "on_task_complete": [
+                "stop_timer",
+                "record_metrics",
+                "record_velocity",
+                "record_token_usage",
+                "sync_trello",
+                "update_state",
+                "check_unblocked",
+            ],
+            "on_task_block": ["sync_trello", "update_state"],
         },
     ),
 }

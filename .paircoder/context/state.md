@@ -16,11 +16,11 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 
 **Sprint 18 Tasks (Critical Fixes):**
 - TASK-150: Cookie cutter template full audit and sync (P0, 60 pts) ✓
-- TASK-151: Add missing config sections to all presets (P0, 30 pts)
+- TASK-151: Add missing config sections to all presets (P0, 30 pts) ✓
 - TASK-152: Fix Task model missing depends_on field (P1, 20 pts)
 - TASK-153: Fix plan list showing 0 tasks (P1, 15 pts)
 
-**Progress:** 1/4 tasks complete (60/125 points)
+**Progress:** 2/4 tasks complete (90/125 points)
 
 **Sprint 19 Tasks (Documentation & Structure):**
 - TASK-154: Document BPS Trello board conventions
@@ -91,6 +91,46 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-19 (afternoon) - TASK-151: Add Missing Config Sections
+
+**TASK-151: Add missing config sections to all presets** - DONE
+
+Updated `presets.py` so all presets generate complete configs with all required sections:
+
+**Changes to Preset dataclass:**
+- Added `estimation_config`, `metrics_config`, `security_config` fields
+
+**Changes to `to_config_dict()`:**
+- Bumped version from 2.4 to 2.6
+- Added default `routing` section (with complexity-based model routing)
+- Added default `trello` section (with empty board_id, sync settings, list_mappings)
+- Added default `estimation` section (complexity_to_hours, token_estimates)
+- Added default `metrics` section (enabled: true, store_path)
+- Added default `hooks` section (Sprint 17 hooks: record_velocity, record_token_usage)
+- Added default `security` section (allowlist_path, secrets_allowlist_path, sandbox)
+
+**Updated `bps` preset:**
+- Added `record_token_usage` and `update_state` hooks to match current standards
+
+**Tests added (9 new):**
+- `test_to_config_dict_has_all_sections`
+- `test_to_config_dict_trello_defaults`
+- `test_to_config_dict_estimation_defaults`
+- `test_to_config_dict_hooks_defaults`
+- `test_to_config_dict_security_defaults`
+- `test_to_config_dict_metrics_defaults`
+- `test_all_presets_generate_complete_config`
+- `test_bps_preset_has_custom_trello_config`
+- `test_bps_preset_has_custom_hooks`
+
+**Files modified:**
+- `tools/cli/bpsai_pair/presets.py`
+- `tools/cli/tests/test_presets.py`
+
+**Test Results:** 36 preset tests, all passing
+
+---
 
 ### Session: 2025-12-19 (afternoon) - TASK-150: Cookie Cutter Template Audit
 

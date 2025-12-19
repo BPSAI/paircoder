@@ -54,12 +54,109 @@ class TestPreset:
 
         config = preset.to_config_dict("My App", "Build something great")
 
-        assert config["version"] == "2.4"
+        assert config["version"] == "2.6"
         assert config["project"]["name"] == "My App"
         assert config["project"]["primary_goal"] == "Build something great"
         assert config["project"]["coverage_target"] == 85
         assert config["workflow"]["default_branch_type"] == "feature"
         assert config["workflow"]["main_branch"] == "main"
+
+    def test_to_config_dict_has_all_sections(self):
+        """Test config dict includes all required sections."""
+        preset = Preset(
+            name="test",
+            description="Test preset",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test goal")
+
+        # All required sections must be present
+        required_sections = [
+            "version", "project", "workflow", "pack", "flows",
+            "routing", "trello", "estimation", "metrics", "hooks", "security"
+        ]
+        for section in required_sections:
+            assert section in config, f"Missing required section: {section}"
+
+    def test_to_config_dict_trello_defaults(self):
+        """Test config dict has Trello defaults."""
+        preset = Preset(
+            name="test",
+            description="Test",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test")
+
+        assert "trello" in config
+        assert config["trello"]["board_id"] == ""
+        assert "sync" in config["trello"]
+        assert "list_mappings" in config["trello"]
+
+    def test_to_config_dict_estimation_defaults(self):
+        """Test config dict has estimation defaults."""
+        preset = Preset(
+            name="test",
+            description="Test",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test")
+
+        assert "estimation" in config
+        assert "complexity_to_hours" in config["estimation"]
+        assert "token_estimates" in config["estimation"]
+        # Check size mappings exist
+        assert "XS" in config["estimation"]["complexity_to_hours"]
+        assert "XL" in config["estimation"]["complexity_to_hours"]
+
+    def test_to_config_dict_hooks_defaults(self):
+        """Test config dict has hooks defaults with Sprint 17 hooks."""
+        preset = Preset(
+            name="test",
+            description="Test",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test")
+
+        assert "hooks" in config
+        assert config["hooks"]["enabled"] is True
+        assert "on_task_start" in config["hooks"]
+        assert "on_task_complete" in config["hooks"]
+        # Check Sprint 17 hooks are present
+        assert "record_velocity" in config["hooks"]["on_task_complete"]
+        assert "record_token_usage" in config["hooks"]["on_task_complete"]
+
+    def test_to_config_dict_security_defaults(self):
+        """Test config dict has security defaults."""
+        preset = Preset(
+            name="test",
+            description="Test",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test")
+
+        assert "security" in config
+        assert "allowlist_path" in config["security"]
+        assert "sandbox" in config["security"]
+        assert config["security"]["sandbox"]["enabled"] is False
+
+    def test_to_config_dict_metrics_defaults(self):
+        """Test config dict has metrics defaults."""
+        preset = Preset(
+            name="test",
+            description="Test",
+            project_type="Test",
+        )
+
+        config = preset.to_config_dict("Test", "Test")
+
+        assert "metrics" in config
+        assert config["metrics"]["enabled"] is True
+        assert "store_path" in config["metrics"]
 
     def test_to_config_dict_with_routing(self):
         """Test config dict includes model routing when specified."""
@@ -149,6 +246,38 @@ class TestBuiltInPresets:
             for exclude in COMMON_EXCLUDES:
                 assert exclude in preset.pack_excludes, \
                     f"{name} missing common exclude: {exclude}"
+
+    def test_all_presets_generate_complete_config(self):
+        """Test all presets generate configs with all required sections."""
+        required_sections = [
+            "version", "project", "workflow", "pack", "flows",
+            "routing", "trello", "estimation", "metrics", "hooks", "security"
+        ]
+
+        for name, preset in PRESETS.items():
+            config = preset.to_config_dict("Test Project", "Test goal")
+            for section in required_sections:
+                assert section in config, \
+                    f"Preset '{name}' missing required section: {section}"
+
+    def test_bps_preset_has_custom_trello_config(self):
+        """Test BPS preset has its custom Trello configuration."""
+        preset = PRESETS.get("bps")
+        assert preset is not None
+        assert preset.trello_config is not None
+        assert "lists" in preset.trello_config
+        assert "labels" in preset.trello_config
+        assert "automation" in preset.trello_config
+
+    def test_bps_preset_has_custom_hooks(self):
+        """Test BPS preset has custom hooks configuration."""
+        preset = PRESETS.get("bps")
+        assert preset is not None
+        assert preset.hooks_config is not None
+        assert "on_task_complete" in preset.hooks_config
+        # Verify Sprint 17 hooks are present
+        assert "record_velocity" in preset.hooks_config["on_task_complete"]
+        assert "record_token_usage" in preset.hooks_config["on_task_complete"]
 
 
 class TestPresetFunctions:
