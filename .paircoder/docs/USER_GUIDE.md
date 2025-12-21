@@ -12,21 +12,22 @@
 6. [Presets](#presets)
 7. [Planning System](#planning-system)
 8. [Flows & Skills](#flows--skills)
-9. [Orchestration](#orchestration)
-10. [Autonomous Workflow](#autonomous-workflow)
-11. [Intent Detection](#intent-detection)
-12. [GitHub Integration](#github-integration)
-13. [Metrics & Analytics](#metrics--analytics)
-14. [Time Tracking](#time-tracking)
-15. [Benchmarking](#benchmarking)
-16. [Caching](#caching)
-17. [Trello Integration](#trello-integration)
-18. [Standup Summaries](#standup-summaries)
-19. [MCP Server](#mcp-server)
-20. [Auto-Hooks](#auto-hooks)
-21. [CLI Reference](#cli-reference)
-22. [Configuration Reference](#configuration-reference)
-23. [Troubleshooting](#troubleshooting)
+9. [Slash Commands](#slash-commands)
+10. [Orchestration](#orchestration)
+11. [Autonomous Workflow](#autonomous-workflow)
+12. [Intent Detection](#intent-detection)
+13. [GitHub Integration](#github-integration)
+14. [Metrics & Analytics](#metrics--analytics)
+15. [Time Tracking](#time-tracking)
+16. [Benchmarking](#benchmarking)
+17. [Caching](#caching)
+18. [Trello Integration](#trello-integration)
+19. [Standup Summaries](#standup-summaries)
+20. [MCP Server](#mcp-server)
+21. [Auto-Hooks](#auto-hooks)
+22. [CLI Reference](#cli-reference)
+23. [Configuration Reference](#configuration-reference)
+24. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -475,6 +476,63 @@ bpsai-pair flow validate tdd-implement
 | `finish-branch` | "finish", "merge", "complete" | Branch completion |
 | `trello-task-workflow` | "work on task", "TRELLO-" | Trello task execution |
 | `trello-aware-planning` | "plan feature", "create tasks" | Planning with Trello |
+
+---
+
+## Slash Commands
+
+Slash commands provide quick access to common operations in Claude Code.
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/status` | Show project status, current sprint, active tasks |
+| `/plan` | Show current plan details and progress |
+| `/task [ID]` | Show current or specific task details |
+
+### Usage
+
+Type the command in Claude Code chat:
+
+```
+/status
+```
+
+Claude Code will execute the command and display the results.
+
+### Creating Custom Commands
+
+Place markdown files in `.claude/commands/` to create custom slash commands:
+
+```markdown
+# .claude/commands/review.md
+Review the current branch:
+1. Run `git diff main...HEAD`
+2. Check for code style issues
+3. Verify tests pass with `pytest`
+4. Summarize findings
+```
+
+Then use `/review` in Claude Code.
+
+### Command File Structure
+
+```
+.claude/
+└── commands/
+    ├── status.md      # /status command
+    ├── plan.md        # /plan command
+    ├── task.md        # /task command
+    └── custom.md      # /custom command (your own)
+```
+
+### Best Practices
+
+1. **Keep commands focused** - Each command should do one thing well
+2. **Use CLI commands** - Reference `bpsai-pair` commands for consistency
+3. **Document steps** - Write clear step-by-step instructions
+4. **Test commands** - Verify commands work as expected before sharing
 
 ---
 

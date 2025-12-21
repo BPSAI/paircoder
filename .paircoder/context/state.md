@@ -35,7 +35,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-161: Config validate and update command ✓
 - TASK-162: CLI commands for Trello custom fields ✓
 - TASK-163: Preset-specific CI workflows ✓
-- TASK-164: Document slash commands feature
+- TASK-164: Document slash commands feature ✓
 
 **Total:** 15 tasks (445 complexity points)
 
@@ -91,6 +91,44 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-164: Document Slash Commands Feature
+
+**TASK-164: Document slash commands feature** - DONE
+
+Documented the slash commands feature across all relevant documentation files.
+
+**Documentation Added:**
+
+1. **CLAUDE.md** (main repo) - Added "Slash Commands" section:
+   - Quick reference table for `/status`, `/plan`, `/task`
+   - Usage instructions
+   - Instructions for creating custom commands
+
+2. **USER_GUIDE.md** (main docs) - Added comprehensive section:
+   - Available commands table
+   - Usage example
+   - Creating custom commands
+   - Command file structure
+   - Best practices
+
+3. **Template USER_GUIDE.md** (cookie cutter) - Added:
+   - Quick commands reference
+   - Custom command creation guide
+
+**Template CLAUDE.md** already had slash commands section (from TASK-155).
+
+**Files Modified:**
+- `CLAUDE.md`
+- `.paircoder/docs/USER_GUIDE.md`
+- `tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.paircoder/docs/USER_GUIDE.md`
+
+**Acceptance Criteria Met:**
+- [x] Slash commands documented in CLAUDE.md
+- [x] Example commands already in cookie cutter (from TASK-155)
+- [x] Full documentation in USER_GUIDE.md
+
+---
 
 ### Session: 2025-12-21 - TASK-163: Preset-Specific CI Workflows
 

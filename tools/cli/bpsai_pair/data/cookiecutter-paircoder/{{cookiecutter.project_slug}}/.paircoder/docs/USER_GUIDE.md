@@ -75,6 +75,29 @@ bpsai-pair flow show <name>
 bpsai-pair flow run <name>
 ```
 
+### Slash Commands
+
+Quick commands available in Claude Code:
+
+| Command | Purpose |
+|---------|---------|
+| `/status` | Show project status, current sprint, active tasks |
+| `/plan` | Show current plan details and progress |
+| `/task [ID]` | Show current or specific task details |
+
+**Usage**: Type `/status` in Claude Code chat.
+
+**Create custom commands**: Add markdown files to `.claude/commands/`:
+
+```markdown
+# .claude/commands/my-command.md
+Run these steps:
+1. First step
+2. Second step
+```
+
+Then use `/my-command` in Claude Code.
+
 ### Context
 
 ```bash

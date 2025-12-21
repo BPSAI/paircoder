@@ -103,6 +103,31 @@ Current focus: **v2.1 Released**
 - Multi-agent architecture (skills, agents, hooks)
 - Ready for ongoing development
 
+## Slash Commands
+
+Quick commands available via `/command` in Claude Code:
+
+| Command | Purpose |
+|---------|---------|
+| `/status` | Show project status, current sprint, active tasks |
+| `/plan` | Show current plan details and progress |
+| `/task [ID]` | Show current or specific task details |
+
+**Usage**: Type `/status` in the chat to run the status command.
+
+### Creating Custom Commands
+
+Place markdown files in `.claude/commands/` to create custom slash commands:
+
+```markdown
+# .claude/commands/my-command.md
+Run these steps:
+1. First step
+2. Second step
+```
+
+Then use `/my-command` in Claude Code.
+
 ## CLI Reference
 
 ```bash
@@ -113,7 +138,7 @@ bpsai-pair status
 bpsai-pair plan list
 bpsai-pair plan show <id>
 
-# Tasks  
+# Tasks
 bpsai-pair task list --plan <id>
 bpsai-pair task update <id> --status done
 
