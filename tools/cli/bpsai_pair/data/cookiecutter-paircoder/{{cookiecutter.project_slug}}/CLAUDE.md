@@ -33,6 +33,18 @@ Claude Code will auto-discover and use these skills in `.claude/skills/`:
 
 **Skills are model-invoked**: You don't need to explicitly call them. Describe what you want and the appropriate skill activates.
 
+## Slash Commands
+
+Quick commands available via `/command`:
+
+| Command | Purpose |
+|---------|---------|
+| `/status` | Show project status, current sprint, active tasks |
+| `/plan` | Show current plan details and progress |
+| `/task [ID]` | Show current or specific task details |
+
+**Usage**: Type `/status` in the chat to run the status command.
+
 ## CLI Commands
 
 Use the `bpsai-pair` CLI for planning and task management:
@@ -90,6 +102,10 @@ Additional context for implementation
 
 ```
 .claude/                      # Claude Code native
+├── commands/                 # Slash commands (/status, /plan, /task)
+│   ├── status.md
+│   ├── plan.md
+│   └── task.md
 ├── skills/                   # Model-invoked skills
 │   ├── design-plan-implement/SKILL.md
 │   ├── tdd-implement/SKILL.md
