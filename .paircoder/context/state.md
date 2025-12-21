@@ -34,7 +34,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-160: Sprint completion checklist enforcement ✓
 - TASK-161: Config validate and update command ✓
 - TASK-162: CLI commands for Trello custom fields ✓
-- TASK-163: Preset-specific CI workflows
+- TASK-163: Preset-specific CI workflows ✓
 - TASK-164: Document slash commands feature
 
 **Total:** 15 tasks (445 complexity points)
@@ -91,6 +91,56 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-163: Preset-Specific CI Workflows
+
+**TASK-163: Preset-specific CI workflows** - DONE
+
+Implemented preset-specific CI workflows so projects get only the relevant CI jobs for their stack.
+
+**CI Workflow Types:**
+- `node` - Node.js only (npm, TypeScript, ESLint, Prettier)
+- `python` - Python only (pip, pytest, ruff, mypy)
+- `fullstack` - Both Node and Python (keeps existing behavior)
+
+**Preset Mappings:**
+- `react` → `node`
+- `python-cli`, `python-api`, `library`, `autonomous`, `bps` → `python`
+- `fullstack`, `minimal` → `fullstack`
+
+**Implementation:**
+1. Created `ci-node.yml` and `ci-python.yml` workflow templates
+2. Added `ci_type` field to `Preset` dataclass
+3. Added `_select_ci_workflow()` helper function to init command
+4. During `bpsai-pair init --preset X`:
+   - Copies all workflow templates
+   - Renames appropriate workflow to `ci.yml`
+   - Removes unused workflow variants
+
+**Example Usage:**
+
+```bash
+# React project gets Node-only CI
+bpsai-pair init --preset react --name "My App" --goal "Build frontend"
+# Result: .github/workflows/ci.yml contains only Node jobs
+
+# Python project gets Python-only CI
+bpsai-pair init --preset python-cli --name "My CLI" --goal "Build CLI"
+# Result: .github/workflows/ci.yml contains only Python jobs
+```
+
+**Files Created:**
+- `cookiecutter-paircoder/.../workflows/ci-node.yml` - Node-only workflow
+- `cookiecutter-paircoder/.../workflows/ci-python.yml` - Python-only workflow
+
+**Files Modified:**
+- `bpsai_pair/presets.py` - Added `ci_type` field to all presets
+- `bpsai_pair/cli.py` - Added `_select_ci_workflow()` helper and updated init command
+- `tests/test_cli.py` - Added 8 tests for CI workflow selection
+
+**Tests:** All 8 CI workflow tests passing
+
+---
 
 ### Session: 2025-12-21 - TASK-162: CLI Commands for Trello Custom Fields
 

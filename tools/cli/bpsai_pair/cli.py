@@ -169,6 +169,7 @@ def preset_show(
             "main_branch": preset.main_branch,
             "python_formatter": preset.python_formatter,
             "node_formatter": preset.node_formatter,
+            "ci_type": preset.ci_type,
             "flows": preset.enabled_flows,
             "pack_excludes": preset.pack_excludes,
             "model_routing": preset.model_routing,
@@ -185,7 +186,8 @@ def preset_show(
         console.print(f"  Branch type: {preset.default_branch_type}")
         console.print(f"  Main branch: {preset.main_branch}")
 
-        console.print("\n[bold]Formatters[/bold]")
+        console.print("\n[bold]CI & Formatters[/bold]")
+        console.print(f"  CI workflow: {preset.ci_type}")
         console.print(f"  Python: {preset.python_formatter}")
         console.print(f"  Node: {preset.node_formatter}")
 
@@ -1793,6 +1795,47 @@ def repo_root() -> Path:
         raise typer.Exit(1)
     return p
 
+
+def _select_ci_workflow(root: Path, ci_type: str) -> None:
+    """Select the appropriate CI workflow based on preset ci_type.
+
+    Renames the preset-specific workflow to ci.yml and removes the others.
+
+    Args:
+        root: Project root directory
+        ci_type: "node", "python", or "fullstack"
+    """
+    workflows_dir = root / ".github" / "workflows"
+    if not workflows_dir.exists():
+        return
+
+    ci_yml = workflows_dir / "ci.yml"
+    ci_node = workflows_dir / "ci-node.yml"
+    ci_python = workflows_dir / "ci-python.yml"
+
+    # Select the appropriate workflow based on ci_type
+    if ci_type == "node" and ci_node.exists():
+        # Use Node-only workflow
+        if ci_yml.exists():
+            ci_yml.unlink()
+        ci_node.rename(ci_yml)
+        if ci_python.exists():
+            ci_python.unlink()
+    elif ci_type == "python" and ci_python.exists():
+        # Use Python-only workflow
+        if ci_yml.exists():
+            ci_yml.unlink()
+        ci_python.rename(ci_yml)
+        if ci_node.exists():
+            ci_node.unlink()
+    else:
+        # fullstack or fallback: keep ci.yml (has both), remove variants
+        if ci_node.exists():
+            ci_node.unlink()
+        if ci_python.exists():
+            ci_python.unlink()
+
+
 def ensure_v2_config(root: Path) -> Path:
     """Ensure v2 config exists at .paircoder/config.yaml.
 
@@ -1927,6 +1970,10 @@ def init(
             task = progress.add_task("Initializing scaffolding...", total=None)
             result = init_bundled_cli.main()
             progress.update(task, completed=True)
+
+        # Select preset-specific CI workflow if a preset was used
+        if preset:
+            _select_ci_workflow(root, preset_obj.ci_type)
 
         console.print("[green]✓[/green] Initialized repo with pair-coding scaffolding")
         # Ensure v2 configuration exists (canonical: .paircoder/config.yaml)

@@ -32,6 +32,7 @@ class Preset:
     # CI settings
     python_formatter: str = "ruff"
     node_formatter: str = "prettier"
+    ci_type: str = "fullstack"  # "node", "python", or "fullstack"
 
     # Flow settings
     enabled_flows: List[str] = field(default_factory=lambda: [
@@ -221,6 +222,7 @@ PRESETS: Dict[str, Preset] = {
         project_type="Python CLI",
         coverage_target=80,
         python_formatter="ruff",
+        ci_type="python",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",
@@ -237,6 +239,7 @@ PRESETS: Dict[str, Preset] = {
         project_type="Python API",
         coverage_target=85,
         python_formatter="ruff",
+        ci_type="python",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",
@@ -256,6 +259,7 @@ PRESETS: Dict[str, Preset] = {
         project_type="React App",
         coverage_target=75,
         node_formatter="prettier",
+        ci_type="node",
         pack_excludes=COMMON_EXCLUDES + [
             ".next",
             ".cache",
@@ -272,6 +276,7 @@ PRESETS: Dict[str, Preset] = {
         coverage_target=80,
         python_formatter="ruff",
         node_formatter="prettier",
+        ci_type="fullstack",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",
@@ -292,6 +297,7 @@ PRESETS: Dict[str, Preset] = {
         project_type="Python Library",
         coverage_target=90,
         python_formatter="ruff",
+        ci_type="python",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",
@@ -311,6 +317,7 @@ PRESETS: Dict[str, Preset] = {
         description="Minimal configuration with essential defaults only",
         project_type="Project",
         coverage_target=70,
+        ci_type="fullstack",  # Keep both for flexibility
         pack_excludes=COMMON_EXCLUDES,
         enabled_flows=["tdd-implement", "review"],
     ),
@@ -320,6 +327,7 @@ PRESETS: Dict[str, Preset] = {
         description="Full autonomy configuration with Trello integration",
         project_type="Autonomous Project",
         coverage_target=80,
+        ci_type="python",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",
@@ -350,6 +358,7 @@ PRESETS: Dict[str, Preset] = {
         description="BPS AI Software preset with 7-list Trello workflow",
         project_type="BPS Project",
         coverage_target=80,
+        ci_type="python",
         pack_excludes=COMMON_EXCLUDES + [
             "*.egg-info",
             ".pytest_cache",

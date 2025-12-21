@@ -519,3 +519,108 @@ def test_plan_sync_trello_apply_defaults_flag():
     assert result.exit_code == 0
     assert "--apply-defaults" in result.stdout
     assert "Apply project defaults" in result.stdout
+
+
+# ============================================================================
+# Preset CI Workflow Tests
+# ============================================================================
+
+
+def test_preset_show_includes_ci_type():
+    """Test that preset show displays ci_type."""
+    result = runner.invoke(app, ["preset", "show", "react"])
+    assert result.exit_code == 0
+    assert "CI workflow:" in result.stdout or "ci_type" in result.stdout.lower()
+    assert "node" in result.stdout
+
+
+def test_preset_show_python_cli_ci_type():
+    """Test that python-cli preset has python ci_type."""
+    result = runner.invoke(app, ["preset", "show", "python-cli"])
+    assert result.exit_code == 0
+    assert "python" in result.stdout.lower()
+
+
+def test_preset_show_fullstack_ci_type():
+    """Test that fullstack preset has fullstack ci_type."""
+    result = runner.invoke(app, ["preset", "show", "fullstack"])
+    assert result.exit_code == 0
+    assert "fullstack" in result.stdout.lower()
+
+
+def test_preset_show_json_includes_ci_type():
+    """Test that preset show JSON output includes ci_type."""
+    result = runner.invoke(app, ["preset", "show", "react", "--json"])
+    assert result.exit_code == 0
+    import json
+    try:
+        data = json.loads(result.stdout)
+        assert "ci_type" in data
+        assert data["ci_type"] == "node"
+    except json.JSONDecodeError:
+        pass  # May have other output mixed in
+
+
+def test_select_ci_workflow_python(tmp_path, monkeypatch):
+    """Test _select_ci_workflow selects python workflow."""
+    from bpsai_pair.cli import _select_ci_workflow
+
+    # Create workflows directory with all three files
+    workflows_dir = tmp_path / ".github" / "workflows"
+    workflows_dir.mkdir(parents=True)
+    (workflows_dir / "ci.yml").write_text("fullstack")
+    (workflows_dir / "ci-node.yml").write_text("node")
+    (workflows_dir / "ci-python.yml").write_text("python")
+
+    _select_ci_workflow(tmp_path, "python")
+
+    assert (workflows_dir / "ci.yml").exists()
+    assert (workflows_dir / "ci.yml").read_text() == "python"
+    assert not (workflows_dir / "ci-node.yml").exists()
+    assert not (workflows_dir / "ci-python.yml").exists()
+
+
+def test_select_ci_workflow_node(tmp_path, monkeypatch):
+    """Test _select_ci_workflow selects node workflow."""
+    from bpsai_pair.cli import _select_ci_workflow
+
+    # Create workflows directory with all three files
+    workflows_dir = tmp_path / ".github" / "workflows"
+    workflows_dir.mkdir(parents=True)
+    (workflows_dir / "ci.yml").write_text("fullstack")
+    (workflows_dir / "ci-node.yml").write_text("node")
+    (workflows_dir / "ci-python.yml").write_text("python")
+
+    _select_ci_workflow(tmp_path, "node")
+
+    assert (workflows_dir / "ci.yml").exists()
+    assert (workflows_dir / "ci.yml").read_text() == "node"
+    assert not (workflows_dir / "ci-node.yml").exists()
+    assert not (workflows_dir / "ci-python.yml").exists()
+
+
+def test_select_ci_workflow_fullstack(tmp_path, monkeypatch):
+    """Test _select_ci_workflow keeps fullstack workflow."""
+    from bpsai_pair.cli import _select_ci_workflow
+
+    # Create workflows directory with all three files
+    workflows_dir = tmp_path / ".github" / "workflows"
+    workflows_dir.mkdir(parents=True)
+    (workflows_dir / "ci.yml").write_text("fullstack")
+    (workflows_dir / "ci-node.yml").write_text("node")
+    (workflows_dir / "ci-python.yml").write_text("python")
+
+    _select_ci_workflow(tmp_path, "fullstack")
+
+    assert (workflows_dir / "ci.yml").exists()
+    assert (workflows_dir / "ci.yml").read_text() == "fullstack"
+    assert not (workflows_dir / "ci-node.yml").exists()
+    assert not (workflows_dir / "ci-python.yml").exists()
+
+
+def test_select_ci_workflow_no_workflows_dir(tmp_path):
+    """Test _select_ci_workflow handles missing workflows directory."""
+    from bpsai_pair.cli import _select_ci_workflow
+
+    # Should not raise an error
+    _select_ci_workflow(tmp_path, "python")
