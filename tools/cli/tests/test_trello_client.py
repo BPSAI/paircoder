@@ -424,3 +424,232 @@ class TestSetCardStatus:
         result = service.set_card_status(mock_card, "Closed", status_field_name="TaskStatus")
 
         assert result is True
+
+
+class TestBoardTemplates:
+    """Tests for board template copy functionality."""
+
+    @pytest.fixture
+    def mock_trello_module(self):
+        """Mock the py-trello module."""
+        mock_client_class = MagicMock()
+        mock_client_instance = MagicMock()
+        mock_client_class.return_value = mock_client_instance
+
+        with patch.dict('sys.modules', {'trello': MagicMock(TrelloClient=mock_client_class)}):
+            yield mock_client_class, mock_client_instance
+
+    def test_find_board_by_name_found(self, mock_trello_module):
+        """Test finding a board by name."""
+        _, mock_client = mock_trello_module
+
+        mock_board = MagicMock()
+        mock_board.name = "BPS AI Project Template"
+        mock_board.closed = False
+
+        mock_client.list_boards.return_value = [mock_board]
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.find_board_by_name("BPS AI Project Template")
+
+        assert result == mock_board
+
+    def test_find_board_by_name_case_insensitive(self, mock_trello_module):
+        """Test finding a board by name is case-insensitive."""
+        _, mock_client = mock_trello_module
+
+        mock_board = MagicMock()
+        mock_board.name = "BPS AI Project Template"
+        mock_board.closed = False
+
+        mock_client.list_boards.return_value = [mock_board]
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.find_board_by_name("bps ai project template")
+
+        assert result == mock_board
+
+    def test_find_board_by_name_not_found(self, mock_trello_module):
+        """Test finding a non-existent board returns None."""
+        _, mock_client = mock_trello_module
+
+        mock_client.list_boards.return_value = []
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.find_board_by_name("Non-existent Board")
+
+        assert result is None
+
+    def test_find_board_by_name_skips_closed(self, mock_trello_module):
+        """Test that closed boards are not found."""
+        _, mock_client = mock_trello_module
+
+        mock_board = MagicMock()
+        mock_board.name = "Archived Template"
+        mock_board.closed = True  # Closed/archived
+
+        mock_client.list_boards.return_value = [mock_board]
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.find_board_by_name("Archived Template")
+
+        assert result is None
+
+    def test_copy_board_from_template_success(self, mock_trello_module):
+        """Test successfully copying a board from template."""
+        _, mock_client = mock_trello_module
+
+        # Setup template board
+        mock_template = MagicMock()
+        mock_template.id = "template-123"
+        mock_template.name = "BPS AI Project Template"
+        mock_template.closed = False
+
+        # Setup new board
+        mock_new_board = MagicMock()
+        mock_new_board.id = "new-board-456"
+        mock_new_board.name = "My New Project"
+        mock_new_board.url = "https://trello.com/b/new-board"
+
+        mock_client.list_boards.return_value = [mock_template]
+        mock_client.fetch_json.return_value = {'id': 'new-board-456'}
+        mock_client.get_board.return_value = mock_new_board
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.copy_board_from_template(
+            template_name="BPS AI Project Template",
+            new_board_name="My New Project"
+        )
+
+        assert result == mock_new_board
+        mock_client.fetch_json.assert_called_once()
+        call_args = mock_client.fetch_json.call_args
+        assert call_args[0][0] == '/boards'
+        assert call_args[1]['post_args']['name'] == 'My New Project'
+        assert call_args[1]['post_args']['idBoardSource'] == 'template-123'
+        assert 'customFields' in call_args[1]['post_args']['keepFromSource']
+        assert 'labels' in call_args[1]['post_args']['keepFromSource']
+
+    def test_copy_board_from_template_with_cards(self, mock_trello_module):
+        """Test copying a board with cards preserved."""
+        _, mock_client = mock_trello_module
+
+        mock_template = MagicMock()
+        mock_template.id = "template-123"
+        mock_template.name = "Template"
+        mock_template.closed = False
+
+        mock_new_board = MagicMock()
+        mock_new_board.id = "new-board-456"
+
+        mock_client.list_boards.return_value = [mock_template]
+        mock_client.fetch_json.return_value = {'id': 'new-board-456'}
+        mock_client.get_board.return_value = mock_new_board
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.copy_board_from_template(
+            template_name="Template",
+            new_board_name="New Board",
+            keep_cards=True
+        )
+
+        assert result == mock_new_board
+        call_args = mock_client.fetch_json.call_args
+        keep_from_source = call_args[1]['post_args']['keepFromSource']
+        assert 'cards' in keep_from_source
+        assert 'checklists' in keep_from_source
+
+    def test_copy_board_from_template_not_found(self, mock_trello_module):
+        """Test copying from non-existent template raises error."""
+        _, mock_client = mock_trello_module
+
+        mock_client.list_boards.return_value = []
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        with pytest.raises(ValueError, match="Template board .* not found"):
+            service.copy_board_from_template(
+                template_name="Non-existent Template",
+                new_board_name="New Board"
+            )
+
+    def test_copy_board_from_template_api_error(self, mock_trello_module):
+        """Test handling API error when copying board."""
+        _, mock_client = mock_trello_module
+
+        mock_template = MagicMock()
+        mock_template.id = "template-123"
+        mock_template.name = "Template"
+        mock_template.closed = False
+
+        mock_client.list_boards.return_value = [mock_template]
+        mock_client.fetch_json.side_effect = Exception("API Error")
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.copy_board_from_template(
+            template_name="Template",
+            new_board_name="New Board"
+        )
+
+        assert result is None
+
+    def test_get_board_info(self, mock_trello_module):
+        """Test getting board info."""
+        _, mock_client = mock_trello_module
+
+        mock_board = MagicMock()
+        mock_board.id = "board-123"
+        mock_board.name = "Test Board"
+        mock_board.url = "https://trello.com/b/board-123"
+
+        # Mock lists
+        mock_list = MagicMock()
+        mock_list.name = "Backlog"
+        mock_list.id = "list-1"
+        mock_board.all_lists.return_value = [mock_list]
+
+        # Mock custom fields
+        mock_field = MagicMock()
+        mock_field.id = "field-1"
+        mock_field.name = "Status"
+        mock_field.field_type = "list"
+        mock_field.list_options = {}
+        mock_board.get_custom_field_definitions.return_value = [mock_field]
+
+        # Mock labels
+        mock_label = MagicMock()
+        mock_label.id = "label-1"
+        mock_label.name = "Bug"
+        mock_label.color = "red"
+        mock_board.get_labels.return_value = [mock_label]
+
+        mock_client.get_board.return_value = mock_board
+
+        from bpsai_pair.trello.client import TrelloService
+        service = TrelloService(api_key="key", token="token")
+
+        result = service.get_board_info(mock_board)
+
+        assert result['id'] == "board-123"
+        assert result['name'] == "Test Board"
+        assert result['lists'] == ["Backlog"]
+        assert result['custom_fields'] == ["Status"]
+        assert result['labels'] == ["Bug"]
+        assert result['list_count'] == 1
+        assert result['custom_field_count'] == 1
+        assert result['label_count'] == 1

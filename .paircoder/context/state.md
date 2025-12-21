@@ -30,7 +30,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-158: Clarify task update vs ttask workflow ✓
 
 **Sprint 17.5 Tasks (Enhancements):**
-- TASK-159: Trello board initialization from template
+- TASK-159: Trello board initialization from template ✓
 - TASK-160: Sprint completion checklist enforcement
 - TASK-161: Config validate and update command
 - TASK-162: CLI commands for Trello custom fields
@@ -91,6 +91,34 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-159: Trello Board Initialization from Template
+
+**TASK-159: Trello board initialization from template** - DONE
+
+Added new CLI command to create Trello boards from templates, preserving Butler rules, custom fields, and labels.
+
+**New Command:**
+```bash
+bpsai-pair trello init-board --name "My New Project" --from-template "BPS AI Project Template"
+```
+
+**Features:**
+- Find template board by name (case-insensitive)
+- Copy board preserving: lists, custom fields, labels, Butler automation rules
+- Optional `--keep-cards` flag to copy template cards
+- Automatically sets new board as active for the project
+- Shows summary of lists, custom fields, and labels copied
+
+**Files Created/Modified:**
+- `tools/cli/bpsai_pair/trello/client.py` - Added `find_board_by_name()`, `copy_board_from_template()`, `get_board_info()` methods
+- `tools/cli/bpsai_pair/trello/commands.py` - Added `init-board` CLI command
+- `tools/cli/tests/test_trello_client.py` - Added 9 tests for new functionality
+
+**API Implementation:**
+Uses Trello API `/boards` POST with `idBoardSource` and `keepFromSource` parameters to preserve board structure.
+
+---
 
 ### Session: 2025-12-21 - TASK-158: Clarify task update vs ttask Workflow
 

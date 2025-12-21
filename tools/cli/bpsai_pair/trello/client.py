@@ -844,3 +844,120 @@ class TrelloService:
         except Exception as e:
             logger.error(f"Failed to set due date: {e}")
             return False
+
+    # ========== Board Template Methods ==========
+
+    def find_board_by_name(self, name: str) -> Optional[Any]:
+        """Find a board by name.
+
+        Args:
+            name: Board name to search for (case-insensitive)
+
+        Returns:
+            Board object or None if not found
+        """
+        boards = self.list_boards()
+        name_lower = name.lower()
+
+        for board in boards:
+            if board.name.lower() == name_lower and not board.closed:
+                return board
+
+        return None
+
+    def copy_board_from_template(
+        self,
+        template_name: str,
+        new_board_name: str,
+        keep_cards: bool = False
+    ) -> Optional[Any]:
+        """Create a new board by copying from a template board.
+
+        This preserves:
+        - All lists
+        - Custom field definitions
+        - Labels (with colors)
+        - Butler automation rules
+        - Board settings
+
+        Optionally preserves:
+        - Cards (if keep_cards=True)
+        - Checklists on cards
+
+        Args:
+            template_name: Name of the template board to copy
+            new_board_name: Name for the new board
+            keep_cards: Whether to copy cards from the template
+
+        Returns:
+            New board object or None if failed
+
+        Raises:
+            ValueError: If template board not found
+        """
+        # Find the template board
+        template = self.find_board_by_name(template_name)
+        if not template:
+            raise ValueError(f"Template board '{template_name}' not found")
+
+        try:
+            # Determine what to keep from the source
+            # Trello API supports: cards, checklists, customFields, labels
+            keep_from_source = "customFields,labels"
+            if keep_cards:
+                keep_from_source = "cards,checklists,customFields,labels"
+
+            # Create new board by copying from template
+            # Using the Trello REST API directly since py-trello doesn't have this method
+            result = self.client.fetch_json(
+                '/boards',
+                http_method='POST',
+                post_args={
+                    'name': new_board_name,
+                    'idBoardSource': template.id,
+                    'keepFromSource': keep_from_source,
+                    'prefs_permissionLevel': 'private',
+                }
+            )
+
+            # Get the new board object
+            new_board = self.client.get_board(result['id'])
+            logger.info(f"Created board '{new_board_name}' from template '{template_name}'")
+            return new_board
+
+        except Exception as e:
+            logger.error(f"Failed to copy board from template: {e}")
+            return None
+
+    def get_board_info(self, board: Any) -> Dict[str, Any]:
+        """Get detailed information about a board.
+
+        Args:
+            board: Board object
+
+        Returns:
+            Dict with board info including lists, custom_fields, labels count
+        """
+        try:
+            self.set_board(board.id)
+            structure = self.get_board_structure()
+
+            return {
+                'id': board.id,
+                'name': board.name,
+                'url': board.url,
+                'lists': list(structure['lists'].keys()),
+                'custom_fields': list(structure['custom_fields'].keys()),
+                'labels': list(structure['labels'].keys()),
+                'list_count': len(structure['lists']),
+                'custom_field_count': len(structure['custom_fields']),
+                'label_count': len(structure['labels']),
+            }
+        except Exception as e:
+            logger.error(f"Failed to get board info: {e}")
+            return {
+                'id': board.id,
+                'name': board.name,
+                'url': board.url,
+                'error': str(e),
+            }
