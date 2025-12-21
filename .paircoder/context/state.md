@@ -31,7 +31,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 
 **Sprint 17.5 Tasks (Enhancements):**
 - TASK-159: Trello board initialization from template ✓
-- TASK-160: Sprint completion checklist enforcement
+- TASK-160: Sprint completion checklist enforcement ✓
 - TASK-161: Config validate and update command
 - TASK-162: CLI commands for Trello custom fields
 - TASK-163: Preset-specific CI workflows
@@ -91,6 +91,54 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-160: Sprint Completion Checklist Enforcement
+
+**TASK-160: Sprint completion checklist enforcement** - DONE
+
+Added CLI commands to enforce sprint completion checklist and generate release preparation tasks.
+
+**New Commands:**
+
+```bash
+# Sprint completion with checklist
+bpsai-pair sprint complete 17.5 [--force] [--plan PLAN_ID]
+
+# List sprints in a plan
+bpsai-pair sprint list [--plan PLAN_ID]
+
+# Generate release preparation tasks
+bpsai-pair release plan [--sprint SPRINT] [--version VERSION] [--create]
+
+# Show release checklist
+bpsai-pair release checklist
+```
+
+**Sprint Complete Checklist Items:**
+1. Cookie cutter template synced
+2. CHANGELOG.md updated
+3. Documentation updated
+4. Tests passing
+5. Version bumped (if release)
+
+**Release Plan Generated Tasks:**
+- REL-001: Sync cookie cutter template with project changes
+- REL-002: Update CHANGELOG.md with release notes
+- REL-003: Bump version number (version update)
+- REL-004: Update documentation for new features
+- REL-005: Final release verification
+
+**Files Modified:**
+- `tools/cli/bpsai_pair/planning/cli_commands.py` - Added `sprint_app` and `release_app` with commands
+- `tools/cli/bpsai_pair/cli.py` - Registered new command groups
+- `tools/cli/tests/test_cli.py` - Added 9 tests for new commands
+
+**Bug Fixes:**
+- Fixed `state.active_plan` → `state.active_plan_id` attribute error in multiple places
+
+**Tests:** All 9 sprint/release tests passing
+
+---
 
 ### Session: 2025-12-21 - TASK-159: Trello Board Initialization from Template
 

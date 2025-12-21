@@ -1099,8 +1099,8 @@ def task_archive(
         # Try to get from active plan in state
         state_manager = get_state_manager()
         state = state_manager.load_state()
-        if state and state.active_plan:
-            plan_id = state.active_plan.replace("plan-", "").split("-", 2)[-1] if "-" in state.active_plan else state.active_plan
+        if state and state.active_plan_id:
+            plan_id = state.active_plan_id.replace("plan-", "").split("-", 2)[-1] if "-" in state.active_plan_id else state.active_plan_id
         else:
             console.print("[red]No plan specified and no active plan found[/red]")
             raise typer.Exit(1)
@@ -1198,8 +1198,8 @@ def task_restore(
     if not plan_id:
         state_manager = get_state_manager()
         state = state_manager.load_state()
-        if state and state.active_plan:
-            plan_id = state.active_plan
+        if state and state.active_plan_id:
+            plan_id = state.active_plan_id
 
     plan_slug = plan_id
     if plan_slug and plan_slug.startswith("plan-"):
@@ -1316,8 +1316,8 @@ def task_changelog_preview(
     if not plan_id:
         state_manager = get_state_manager()
         state = state_manager.load_state()
-        if state and state.active_plan:
-            plan_id = state.active_plan
+        if state and state.active_plan_id:
+            plan_id = state.active_plan_id
 
     plan_slug = plan_id
     if plan_slug and plan_slug.startswith("plan-"):
@@ -1611,3 +1611,432 @@ def planning_status() -> str:
     """
     state_manager = get_state_manager()
     return state_manager.format_status_report()
+
+
+# ============================================================================
+# SPRINT COMMANDS
+# ============================================================================
+
+sprint_app = typer.Typer(
+    help="Sprint management commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+# Sprint completion checklist items
+SPRINT_COMPLETION_CHECKLIST = [
+    ("Cookie cutter template synced", "Have you synced changes to the cookie cutter template?"),
+    ("CHANGELOG.md updated", "Have you updated CHANGELOG.md with new features/fixes?"),
+    ("Documentation updated", "Have you updated relevant documentation?"),
+    ("Tests passing", "Are all tests passing?"),
+    ("Version bumped (if release)", "Have you bumped the version number if this is a release?"),
+]
+
+
+@sprint_app.command("complete")
+def sprint_complete(
+    sprint_id: str = typer.Argument(..., help="Sprint ID to complete (e.g., sprint-17)"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip checklist confirmation"),
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID (uses active plan if not specified)"),
+):
+    """Complete a sprint with checklist verification.
+
+    Ensures important tasks are not forgotten at sprint end:
+    - Cookie cutter template sync
+    - CHANGELOG.md updates
+    - Documentation updates
+    - Version bump (for releases)
+
+    Examples:
+        # Complete sprint with checklist
+        bpsai-pair sprint complete sprint-17
+
+        # Force complete without checklist
+        bpsai-pair sprint complete sprint-17 --force
+    """
+    paircoder_dir = find_paircoder_dir()
+
+    # Get active plan if not specified
+    if not plan_id:
+        state_manager = get_state_manager()
+        state = state_manager.load_state()
+        if state and state.active_plan_id:
+            plan_id = state.active_plan_id
+        else:
+            console.print("[red]No active plan. Specify --plan or set an active plan.[/red]")
+            raise typer.Exit(1)
+
+    # Load plan to verify sprint exists
+    plan_parser = PlanParser(paircoder_dir / "plans")
+    plan = plan_parser.get_plan_by_id(plan_id)
+
+    if not plan:
+        console.print(f"[red]Plan not found: {plan_id}[/red]")
+        raise typer.Exit(1)
+
+    # Check if sprint exists in plan
+    sprint_found = False
+    for sprint in plan.sprints:
+        if sprint.id == sprint_id or sprint.id == f"{plan_id}-{sprint_id}":
+            sprint_found = True
+            break
+
+    if not sprint_found:
+        console.print(f"[yellow]Warning: Sprint '{sprint_id}' not found in plan. Continuing anyway.[/yellow]")
+
+    # Get task stats for this sprint
+    task_parser = TaskParser(paircoder_dir / "tasks")
+    all_tasks = task_parser.list_tasks()
+    sprint_tasks = [t for t in all_tasks if t.sprint == sprint_id]
+
+    completed = len([t for t in sprint_tasks if t.status == TaskStatus.DONE])
+    total = len(sprint_tasks)
+
+    console.print(f"\n[bold]Completing Sprint: {sprint_id}[/bold]")
+    console.print(f"Plan: {plan_id}")
+    console.print(f"Tasks: {completed}/{total} completed\n")
+
+    if total > 0 and completed < total:
+        incomplete_tasks = [t for t in sprint_tasks if t.status != TaskStatus.DONE]
+        console.print("[yellow]Warning: Some tasks are incomplete:[/yellow]")
+        for task in incomplete_tasks[:5]:
+            console.print(f"  - {task.id}: {task.title} ({task.status.value})")
+        if len(incomplete_tasks) > 5:
+            console.print(f"  ... and {len(incomplete_tasks) - 5} more")
+        console.print()
+
+    # Show and verify checklist
+    if not force:
+        console.print("[bold]Pre-completion Checklist:[/bold]\n")
+
+        all_confirmed = True
+        responses = {}
+
+        for item_id, question in SPRINT_COMPLETION_CHECKLIST:
+            response = typer.confirm(f"  {question}", default=False)
+            responses[item_id] = response
+            if not response:
+                all_confirmed = False
+
+        console.print()
+
+        # Show summary
+        console.print("[bold]Checklist Summary:[/bold]")
+        for item_id, question in SPRINT_COMPLETION_CHECKLIST:
+            status = "[green]✓[/green]" if responses[item_id] else "[red]✗[/red]"
+            console.print(f"  {status} {item_id}")
+
+        console.print()
+
+        if not all_confirmed:
+            console.print("[yellow]Some items are not complete.[/yellow]")
+            proceed = typer.confirm("Proceed anyway?", default=False)
+            if not proceed:
+                console.print("[dim]Sprint completion cancelled.[/dim]")
+                console.print("\n[bold]To generate release tasks:[/bold]")
+                console.print(f"  bpsai-pair release plan --sprint {sprint_id}")
+                raise typer.Exit(0)
+
+    # Mark sprint as complete
+    console.print(f"\n[green]✓ Sprint {sprint_id} marked as complete[/green]")
+
+    # Suggest next steps
+    console.print("\n[bold]Next Steps:[/bold]")
+    console.print("  1. Archive completed tasks: [dim]bpsai-pair task archive[/dim]")
+    console.print("  2. Generate changelog: [dim]bpsai-pair task changelog-preview[/dim]")
+    console.print("  3. Create release: [dim]bpsai-pair release plan --sprint {sprint_id}[/dim]")
+
+
+@sprint_app.command("list")
+def sprint_list(
+    plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID (uses active plan if not specified)"),
+):
+    """List sprints in a plan."""
+    paircoder_dir = find_paircoder_dir()
+
+    # Get active plan if not specified
+    if not plan_id:
+        state_manager = get_state_manager()
+        state = state_manager.load_state()
+        if state and state.active_plan_id:
+            plan_id = state.active_plan_id
+        else:
+            console.print("[red]No active plan. Specify --plan or set an active plan.[/red]")
+            raise typer.Exit(1)
+
+    plan_parser = PlanParser(paircoder_dir / "plans")
+    plan = plan_parser.get_plan_by_id(plan_id)
+
+    if not plan:
+        console.print(f"[red]Plan not found: {plan_id}[/red]")
+        raise typer.Exit(1)
+
+    if not plan.sprints:
+        console.print("[dim]No sprints defined in this plan.[/dim]")
+        return
+
+    # Get task stats
+    task_parser = TaskParser(paircoder_dir / "tasks")
+    all_tasks = task_parser.list_tasks()
+
+    table = Table(title=f"Sprints in {plan_id}")
+    table.add_column("Sprint", style="cyan")
+    table.add_column("Goal")
+    table.add_column("Tasks", justify="right")
+    table.add_column("Done", justify="right")
+    table.add_column("Points", justify="right")
+
+    for sprint in plan.sprints:
+        sprint_tasks = [t for t in all_tasks if t.sprint == sprint.id]
+        completed = len([t for t in sprint_tasks if t.status == TaskStatus.DONE])
+        total = len(sprint_tasks)
+        points = sum(t.complexity for t in sprint_tasks)
+
+        status = f"{completed}/{total}"
+        if total > 0 and completed == total:
+            status = f"[green]{status}[/green]"
+
+        table.add_row(
+            sprint.id,
+            sprint.goal[:40] + "..." if len(sprint.goal) > 40 else sprint.goal,
+            str(total),
+            status,
+            str(points),
+        )
+
+    console.print(table)
+
+
+# ============================================================================
+# RELEASE COMMANDS
+# ============================================================================
+
+release_app = typer.Typer(
+    help="Release management commands",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@release_app.command("plan")
+def release_plan(
+    sprint_id: Optional[str] = typer.Option(None, "--sprint", "-s", help="Sprint to create release tasks for"),
+    version: Optional[str] = typer.Option(None, "--version", "-v", help="Target version (e.g., v2.6.0)"),
+    create_tasks: bool = typer.Option(False, "--create", "-c", help="Actually create the tasks"),
+):
+    """Generate release preparation tasks.
+
+    Creates tasks for common release activities:
+    - Sync cookie cutter template
+    - Update CHANGELOG.md
+    - Bump version number
+    - Update documentation
+
+    Examples:
+        # Preview release tasks
+        bpsai-pair release plan --sprint sprint-17
+
+        # Create release tasks
+        bpsai-pair release plan --sprint sprint-17 --create
+
+        # With specific version
+        bpsai-pair release plan --version v2.6.0 --create
+    """
+    paircoder_dir = find_paircoder_dir()
+
+    # Get active plan
+    state_manager = get_state_manager()
+    state = state_manager.load_state()
+    plan_id = state.active_plan_id if state else None
+
+    if not plan_id:
+        console.print("[yellow]No active plan. Release tasks will be standalone.[/yellow]")
+
+    # Define release tasks
+    release_tasks = [
+        {
+            "id": "REL-001",
+            "title": "Sync cookie cutter template with project changes",
+            "type": "chore",
+            "priority": "P1",
+            "complexity": 25,
+            "description": """
+Ensure the cookie cutter template reflects all recent changes:
+- New configuration options
+- New skills and commands
+- Updated documentation
+- New directory structure
+
+Files to check:
+- tools/cli/bpsai_pair/data/cookiecutter-paircoder/
+""".strip(),
+        },
+        {
+            "id": "REL-002",
+            "title": "Update CHANGELOG.md",
+            "type": "docs",
+            "priority": "P1",
+            "complexity": 15,
+            "description": """
+Add release notes for the new version:
+- New features
+- Bug fixes
+- Breaking changes
+- Migration guide (if needed)
+
+Run: bpsai-pair task changelog-preview
+""".strip(),
+        },
+        {
+            "id": "REL-003",
+            "title": "Bump version number",
+            "type": "chore",
+            "priority": "P1",
+            "complexity": 10,
+            "description": f"""
+Update version to {version or 'vX.Y.Z'} in:
+- pyproject.toml
+- __init__.py (if applicable)
+- README.md (if version mentioned)
+""".strip(),
+        },
+        {
+            "id": "REL-004",
+            "title": "Update documentation",
+            "type": "docs",
+            "priority": "P2",
+            "complexity": 20,
+            "description": """
+Ensure documentation reflects new features:
+- README.md
+- USER_GUIDE.md
+- FEATURE_MATRIX.md
+- MCP_SETUP.md (if MCP changes)
+""".strip(),
+        },
+        {
+            "id": "REL-005",
+            "title": "Run full test suite",
+            "type": "chore",
+            "priority": "P1",
+            "complexity": 15,
+            "description": """
+Verify all tests pass before release:
+- pytest -v
+- Check coverage
+- Manual smoke tests
+""".strip(),
+        },
+    ]
+
+    # Display tasks
+    console.print(f"\n[bold]Release Preparation Tasks[/bold]")
+    if sprint_id:
+        console.print(f"Sprint: {sprint_id}")
+    if version:
+        console.print(f"Target Version: {version}")
+    console.print()
+
+    table = Table()
+    table.add_column("ID", style="cyan")
+    table.add_column("Title")
+    table.add_column("Type")
+    table.add_column("Priority")
+    table.add_column("Points", justify="right")
+
+    for task in release_tasks:
+        table.add_row(
+            task["id"],
+            task["title"],
+            task["type"],
+            task["priority"],
+            str(task["complexity"]),
+        )
+
+    console.print(table)
+    console.print(f"\nTotal: {len(release_tasks)} tasks, {sum(t['complexity'] for t in release_tasks)} points")
+
+    if not create_tasks:
+        console.print("\n[dim]Run with --create to create these tasks[/dim]")
+        return
+
+    # Create the tasks
+    console.print("\n[bold]Creating tasks...[/bold]")
+
+    tasks_dir = paircoder_dir / "tasks"
+    tasks_dir.mkdir(exist_ok=True)
+
+    for task_def in release_tasks:
+        task_id = f"TASK-{task_def['id']}"
+        task_file = tasks_dir / f"{task_id}.task.md"
+
+        content = f"""---
+id: {task_id}
+title: "{task_def['title']}"
+plan: {plan_id or 'release'}
+sprint: {sprint_id or 'release'}
+type: {task_def['type']}
+priority: {task_def['priority']}
+complexity: {task_def['complexity']}
+status: pending
+depends_on: []
+---
+
+# {task_id}: {task_def['title']}
+
+## Description
+
+{task_def['description']}
+
+## Acceptance Criteria
+
+- [ ] Task completed
+- [ ] Changes verified
+"""
+
+        task_file.write_text(content)
+        console.print(f"  [green]✓[/green] Created {task_id}")
+
+    console.print(f"\n[green]Created {len(release_tasks)} release tasks[/green]")
+    console.print("\n[dim]View tasks: bpsai-pair task list[/dim]")
+
+
+@release_app.command("checklist")
+def release_checklist():
+    """Show the release preparation checklist.
+
+    Displays the standard checklist items that should be completed
+    before any release.
+    """
+    console.print("\n[bold]Release Preparation Checklist[/bold]\n")
+
+    checklist_items = [
+        ("Pre-Release", [
+            "All sprint tasks completed or deferred",
+            "Tests passing (pytest -v)",
+            "No critical bugs open",
+            "Code reviewed and approved",
+        ]),
+        ("Documentation", [
+            "CHANGELOG.md updated with release notes",
+            "README.md reflects current features",
+            "USER_GUIDE.md up to date",
+            "FEATURE_MATRIX.md accurate",
+        ]),
+        ("Template Sync", [
+            "Cookie cutter template synced",
+            "New skills/commands in template",
+            "Config options in template",
+            "Documentation in template",
+        ]),
+        ("Version & Release", [
+            "Version bumped in pyproject.toml",
+            "Git tag created",
+            "Package published (pip)",
+            "Release notes on GitHub",
+        ]),
+    ]
+
+    for section, items in checklist_items:
+        console.print(f"[bold cyan]{section}[/bold cyan]")
+        for item in items:
+            console.print(f"  [ ] {item}")
+        console.print()

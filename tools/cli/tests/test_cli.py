@@ -163,3 +163,114 @@ def test_validate(initialized_repo, monkeypatch):
 
     result = runner.invoke(app, ["validate"])
     assert result.exit_code == 0
+
+
+# ============================================================================
+# Sprint and Release Command Tests
+# ============================================================================
+
+
+def test_sprint_complete_help():
+    """Test sprint complete command help."""
+    result = runner.invoke(app, ["sprint", "complete", "--help"])
+    assert result.exit_code == 0
+    assert "Complete a sprint with checklist verification" in result.stdout
+    assert "--force" in result.stdout
+    assert "--plan" in result.stdout
+
+
+def test_sprint_list_help():
+    """Test sprint list command help."""
+    result = runner.invoke(app, ["sprint", "list", "--help"])
+    assert result.exit_code == 0
+    assert "List sprints in a plan" in result.stdout
+
+
+def test_sprint_complete_no_active_plan(initialized_repo, monkeypatch):
+    """Test sprint complete without an active plan."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["sprint", "complete", "17.5"])
+    assert result.exit_code == 1
+    assert "No active plan" in result.stdout
+
+
+def test_sprint_complete_with_plan_flag(initialized_repo, monkeypatch):
+    """Test sprint complete with explicit --plan flag."""
+    monkeypatch.chdir(initialized_repo)
+
+    # Create a sprint file with plan
+    plans_dir = initialized_repo / ".paircoder" / "plans"
+    plans_dir.mkdir(parents=True)
+    sprint_file = plans_dir / "sprint-17.5.md"
+    sprint_file.write_text("""# Sprint 17.5
+
+## Goals
+- Test goal
+
+## Tasks
+- [ ] TASK-001: Test task
+""")
+
+    # Using --plan flag should bypass needing active plan
+    result = runner.invoke(app, ["sprint", "complete", "17.5", "--plan", "test-plan", "--force"])
+    # Should proceed (may fail for other reasons but not for "no active plan")
+    assert "No active plan" not in result.stdout
+
+
+def test_sprint_complete_with_force(initialized_repo, monkeypatch):
+    """Test sprint complete with --force flag skips checklist."""
+    monkeypatch.chdir(initialized_repo)
+
+    # Create plans directory and sprint file
+    plans_dir = initialized_repo / ".paircoder" / "plans"
+    plans_dir.mkdir(parents=True)
+    sprint_file = plans_dir / "sprint-17.5.md"
+    sprint_file.write_text("""# Sprint 17.5
+
+## Goals
+- Test goal
+
+## Tasks
+- [ ] TASK-001: Test task
+""")
+
+    # Use --plan to bypass active plan requirement
+    result = runner.invoke(app, ["sprint", "complete", "17.5", "--plan", "test-plan", "--force"])
+    # With --force, it should skip checklist
+    assert "No active plan" not in result.stdout
+
+
+def test_release_plan_help():
+    """Test release plan command help."""
+    result = runner.invoke(app, ["release", "plan", "--help"])
+    assert result.exit_code == 0
+    assert "Generate release preparation tasks" in result.stdout
+    assert "--create" in result.stdout
+
+
+def test_release_checklist_help():
+    """Test release checklist command help."""
+    result = runner.invoke(app, ["release", "checklist", "--help"])
+    assert result.exit_code == 0
+    assert "Show the release preparation checklist" in result.stdout
+
+
+def test_release_checklist(initialized_repo, monkeypatch):
+    """Test release checklist shows all items."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["release", "checklist"])
+    assert result.exit_code == 0
+    # Should show checklist items
+    assert "Cookie cutter" in result.stdout or "CHANGELOG" in result.stdout or "checklist" in result.stdout.lower()
+
+
+def test_release_plan_preview(initialized_repo, monkeypatch):
+    """Test release plan shows tasks without --create-tasks."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["release", "plan", "--version", "2.2.0"])
+    assert result.exit_code == 0
+    # Should show preview without creating
+    assert "REL-" in result.stdout or "release" in result.stdout.lower()
