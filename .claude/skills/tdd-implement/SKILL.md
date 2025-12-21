@@ -1,245 +1,63 @@
 ---
 name: tdd-implement
 description: Implement features using test-driven development. Use when fixing bugs, implementing well-defined tasks, or when user mentions TDD, testing, or asks to fix/implement something specific. Triggers on words like fix, bug, implement, test, TDD, failing test.
-allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 
-# Test-Driven Development (TDD) Workflow
+# TDD Implementation
 
-A disciplined approach: write tests first, implement to pass, then refactor.
+## PairCoder Integration
 
-## When This Skill Activates
+When implementing via TDD in this project:
 
-This skill is invoked when:
-- User asks to fix a bug
-- User asks to implement a specific, well-defined feature
-- User mentions TDD or test-driven development
-- Task has clear acceptance criteria
-- Keywords: fix, bug, implement, test, TDD, failing
+1. **Start task**: `bpsai-pair task update TASK-XXX --status in_progress`
+2. **Write test** in `tests/test_<module>.py`
+3. **Run test**: `pytest tests/test_<module>.py -v` (expect RED)
+4. **Implement** in `tools/cli/bpsai_pair/`
+5. **Run test**: `pytest tests/test_<module>.py -v` (expect GREEN)
+6. **Refactor** if needed, keeping tests green
+7. **Complete**: Follow paircoder-task-lifecycle skill for two-step completion
 
-## The TDD Cycle
+## Project Test Commands
 
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│   RED → GREEN → REFACTOR → (repeat)     │
-│                                         │
-│   1. Write failing test                 │
-│   2. Write minimum code to pass         │
-│   3. Refactor for clarity               │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
-## Phase 1: RED - Write Failing Test
-
-### 1.1 Understand the Requirement
-Before writing tests:
-1. Read the task/bug description carefully
-2. Identify the expected behavior
-3. Find existing related tests:
-   ```bash
-   grep -r "test_.*relevant" tests/
-   ```
-
-### 1.2 Write the Test
-```python
-def test_feature_does_expected_thing():
-    """Test that [feature] produces [expected result]."""
-    # Arrange: Set up test data
-    input_data = create_test_input()
-    
-    # Act: Call the function under test
-    result = function_under_test(input_data)
-    
-    # Assert: Verify expected behavior
-    assert result == expected_output
-    assert result.property == expected_value
-```
-
-### 1.3 Run and Confirm Failure
 ```bash
-# Run the specific test
-pytest tests/test_module.py::test_feature_does_expected_thing -v
+# Run specific test
+pytest tests/test_module.py::test_function -v
 
-# Expected: FAILED (if test is correct)
-```
-
-**Important**: If the test passes immediately, either:
-- The feature already exists (check first!)
-- The test is not testing what you think
-
-## Phase 2: GREEN - Make It Pass
-
-### 2.1 Write Minimum Code
-Implement the **simplest possible code** that makes the test pass:
-- Don't optimize
-- Don't handle edge cases yet
-- Don't refactor
-- Just make it work
-
-### 2.2 Run Tests Again
-```bash
-# Run the test
-pytest tests/test_module.py::test_feature_does_expected_thing -v
-
-# Expected: PASSED
-```
-
-### 2.3 Run Full Test Suite
-Ensure you didn't break anything:
-```bash
-pytest
-```
-
-## Phase 3: REFACTOR - Clean Up
-
-### 3.1 Improve Code Quality
-Now that tests pass, improve the code:
-- Extract helper functions
-- Improve variable names
-- Remove duplication
-- Add type hints
-- Add docstrings
-
-### 3.2 Refactoring Rules
-- **Keep tests passing** at all times
-- Make small changes, run tests after each
-- Don't add new functionality during refactor
-
-### 3.3 Final Test Run
-```bash
-# Full suite passes
-pytest
-
-# Linting passes
-ruff check .
-```
-
-## Phase 4: Iterate
-
-### 4.1 Add Edge Cases
-Write additional tests for:
-- Empty inputs
-- Invalid inputs
-- Boundary conditions
-- Error conditions
-
-### 4.2 Repeat the Cycle
-For each edge case:
-1. RED: Write failing test
-2. GREEN: Implement handler
-3. REFACTOR: Clean up
-
-## Bug Fix Workflow
-
-When fixing bugs, the TDD cycle is slightly modified:
-
-### Step 1: Reproduce with Test
-```python
-def test_bug_is_fixed():
-    """Regression test for issue #XXX."""
-    # This test reproduces the bug
-    result = buggy_function(problematic_input)
-    assert result == correct_behavior  # Currently fails
-```
-
-### Step 2: Confirm Bug Exists
-```bash
-pytest tests/test_module.py::test_bug_is_fixed -v
-# Should FAIL, confirming the bug
-```
-
-### Step 3: Fix the Bug
-Implement the minimal fix to pass the test.
-
-### Step 4: Verify Fix
-```bash
-# Specific test passes
-pytest tests/test_module.py::test_bug_is_fixed -v
-
-# No regressions
-pytest
-```
-
-## Quick Reference
-
-### Test File Location
-```
-src/module/feature.py → tests/test_feature.py
-src/cli/commands.py → tests/test_cli_commands.py
-```
-
-### Test Naming Convention
-```python
-def test_<function>_<scenario>_<expected_result>():
-    """Test that <function> <scenario> results in <expected>."""
-```
-
-### Common Assertions
-```python
-assert result == expected           # Equality
-assert result is not None           # Not None
-assert "substring" in result        # Contains
-assert result.startswith("prefix")  # Starts with
-assert len(result) == 5             # Length
-assert isinstance(result, MyClass)  # Type
-pytest.raises(ValueError)           # Exception
-```
-
-### Pytest Commands
-```bash
 # Run all tests
 pytest
 
-# Run specific file
-pytest tests/test_module.py
+# Run with coverage
+pytest --cov=tools/cli/bpsai_pair
 
-# Run specific test
-pytest tests/test_module.py::test_function
-
-# Verbose output
-pytest -v
+# Run only failed tests
+pytest --lf
 
 # Stop on first failure
 pytest -x
 
-# Show print statements
+# Show print output
 pytest -s
-
-# Coverage report
-pytest --cov=src
 ```
 
-## Task Integration
+## Project Test Conventions
 
-### When Starting a Task
-1. Set task status: `status: in_progress`
-2. Read acceptance criteria
-3. Write test for first criterion
-4. Begin TDD cycle
+- Test files: `tests/test_<module>.py`
+- Test functions: `test_<function>_<scenario>_<expected>()`
+- Use fixtures from `tests/conftest.py`
+- Mock external services (Trello API, etc.)
 
-### When Completing a Task
-1. All acceptance criteria have tests
-2. All tests pass
-3. Code is refactored
-4. Update task: `status: done`
-5. Commit: `[TASK-XXX] Description`
+## Linting
 
-## Anti-Patterns to Avoid
+```bash
+# Check linting
+ruff check .
 
-❌ **Don't write tests after code**
-- You lose the design benefits of TDD
-- Tests may just verify what code does, not what it should do
+# Auto-fix
+ruff check --fix .
+```
 
-❌ **Don't skip the RED phase**
-- If test passes immediately, you haven't learned anything
-- You might not be testing the right thing
+## Task Completion
 
-❌ **Don't refactor while RED**
-- Fix the test first
-- Refactoring requires green tests as safety net
-
-❌ **Don't write multiple tests at once**
-- One test at a time
-- Keeps focus and provides clear feedback
+After tests pass, follow the paircoder-task-lifecycle skill:
+1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
+2. `bpsai-pair task update TASK-XXX --status done`

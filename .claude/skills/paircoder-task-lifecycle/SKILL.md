@@ -155,6 +155,28 @@ Use these for direct Trello operations.
 
 **DO NOT skip step 4!** Using only `task update` will NOT check acceptance criteria on Trello.
 
+## Validation Scripts
+
+Use these scripts to validate before completion:
+
+### Validate Task File Format
+
+```bash
+python .claude/skills/paircoder-task-lifecycle/scripts/validate_task_status.py TASK-XXX
+```
+
+Checks: frontmatter, required fields, valid status, acceptance criteria section.
+
+### Check Completion Readiness
+
+```bash
+python .claude/skills/paircoder-task-lifecycle/scripts/check_completion.py TASK-XXX
+```
+
+Runs: task file validation, tests, linting, git status.
+
+**Validation loop:** Run → fix issues → re-run until all checks pass.
+
 ## Trello Sync Commands
 
 ```bash

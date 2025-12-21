@@ -2,6 +2,30 @@
 
 > Updated: 2025-12-17 | Version: 2.5.2 | 88+ commands
 
+## Contents
+
+- [Task Commands (Local)](#task-commands-local)
+- [Trello Task Commands (ttask)](#trello-task-commands-ttask)
+- [When to Use task vs ttask](#when-to-use-task-vs-ttask)
+- [Plan Commands](#plan-commands)
+- [Trello Commands](#trello-commands)
+- [Other Commands](#other-commands)
+- [Orchestration Commands](#orchestration-commands)
+- [GitHub Commands](#github-commands)
+- [Metrics Commands](#metrics-commands)
+- [Timer Commands](#timer-commands)
+- [MCP Commands](#mcp-commands)
+- [Cache Commands](#cache-commands)
+- [Benchmark Commands](#benchmark-commands)
+- [Intent Commands](#intent-commands)
+- [Preset Commands](#preset-commands)
+- [Flow Commands](#flow-commands)
+- [Configuration](#configuration)
+- [Environment Variables](#environment-variables)
+- [Common Workflows](#common-workflows)
+
+---
+
 ## Overview
 
 PairCoder CLI (`bpsai-pair`) manages tasks, plans, Trello integration, and development workflow.
