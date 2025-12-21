@@ -40,7 +40,7 @@ Quick commands available via `/command`:
 | Command | Purpose |
 |---------|---------|
 | `/status` | Show project status, current sprint, active tasks |
-| `/plan` | Show current plan details and progress |
+| `/pc-plan` | Show current plan details and progress |
 | `/task [ID]` | Show current or specific task details |
 
 **Usage**: Type `/status` in the chat to run the status command.
@@ -102,9 +102,9 @@ Additional context for implementation
 
 ```
 .claude/                      # Claude Code native
-├── commands/                 # Slash commands (/status, /plan, /task)
+├── commands/                 # Slash commands (/status, /pc-plan, /task)
 │   ├── status.md
-│   ├── plan.md
+│   ├── pc-plan.md
 │   └── task.md
 ├── skills/                   # Model-invoked skills
 │   ├── design-plan-implement/SKILL.md

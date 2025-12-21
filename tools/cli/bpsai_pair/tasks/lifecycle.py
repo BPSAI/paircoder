@@ -1,11 +1,14 @@
 """Task lifecycle states and transitions."""
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import yaml
+
+from ..constants import TASK_ID_PATTERN, TASK_FILE_GLOBS
 
 
 class TaskState(Enum):
@@ -121,8 +124,9 @@ class TaskLifecycle:
 
         for line in content.split("\n"):
             line_stripped = line.strip()
-            # Extract title from H1 heading: "# TASK-XXX: Title"
-            if line_stripped.startswith("# TASK-") and ": " in line_stripped:
+            # Extract title from H1 heading: "# TASK-XXX: Title" or "# T18.1: Title"
+            task_heading_match = re.match(rf"# {TASK_ID_PATTERN}: (.+)", line_stripped)
+            if task_heading_match:
                 title_parts = line_stripped.split(": ", 1)
                 if len(title_parts) == 2:
                     metadata["title"] = title_parts[1]
@@ -173,18 +177,20 @@ class TaskLifecycle:
                             statuses: List[TaskState]) -> List[TaskMetadata]:
         """Get all tasks with specified statuses."""
         tasks = []
-        for task_file in plan_dir.glob("TASK-*.task.md"):
-            task = self.load_task(task_file)
-            if task.status in statuses:
-                tasks.append(task)
+        for glob_pattern in TASK_FILE_GLOBS:
+            for task_file in plan_dir.glob(glob_pattern):
+                task = self.load_task(task_file)
+                if task.status in statuses:
+                    tasks.append(task)
         return sorted(tasks, key=lambda t: t.id)
 
     def get_tasks_by_sprint(self, plan_dir: Path,
                             sprints: List[str]) -> List[TaskMetadata]:
         """Get all tasks in specified sprints."""
         tasks = []
-        for task_file in plan_dir.glob("TASK-*.task.md"):
-            task = self.load_task(task_file)
-            if task.sprint in sprints:
-                tasks.append(task)
+        for glob_pattern in TASK_FILE_GLOBS:
+            for task_file in plan_dir.glob(glob_pattern):
+                task = self.load_task(task_file)
+                if task.sprint in sprints:
+                    tasks.append(task)
         return sorted(tasks, key=lambda t: t.id)

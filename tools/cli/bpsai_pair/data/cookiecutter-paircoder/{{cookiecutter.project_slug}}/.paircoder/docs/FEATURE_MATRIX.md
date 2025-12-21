@@ -42,7 +42,7 @@ Quick reference for PairCoder capabilities in this project.
 | Command | Description |
 |---------|-------------|
 | `/status` | Show project status |
-| `/plan` | Show current plan |
+| `/pc-plan` | Show current plan |
 | `/task [ID]` | Show task details |
 
 ## Skills (Claude Code)

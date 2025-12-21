@@ -5,9 +5,23 @@
 Enable PairCoder to work across multiple related repositories while maintaining awareness of cross-project dependencies and contracts. The agent working in one repo will understand how changes impact sibling repos without needing to modify them directly.
 
 **Epic ID:** EPIC-001
-**Status:** Planned
-**Estimated Sprints:** 2 (Sprint A + Sprint B)
+**Status:** Planned (Post-Sprint 21)
+**Estimated Sprints:** 2 (Sprint 22 + Sprint 23)
 **Total Estimated Complexity:** 350-400 points
+**Task Naming:** `TASK-W{nn}` (e.g., TASK-W01, TASK-W15)
+
+---
+
+## Prerequisites from Sprints 18-21
+
+| Sprint | Dependency | Impact on Epic |
+|--------|------------|----------------|
+| Sprint 19 | T19.1 (Hooks system) | TASK-W11 builds on enhanced hooks |
+| Sprint 20 | T20.1-T20.2 (Skill conventions) | TASK-W12 follows gerund naming, third-person voice |
+| Sprint 20 | T20.3 (Skill creation skill) | Used to create workspace-aware skill |
+| Sprint 21 | T21.4 (Skill quality scoring) | Validate workspace-aware skill quality |
+
+---
 
 ## Problem Statement
 
@@ -115,7 +129,7 @@ trello:
 
 ---
 
-# Sprint A: Workspace Core
+# Sprint 22 (Sprint A): Workspace Core
 
 **Goal:** Establish workspace configuration, project discovery, and contract loading.
 
@@ -311,7 +325,6 @@ bpsai-pair workspace init [--parent PATH] [--non-interactive]
 ### Files to Create/Modify
 
 - `bpsai_pair/workspace/cli.py` (new)
-- Register in main CLI app
 - `tests/workspace/test_cli.py` (new)
 
 ---
@@ -320,24 +333,44 @@ bpsai-pair workspace init [--parent PATH] [--non-interactive]
 
 **Complexity:** 20 | **Priority:** P0 | **Stack:** Backend
 
-Display workspace overview with project status and contract health.
+Show current workspace status with project health and contract freshness.
 
 ### Implementation Plan
 
-1. Load and validate workspace config
-2. Check each project's health (path exists, contracts loadable)
-3. Display dependency graph
-4. Show contract statistics
-5. Highlight any issues
+1. Load workspace config
+2. Check each project's status
+3. Verify contract files exist and are fresh
+4. Show dependency graph summary
+5. Report any issues
+
+### CLI Output
+
+```bash
+$ bpsai-pair workspace status
+
+Workspace: BPS Platform
+Projects: 3
+
+┌─────────────┬────────────┬──────────────┬──────────────┐
+│ Project     │ Type       │ Status       │ Contracts    │
+├─────────────┼────────────┼──────────────┼──────────────┤
+│ api         │ fastapi    │ ✅ healthy   │ openapi (2h) │
+│ frontend    │ react      │ ✅ healthy   │ -            │
+│ workers     │ worker     │ ⚠️ stale     │ schemas (7d) │
+└─────────────┴────────────┴──────────────┴──────────────┘
+
+Dependencies:
+  frontend → api (openapi)
+  workers → api (models)
+```
 
 ### Acceptance Criteria
 
-- [ ] Shows all projects with status indicators
+- [ ] Shows all projects with status
+- [ ] Shows contract freshness
 - [ ] Displays dependency relationships
-- [ ] Shows contract counts (endpoints, models, schemas)
-- [ ] Highlights missing or invalid contracts
-- [ ] Shows last contract update timestamps
-- [ ] Pretty table output with Rich
+- [ ] Warns about stale contracts
+- [ ] JSON output option
 
 ### CLI Signature
 
@@ -345,199 +378,180 @@ Display workspace overview with project status and contract health.
 bpsai-pair workspace status [--json]
 ```
 
-### Example Output
-
-```
-Workspace: BPS Platform
-═══════════════════════
-
-Projects:
-  ✓ api-server (fastapi)
-    └─ Contracts: 47 endpoints, 23 models
-    └─ Consumers: frontend, workers
-    
-  ✓ client-app (frontend)
-    └─ Consumes: api-server (openapi)
-    └─ API calls: 31 endpoints used
-    
-  ✓ workers (worker)
-    └─ Contracts: 8 message schemas
-    └─ Consumes: api-server (models)
-
-Health: All contracts valid ✓
-```
-
-### Files to Create/Modify
-
-- `bpsai_pair/workspace/cli.py`
-- `bpsai_pair/workspace/health.py` (new)
-
 ---
 
-## TASK-W08: CLI - workspace export-contracts
+# Sprint 23 (Sprint B): Impact Analysis
 
-**Complexity:** 30 | **Priority:** P1 | **Stack:** Backend
-
-Auto-export contracts from FastAPI applications.
-
-### Implementation Plan
-
-1. Detect FastAPI app entry point
-2. Import app and call app.openapi()
-3. Write to configured contract path
-4. Handle apps that need startup (database, etc.)
-5. Support custom export commands per project
-
-### Acceptance Criteria
-
-- [ ] Auto-detects FastAPI app from common patterns
-- [ ] Exports OpenAPI JSON without running server
-- [ ] Creates contracts directory if missing
-- [ ] Supports custom export command in config
-- [ ] Handles import errors gracefully
-- [ ] Shows diff if contract changed
-- [ ] Updates contract timestamp
-
-### CLI Signature
-
-```bash
-bpsai-pair workspace export-contracts [--project NAME] [--all]
-```
-
-### Files to Create/Modify
-
-- `bpsai_pair/workspace/export.py` (new)
-- `bpsai_pair/workspace/cli.py`
-
----
-
-# Sprint B: Awareness & Validation
-
-**Goal:** Implement change detection, impact analysis, and developer warnings.
+**Goal:** Implement impact analysis, warnings, and PR integration.
 
 **Sprint Complexity:** 175 points
 
-## TASK-W09: Consumer Detection
+## TASK-W08: Contract Change Detector
 
-**Complexity:** 35 | **Priority:** P0 | **Stack:** Backend
+**Complexity:** 25 | **Priority:** P0 | **Stack:** Backend
 
-Analyze consumer projects to find what endpoints/models they use.
+Detect changes to contracts (API endpoints, models, schemas) from git diff.
 
 ### Implementation Plan
 
-1. For frontend: parse TypeScript/JavaScript for fetch/axios calls
-2. Extract URL patterns and map to OpenAPI endpoints
-3. For Python consumers: parse imports and usage
-4. Build consumer registry: "endpoint X is used by [frontend, workers]"
-5. Cache results with file hash invalidation
+1. Parse git diff output
+2. Identify changed contract files
+3. Detect type of change (add, modify, delete)
+4. For modifications, determine semantic change type
+5. Build change manifest
 
 ### Acceptance Criteria
 
-- [ ] Parses TypeScript fetch/axios calls
-- [ ] Extracts API endpoint URLs from frontend code
-- [ ] Maps URLs to OpenAPI endpoint definitions
-- [ ] Parses Python imports from sibling projects
-- [ ] Builds reverse index: endpoint → consumers
-- [ ] Caches results, invalidates on file changes
-- [ ] Unit tests with sample consumer code
+- [ ] Detects added/modified/deleted contract files
+- [ ] Identifies endpoint changes in OpenAPI
+- [ ] Identifies field changes in models
+- [ ] Classifies changes (breaking, non-breaking, additive)
+- [ ] Works with staged and unstaged changes
+- [ ] Unit tests for various change types
 
 ### Files to Create/Modify
 
-- `bpsai_pair/workspace/consumers/typescript.py` (new)
-- `bpsai_pair/workspace/consumers/python.py` (new)
-- `bpsai_pair/workspace/consumers/registry.py` (new)
-- `tests/workspace/consumers/` (new directory)
+- `bpsai_pair/workspace/changes.py` (new)
+- `tests/workspace/test_changes.py` (new)
 
 ---
 
-## TASK-W10: Change Impact Analyzer
+## TASK-W09: Consumer Impact Analyzer
 
-**Complexity:** 40 | **Priority:** P0 | **Stack:** Backend
+**Complexity:** 35 | **Priority:** P0 | **Stack:** Backend
 
-Analyze proposed changes and determine cross-project impact.
+Analyze how contract changes impact consuming projects.
 
 ### Implementation Plan
 
-1. Take file path + change type as input
-2. Map changed file to contract (endpoint, model, schema)
-3. Look up consumers of that contract
-4. Classify impact: breaking, compatible, additive
+1. Load contract changes
+2. Find all consumers of changed contracts
+3. Search consumer code for usage of changed items
+4. Assess impact severity
 5. Generate impact report
+
+### Impact Assessment
+
+| Change Type | Impact |
+|-------------|--------|
+| Endpoint deleted | 🔴 Breaking |
+| Required field removed | 🔴 Breaking |
+| Endpoint path changed | 🔴 Breaking |
+| New required field | 🟡 Potentially Breaking |
+| Optional field removed | 🟡 Warning |
+| New optional field | 🟢 Safe |
+| New endpoint | 🟢 Safe |
 
 ### Acceptance Criteria
 
-- [ ] Maps file changes to affected contracts
-- [ ] Identifies all consumer projects
-- [ ] Classifies changes: breaking vs non-breaking
-- [ ] Breaking: removed field, changed type, removed endpoint
-- [ ] Compatible: added optional field, new endpoint
-- [ ] Generates structured impact report
-- [ ] Unit tests for various change scenarios
-
-### Impact Classification Rules
-
-| Change Type | Breaking? |
-|-------------|-----------|
-| Remove endpoint | Yes |
-| Remove required field | Yes |
-| Change field type | Yes |
-| Rename endpoint | Yes |
-| Add required field | Yes |
-| Add optional field | No |
-| Add new endpoint | No |
-| Add new model | No |
+- [ ] Finds consumers of changed contracts
+- [ ] Searches consumer code for affected usages
+- [ ] Classifies impact severity correctly
+- [ ] Reports specific file:line locations in consumers
+- [ ] Handles projects with no consumers gracefully
+- [ ] Unit tests with mock projects
 
 ### Files to Create/Modify
 
 - `bpsai_pair/workspace/impact.py` (new)
-- `bpsai_pair/workspace/changes.py` (new)
 - `tests/workspace/test_impact.py` (new)
 
 ---
 
-## TASK-W11: Pre-Change Warning System
+## TASK-W10: TypeScript API Consumer Scanner
 
-**Complexity:** 30 | **Priority:** P0 | **Stack:** Backend
+**Complexity:** 30 | **Priority:** P1 | **Stack:** Backend
 
-Warn developers before making breaking changes.
+Scan TypeScript/JavaScript files to find API endpoint usages.
 
 ### Implementation Plan
 
-1. Hook into file change detection
-2. Run impact analysis on pending changes
-3. Display warnings for breaking changes
-4. Allow override with confirmation
-5. Log warnings for audit trail
+1. Glob configured source patterns
+2. Parse with tree-sitter or regex for common patterns
+3. Find fetch/axios/api calls
+4. Extract endpoint paths from calls
+5. Build usage index
+
+### Patterns to Detect
+
+```typescript
+// Direct fetch
+fetch('/api/users')
+fetch(`${API_URL}/users/${id}`)
+
+// Axios
+axios.get('/api/users')
+api.post('/users', data)
+
+// Generated client
+apiClient.users.list()
+```
 
 ### Acceptance Criteria
 
-- [ ] Triggers on file save/change in watched directories
-- [ ] Runs impact analysis automatically
-- [ ] Displays clear warning with affected consumers
-- [ ] Shows specific files in consumer that will break
-- [ ] Allows proceeding with acknowledgment
-- [ ] Logs warnings to activity log
-- [ ] Can be disabled per-session
+- [ ] Finds fetch() calls with string/template paths
+- [ ] Finds axios calls
+- [ ] Handles common patterns (api clients, constants)
+- [ ] Extracts HTTP methods when possible
+- [ ] Reports file:line for each usage
+- [ ] Unit tests with sample TS files
 
-### Warning Output Example
+### Files to Create/Modify
+
+- `bpsai_pair/workspace/contracts/typescript.py` (new)
+- `tests/workspace/contracts/test_typescript.py` (new)
+- `tests/fixtures/sample_api_calls.ts` (new)
+
+---
+
+## TASK-W11: Workspace Warning Hooks
+
+**Complexity:** 25 | **Priority:** P0 | **Stack:** Backend
+
+**Note:** Builds on T19.1 (enhanced hooks system from Sprint 19)
+
+Hook into file saves to warn about breaking changes before commit.
+
+### Implementation Plan
+
+1. Register hook for contract file saves
+2. On save, run quick impact check
+3. Show warning in Claude's context if breaking
+4. Allow proceed with acknowledgment
+
+### Hook Integration
+
+```python
+# Extends hooks from Sprint 19
+@hook("on_file_save")
+def check_workspace_impact(filepath: str):
+    if is_contract_file(filepath):
+        impact = analyze_impact(filepath)
+        if impact.has_breaking_changes:
+            warn_user(impact)
+```
+
+### Warning Output
 
 ```
-⚠️  BREAKING CHANGE DETECTED
-═══════════════════════════
+⚠️ Workspace Impact Warning
 
-You are modifying: api-server/src/routes/users.py
+Your changes to api/routes/users.py affect consumers:
 
-This will affect:
-  • DELETE /api/users/{id} - REMOVED
-    └─ Used by: client-app/src/api/users.ts:47
-    └─ Used by: client-app/src/components/UserAdmin.tsx:123
+Breaking Changes:
+  DELETE /api/users/{id}
+    ↳ client-app/src/api/users.ts:47
 
-  • PATCH /api/users/{id} - Response changed
-    └─ Field 'email' type changed: string → EmailStr
-    └─ Used by: client-app/src/api/users.ts:52
-
-Proceed anyway? [y/N]
+Run `bpsai-pair workspace check-impact` for full analysis.
 ```
+
+### Acceptance Criteria
+
+- [ ] Hook fires on contract file save
+- [ ] Quick impact analysis (< 2 seconds)
+- [ ] Shows breaking changes clearly
+- [ ] Non-blocking (warning, not error)
+- [ ] Integrates with existing hooks.py
 
 ### Files to Create/Modify
 
@@ -547,39 +561,32 @@ Proceed anyway? [y/N]
 
 ---
 
-## TASK-W12: Skill - workspace-aware
+## TASK-W12: Skill - working-with-workspaces
 
 **Complexity:** 20 | **Priority:** P0 | **Stack:** Documentation
 
+**Note:** Follows Sprint 20 skill conventions (gerund naming, third-person voice)
+
 Create skill that loads workspace context before Claude starts working.
 
-### Implementation Plan
+### Skill Structure
 
-1. Define skill with workspace triggers
-2. Load workspace config and contracts
-3. Generate context summary for Claude
-4. Include consumer information
-5. Add rules about checking impact
+Following Sprint 20 conventions:
+- Name: `working-with-workspaces` (gerund form)
+- Description: Third-person voice, < 1024 chars
+- Validated with `bpsai-pair skill validate`
 
-### Acceptance Criteria
-
-- [ ] Skill triggers when working in workspace project
-- [ ] Loads relevant contracts from siblings
-- [ ] Generates concise context summary
-- [ ] Lists consumers of current project
-- [ ] Reminds to check impact before changes
-- [ ] Includes CLI commands for validation
-
-### Skill Content
+### SKILL.md Content
 
 ```markdown
 ---
-name: workspace-aware
-description: Multi-project workspace awareness. Use when working in a project 
-  that is part of a larger workspace with sibling projects.
+name: working-with-workspaces
+description: Provides multi-project workspace awareness for developers working in 
+  repositories that are part of a larger system. Loads sibling project contracts,
+  warns about breaking changes, and generates impact summaries.
 ---
 
-# Workspace Awareness
+# Working with Workspaces
 
 ## Before Starting Work
 
@@ -607,10 +614,19 @@ bpsai-pair workspace check-impact <file>
 - Run consumer tests after API changes
 ```
 
+### Acceptance Criteria
+
+- [ ] Skill triggers when working in workspace project
+- [ ] Follows gerund naming convention
+- [ ] Description in third-person voice
+- [ ] Passes `bpsai-pair skill validate`
+- [ ] Loads relevant contracts from siblings
+- [ ] Lists consumers of current project
+- [ ] Includes CLI commands for validation
+
 ### Files to Create/Modify
 
-- `.claude/skills/workspace-aware/SKILL.md` (new)
-- Dynamic context loader integration
+- `.claude/skills/working-with-workspaces/SKILL.md` (new)
 
 ---
 
@@ -663,22 +679,6 @@ Auto-generate cross-project impact summary for PRs.
 4. Include affected files in sibling projects
 5. Suggest coordination steps
 
-### Acceptance Criteria
-
-- [ ] Compares branches to find all changes
-- [ ] Generates markdown impact summary
-- [ ] Lists all affected sibling projects
-- [ ] Shows specific files that consume changed contracts
-- [ ] Suggests test commands to run
-- [ ] Can be copied to PR description
-- [ ] Outputs to stdout or file
-
-### CLI Signature
-
-```bash
-bpsai-pair workspace pr-impact [--target BRANCH] [--output FILE]
-```
-
 ### Example Output
 
 ```markdown
@@ -704,6 +704,22 @@ bpsai-pair workspace pr-impact [--target BRANCH] [--output FILE]
 3. Update frontend to remove deleted endpoint usage
 ```
 
+### Acceptance Criteria
+
+- [ ] Compares branches to find all changes
+- [ ] Generates markdown impact summary
+- [ ] Lists all affected sibling projects
+- [ ] Shows specific files that consume changed contracts
+- [ ] Suggests test commands to run
+- [ ] Can be copied to PR description
+- [ ] Outputs to stdout or file
+
+### CLI Signature
+
+```bash
+bpsai-pair workspace pr-impact [--target BRANCH] [--output FILE]
+```
+
 ### Files to Create/Modify
 
 - `bpsai_pair/workspace/pr.py` (new)
@@ -724,22 +740,6 @@ Detect when duplicated types across repos have drifted out of sync.
 3. Identify drift (different fields, types)
 4. Report discrepancies
 5. Suggest fixes
-
-### Acceptance Criteria
-
-- [ ] Finds models with same name across projects
-- [ ] Compares field names and types
-- [ ] Reports missing fields in either direction
-- [ ] Reports type mismatches
-- [ ] Suggests which version is authoritative
-- [ ] Outputs report for review
-- [ ] Tracks known acceptable differences
-
-### CLI Signature
-
-```bash
-bpsai-pair workspace check-drift [--ignore FILE]
-```
 
 ### Example Output
 
@@ -762,6 +762,22 @@ User model has drifted:
     # MISSING: created_at
 
 Recommendation: Add 'created_at' to workers model
+```
+
+### Acceptance Criteria
+
+- [ ] Finds models with same name across projects
+- [ ] Compares field names and types
+- [ ] Reports missing fields in either direction
+- [ ] Reports type mismatches
+- [ ] Suggests which version is authoritative
+- [ ] Outputs report for review
+- [ ] Tracks known acceptable differences
+
+### CLI Signature
+
+```bash
+bpsai-pair workspace check-drift [--ignore FILE]
 ```
 
 ### Files to Create/Modify
@@ -842,8 +858,8 @@ These are potential future additions after the core Epic is complete:
 
 | Sprint | Duration | Deliverable |
 |--------|----------|-------------|
-| Sprint A | 1 week | Workspace config, contract loading, basic CLI |
-| Sprint B | 1 week | Impact analysis, warnings, PR integration |
+| Sprint 22 (A) | 1 week | Workspace config, contract loading, basic CLI |
+| Sprint 23 (B) | 1 week | Impact analysis, warnings, PR integration |
 | Buffer | 2-3 days | Testing, documentation, edge cases |
 
 **Total: ~2.5 weeks**

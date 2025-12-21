@@ -11,6 +11,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Callable, Optional
 from pathlib import Path
 
+from ..constants import extract_task_id_from_card_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,10 +27,8 @@ class CardMoveEvent:
 
     @property
     def task_id(self) -> Optional[str]:
-        """Extract task ID from card name like '[TASK-066] Title'."""
-        if self.card_name.startswith("[") and "]" in self.card_name:
-            return self.card_name[1:self.card_name.index("]")]
-        return None
+        """Extract task ID from card name like '[TASK-066] Title' or '[T18.1] Title'."""
+        return extract_task_id_from_card_name(self.card_name)
 
 
 # Default list-to-status mappings (fallback if board fetch fails)

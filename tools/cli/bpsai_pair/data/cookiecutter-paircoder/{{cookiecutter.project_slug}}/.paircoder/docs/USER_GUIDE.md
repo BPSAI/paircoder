@@ -82,7 +82,7 @@ Quick commands available in Claude Code:
 | Command | Purpose |
 |---------|---------|
 | `/status` | Show project status, current sprint, active tasks |
-| `/plan` | Show current plan details and progress |
+| `/pc-plan` | Show current plan details and progress |
 | `/task [ID]` | Show current or specific task details |
 
 **Usage**: Type `/status` in Claude Code chat.

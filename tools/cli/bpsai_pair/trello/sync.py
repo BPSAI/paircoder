@@ -10,6 +10,7 @@ import re
 
 from .client import TrelloService, EffortMapping
 from .templates import CardDescriptionTemplate, CardDescriptionData, should_preserve_description
+from ..constants import extract_task_id_from_card_name
 
 logger = logging.getLogger(__name__)
 
@@ -727,7 +728,7 @@ class TrelloToLocalSync:
         return self._task_parser
 
     def extract_task_id(self, card_name: str) -> Optional[str]:
-        """Extract task ID from card name like '[TASK-066] Title'.
+        """Extract task ID from card name like '[TASK-066] Title' or '[T18.1] Title'.
 
         Args:
             card_name: Card name with potential task ID prefix
@@ -735,9 +736,7 @@ class TrelloToLocalSync:
         Returns:
             Task ID or None if not found
         """
-        if card_name.startswith("[") and "]" in card_name:
-            return card_name[1:card_name.index("]")]
-        return None
+        return extract_task_id_from_card_name(card_name)
 
     def get_list_status(self, list_name: str) -> Optional[str]:
         """Map Trello list name to task status.

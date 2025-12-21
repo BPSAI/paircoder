@@ -488,7 +488,7 @@ Slash commands provide quick access to common operations in Claude Code.
 | Command | Purpose |
 |---------|---------|
 | `/status` | Show project status, current sprint, active tasks |
-| `/plan` | Show current plan details and progress |
+| `/pc-plan` | Show current plan details and progress |
 | `/task [ID]` | Show current or specific task details |
 
 ### Usage
@@ -522,7 +522,7 @@ Then use `/review` in Claude Code.
 .claude/
 └── commands/
     ├── status.md      # /status command
-    ├── plan.md        # /plan command
+    ├── pc-plan.md     # /pc-plan command
     ├── task.md        # /task command
     └── custom.md      # /custom command (your own)
 ```

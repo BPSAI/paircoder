@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Callable
 
 from .client import GitHubClient, GitHubService
+from ..constants import TASK_ID_REGEX, extract_task_id
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +48,7 @@ class PRInfo:
         # Extract task ID from title if present
         task_id = None
         title = data.get("title", "")
-        task_match = re.search(r"\[?(TASK-\d+)\]?", title)
-        if task_match:
-            task_id = task_match.group(1)
+        task_id = extract_task_id(title)
 
         return cls(
             number=data.get("number", 0),
@@ -434,11 +433,8 @@ def auto_create_pr_for_branch(
         return existing
 
     # Extract task ID from branch name
-    # Patterns: feature/TASK-001-*, TASK-001/*, TASK-001-*
-    task_id = None
-    task_match = re.search(r"(TASK-\d+)", branch, re.IGNORECASE)
-    if task_match:
-        task_id = task_match.group(1).upper()
+    # Patterns: feature/TASK-001-*, T18.1/*, REL-18-01-*, etc.
+    task_id = extract_task_id(branch)
 
     if not task_id:
         logger.info(f"No task ID found in branch name: {branch}")
