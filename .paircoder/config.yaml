@@ -85,30 +85,55 @@ metrics:
 estimation:
   complexity_to_hours:
     xs:
-      range: [0, 15]
-      hours: [0.5, 1.0, 2.0]   # XS - under 2 hours
+      range:
+      - 0
+      - 15
+      hours:
+      - 0.5
+      - 1.0
+      - 2.0
     s:
-      range: [16, 30]
-      hours: [1.0, 2.0, 4.0]   # S - half day
+      range:
+      - 16
+      - 30
+      hours:
+      - 1.0
+      - 2.0
+      - 4.0
     m:
-      range: [31, 50]
-      hours: [2.0, 4.0, 8.0]   # M - full day
+      range:
+      - 31
+      - 50
+      hours:
+      - 2.0
+      - 4.0
+      - 8.0
     l:
-      range: [51, 75]
-      hours: [4.0, 8.0, 16.0]  # L - 1-2 days
+      range:
+      - 51
+      - 75
+      hours:
+      - 4.0
+      - 8.0
+      - 16.0
     xl:
-      range: [76, 100]
-      hours: [8.0, 16.0, 32.0] # XL - 2-4 days
+      range:
+      - 76
+      - 100
+      hours:
+      - 8.0
+      - 16.0
+      - 32.0
 token_estimates:
-  base_context: 15000        # Skills, state, project context
-  per_complexity_point: 500  # Rough: 50 complexity = 25k tokens
+  base_context: 15000
+  per_complexity_point: 500
   by_task_type:
-    feature: 1.2   # More back-and-forth
-    bugfix: 0.8    # Usually focused
-    docs: 0.6      # Less code generation
-    refactor: 1.5  # Lots of reading existing code
-    chore: 0.9     # Moderate complexity
-  per_file_touched: 2000     # Each file adds context
+    feature: 1.2
+    bugfix: 0.8
+    docs: 0.6
+    refactor: 1.5
+    chore: 0.9
+  per_file_touched: 2000
 hooks:
   enabled: true
   on_task_ready:
@@ -292,6 +317,6 @@ trello:
     summary_card_template: "Week {week_number} ({date_range})\n\u2705 {completed_count}\
       \ Completed\n\u2699\uFE0F {in_progress_count} In Progress\n\U0001F41E {issues_count}\
       \ Issues\n"
-  board_id: 694176ebf4b9d27c6e7a0e73
+  board_id: 69487ba516aeeabe10976a23
   board_name: PairCoder
   enabled: true
