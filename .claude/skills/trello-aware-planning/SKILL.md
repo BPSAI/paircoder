@@ -173,3 +173,7 @@ At end of each week, create summary in "Notes / Ops Log":
 3. **Track throughput** - Count cards completed, not points estimated
 4. **Update daily** - 5 min to move cards and add notes
 5. **Weekly review** - 15 min to summarize and plan ahead
+
+## Project-Specific Conventions
+
+See `reference.md` in this skill directory for project-specific board conventions (protected cards, required custom fields, etc.).

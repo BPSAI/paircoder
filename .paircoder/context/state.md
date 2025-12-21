@@ -23,7 +23,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 **Progress:** 4/4 tasks complete (125/125 points) ✅ Sprint 17.5 Phase1 Complete!
 
 **Sprint 17.5 Tasks (Documentation & Structure):**
-- TASK-154: Document BPS Trello board conventions
+- TASK-154: Document BPS Trello board conventions ✓
 - TASK-155: Add /commands directory to cookie cutter
 - TASK-156: Reorganize docs/ vs .paircoder/docs/
 - TASK-157: Document Trello setup in quick start
@@ -91,6 +91,30 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-154: Document BPS Trello Board Conventions
+
+**TASK-154: Document BPS Trello board conventions** - DONE
+
+Created documentation for BPS-specific Trello board conventions to prevent AI agents from:
+- Moving dashboard/Info list cards
+- Leaving custom fields empty
+- Not checking acceptance criteria on completion
+- Not adding PR URLs to cards
+
+**Files Created:**
+- `.paircoder/context/bps-board-conventions.md` - Comprehensive reference document for board conventions
+- `.claude/skills/trello-task-workflow/reference.md` - Skill-specific reference for task workflow
+- `.claude/skills/trello-aware-planning/reference.md` - Skill-specific reference for planning
+
+**Files Modified:**
+- `.claude/skills/trello-task-workflow/SKILL.md` - Added pointer to reference.md
+- `.claude/skills/trello-aware-planning/SKILL.md` - Added pointer to reference.md
+
+**Design Decision:**
+Kept skill files generic with project-specific conventions in separate `reference.md` files. This allows skills to be reusable while still having project-specific customizations.
+
+---
 
 ### Session: 2025-12-19 (afternoon) - TASK-153: Fix Plan List Task Count
 

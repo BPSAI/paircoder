@@ -244,3 +244,7 @@ This skill works alongside:
 - **tdd-implement**: Use for bug fix tasks
 - **code-review**: Use when reviewing PR linked to task
 - **finish-branch**: Automatically marks task done when branch merges
+
+## Project-Specific Conventions
+
+See `reference.md` in this skill directory for project-specific board conventions (protected cards, required custom fields, etc.).

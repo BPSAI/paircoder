@@ -120,10 +120,18 @@
     ],
     "total_seconds": 240.032922
   },
-  "_active": {
-    "task_id": "TASK-154",
-    "timer_id": "local-20251219163052",
-    "description": "TASK-154: Document BPS Trello board conventions",
-    "start": "2025-12-19T16:30:52.571613"
+  "TASK-154": {
+    "entries": [
+      {
+        "id": "local-20251219163052",
+        "task_id": "TASK-154",
+        "description": "TASK-154: Document BPS Trello board conventions",
+        "start": "2025-12-19T16:30:52.571613",
+        "end": "2025-12-21T14:48:24.310965",
+        "duration_seconds": 166651.739352,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 166651.739352
   }
 }
