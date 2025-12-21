@@ -56,6 +56,12 @@ ruff check .
 ruff check --fix .
 ```
 
+## Run All Checks
+
+```bash
+bpsai-pair ci    # Runs tests + linting + type checks in one command
+```
+
 ## Task Completion
 
 After tests pass, follow the paircoder-task-lifecycle skill:

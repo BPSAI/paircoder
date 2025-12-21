@@ -7,38 +7,34 @@ description: Complete and finalize work on a branch for merge. Use when user wan
 
 ## Pre-Merge Checklist
 
-### 1. Tests & Linting
+### 1. Run All Checks
 
 ```bash
-pytest                    # All tests pass
-ruff check .              # No lint errors
-ruff format --check .     # Formatting OK
+bpsai-pair ci                 # Tests + linting in one command
+bpsai-pair validate           # Check project structure
 ```
 
-### 2. Review Changes
+### 2. Security Scan
+
+```bash
+bpsai-pair security scan-secrets --staged   # Check for leaked secrets
+```
+
+### 3. Review Changes
 
 ```bash
 git diff main...HEAD --stat
 git diff main...HEAD | grep -E "print\(|breakpoint|TODO|FIXME"
 ```
 
-### 3. Clean Up
-- Remove debug statements
-- Remove commented-out code
-- Remove unused imports
-
 ### 4. Update Task Status
 
-Follow paircoder-task-lifecycle skill:
-1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
-2. `bpsai-pair task update TASK-XXX --status done`
+Follow paircoder-task-lifecycle skill for two-step completion.
 
-### 5. Commit & Push
+### 5. Create PR
 
 ```bash
-git add -A
-git commit -m "[TASK-XXX] Description"
-git push origin <branch>
+bpsai-pair github auto-pr     # Auto-creates PR from branch, detects TASK-xxx
 ```
 
 ## PR Template

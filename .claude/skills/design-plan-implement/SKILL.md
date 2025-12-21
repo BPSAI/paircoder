@@ -5,6 +5,21 @@ description: Turn feature requests into validated designs and implementation pla
 
 # Design → Plan → Implement
 
+## When to Use This Flow
+
+Check if planning is needed:
+```bash
+bpsai-pair intent should-plan "user's request here"
+```
+
+Get flow recommendation:
+```bash
+bpsai-pair intent suggest-flow "user's request here"
+```
+
+Use this flow for: features, refactors, multi-step work.
+Skip planning for: typo fixes, small bugs, documentation tweaks.
+
 ## Workflow
 
 ### 1. Clarify Requirements

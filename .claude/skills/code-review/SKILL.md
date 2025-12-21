@@ -8,18 +8,15 @@ description: Review code changes for quality, correctness, and best practices. U
 ## Quick Commands
 
 ```bash
+# Run ALL checks at once (tests + linting)
+bpsai-pair ci
+
+# Validate project structure
+bpsai-pair validate
+
 # See what changed
 git diff main...HEAD --stat
 git diff main...HEAD
-
-# Check commit history
-git log main..HEAD --oneline
-
-# Run tests
-pytest
-
-# Check linting
-ruff check .
 ```
 
 ## Review Output Format

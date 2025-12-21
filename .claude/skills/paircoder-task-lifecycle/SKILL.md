@@ -11,6 +11,29 @@ Task state changes MUST go through the CLI to trigger hooks (Trello sync, timers
 
 **Never** just edit task files or say "marking as done" - run the command.
 
+## Automatic Hooks
+
+When you change task status via CLI, these hooks fire automatically:
+
+### On `task update --status in_progress`:
+- `start_timer` - Begins time tracking
+- `sync_trello` - Moves card to "In Progress"
+- `update_state` - Updates state.md current focus
+
+### On `task update --status done`:
+- `stop_timer` - Stops timer, records duration
+- `record_metrics` - Records token usage and costs
+- `record_velocity` - Tracks sprint velocity
+- `sync_trello` - Moves card to "Deployed/Done"
+- `update_state` - Updates state.md
+- `check_unblocked` - Identifies newly unblocked tasks
+
+### On `task update --status blocked`:
+- `sync_trello` - Moves card to "Issues/Tech Debt"
+- `update_state` - Updates state.md
+
+**You don't need to manually update Trello, start/stop timers, or refresh state.md - hooks handle it.**
+
 ## Starting a Task
 
 ```bash
