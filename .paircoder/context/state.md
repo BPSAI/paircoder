@@ -24,7 +24,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 
 **Sprint 17.5 Tasks (Documentation & Structure):**
 - TASK-154: Document BPS Trello board conventions ✓
-- TASK-155: Add /commands directory to cookie cutter
+- TASK-155: Add /commands directory to cookie cutter ✓
 - TASK-156: Reorganize docs/ vs .paircoder/docs/
 - TASK-157: Document Trello setup in quick start
 - TASK-158: Clarify task update vs ttask workflow
@@ -91,6 +91,26 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-155: Add /commands Directory to Cookie Cutter Template
+
+**TASK-155: Add /commands directory to cookie cutter template** - DONE
+
+Added slash commands capability to the cookie cutter template so new projects get this feature out of the box.
+
+**Files Created:**
+- `.claude/commands/status.md` - Shows project status, current sprint, active tasks
+- `.claude/commands/plan.md` - Shows current plan details and progress
+- `.claude/commands/task.md` - Shows current or specific task details
+
+**Files Modified:**
+- `CLAUDE.md` - Added "Slash Commands" section documenting `/status`, `/plan`, `/task`
+- `CLAUDE.md` - Updated directory structure to include `commands/` directory
+
+**Template Location:**
+`tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.claude/commands/`
+
+---
 
 ### Session: 2025-12-21 - TASK-154: Document BPS Trello Board Conventions
 
