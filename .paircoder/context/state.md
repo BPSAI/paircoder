@@ -27,7 +27,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-155: Add /commands directory to cookie cutter ✓
 - TASK-156: Reorganize docs/ vs .paircoder/docs/ ✓
 - TASK-157: Document Trello setup in quick start ✓
-- TASK-158: Clarify task update vs ttask workflow
+- TASK-158: Clarify task update vs ttask workflow ✓
 
 **Sprint 17.5 Tasks (Enhancements):**
 - TASK-159: Trello board initialization from template
@@ -91,6 +91,38 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-158: Clarify task update vs ttask Workflow
+
+**TASK-158: Clarify task update vs ttask workflow** - DONE
+
+Clarified when to use `task update` vs `ttask` commands to eliminate confusion in skills documentation.
+
+**Key Clarification:**
+```
+Is Trello connected?
+├── YES → Use `ttask` commands (they handle everything)
+└── NO  → Use `task update` commands
+```
+
+**Main Changes:**
+
+1. **Decision tree added** to paircoder-task-lifecycle skill showing when to use each command
+2. **Simplified completion process** - `ttask done` now handles everything, no need for two-step process
+3. **"Don't Mix Commands" table** added to prevent common mistakes
+4. **Updated USER_GUIDE.md** with decision tree in Tasks section
+
+**Files Modified:**
+- `.claude/skills/paircoder-task-lifecycle/SKILL.md` - Added decision tree, simplified completion
+- `.claude/skills/trello-task-workflow/SKILL.md` - Added "When to Use" section, clarified one-command completion
+- Template: `.claude/skills/paircoder-task-lifecycle/SKILL.md`
+- Template: `.claude/skills/trello-task-workflow/SKILL.md`
+- Template: `.paircoder/docs/USER_GUIDE.md`
+
+**Before:** Confusing two-step process (`ttask done` + `task update`)
+**After:** Simple rule - if Trello connected, just use `ttask` commands
+
+---
 
 ### Session: 2025-12-21 - TASK-157: Document Trello Setup in Quick Start Guide
 

@@ -175,5 +175,19 @@
       }
     ],
     "total_seconds": 115.002416
+  },
+  "TASK-158": {
+    "entries": [
+      {
+        "id": "local-20251221154216",
+        "task_id": "TASK-158",
+        "description": "TASK-158: Clarify task update vs ttask workflow",
+        "start": "2025-12-21T15:42:16.496307",
+        "end": "2025-12-21T15:45:51.504339",
+        "duration_seconds": 215.008032,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 215.008032
   }
 }

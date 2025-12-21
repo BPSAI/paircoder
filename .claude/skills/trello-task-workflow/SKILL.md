@@ -5,6 +5,21 @@ description: Work on tasks from Trello board with automatic status sync. Use whe
 
 # Trello Task Workflow
 
+## When to Use This Workflow
+
+**Use `ttask` commands if Trello is connected.** They handle everything:
+- Trello card updates (move, comments, checklist)
+- Local task file updates
+- Hook triggers (timer, metrics, state.md)
+
+**Do NOT use `task update` for Trello projects** - it only updates local files and misses Trello sync.
+
+```
+Check: bpsai-pair trello status
+├── Connected → Use ttask commands (this workflow)
+└── Not connected → Use task update commands instead
+```
+
 ## Prerequisites
 
 ```bash
@@ -42,15 +57,20 @@ Always include task ID in commits: `feat(auth): add JWT (TRELLO-123)`
 
 ## Completing Work
 
-**Two-step completion (required):**
+**One command does everything:**
 
 ```bash
-# 1. Complete on Trello (checks all AC)
 bpsai-pair ttask done TRELLO-XXX --summary "What was done" --list "Deployed/Done"
-
-# 2. Update local file
-bpsai-pair task update TASK-XXX --status done
 ```
+
+This single command:
+- ✓ Moves card to "Deployed/Done"
+- ✓ Checks all acceptance criteria items
+- ✓ Adds completion summary
+- ✓ Updates local task file
+- ✓ Triggers all hooks (timer, metrics, state.md)
+
+**You do NOT need to also run `task update`** - `ttask done` handles it all.
 
 ## Blocked
 
@@ -75,3 +95,13 @@ Sprint → In Progress → Deployed/Done
 | Add comment | `bpsai-pair ttask comment TRELLO-XXX "msg"` |
 | Complete | `bpsai-pair ttask done TRELLO-XXX --summary "..." --list "Deployed/Done"` |
 | Block | `bpsai-pair ttask block TRELLO-XXX --reason "..."` |
+
+## Important: Don't Mix Commands
+
+| Wrong | Right |
+|-------|-------|
+| `task update --status in_progress` | `ttask start TRELLO-XXX` |
+| `task update --status done` | `ttask done TRELLO-XXX --summary "..."` |
+| Using both `ttask done` AND `task update` | Just use `ttask done` |
+
+**Remember:** For Trello projects, `ttask` commands are all you need.

@@ -41,12 +41,31 @@ bpsai-pair plan add-task <id> --id TASK-XXX --title "..."
 
 ### Tasks
 
+**Which command to use?**
+
+```
+Is Trello connected? (bpsai-pair trello status)
+├── YES → Use ttask commands
+│   ├── Start:    ttask start TRELLO-XX
+│   ├── Complete: ttask done TRELLO-XX --summary "..." --list "Deployed/Done"
+│   └── Block:    ttask block TRELLO-XX --reason "..."
+│
+└── NO → Use task update commands
+    ├── Start:    task update TASK-XXX --status in_progress
+    ├── Complete: task update TASK-XXX --status done
+    └── Block:    task update TASK-XXX --status blocked
+```
+
+**For non-Trello projects:**
+
 ```bash
 bpsai-pair task list
 bpsai-pair task show <id>
 bpsai-pair task update <id> --status done
 bpsai-pair task next
 ```
+
+**For Trello projects:** See [Trello Integration](#trello-integration) section.
 
 ### Flows
 
