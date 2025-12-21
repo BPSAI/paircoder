@@ -11,6 +11,8 @@
 
 Make PairCoder methodology enforcement automatic. Prevent context loss during sessions and ensure state.md is always current.
 
+**Note:** Sprint 17.5 already completed sprint completion checklist (TASK-160).
+
 ---
 
 ## Backlog Items
@@ -105,10 +107,10 @@ Add startup detection that:
 
 Current state from .paircoder/context/state.md:
 - Active plan: sprint-18-release-engineering
-- Current task: T18.4 (in_progress)
-- Last session: Completed T18.3
+- Current task: T18.2 (in_progress)
+- Last session: Completed T18.1
 
-Continue with T18.4 or run `bpsai-pair status` for full context?
+Continue with T18.2 or run `bpsai-pair status` for full context?
 ```
 
 #### Acceptance Criteria
@@ -200,15 +202,15 @@ $ bpsai-pair plan estimate sprint-19-methodology
 
 Plan Token Estimate:
   Base context:     15,000
-  Tasks (8):        40,000  (avg 5,000 per task)
-  Files touched:    16,000  (8 files × 2,000)
+  Tasks (7):        35,000  (avg 5,000 per task)
+  Files touched:    14,000  (7 files × 2,000)
   ─────────────────────────
-  Total estimate:   71,000 tokens
+  Total estimate:   64,000 tokens
 
 ⚠️ This plan may exceed comfortable session limits.
 
 Recommendations:
-  1. Split into 2 batches (T19.1-T19.4, T19.5-T19.8)
+  1. Split into 2 batches (T19.1-T19.3, T19.4-T19.7)
   2. Use intermediate commits for recovery points
   3. Update state.md frequently
 ```
@@ -223,52 +225,11 @@ Recommendations:
 
 ---
 
-### T19.5: Sprint Completion with Release Integration
-
-**Priority:** P2
-**Effort:** M (3 hrs)
-**Type:** feature
-**Source:** ENH-006
-
-#### Description
-
-Enhance `bpsai-pair sprint complete` to enforce release checklist and optionally trigger `release prep`.
-
-#### Proposed Flow
-
-```bash
-$ bpsai-pair sprint complete sprint-18
-
-Sprint 18 Summary:
-  Tasks: 7/7 complete (45 points)
-  
-Pre-completion checklist:
-  [?] Run release prep? (Recommended after feature sprints)
-
-Running release prep...
-  ❌ CHANGELOG.md needs update
-  ❌ Cookie cutter drift detected
-
-Cannot complete sprint with release issues.
-Fix issues or use --force to skip.
-```
-
-#### Acceptance Criteria
-
-- [ ] Sprint complete prompts for release prep
-- [ ] Blocks completion if release issues found (unless --force)
-- [ ] Archives sprint tasks after successful completion
-- [ ] Updates state.md automatically
-- [ ] Generates sprint summary report
-
----
-
-### T19.6: Skill Validator CLI
+### T19.5: Skill Validator CLI
 
 **Priority:** P2
 **Effort:** M (4 hrs)
 **Type:** feature
-**Source:** TASK-116 (from original roadmap)
 
 #### Description
 
@@ -312,12 +273,11 @@ Summary: 6 pass, 2 warnings, 0 errors
 
 ---
 
-### T19.7: Merge trello-task-workflow into paircoder-task-lifecycle
+### T19.6: Merge trello-task-workflow into paircoder-task-lifecycle
 
 **Priority:** P3
 **Effort:** S (2 hrs)
 **Type:** chore
-**Source:** BACKLOG-005 (from skills optimization)
 
 #### Description
 
@@ -340,7 +300,7 @@ Summary: 6 pass, 2 warnings, 0 errors
 
 ---
 
-### T19.8: Document Built-in Slash Commands
+### T19.7: Document Built-in Claude Code Commands
 
 **Priority:** P2
 **Effort:** S (1 hr)
@@ -384,9 +344,9 @@ Add section to docs/USER_GUIDE.md or create docs/CLAUDE_CODE_INTEGRATION.md:
 |----------|-------|--------|
 | P0 | 2 | M + M |
 | P1 | 2 | L + M |
-| P2 | 3 | M + M + S |
+| P2 | 2 | M + S |
 | P3 | 1 | S |
-| **Total** | **8** | ~28-32 hrs |
+| **Total** | **7** | ~24-28 hrs |
 
 ---
 
@@ -394,9 +354,7 @@ Add section to docs/USER_GUIDE.md or create docs/CLAUDE_CODE_INTEGRATION.md:
 
 | Task | Depends On |
 |------|------------|
-| T19.5 | T18.4 (release prep command) |
-| T19.6 | Sprint 18 complete |
-| T19.7 | T19.6 (skill validator to verify after merge) |
+| T19.6 | T19.5 (skill validator to verify after merge) |
 
 ---
 

@@ -3,13 +3,20 @@
 > **Target Version:** v2.7.0
 > **Type:** maintenance
 > **Slug:** sprint-18-release-engineering
-> **Focus:** Automate releases, fix cookie cutter drift, resolve critical bugs
+> **Focus:** Automate releases, create release prep tooling
 
 ---
 
 ## Sprint Goal
 
-Establish automated release engineering processes to prevent version mismatches, stale templates, and missing documentation that plagued the v2.6.0 release.
+Establish automated release engineering processes. Build on Sprint 17.5's cookie cutter audit to create ongoing drift detection and release automation.
+
+**Note:** Sprint 17.5 already completed:
+- Cookie cutter full audit (TASK-150)
+- Missing preset config sections (TASK-151)
+- depends_on fix (TASK-152)
+- Plan list task count fix (TASK-153)
+- Sprint completion checklist (TASK-160)
 
 ---
 
@@ -51,89 +58,7 @@ __version__ = version("bpsai-pair")
 
 ---
 
-### T18.2: Fix Plan List Task Count
-
-**Priority:** P1
-**Effort:** S (1 hr)
-**Type:** bugfix
-**Source:** BUG-001
-
-#### Description
-
-`bpsai-pair plan list` shows "Tasks: 0" even when tasks exist for the plan.
-
-#### Observed Behavior
-
-```
-┃ ID                            ┃ Title              ┃ Tasks ┃
-│ plan-2025-12-react-sdk-phase1 │ React SDK Phase 1  │     0 │
-```
-
-But `bpsai-pair task list` shows 14 tasks with that plan_id.
-
-#### Root Cause
-
-Plan list command doesn't query TaskParser for associated tasks. Task count likely hardcoded or not computed.
-
-#### Fix Location
-
-`tools/cli/bpsai_pair/planning/cli_commands.py` - plan list command
-
-#### Acceptance Criteria
-
-- [ ] Plan list shows accurate task count
-- [ ] Count derived from tasks with matching plan_id
-- [ ] Test covers plan with tasks and plan without tasks
-
----
-
-### T18.3: Fix depends_on Attribute Missing
-
-**Priority:** P1
-**Effort:** S (1 hr)
-**Type:** bugfix
-**Source:** BUG-003
-
-#### Description
-
-The `check_unblocked` hook fails with `'Task' object has no attribute 'depends_on'` when completing tasks.
-
-#### Error Observed
-
-```
-✅ Updated T2.3 -> done
-Unblock check failed: 'Task' object has no attribute 'depends_on'
-```
-
-#### Root Cause
-
-1. Task model in `planning/models.py` may not have `depends_on` field
-2. Task files don't include `depends_on: []`
-3. Hook assumes field exists without checking
-
-#### Implementation Options
-
-1. Add `depends_on: List[str] = []` to Task model with default
-2. Update hook to handle missing attribute gracefully
-3. Update task template to always include `depends_on: []`
-
-#### Fix Locations
-
-- `tools/cli/bpsai_pair/planning/models.py` - Task dataclass
-- `tools/cli/bpsai_pair/hooks.py` - check_unblocked handler
-- Cookie cutter task templates
-
-#### Acceptance Criteria
-
-- [ ] Task model has `depends_on` field with default empty list
-- [ ] Hook handles missing attribute gracefully
-- [ ] New tasks created with `depends_on: []` by default
-- [ ] Existing tasks without field don't cause errors
-- [ ] Test covers task completion with and without depends_on
-
----
-
-### T18.4: Create Release Prep Command
+### T18.2: Create Release Prep Command
 
 **Priority:** P1
 **Effort:** M (4 hrs)
@@ -147,12 +72,12 @@ Add `bpsai-pair release prep` command that verifies release readiness and genera
 #### Proposed CLI
 
 ```bash
-bpsai-pair release prep --since v2.5.4
+bpsai-pair release prep --since v2.6.0
 
 Release Checklist for v2.7.0:
   ✅ Version bumped in pyproject.toml
   ❌ CHANGELOG.md missing v2.7.0 entry
-  ❌ Cookie cutter config.yaml drift detected
+  ❌ Cookie cutter template drift detected
   ⚠️  README.md last updated 2025-12-15
   ✅ Tests passing
 
@@ -165,7 +90,7 @@ Generated tasks:
 
 1. Version consistency (pyproject.toml matches __version__)
 2. CHANGELOG has entry for current version
-3. Cookie cutter template matches source files
+3. Cookie cutter template matches source files (use drift detection)
 4. Documentation freshness (warn if >7 days old)
 5. Test suite passing
 6. No uncommitted changes
@@ -196,7 +121,7 @@ release:
 
 ---
 
-### T18.5: Cookie Cutter Drift Detection
+### T18.3: Cookie Cutter Drift Detection CLI
 
 **Priority:** P1
 **Effort:** M (4 hrs)
@@ -205,7 +130,7 @@ release:
 
 #### Description
 
-Add CI check and CLI command to detect when cookie cutter templates have drifted from their source files.
+Sprint 17.5's TASK-150 did a one-time audit. Now add ongoing drift detection as a CLI command and CI check.
 
 #### Proposed CLI
 
@@ -213,10 +138,12 @@ Add CI check and CLI command to detect when cookie cutter templates have drifted
 bpsai-pair template check
 
 Cookie Cutter Template Status:
-  ❌ config.yaml - Missing: trello, estimation, security sections
-  ❌ state.md - Format outdated (missing session tracking)
-  ⚠️  ci.yml - Contains both Node and Python (consider preset-specific)
-  ✅ CLAUDE.md - Up to date
+  ✅ config.yaml - Up to date
+  ✅ state.md - Up to date
+  ⚠️  CLAUDE.md - Minor drift (3 lines changed)
+  ✅ ci.yml - Up to date
+
+All critical files in sync.
 ```
 
 #### CI Integration
@@ -226,6 +153,12 @@ Cookie Cutter Template Status:
 - name: Check template drift
   run: bpsai-pair template check --fail-on-drift
 ```
+
+#### Implementation
+
+Compare key files between:
+- Source: Current repo files
+- Template: `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`
 
 #### Acceptance Criteria
 
@@ -238,47 +171,7 @@ Cookie Cutter Template Status:
 
 ---
 
-### T18.6: Full Cookie Cutter Audit
-
-**Priority:** P1
-**Effort:** L (8 hrs)
-**Type:** chore
-**Source:** REVIEW-001
-
-#### Description
-
-Multiple template files in the cookie cutter are outdated. Full audit and sync required.
-
-#### Affected Files (Confirmed Stale)
-
-- `.paircoder/context/state.md` - Old format, missing session tracking
-- `.paircoder/context/project.md` - Generic, not project-type specific
-- `.paircoder/context/workflow.md` - Needs review
-- `CODEOWNERS` - Generic placeholders
-- `.github/workflows/ci.yml` - Too generic (both Node + Python)
-- `.github/workflows/project_tree.yml` - Wrong output path (BUG-002)
-
-#### Implementation
-
-1. Full audit of all template files against current paircoder equivalents
-2. Update all stale files to current format
-3. Document which files are preset-specific vs universal
-4. Create mapping file for future drift detection
-
-#### Acceptance Criteria
-
-- [ ] All template files audited against paircoder source
-- [ ] state.md template matches current format
-- [ ] project.md template is useful (or preset-specific)
-- [ ] workflow.md template is current
-- [ ] CI workflows are preset-appropriate
-- [ ] CODEOWNERS has clear placeholders
-- [ ] project_tree.yml outputs to correct path
-- [ ] Audit results documented
-
----
-
-### T18.7: Release Engineering Documentation
+### T18.4: Release Engineering Documentation
 
 **Priority:** P2
 **Effort:** M (3 hrs)
@@ -299,9 +192,8 @@ Document the release process to prevent future release issues.
 
 - Version bump locations (now just pyproject.toml)
 - CHANGELOG format and conventions
-- Cookie cutter sync process
-- Release checklist
 - How to use `bpsai-pair release prep`
+- Cookie cutter sync process (and `template check`)
 - CI/CD pipeline overview
 
 #### Acceptance Criteria
@@ -318,9 +210,9 @@ Document the release process to prevent future release issues.
 | Priority | Count | Effort |
 |----------|-------|--------|
 | P0 | 1 | XS |
-| P1 | 5 | S + S + M + M + L |
+| P1 | 2 | M + M |
 | P2 | 1 | M |
-| **Total** | **7** | ~20-24 hrs |
+| **Total** | **4** | ~12 hrs |
 
 ---
 
@@ -328,7 +220,6 @@ Document the release process to prevent future release issues.
 
 - [ ] All acceptance criteria met
 - [ ] Tests pass (`bpsai-pair ci`)
-- [ ] Documentation updated
 - [ ] `bpsai-pair release prep` shows all green
 - [ ] Version bumped to 2.7.0
 - [ ] CHANGELOG updated

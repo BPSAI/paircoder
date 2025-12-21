@@ -11,6 +11,11 @@
 
 Enable PairCoder to learn from usage patterns and suggest or create new skills automatically. Transform from a static skill system to an evolving capability platform.
 
+**Note:** Sprint 17.5 already completed:
+- Trello board from template (TASK-159)
+- Preset-specific CI workflows (TASK-163)
+- Slash commands documentation (TASK-164)
+
 ---
 
 ## Backlog Items
@@ -20,7 +25,6 @@ Enable PairCoder to learn from usage patterns and suggest or create new skills a
 **Priority:** P1
 **Effort:** M (4 hrs)
 **Type:** feature
-**Source:** TASK-131 (from original roadmap)
 
 #### Description
 
@@ -315,139 +319,14 @@ bpsai-pair skill list --source all
 
 ---
 
-### T21.6: Trello Board from Template
-
-**Priority:** P2
-**Effort:** M (4 hrs)
-**Type:** feature
-**Source:** ENH-001
-
-#### Description
-
-Create new Trello boards from template boards, preserving Butler rules, custom fields, and labels.
-
-#### CLI Signature
-
-```bash
-bpsai-pair trello init-board --from-template "BPS AI Project Template" --name "New Project"
-
-Creating board from template...
-  ✅ Board created: "New Project"
-  ✅ 7 lists copied
-  ✅ Butler rules preserved
-  ✅ Custom fields copied
-  ✅ Labels copied
-
-Board ID saved to .paircoder/config.yaml
-```
-
-#### Implementation
-
-1. Find template board by name
-2. Use Trello API to copy board
-3. Set new board name
-4. Save board_id to config.yaml
-5. Verify Butler rules, fields, labels
-
-#### Acceptance Criteria
-
-- [ ] `trello init-board` command exists
-- [ ] `--from-template` accepts board name
-- [ ] `--name` sets new board name
-- [ ] Board ID saved to config
-- [ ] Butler rules preserved
-- [ ] Custom fields preserved
-- [ ] Labels preserved
-
----
-
-### T21.7: Preset-Specific CI Workflows
-
-**Priority:** P3
-**Effort:** M (3 hrs)
-**Type:** feature
-**Source:** MISSING-003
-
-#### Description
-
-Cookie cutter CI workflows are too generic (both Node and Python). Make them preset-specific.
-
-#### Current Issue
-
-```yaml
-# Current ci.yml runs both:
-- Python tests (even for React projects)
-- Node tests (even for Python projects)
-```
-
-#### Solution
-
-Generate CI based on preset:
-
-| Preset | CI Workflow |
-|--------|-------------|
-| `react` | Node only (npm test, npm build) |
-| `python` | Python only (pytest, mypy) |
-| `fastapi` | Python only + API tests |
-| `fullstack` | Both Node and Python |
-
-#### Implementation
-
-1. Create preset-specific workflow templates
-2. Update cookie cutter to select based on preset
-3. Add workflow template to presets.py
-
-#### Acceptance Criteria
-
-- [ ] React preset generates Node-only CI
-- [ ] Python presets generate Python-only CI
-- [ ] Fullstack preset generates both
-- [ ] Workflows validated
-
----
-
-### T21.8: Slash Commands Documentation
-
-**Priority:** P3
-**Effort:** S (1 hr)
-**Type:** docs
-**Source:** DOC-001
-
-#### Description
-
-Document the `.claude/commands/` feature in user-facing documentation.
-
-#### Content
-
-- What slash commands are
-- Project vs personal commands
-- How to create custom commands
-- PairCoder's built-in commands
-- Best practices
-
-#### Deliverables
-
-- Add section to CLAUDE.md
-- Add section to docs/USER_GUIDE.md
-- Add example commands to cookie cutter
-
-#### Acceptance Criteria
-
-- [ ] CLAUDE.md documents slash commands
-- [ ] USER_GUIDE.md has commands section
-- [ ] Cookie cutter includes example commands
-- [ ] `.claude/commands/` directory in template
-
----
-
 ## Sprint Totals
 
 | Priority | Count | Effort |
 |----------|-------|--------|
 | P1 | 2 | M + L |
-| P2 | 3 | L + M + M |
-| P3 | 3 | L + M + S |
-| **Total** | **8** | ~36-40 hrs |
+| P2 | 2 | L + M |
+| P3 | 1 | L |
+| **Total** | **5** | ~28-32 hrs |
 
 ---
 
@@ -457,7 +336,7 @@ Document the `.claude/commands/` feature in user-facing documentation.
 |------|------------|
 | T21.1 | T20.3 (skill-creation skill) |
 | T21.3 | T21.2 (gap detection provides patterns) |
-| T21.4 | T19.6 (skill validator for quality checks) |
+| T21.4 | T19.5 (skill validator for quality checks) |
 | T21.5 | T20.4 (skill installer as foundation) |
 
 ---

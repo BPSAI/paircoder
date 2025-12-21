@@ -11,6 +11,11 @@
 
 Establish PairCoder as a skill platform. Skills should be easy to create, share, and install across projects and platforms.
 
+**Note:** Sprint 17.5 already completed:
+- Config validate/update command (TASK-161)
+- Trello custom fields CLI (TASK-162)
+- Document Trello board conventions (TASK-154)
+
 ---
 
 ## Backlog Items
@@ -83,7 +88,6 @@ Update all skill descriptions to use third-person voice instead of second-person
 **Priority:** P1
 **Effort:** M (4 hrs)
 **Type:** feature
-**Source:** TASK-119 (from original roadmap)
 
 #### Description
 
@@ -128,9 +132,9 @@ Create a skill when:
 
 ## CLI Commands
 
-bpsai-pair skill create <name>    # Scaffold new skill
+bpsai-pair skill create <n>    # Scaffold new skill
 bpsai-pair skill validate         # Check all skills
-bpsai-pair skill validate <name>  # Check specific skill
+bpsai-pair skill validate <n>  # Check specific skill
 ```
 
 #### Acceptance Criteria
@@ -252,166 +256,13 @@ bpsai-pair skill export my-skill --format continue
 
 ---
 
-### T20.6: Preset Validation and Update Command
-
-**Priority:** P3
-**Effort:** M (3 hrs)
-**Type:** feature
-**Source:** ENH-003
-
-#### Description
-
-After updating PairCoder, existing projects may have outdated config. Add command to validate and update config against current preset standards.
-
-#### CLI Signatures
-
-```bash
-# Check config against preset
-bpsai-pair config validate
-# Shows: Missing sections: trello, estimation, security
-
-# Update config from preset
-bpsai-pair config update --preset react
-# Adds missing sections while preserving existing values
-```
-
-#### Validation Output
-
-```bash
-$ bpsai-pair config validate
-
-Config Validation (preset: react):
-  ✅ version: 2.7
-  ✅ project section
-  ✅ workflow section
-  ❌ Missing: trello section
-  ❌ Missing: estimation section
-  ⚠️  Outdated: hooks section (missing new hooks)
-
-Run `bpsai-pair config update --preset react` to fix.
-```
-
-#### Acceptance Criteria
-
-- [ ] `config validate` shows missing/outdated sections
-- [ ] `config update` adds missing sections from preset
-- [ ] Existing values preserved during update
-- [ ] `--dry-run` flag shows what would change
-- [ ] Backup created before update
-
----
-
-### T20.7: Trello Custom Fields CLI
-
-**Priority:** P2
-**Effort:** M (4 hrs)
-**Type:** feature
-**Source:** ENH-004
-
-#### Description
-
-Add CLI commands to set Trello custom fields programmatically.
-
-#### CLI Signatures
-
-```bash
-# Set individual field
-bpsai-pair trello set-field <card-id> --project "Support App"
-bpsai-pair trello set-field <card-id> --stack "React"
-bpsai-pair trello set-field <card-id> --repo-url "https://github.com/..."
-
-# Apply all defaults from config
-bpsai-pair trello apply-defaults <card-id>
-
-# Apply defaults during sync
-bpsai-pair plan sync-trello <plan-id> --apply-defaults
-```
-
-#### Config Addition
-
-```yaml
-trello:
-  board_id: "..."
-  defaults:
-    project: "PairCoder"
-    stack: "Python"
-    repo_url: "https://github.com/bpsai/paircoder"
-```
-
-#### Acceptance Criteria
-
-- [ ] Can set custom fields via CLI
-- [ ] Can apply project defaults to cards
-- [ ] `plan sync-trello` has `--apply-defaults` option
-- [ ] `ttask start` optionally applies defaults
-- [ ] Config section documented
-
----
-
-### T20.8: Document Trello Board Conventions
-
-**Priority:** P1
-**Effort:** S (2 hrs)
-**Type:** docs
-**Source:** DOC-004
-
-#### Description
-
-Document BPS-specific Trello board conventions so Claude doesn't move protected cards or miss required fields.
-
-#### Content
-
-```markdown
-## BPS Board Conventions
-
-### Protected Cards (NEVER MOVE)
-Cards in the "Info" list are dashboard cards:
-- Weekly Completed, Frontend Completed, Backend Completed
-- Aging WIP, Worker/Function Completed
-- Board Setup card
-- Any card with colored counter backgrounds
-
-### Required Custom Fields
-When creating/completing cards, set:
-- Project: The project name
-- Stack: Technology stack
-- Repo URL: GitHub repository URL
-- Effort: Task size (XS, S, M, L, XL)
-- Agent Task: Check if AI-assignable
-
-### On Task Completion
-1. Check ALL acceptance criteria items
-2. Verify custom fields are set
-3. Add completion summary as comment
-
-### On PR Creation
-Add PR URL to card's "PR URL" custom field
-```
-
-#### Deliverables
-
-- Update `.claude/skills/planning-with-trello/SKILL.md`
-- Create `.paircoder/context/bps-board-conventions.md` reference doc
-- Update docs/USER_GUIDE.md
-
-#### Acceptance Criteria
-
-- [ ] Info list cards documented as protected
-- [ ] Custom field requirements documented
-- [ ] Acceptance criteria checking emphasized
-- [ ] PR URL workflow documented
-- [ ] Reference doc created
-
----
-
 ## Sprint Totals
 
 | Priority | Count | Effort |
 |----------|-------|--------|
-| P1 | 3 | M + M + S |
-| P2 | 4 | S + L + M + S |
-| P3 | 1 | M |
-| **Total** | **8** | ~26-30 hrs |
+| P1 | 2 | M + M |
+| P2 | 3 | S + S + L |
+| **Total** | **5** | ~18-22 hrs |
 
 ---
 
@@ -419,7 +270,7 @@ Add PR URL to card's "PR URL" custom field
 
 | Task | Depends On |
 |------|------------|
-| T20.1, T20.2 | T19.6 (skill validator) |
+| T20.1, T20.2 | T19.5 (skill validator) |
 | T20.3 | T20.1, T20.2 (naming conventions established) |
 | T20.4 | T20.3 (skill-creation skill for validation) |
 

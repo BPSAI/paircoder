@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2025-12-19 (afternoon session)
+> Last updated: 2025-12-21 (Sprint 0 Transition)
 
 ## Active Plan
 
 **Plan:** `plan-2025-12-backlog-remediation`
 **Status:** Active
-**Current Sprint:** sprint-17.5
+**Current Sprint:** Sprint 18 (ready to start)
 
 **Previous:** `plan-2025-12-sprint-17-time-tokens-metrics` (complete)
 
@@ -91,6 +91,53 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - Sprint 0: Pre-Sprint 18 Transition
+
+**Sprint 0 Transition** - COMPLETE
+
+Completed two housekeeping tasks to enable new task naming convention and avoid Claude Code conflicts.
+
+**Task 1: Update Task ID Regex Patterns**
+
+Created centralized task ID pattern support for multiple formats:
+- `TASK-XXX`: Legacy format (e.g., TASK-142)
+- `T{sprint}.{seq}`: Sprint tasks (e.g., T18.1, T18.12)
+- `REL-{sprint}-{seq}`: Release tasks (e.g., REL-18-01)
+- `BUG-XXX`: Bug fixes (e.g., BUG-005)
+
+**Files Created:**
+- `tools/cli/bpsai_pair/constants.py` - Central task ID patterns and helper functions
+- `tools/cli/tests/test_constants.py` - 52 tests for pattern validation
+
+**Files Modified:**
+- `bpsai_pair/github/pr.py` - Use centralized `extract_task_id()`
+- `bpsai_pair/tasks/lifecycle.py` - Use `TASK_FILE_GLOBS` for task file discovery
+- `bpsai_pair/trello/sync.py` - Use `extract_task_id_from_card_name()`
+- `bpsai_pair/trello/webhook.py` - Use `extract_task_id_from_card_name()`
+
+**Task 2: Rename /plan → /pc-plan**
+
+Renamed slash command to avoid conflict with Claude Code's built-in `/plan` command.
+
+**Files Renamed:**
+- `.claude/commands/plan.md` → `.claude/commands/pc-plan.md`
+- Template: `.claude/commands/plan.md` → `.claude/commands/pc-plan.md`
+
+**Documentation Updated:**
+- `CLAUDE.md` - Updated command table
+- `.paircoder/docs/USER_GUIDE.md` - Updated command table and file structure
+- Template `CLAUDE.md` - Updated command table and directory structure
+- Template `USER_GUIDE.md` - Updated command table
+- Template `FEATURE_MATRIX.md` - Updated command table
+- `CHANGELOG.md` - Updated slash command list
+
+**Tests:** All 52 constants tests pass, 1458 tests pass overall (pre-existing trello sync failures unrelated)
+
+**What's Next:**
+- Begin Sprint 18: T18.1 (Fix version string single source)
+
+---
 
 ### Session: 2025-12-21 - TASK-164: Document Slash Commands Feature
 
