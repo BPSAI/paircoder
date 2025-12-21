@@ -119,10 +119,17 @@ Additional context for implementation
 └── settings.json             # Hooks configuration
 
 .paircoder/                   # Cross-agent content
+├── docs/                     # PairCoder documentation
+│   ├── USER_GUIDE.md         # How to use PairCoder
+│   ├── MCP_SETUP.md          # MCP server configuration
+│   └── FEATURE_MATRIX.md     # Capabilities reference
 ├── context/                  # Project context
 ├── flows/                    # Workflow definitions
 ├── plans/                    # Plan files
 └── tasks/                    # Task files
+
+docs/                         # Project-specific documentation (your docs)
+└── .gitkeep                  # Add architecture.md, api.md, etc.
 ```
 
 ## Trello Integration (Optional)
@@ -143,6 +150,18 @@ bpsai-pair ttask list --agent      # Show AI-ready tasks
 bpsai-pair ttask start TRELLO-123  # Claim a task
 bpsai-pair ttask done TRELLO-123 -s "Done"  # Complete task
 ```
+
+## Documentation
+
+PairCoder documentation is in `.paircoder/docs/`:
+
+| Document | Purpose |
+|----------|---------|
+| [USER_GUIDE.md](.paircoder/docs/USER_GUIDE.md) | How to use PairCoder |
+| [MCP_SETUP.md](.paircoder/docs/MCP_SETUP.md) | MCP server configuration |
+| [FEATURE_MATRIX.md](.paircoder/docs/FEATURE_MATRIX.md) | Capabilities reference |
+
+**Note**: Project-specific documentation goes in `docs/` (not `.paircoder/docs/`).
 
 ## Integration with Other Agents
 

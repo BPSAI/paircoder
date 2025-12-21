@@ -49,6 +49,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `.paircoder/security/` with allowlist, sandbox, and secret-allowlist configs
 - Added `paircoder-task-lifecycle` skill
 - Updated `config.yaml` with estimation and token settings
+- Added `.claude/commands/` with starter slash commands (`/status`, `/plan`, `/task`)
+- **Reorganized documentation structure** (TASK-156):
+  - Moved `docs/USER_GUIDE.md` → `.paircoder/docs/USER_GUIDE.md`
+  - Added `.paircoder/docs/MCP_SETUP.md` (MCP server configuration)
+  - Added `.paircoder/docs/FEATURE_MATRIX.md` (capabilities reference)
+  - `docs/` now reserved for project-specific documentation
+
+#### Migration Guide (v2.5 → v2.6)
+
+For existing PairCoder projects, run these commands to update your documentation structure:
+
+```bash
+# Create PairCoder docs directory
+mkdir -p .paircoder/docs
+
+# Move PairCoder documentation (if exists)
+mv docs/USER_GUIDE.md .paircoder/docs/ 2>/dev/null || true
+
+# Create project docs placeholder
+echo "# Project Documentation" > docs/.gitkeep
+
+# Download new documentation files
+curl -sL https://raw.githubusercontent.com/bps-ai/paircoder/main/tools/cli/bpsai_pair/data/cookiecutter-paircoder/%7B%7Bcookiecutter.project_slug%7D%7D/.paircoder/docs/MCP_SETUP.md > .paircoder/docs/MCP_SETUP.md
+curl -sL https://raw.githubusercontent.com/bps-ai/paircoder/main/tools/cli/bpsai_pair/data/cookiecutter-paircoder/%7B%7Bcookiecutter.project_slug%7D%7D/.paircoder/docs/FEATURE_MATRIX.md > .paircoder/docs/FEATURE_MATRIX.md
+```
+
+**New directory structure:**
+```
+.paircoder/docs/      # PairCoder documentation (ships with template)
+docs/                 # Your project-specific documentation
+```
 
 ### Changed
 - Version bumped to 2.6 (config.yaml)

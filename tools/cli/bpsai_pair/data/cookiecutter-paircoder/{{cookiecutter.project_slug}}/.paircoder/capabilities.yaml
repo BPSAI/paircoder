@@ -29,6 +29,8 @@ directories:
   flows: .paircoder/flows/          # Workflow definitions
   plans: .paircoder/plans/          # Plan files
   tasks: .paircoder/tasks/          # Task files organized by plan
+  docs: .paircoder/docs/            # PairCoder documentation
+  project_docs: docs/               # Project-specific documentation
 
 # ============================================================================
 # CAPABILITIES

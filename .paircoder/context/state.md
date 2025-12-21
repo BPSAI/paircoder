@@ -25,7 +25,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 **Sprint 17.5 Tasks (Documentation & Structure):**
 - TASK-154: Document BPS Trello board conventions ✓
 - TASK-155: Add /commands directory to cookie cutter ✓
-- TASK-156: Reorganize docs/ vs .paircoder/docs/
+- TASK-156: Reorganize docs/ vs .paircoder/docs/ ✓
 - TASK-157: Document Trello setup in quick start
 - TASK-158: Clarify task update vs ttask workflow
 
@@ -91,6 +91,38 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-156: Reorganize docs/ vs .paircoder/docs/
+
+**TASK-156: Reorganize docs/ vs .paircoder/docs/ structure** - DONE
+
+Reorganized documentation structure in the cookie cutter template to clearly separate PairCoder documentation from project-specific documentation.
+
+**New Structure:**
+```
+.paircoder/docs/      # PairCoder documentation (ships with template)
+├── USER_GUIDE.md     # How to use PairCoder
+├── MCP_SETUP.md      # MCP server configuration
+└── FEATURE_MATRIX.md # Capabilities reference
+
+docs/                 # Project-specific documentation (user-created)
+└── .gitkeep          # Placeholder for architecture.md, api.md, etc.
+```
+
+**Files Created:**
+- `.paircoder/docs/MCP_SETUP.md` - MCP server configuration guide
+- `.paircoder/docs/FEATURE_MATRIX.md` - PairCoder capabilities reference
+- `docs/.gitkeep` - Placeholder with instructions
+
+**Files Moved:**
+- `docs/USER_GUIDE.md` → `.paircoder/docs/USER_GUIDE.md`
+
+**Files Modified:**
+- `CLAUDE.md` - Added Documentation section, updated directory structure
+- `.paircoder/capabilities.yaml` - Added docs and project_docs directories
+- `CHANGELOG.md` - Added migration guide for existing projects
+
+---
 
 ### Session: 2025-12-21 - TASK-155: Add /commands Directory to Cookie Cutter Template
 
