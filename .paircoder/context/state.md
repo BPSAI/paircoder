@@ -26,7 +26,7 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 - TASK-154: Document BPS Trello board conventions ✓
 - TASK-155: Add /commands directory to cookie cutter ✓
 - TASK-156: Reorganize docs/ vs .paircoder/docs/ ✓
-- TASK-157: Document Trello setup in quick start
+- TASK-157: Document Trello setup in quick start ✓
 - TASK-158: Clarify task update vs ttask workflow
 
 **Sprint 17.5 Tasks (Enhancements):**
@@ -91,6 +91,37 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-157: Document Trello Setup in Quick Start Guide
+
+**TASK-157: Document Trello setup in quick start guide** - DONE
+
+Added comprehensive Trello setup documentation so new users know how to connect their Trello boards.
+
+**Changes Made:**
+
+1. **README.md** - Added "Trello Setup" section before Trello commands with:
+   - Step-by-step API credential setup
+   - Environment variable configuration
+   - Board connection commands
+
+2. **cli.py** - Updated `bpsai-pair init` output to show:
+   - Next steps after initialization
+   - Optional Trello connection instructions
+   - Link to full documentation
+
+3. **USER_GUIDE.md** (template) - Added full Trello Integration section with:
+   - 5-step setup guide with detailed instructions
+   - Working with Trello tasks commands
+   - Syncing plans to Trello
+   - Troubleshooting common issues
+
+**Files Modified:**
+- `README.md`
+- `tools/cli/bpsai_pair/cli.py`
+- `tools/cli/bpsai_pair/data/cookiecutter-paircoder/{{cookiecutter.project_slug}}/.paircoder/docs/USER_GUIDE.md`
+
+---
 
 ### Session: 2025-12-21 - TASK-156: Reorganize docs/ vs .paircoder/docs/
 

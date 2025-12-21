@@ -224,6 +224,31 @@ my-project/
 | `cache clear` | Clear context cache |
 | `cache invalidate` | Invalidate specific file |
 
+### Trello Setup
+
+To connect your project to a Trello board:
+
+```bash
+# 1. Get API credentials from https://trello.com/power-ups/admin
+#    - Click "New" to create a Power-Up
+#    - Copy the API Key
+#    - Click "Generate Token" and authorize
+
+# 2. Set environment variables
+export TRELLO_API_KEY=your_api_key
+export TRELLO_TOKEN=your_token
+
+# 3. Connect and set board
+bpsai-pair trello connect
+bpsai-pair trello boards              # List available boards
+bpsai-pair trello use-board <board-id>  # Set active board
+
+# 4. Verify connection
+bpsai-pair trello status
+```
+
+The board ID can be found in your Trello board URL: `https://trello.com/b/<BOARD_ID>/board-name`
+
 ### Trello (10 commands)
 
 | Command | Description |

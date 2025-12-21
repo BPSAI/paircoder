@@ -70,6 +70,117 @@ bpsai-pair pack
 3. They read `.paircoder/context/state.md` for current status
 4. They follow flows when appropriate
 
+## Trello Integration
+
+PairCoder integrates with Trello for task management. Follow these steps to connect your project to a Trello board.
+
+### Step 1: Get Trello API Credentials
+
+1. Go to [trello.com/power-ups/admin](https://trello.com/power-ups/admin)
+2. Click **"New"** to create a new Power-Up (or use an existing one)
+3. Copy the **API Key**
+4. Click **"Generate Token"** link next to the API Key
+5. Authorize the app and copy the **Token**
+
+### Step 2: Set Environment Variables
+
+```bash
+# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export TRELLO_API_KEY=your_api_key_here
+export TRELLO_TOKEN=your_token_here
+
+# Or set temporarily for current session
+export TRELLO_API_KEY=abc123...
+export TRELLO_TOKEN=xyz789...
+```
+
+### Step 3: Connect to Trello
+
+```bash
+# Verify credentials are working
+bpsai-pair trello connect
+
+# List your boards
+bpsai-pair trello boards
+```
+
+### Step 4: Set Active Board
+
+Find your board ID from the Trello URL: `https://trello.com/b/<BOARD_ID>/board-name`
+
+```bash
+# Set the active board
+bpsai-pair trello use-board <board-id>
+
+# Verify connection
+bpsai-pair trello status
+
+# View board lists
+bpsai-pair trello lists
+```
+
+### Step 5: Configure Board in config.yaml
+
+The board ID is automatically saved to `.paircoder/config.yaml`:
+
+```yaml
+trello:
+  board_id: "your_board_id"
+  sync_on_task_update: true
+  list_mappings:
+    backlog: "Intake/Backlog"
+    ready: "Planned/Ready"
+    in_progress: "In Progress"
+    review: "In Review"
+    done: "Deployed/Done"
+```
+
+### Working with Trello Tasks
+
+```bash
+# List tasks from board
+bpsai-pair ttask list
+
+# List AI-ready tasks (assigned, in backlog)
+bpsai-pair ttask list --agent
+
+# Start working on a task
+bpsai-pair ttask start TRELLO-123
+
+# Complete a task (checks acceptance criteria)
+bpsai-pair ttask done TRELLO-123 --summary "Implemented feature X"
+
+# Add a comment to a card
+bpsai-pair ttask comment TRELLO-123 "Progress update: 50% complete"
+```
+
+### Syncing Plans to Trello
+
+```bash
+# Create a plan and sync to Trello
+bpsai-pair plan new my-feature --type feature --title "My Feature"
+bpsai-pair plan sync-trello my-feature
+
+# Sync directly to Planned/Ready list
+bpsai-pair plan sync-trello my-feature --target-list "Planned/Ready"
+```
+
+### Troubleshooting
+
+**"Invalid credentials" error:**
+- Verify TRELLO_API_KEY and TRELLO_TOKEN are set correctly
+- Regenerate the token if expired
+
+**"Board not found" error:**
+- Check the board ID in your Trello URL
+- Ensure you have access to the board
+
+**Cards not moving:**
+- Verify list names in config match your board exactly
+- Check `bpsai-pair trello lists` for correct list names
+
 ## More Information
 
-See the full [PairCoder User Guide](https://github.com/bps-ai/paircoder/blob/main/tools/cli/USER_GUIDE.md).
+- [MCP Setup Guide](./MCP_SETUP.md) - Claude Desktop integration
+- [Feature Matrix](./FEATURE_MATRIX.md) - All PairCoder capabilities
+- [Full Documentation](https://github.com/bps-ai/paircoder)

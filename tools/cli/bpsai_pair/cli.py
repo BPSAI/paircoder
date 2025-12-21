@@ -1762,6 +1762,19 @@ def init(
         if not preset:  # Don't overwrite preset config
             ensure_v2_config(root)
         console.print("[dim]Review diffs and commit changes[/dim]")
+
+        # Show next steps including Trello setup
+        console.print("\n[bold]Next steps:[/bold]")
+        console.print("  1. Review and commit the generated files")
+        console.print("  2. Read .paircoder/context/state.md to understand the workflow")
+        console.print("\n[bold]Optional - Connect to Trello:[/bold]")
+        console.print("  1. Get API key from [link=https://trello.com/power-ups/admin]trello.com/power-ups/admin[/link]")
+        console.print("  2. Set environment variables:")
+        console.print("     [dim]export TRELLO_API_KEY=your_key[/dim]")
+        console.print("     [dim]export TRELLO_TOKEN=your_token[/dim]")
+        console.print("  3. Run: [bold]bpsai-pair trello connect[/bold]")
+        console.print("  4. Run: [bold]bpsai-pair trello use-board <board-id>[/bold]")
+        console.print("\n[dim]See .paircoder/docs/USER_GUIDE.md for full documentation[/dim]")
     else:
         # Use provided template (simplified for now)
         console.print(f"[yellow]Using template: {template}[/yellow]")
