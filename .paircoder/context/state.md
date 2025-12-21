@@ -32,8 +32,8 @@ Backlog Remediation: Bugs, Missing Features & Documentation
 **Sprint 17.5 Tasks (Enhancements):**
 - TASK-159: Trello board initialization from template ✓
 - TASK-160: Sprint completion checklist enforcement ✓
-- TASK-161: Config validate and update command
-- TASK-162: CLI commands for Trello custom fields
+- TASK-161: Config validate and update command ✓
+- TASK-162: CLI commands for Trello custom fields ✓
 - TASK-163: Preset-specific CI workflows
 - TASK-164: Document slash commands feature
 
@@ -91,6 +91,98 @@ Tasks in `.paircoder/tasks/backlog/`:
 - TASK-076: Multi-project support
 
 ## What Was Just Done
+
+### Session: 2025-12-21 - TASK-162: CLI Commands for Trello Custom Fields
+
+**TASK-162: CLI commands for Trello custom fields** - DONE
+
+Added CLI commands to set Trello custom fields programmatically and apply project defaults to cards.
+
+**New Commands:**
+
+```bash
+# List all custom fields on board
+bpsai-pair trello list-fields
+
+# Set custom fields on a card
+bpsai-pair trello set-field <card-id> --project "Support App" --stack "React" --status "In Progress"
+
+# Set any custom field by name
+bpsai-pair trello set-field <card-id> --field "Deployment Tag" --value "v2.1.0"
+
+# Apply project defaults from config
+bpsai-pair trello apply-defaults <card-id>
+
+# Sync plan with defaults
+bpsai-pair plan sync-trello <plan-id> --apply-defaults
+```
+
+**Config Schema Addition:**
+
+```yaml
+trello:
+  defaults:
+    project: "Support App"
+    stack: "React"
+    repo_url: "https://github.com/org/repo"
+```
+
+**Features:**
+- Set common fields with dedicated flags: `--project`, `--stack`, `--status`, `--effort`, `--repo-url`
+- Set any custom field with `--field` and `--value`
+- Accept card URL or ID
+- `apply-defaults` reads from config and applies to card
+- `plan sync-trello --apply-defaults` applies defaults when creating new cards
+
+**Files Modified:**
+- `bpsai_pair/trello/commands.py` - Added `list-fields`, `set-field`, `apply-defaults` commands
+- `bpsai_pair/planning/cli_commands.py` - Added `--apply-defaults` flag to `plan sync-trello`
+- `tests/test_cli.py` - Added 9 tests for new commands
+
+**Tests:** All 9 trello custom field tests passing
+
+---
+
+### Session: 2025-12-21 - TASK-161: Config Validate and Update Command
+
+**TASK-161: Config validate and update command** - DONE
+
+Added CLI commands to validate config files against preset templates and update outdated configs.
+
+**New Commands:**
+
+```bash
+# Validate config against preset template
+bpsai-pair config validate [--preset PRESET] [--json]
+
+# Update config with missing sections
+bpsai-pair config update [--preset PRESET] [--dry-run]
+
+# Show config or specific section
+bpsai-pair config show [SECTION]
+```
+
+**Validation Report Features:**
+- Checks config version against current (2.6)
+- Lists missing top-level sections (routing, trello, estimation, metrics, hooks, security)
+- Lists missing keys within existing sections
+- Shows warnings for outdated configs
+- Provides JSON output option for CI/CD
+
+**Update Features:**
+- Preserves all existing values
+- Only adds missing sections and keys from preset template
+- Updates version number to current
+- Dry-run mode to preview changes
+
+**Files Created/Modified:**
+- `tools/cli/bpsai_pair/config.py` - Added `ConfigValidationResult`, `validate_config()`, `update_config()`, `save_raw_config()`, `load_raw_config()` functions
+- `tools/cli/bpsai_pair/cli.py` - Added `config_app` with validate, update, show commands
+- `tools/cli/tests/test_cli.py` - Added 13 tests for config commands
+
+**Tests:** All 13 config tests passing
+
+---
 
 ### Session: 2025-12-21 - TASK-160: Sprint Completion Checklist Enforcement
 

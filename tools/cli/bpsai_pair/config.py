@@ -5,10 +5,214 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 import yaml
 import json
 from dataclasses import dataclass, asdict, field
+
+
+# Current config version - update when schema changes
+CURRENT_CONFIG_VERSION = "2.6"
+
+# Required top-level sections for a complete config
+REQUIRED_SECTIONS = [
+    "version",
+    "project",
+    "workflow",
+    "pack",
+    "flows",
+    "routing",
+    "trello",
+    "estimation",
+    "metrics",
+    "hooks",
+    "security",
+]
+
+
+@dataclass
+class ConfigValidationResult:
+    """Result of config validation."""
+
+    is_valid: bool
+    current_version: Optional[str]
+    target_version: str
+    missing_sections: List[str]
+    missing_keys: Dict[str, List[str]]  # section -> missing keys
+    warnings: List[str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "is_valid": self.is_valid,
+            "current_version": self.current_version,
+            "target_version": self.target_version,
+            "missing_sections": self.missing_sections,
+            "missing_keys": self.missing_keys,
+            "warnings": self.warnings,
+        }
+
+
+def load_raw_config(root: Path) -> Tuple[Optional[Dict[str, Any]], Optional[Path]]:
+    """Load raw config dictionary from file.
+
+    Args:
+        root: Project root directory
+
+    Returns:
+        Tuple of (config dict, config file path) or (None, None) if not found
+    """
+    config_file = Config.find_config_file(root)
+    if not config_file or not config_file.exists():
+        return None, None
+
+    with open(config_file) as f:
+        data = yaml.safe_load(f) or {}
+
+    return data, config_file
+
+
+def validate_config(root: Path, preset_name: str = "minimal") -> ConfigValidationResult:
+    """Validate config against preset template.
+
+    Args:
+        root: Project root directory
+        preset_name: Preset to validate against
+
+    Returns:
+        ConfigValidationResult with validation details
+    """
+    from .presets import get_preset
+
+    raw_config, config_file = load_raw_config(root)
+
+    if raw_config is None:
+        return ConfigValidationResult(
+            is_valid=False,
+            current_version=None,
+            target_version=CURRENT_CONFIG_VERSION,
+            missing_sections=REQUIRED_SECTIONS,
+            missing_keys={},
+            warnings=["No config file found. Run 'bpsai-pair init' to create one."],
+        )
+
+    # Get template from preset
+    preset = get_preset(preset_name)
+    if not preset:
+        preset = get_preset("minimal")
+
+    template = preset.to_config_dict("Project", "Build software")
+
+    # Check version
+    current_version = raw_config.get("version")
+    warnings = []
+
+    if current_version and current_version != CURRENT_CONFIG_VERSION:
+        warnings.append(f"Config version {current_version} is outdated (current: {CURRENT_CONFIG_VERSION})")
+
+    # Check missing sections
+    missing_sections = []
+    for section in REQUIRED_SECTIONS:
+        if section not in raw_config:
+            missing_sections.append(section)
+
+    # Check missing keys within existing sections
+    missing_keys = {}
+    for section, section_template in template.items():
+        if section in raw_config and isinstance(section_template, dict) and isinstance(raw_config[section], dict):
+            section_missing = []
+            for key in section_template:
+                if key not in raw_config[section]:
+                    section_missing.append(key)
+            if section_missing:
+                missing_keys[section] = section_missing
+
+    is_valid = not missing_sections and not missing_keys and not warnings
+
+    return ConfigValidationResult(
+        is_valid=is_valid,
+        current_version=current_version,
+        target_version=CURRENT_CONFIG_VERSION,
+        missing_sections=missing_sections,
+        missing_keys=missing_keys,
+        warnings=warnings,
+    )
+
+
+def update_config(root: Path, preset_name: str = "minimal") -> Tuple[Dict[str, Any], List[str]]:
+    """Update config with missing sections from preset.
+
+    Args:
+        root: Project root directory
+        preset_name: Preset to use for defaults
+
+    Returns:
+        Tuple of (updated config dict, list of changes made)
+    """
+    from .presets import get_preset
+
+    raw_config, config_file = load_raw_config(root)
+
+    if raw_config is None:
+        raise ValueError("No config file found. Run 'bpsai-pair init' first.")
+
+    # Get template from preset
+    preset = get_preset(preset_name)
+    if not preset:
+        preset = get_preset("minimal")
+
+    # Get project name and goal from existing config
+    project_name = raw_config.get("project", {}).get("name", "My Project")
+    primary_goal = raw_config.get("project", {}).get("primary_goal", "Build software")
+
+    template = preset.to_config_dict(project_name, primary_goal)
+
+    changes = []
+
+    # Update version
+    old_version = raw_config.get("version")
+    if old_version != CURRENT_CONFIG_VERSION:
+        raw_config["version"] = CURRENT_CONFIG_VERSION
+        changes.append(f"Updated version: {old_version} → {CURRENT_CONFIG_VERSION}")
+
+    # Add missing sections
+    for section in REQUIRED_SECTIONS:
+        if section not in raw_config and section in template:
+            raw_config[section] = template[section]
+            changes.append(f"Added section: {section}")
+
+    # Add missing keys within existing sections (preserve existing values)
+    for section, section_template in template.items():
+        if section in raw_config and isinstance(section_template, dict) and isinstance(raw_config[section], dict):
+            for key, value in section_template.items():
+                if key not in raw_config[section]:
+                    raw_config[section][key] = value
+                    changes.append(f"Added key: {section}.{key}")
+
+    return raw_config, changes
+
+
+def save_raw_config(root: Path, config: Dict[str, Any]) -> Path:
+    """Save raw config dictionary to file.
+
+    Args:
+        root: Project root directory
+        config: Config dictionary to save
+
+    Returns:
+        Path to saved config file
+    """
+    config_file = Config.find_config_file(root)
+    if not config_file:
+        # Default to v2 location
+        config_dir = root / ".paircoder"
+        config_dir.mkdir(exist_ok=True)
+        config_file = config_dir / "config.yaml"
+
+    with open(config_file, 'w') as f:
+        yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+    return config_file
 
 @dataclass
 class Config:

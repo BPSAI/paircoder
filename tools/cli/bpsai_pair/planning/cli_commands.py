@@ -448,6 +448,7 @@ def plan_sync_trello(
     target_list: Optional[str] = typer.Option(None, "--target-list", "-t", help="Target list for cards (default: Intake/Backlog, use 'Planned/Ready' for sprint planning)"),
     create_lists: bool = typer.Option(False, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
     link_cards: bool = typer.Option(True, "--link/--no-link", help="Store card IDs in task files"),
+    apply_defaults: bool = typer.Option(False, "--apply-defaults", "-d", help="Apply project defaults from config to new cards"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without making changes"),
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
@@ -455,6 +456,8 @@ def plan_sync_trello(
 
     By default, cards are created in 'Intake/Backlog'. For sprint planning,
     use --target-list "Planned/Ready" to place cards directly in the ready queue.
+
+    Use --apply-defaults to set custom fields from config.yaml trello.defaults section.
     """
     paircoder_dir = find_paircoder_dir()
     plan_parser = PlanParser(paircoder_dir / "plans")
@@ -624,6 +627,24 @@ def plan_sync_trello(
                             # Update task file with card ID if requested
                             if link_cards:
                                 _update_task_with_card_id(task, card.id, task_parser)
+
+                            # Apply project defaults if requested
+                            if apply_defaults:
+                                defaults = trello_config.get("defaults", {})
+                                if defaults:
+                                    custom_fields_config = trello_config.get("custom_fields", {})
+                                    field_mapping = {
+                                        "project": custom_fields_config.get("project", "Project"),
+                                        "stack": custom_fields_config.get("stack", "Stack"),
+                                        "repo_url": custom_fields_config.get("repo_url", "Repo URL"),
+                                        "deployment_tag": custom_fields_config.get("deployment_tag", "Deployment Tag"),
+                                    }
+                                    field_values = {}
+                                    for key, val in defaults.items():
+                                        field_name = field_mapping.get(key, key)
+                                        field_values[field_name] = val
+                                    if field_values:
+                                        service.set_card_custom_fields(card, field_values)
                     else:
                         results["errors"].append(f"Failed to sync card for {task.id}")
                         console.print(f"    [red]✗[/red] {task.id}: Failed to sync")

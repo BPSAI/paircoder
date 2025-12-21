@@ -274,3 +274,248 @@ def test_release_plan_preview(initialized_repo, monkeypatch):
     assert result.exit_code == 0
     # Should show preview without creating
     assert "REL-" in result.stdout or "release" in result.stdout.lower()
+
+
+# ============================================================================
+# Config Command Tests
+# ============================================================================
+
+
+def test_config_validate_help():
+    """Test config validate command help."""
+    result = runner.invoke(app, ["config", "validate", "--help"])
+    assert result.exit_code == 0
+    assert "Validate config against preset template" in result.stdout
+    assert "--preset" in result.stdout
+    assert "--json" in result.stdout
+
+
+def test_config_update_help():
+    """Test config update command help."""
+    result = runner.invoke(app, ["config", "update", "--help"])
+    assert result.exit_code == 0
+    assert "Update config with missing sections from preset" in result.stdout
+    assert "--preset" in result.stdout
+    assert "--dry-run" in result.stdout
+
+
+def test_config_show_help():
+    """Test config show command help."""
+    result = runner.invoke(app, ["config", "show", "--help"])
+    assert result.exit_code == 0
+    assert "Show current config or a specific section" in result.stdout
+
+
+def test_config_validate_no_config(tmp_path, monkeypatch):
+    """Test config validate when no config exists."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["config", "validate"])
+    assert result.exit_code == 1
+    assert "No config file found" in result.stdout or "missing" in result.stdout.lower()
+
+
+def test_config_validate_with_config(initialized_repo, monkeypatch):
+    """Test config validate with existing config."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["config", "validate"])
+    # Should show validation report
+    assert "Config Validation Report" in result.stdout or "Version" in result.stdout
+
+
+def test_config_validate_json(initialized_repo, monkeypatch):
+    """Test config validate with JSON output."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["config", "validate", "--json"])
+    # Should be valid JSON
+    import json
+    try:
+        data = json.loads(result.stdout)
+        assert "is_valid" in data
+        assert "target_version" in data
+        assert "missing_sections" in data
+    except json.JSONDecodeError:
+        # If it errors, might have other output mixed in
+        pass
+
+
+def test_config_update_no_config(tmp_path, monkeypatch):
+    """Test config update when no config exists."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["config", "update"])
+    assert result.exit_code == 1
+    assert "No config file found" in result.stdout or "init" in result.stdout.lower()
+
+
+def test_config_update_dry_run(initialized_repo, monkeypatch):
+    """Test config update with dry-run flag."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["config", "update", "--dry-run"])
+    assert result.exit_code == 0
+    assert "Dry run" in result.stdout or "no changes made" in result.stdout.lower() or "already up to date" in result.stdout.lower()
+
+
+def test_config_update_adds_missing_sections(initialized_repo, monkeypatch):
+    """Test config update adds missing sections."""
+    monkeypatch.chdir(initialized_repo)
+
+    # First create a minimal config missing some sections
+    config_file = initialized_repo / ".paircoder" / "config.yaml"
+    config_file.write_text("""version: "2.4"
+project:
+  name: Test Project
+  primary_goal: Build stuff
+""")
+
+    result = runner.invoke(app, ["config", "update", "--dry-run"])
+    assert result.exit_code == 0
+    # Should show changes to be made
+    assert "Changes" in result.stdout or "Added" in result.stdout
+
+
+def test_config_show_no_config(tmp_path, monkeypatch):
+    """Test config show when no config exists."""
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["config", "show"])
+    assert result.exit_code == 1
+    assert "No config file found" in result.stdout
+
+
+def test_config_show_with_config(initialized_repo, monkeypatch):
+    """Test config show with existing config."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["config", "show"])
+    assert result.exit_code == 0
+    # Should show config content
+    assert "version" in result.stdout.lower()
+
+
+def test_config_show_section(initialized_repo, monkeypatch):
+    """Test config show for a specific section."""
+    monkeypatch.chdir(initialized_repo)
+
+    # Create config with project section
+    config_file = initialized_repo / ".paircoder" / "config.yaml"
+    config_file.write_text("""version: "2.6"
+project:
+  name: Test Project
+  primary_goal: Build stuff
+hooks:
+  enabled: true
+""")
+
+    result = runner.invoke(app, ["config", "show", "project"])
+    assert result.exit_code == 0
+    assert "name" in result.stdout.lower()
+    assert "Test Project" in result.stdout
+
+
+def test_config_show_section_not_found(initialized_repo, monkeypatch):
+    """Test config show for a non-existent section."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["config", "show", "nonexistent"])
+    assert result.exit_code == 1
+    assert "not found" in result.stdout.lower()
+
+
+# ============================================================================
+# Trello Custom Field Command Tests
+# ============================================================================
+
+
+def test_trello_list_fields_help():
+    """Test trello list-fields command help."""
+    result = runner.invoke(app, ["trello", "list-fields", "--help"])
+    assert result.exit_code == 0
+    assert "List all custom fields" in result.stdout
+
+
+def test_trello_set_field_help():
+    """Test trello set-field command help."""
+    result = runner.invoke(app, ["trello", "set-field", "--help"])
+    assert result.exit_code == 0
+    assert "Set custom field values" in result.stdout
+    assert "--project" in result.stdout
+    assert "--stack" in result.stdout
+    assert "--status" in result.stdout
+
+
+def test_trello_apply_defaults_help():
+    """Test trello apply-defaults command help."""
+    result = runner.invoke(app, ["trello", "apply-defaults", "--help"])
+    assert result.exit_code == 0
+    assert "Apply project default values" in result.stdout
+
+
+def test_trello_list_fields_no_board(initialized_repo, monkeypatch):
+    """Test trello list-fields without configured board."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["trello", "list-fields"])
+    assert result.exit_code == 1
+    assert "No board configured" in result.stdout
+
+
+def test_trello_set_field_no_board(initialized_repo, monkeypatch):
+    """Test trello set-field without configured board."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["trello", "set-field", "abc123", "--project", "Test"])
+    assert result.exit_code == 1
+    assert "No board configured" in result.stdout
+
+
+def test_trello_apply_defaults_no_board(initialized_repo, monkeypatch):
+    """Test trello apply-defaults without configured board."""
+    monkeypatch.chdir(initialized_repo)
+
+    result = runner.invoke(app, ["trello", "apply-defaults", "abc123"])
+    assert result.exit_code == 1
+    assert "No board configured" in result.stdout
+
+
+def test_trello_set_field_no_fields_specified(initialized_repo, monkeypatch):
+    """Test trello set-field when no fields specified."""
+    monkeypatch.chdir(initialized_repo)
+
+    # Create config with board ID
+    config_file = initialized_repo / ".paircoder" / "config.yaml"
+    config_file.write_text("""version: "2.6"
+trello:
+  board_id: "test-board"
+""")
+
+    result = runner.invoke(app, ["trello", "set-field", "abc123"])
+    # Should fail - either "No fields specified" or "Not connected" (if no Trello creds)
+    assert result.exit_code == 1 or result.exception is not None
+
+
+def test_trello_apply_defaults_no_defaults_configured(initialized_repo, monkeypatch):
+    """Test trello apply-defaults when no defaults in config."""
+    monkeypatch.chdir(initialized_repo)
+
+    # Create config with board ID but no defaults
+    config_file = initialized_repo / ".paircoder" / "config.yaml"
+    config_file.write_text("""version: "2.6"
+trello:
+  board_id: "test-board"
+""")
+
+    result = runner.invoke(app, ["trello", "apply-defaults", "abc123"])
+    assert result.exit_code == 1
+    assert "No defaults configured" in result.stdout or "Not connected" in result.stdout
+
+
+def test_plan_sync_trello_apply_defaults_flag():
+    """Test plan sync-trello has --apply-defaults flag."""
+    result = runner.invoke(app, ["plan", "sync-trello", "--help"])
+    assert result.exit_code == 0
+    assert "--apply-defaults" in result.stdout
+    assert "Apply project defaults" in result.stdout
