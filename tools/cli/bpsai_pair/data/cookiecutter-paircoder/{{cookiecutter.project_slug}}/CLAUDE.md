@@ -1,41 +1,158 @@
-# CLAUDE.md
+# Claude Code Instructions
 
-This project uses **PairCoder v2** for structured human-AI pair programming.
+> **PairCoder v2** — AI-augmented pair programming framework
 
-## Project Context
+---
 
-Read these files to understand the project:
+## ⚠️ NON-NEGOTIABLE REQUIREMENTS
+
+These requirements MUST be followed. Failure to follow them is a serious workflow violation.
+
+### 1. Update state.md After EVERY Task Completion
+
+**IMMEDIATELY after completing any task**, you MUST update `.paircoder/context/state.md`:
+- Mark the task as done in the task list
+- Add a session entry under "What Was Just Done" describing what was accomplished
+- Update "What's Next" if applicable
+
+**DO NOT:**
+- Proceed to other work before updating state.md
+- Batch multiple task completions before updating
+- Claim a task is complete without documenting it in state.md
+
+### 2. Follow Trello Two-Step Completion
+
+When completing tasks with Trello cards:
+1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` (checks AC)
+2. `bpsai-pair task update TASK-XXX --status done` (updates local file)
+
+**DO NOT** skip `ttask done` - this checks acceptance criteria on Trello.
+
+---
+
+## Before Doing Anything
+
+1. **Read** `.paircoder/capabilities.yaml` — understand what you can do
+2. **Read** `.paircoder/context/state.md` — understand current status
+3. **Check** if a flow applies to the user's request
+4. **If starting a task**: Run `bpsai-pair task update TASK-XXX --status in_progress`
+
+---
+
+## ⚠️ BEFORE ANY TRELLO OPERATIONS
+
+**MANDATORY:** Before creating plans, syncing to Trello, or updating cards:
+
+1. **READ** `.paircoder/context/bps-board-conventions.md` - Contains exact custom field values
+2. **USE ONLY** values listed in that document - do NOT invent new values
+3. **FOR PAIRCODER:** Always use these defaults:
+   - Project: `PairCoder`
+   - Stack: `Worker/Function`
+   - Repo URL: `https://github.com/BPSAI/paircoder`
+
+**NEVER:**
+- Create new dropdown values
+- Use `CLI` for Stack (it doesn't exist - use `Worker/Function`)
+- Use `Bug/Issue` or `Documentation` for Stack (those are labels, not Stack options)
+- Use `maintenance` as plan type (use `chore`)
+- Use `To do` for Status (use `Planning` or `Enqueued`)
+
+---
+
+## Task Naming Convention
+
+| Sprint Tasks | Format | Example |
+|--------------|--------|---------|
+| Current sprint | `T{sprint}.{seq}` | T18.1, T18.2, T19.1 |
+| Legacy | `TASK-{num}` | TASK-150 |
+| Release | `REL-{sprint}-{seq}` | REL-18-01 |
+
+**Use the format specified in the backlog document.** If backlog says `T18.1`, create task with id `T18.1`, not `TASK-###`.
+
+---
+
+## Valid Plan Types
+
+```
+feature  - New functionality
+bugfix   - Bug fixes  
+refactor - Code improvements
+chore    - Maintenance, cleanup, docs, releases
+```
+
+**`maintenance` is NOT valid.** Use `chore` instead.
+
+---
+
+## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.paircoder/context/project.md` | Project overview, constraints, architecture |
-| `.paircoder/context/workflow.md` | Branch conventions, commit format, code style |
-| `.paircoder/context/state.md` | **Current state**: active plan, sprint, tasks |
+| `.paircoder/capabilities.yaml` | Your capabilities and when to use them |
+| `.paircoder/context/project.md` | Project overview and constraints |
+| `.paircoder/context/state.md` | Current plan, tasks, and status |
+| `.paircoder/context/workflow.md` | How we work here |
+| `.paircoder/config.yaml` | Project configuration |
 
-## Before Starting Work
+## Your Roles
 
-1. **Check state**: Read `.paircoder/context/state.md`
-2. **Find your task**: Look in `.paircoder/tasks/{plan-slug}/` for task files
-3. **Follow the workflow**: Appropriate skill will auto-activate based on your request
+You can operate in different roles depending on the work:
 
-## Available Skills
+### Navigator (Planning & Design)
+- Clarify goals, ask questions
+- Propose approaches with tradeoffs
+- Create/update plans and tasks
+- Strategic thinking
 
-Claude Code will auto-discover and use these skills in `.claude/skills/`:
+### Driver (Implementation)
+- Write and update code
+- Run tests
+- Follow task specifications
+- Tactical execution
 
-| Skill | Triggers On | Purpose |
-|-------|-------------|---------|
-| `design-plan-implement` | "design", "plan", "approach", "feature" | New feature development |
-| `tdd-implement` | "fix", "bug", "test", "implement" | Test-driven development |
-| `code-review` | "review", "check", "PR" | Code review workflow |
-| `finish-branch` | "finish", "merge", "complete", "ship" | Branch completion |
-| `paircoder-task-lifecycle` | "work on task", "TRELLO-", "next task" | Task lifecycle with Trello sync |
-| `trello-aware-planning` | "plan feature", "create tasks", "sprint" | Trello-integrated planning |
+### Reviewer (Quality)
+- Review code changes
+- Check for issues
+- Ensure gates pass
+- Suggest improvements
 
-**Skills are model-invoked**: You don't need to explicitly call them. Describe what you want and the appropriate skill activates.
+## Flow Triggers
+
+When you see these patterns, suggest the corresponding flow:
+
+| User Says | Suggested Flow |
+|-----------|---------------|
+| "build a...", "create a...", "add a..." | `design-plan-implement` |
+| "fix", "bug", "broken", "error" | `tdd-implement` |
+| "review", "check", "look at" | `review` |
+| "done", "finished", "ready to merge" | `finish-branch` |
+
+## After Completing Work
+
+**⚠️ This is a NON-NEGOTIABLE requirement. See top of this document.**
+
+1. **Trello** (if card exists): `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
+2. **Local file**: `bpsai-pair task update <id> --status done`
+3. **IMMEDIATELY update** `.paircoder/context/state.md`:
+   - Mark task as done in task list (✓)
+   - Add session entry under "What Was Just Done"
+   - Update "What's Next"
+
+**You are NOT done until state.md is updated.**
+
+## Project-Specific Notes
+
+This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
+
+Current focus: **v2.6.1 Released**
+- Planning system complete (plan, task commands)
+- Skills and flows implemented
+- Multi-agent architecture (skills, agents, hooks)
+- Ready for ongoing development
 
 ## Slash Commands
 
-Quick commands available via `/command`:
+Quick commands available via `/command` in Claude Code:
 
 | Command | Purpose |
 |---------|---------|
@@ -45,136 +162,38 @@ Quick commands available via `/command`:
 
 **Usage**: Type `/status` in the chat to run the status command.
 
-## CLI Commands
+### Creating Custom Commands
 
-Use the `bpsai-pair` CLI for planning and task management:
+Place markdown files in `.claude/commands/` to create custom slash commands:
+
+```markdown
+# .claude/commands/my-command.md
+Run these steps:
+1. First step
+2. Second step
+```
+
+Then use `/my-command` in Claude Code.
+
+## CLI Reference
 
 ```bash
-bpsai-pair status          # Show current state
-bpsai-pair task next       # Get next priority task
-bpsai-pair task show XXX   # View task details
-bpsai-pair plan list       # List all plans
+# Status
+bpsai-pair status
+
+# Plans
+bpsai-pair plan list
+bpsai-pair plan show <id>
+
+# Tasks
+bpsai-pair task list --plan <id>
+bpsai-pair task update <id> --status done
+
+# Flows
+bpsai-pair flow list
+bpsai-pair flow run <n>
+
+# Context
+bpsai-pair context-sync --last "..." --next "..."
+bpsai-pair pack
 ```
-
-## Custom Agents
-
-Available subagents in `.claude/agents/`:
-
-- **planner** - For design and planning (read-only, no code changes)
-- **reviewer** - For code review (read-only analysis)
-
-## Hooks (Automatic)
-
-These hooks run automatically:
-- **PostToolUse**: Logs file changes to task context
-- **Stop**: Syncs state when conversation ends
-
-## Working with Tasks
-
-### Task File Structure
-```yaml
----
-id: TASK-XXX
-plan: plan-name
-title: Task title
-status: pending | in_progress | done | blocked
-priority: P0 | P1 | P2
-complexity: 10-100
----
-
-# Objective
-What needs to be accomplished
-
-# Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-# Implementation Notes
-Additional context for implementation
-```
-
-### Status Updates
-- Set `status: in_progress` when you start working
-- Set `status: done` when all criteria are met
-- Add notes under `# Implementation Notes` as you work
-
-## Directory Structure Reference
-
-```
-.claude/                      # Claude Code native
-├── commands/                 # Slash commands (/status, /pc-plan, /task)
-│   ├── status.md
-│   ├── pc-plan.md
-│   └── task.md
-├── skills/                   # Model-invoked skills
-│   ├── design-plan-implement/SKILL.md
-│   ├── tdd-implement/SKILL.md
-│   ├── code-review/SKILL.md
-│   ├── finish-branch/SKILL.md
-│   ├── paircoder-task-lifecycle/SKILL.md
-│   └── trello-aware-planning/SKILL.md
-├── agents/                   # Custom subagents
-│   ├── planner.md
-│   └── reviewer.md
-└── settings.json             # Hooks configuration
-
-.paircoder/                   # Cross-agent content
-├── docs/                     # PairCoder documentation
-│   ├── USER_GUIDE.md         # How to use PairCoder
-│   ├── MCP_SETUP.md          # MCP server configuration
-│   └── FEATURE_MATRIX.md     # Capabilities reference
-├── context/                  # Project context
-├── flows/                    # Workflow definitions
-├── plans/                    # Plan files
-└── tasks/                    # Task files
-
-docs/                         # Project-specific documentation (your docs)
-└── .gitkeep                  # Add architecture.md, api.md, etc.
-```
-
-## Trello Integration (Optional)
-
-If this project uses Trello for task management:
-
-1. Connect: `bpsai-pair trello connect`
-2. Set board: `bpsai-pair trello use-board <board-id>`
-3. Use skills:
-   - `paircoder-task-lifecycle` - Work on tasks from the board
-   - `trello-aware-planning` - Create tasks during planning
-
-### Trello Commands
-
-```bash
-bpsai-pair trello status           # Check connection
-bpsai-pair ttask list --agent      # Show AI-ready tasks
-bpsai-pair ttask start TRELLO-123  # Claim a task
-bpsai-pair ttask done TRELLO-123 -s "Done"  # Complete task
-```
-
-## Documentation
-
-PairCoder documentation is in `.paircoder/docs/`:
-
-| Document | Purpose |
-|----------|---------|
-| [USER_GUIDE.md](.paircoder/docs/USER_GUIDE.md) | How to use PairCoder |
-| [MCP_SETUP.md](.paircoder/docs/MCP_SETUP.md) | MCP server configuration |
-| [FEATURE_MATRIX.md](.paircoder/docs/FEATURE_MATRIX.md) | Capabilities reference |
-
-**Note**: Project-specific documentation goes in `docs/` (not `.paircoder/docs/`).
-
-## Integration with Other Agents
-
-This project also supports other AGENTS.md-compatible agents:
-- See `AGENTS.md` in project root for universal instructions
-- Flows in `.paircoder/flows/` work with Codex, Cursor, etc.
-- Claude Code skills are optimized versions of flows
-
-## Quick Start Checklist
-
-- [ ] Read `.paircoder/context/state.md`
-- [ ] Identify current task from state or run `bpsai-pair task next`
-- [ ] Set task status to `in_progress`
-- [ ] Follow appropriate workflow (skill auto-activates)
-- [ ] Update task status to `done` when complete
-- [ ] Commit with message format: `[TASK-XXX] Description`

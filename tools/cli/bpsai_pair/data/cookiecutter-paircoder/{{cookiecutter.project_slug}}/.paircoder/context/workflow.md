@@ -1,4 +1,4 @@
-# Development Workflow
+# PairCoder Development Workflow
 
 ## Branch Strategy
 
@@ -50,11 +50,14 @@ Use the `tdd-implement` flow for guidance.
 Before marking work complete:
 
 ```bash
-# Run tests (Python)
-pytest
+# Run tests
+cd tools/cli && pytest
 
-# Or for Node projects
-npm test
+# Check types (if configured)
+mypy bpsai_pair/
+
+# Lint
+ruff check bpsai_pair/
 ```
 
 ### 5. Review
@@ -68,10 +71,6 @@ bpsai-pair flow run review
 ### 6. Completion
 
 ```bash
-# With Trello (if connected)
-bpsai-pair ttask done TRELLO-XX --summary "Completed X" --list "Deployed/Done"
-bpsai-pair task update TASK-XXX --status done
-
 # Update state
 bpsai-pair context-sync --last "Completed X" --next "Ready to merge"
 
@@ -93,16 +92,15 @@ Types:
 
 Examples:
 ```
-feat(api): add user authentication endpoint
+feat(planning): add plan parser
 fix(cli): handle missing config gracefully
-docs(readme): update installation instructions
-refactor(core): extract validation logic
+docs(adr): update v2 architecture
+refactor(flows): extract common validation
 ```
 
 ## Code Style
 
 - **Python**: Follow PEP 8, use type hints
-- **JavaScript/TypeScript**: Use prettier/eslint
 - **YAML**: 2-space indent, quoted strings for ambiguous values
 - **Markdown**: ATX headers (`#`), fenced code blocks
 
@@ -125,7 +123,21 @@ refactor(core): extract validation logic
 2. Add a session entry under "What Was Just Done" describing what was accomplished
 3. Update "What's Next" if applicable
 
+**Also update state.md:**
+- When starting a new task
+- When encountering blockers
+- At end of session
+
 **You are NOT done with a task until state.md reflects the completion.**
+
+## Working with AI Agents
+
+When using Claude Code, Codex CLI, or similar:
+
+1. Point them to `.paircoder/capabilities.yaml`
+2. Let them read `context/project.md` and `context/state.md`
+3. They should suggest appropriate flows based on your request
+4. Update state after they complete work
 
 ## Definition of Done
 
@@ -135,36 +147,7 @@ refactor(core): extract validation logic
 - [ ] Tests pass (if applicable)
 - [ ] Trello card updated (if exists): `ttask done` to check AC and move card
 - [ ] Local task file updated: `task update --status done`
-- [ ] **state.md updated** with task completion and session notes
+- [ ] **state.md updated** with task completion and session notes ← NON-NEGOTIABLE
 - [ ] Committed with proper message
 
-## CLI Commands Reference
-
-```bash
-# Status
-bpsai-pair status
-
-# Planning
-bpsai-pair plan new <slug> --type feature
-bpsai-pair plan list
-bpsai-pair plan show <id>
-
-# Tasks
-bpsai-pair task list
-bpsai-pair task next
-bpsai-pair task update <id> --status in_progress
-bpsai-pair task update <id> --status done
-
-# Trello (if connected)
-bpsai-pair ttask list --agent
-bpsai-pair ttask start TRELLO-XXX
-bpsai-pair ttask done TRELLO-XXX --summary "..." --list "Deployed/Done"
-
-# Flows
-bpsai-pair flow list
-bpsai-pair flow run <name>
-
-# Context
-bpsai-pair context-sync --last "..." --next "..."
-bpsai-pair pack
-```
+**⚠️ Skipping the state.md update is a workflow violation.**

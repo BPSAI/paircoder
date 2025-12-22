@@ -2,9 +2,9 @@
 # This file tells LLMs (Claude Code, Codex CLI, etc.) what they can do and when
 
 version: "2.2"
-name: {{ cookiecutter.project_slug }}
+name: paircoder
 description: |
-  {{ cookiecutter.project_name }} - AI pair programming enabled project.
+  AI pair programming framework with planning, flows, and context management.
   LLMs should read this file to understand available capabilities.
 
 # ============================================================================
@@ -29,8 +29,6 @@ directories:
   flows: .paircoder/flows/          # Workflow definitions
   plans: .paircoder/plans/          # Plan files
   tasks: .paircoder/tasks/          # Task files organized by plan
-  docs: .paircoder/docs/            # PairCoder documentation
-  project_docs: docs/               # Project-specific documentation
 
 # ============================================================================
 # CAPABILITIES
@@ -159,8 +157,37 @@ capabilities:
       cli: "bpsai-pair pack --out <filename.tgz>"
 
   # --------------------------------------------------------------------------
-  # STATUS CAPABILITIES
+  # FEATURE BRANCH CAPABILITIES
   # --------------------------------------------------------------------------
+
+  - id: create_feature_branch
+    name: "Create feature branch"
+    description: |
+      Creates a git branch and initializes context for new work.
+    when_to_use:
+      - Starting work on a new feature
+      - User says "let's start on X"
+    how_to_invoke:
+      cli: "bpsai-pair feature <name> --type <feature|fix|refactor> [--plan <plan>]"
+      programmatic: |
+        1. git checkout -b <type>/<name>
+        2. Create/update plan if --plan specified
+        3. Update state.md
+
+  # --------------------------------------------------------------------------
+  # VALIDATION CAPABILITIES
+  # --------------------------------------------------------------------------
+
+  - id: validate_structure
+    name: "Validate PairCoder structure"
+    description: |
+      Checks that .paircoder/ structure is valid and complete.
+    when_to_use:
+      - After making changes to structure
+      - When something seems wrong
+      - Periodically to ensure integrity
+    how_to_invoke:
+      cli: "bpsai-pair validate"
 
   - id: show_status
     name: "Show overall status"
@@ -173,44 +200,10 @@ capabilities:
     how_to_invoke:
       cli: "bpsai-pair status"
 
-  # --------------------------------------------------------------------------
-  # TRELLO INTEGRATION (optional - requires trello connection)
-  # --------------------------------------------------------------------------
-
-  - id: trello_work_task
-    name: "Work on Trello task"
-    description: "Start, update, or complete tasks from Trello board."
-    when_to_use:
-      - User mentions a Trello card (TRELLO-123)
-      - User asks for next task from Trello
-      - User says "work on task" or "finish task"
-    how_to_invoke:
-      cli: "bpsai-pair ttask start TRELLO-XXX"
-    skill_to_use: paircoder-task-lifecycle
-    requires: trello_connected
-
-  - id: trello_plan_tasks
-    name: "Plan with Trello"
-    description: "Create and organize tasks in Trello during planning."
-    when_to_use:
-      - User wants to break down work into Trello cards
-      - User asks to organize the sprint
-      - User says "create tasks" or "plan feature"
-    how_to_invoke:
-      cli: "bpsai-pair trello lists"
-    skill_to_use: trello-aware-planning
-    requires: trello_connected
-
-# ============================================================================
-# FEATURE FLAGS
-# ============================================================================
-
-feature_flags:
-  trello_connected: false  # Set true after: bpsai-pair trello connect
-
 # ============================================================================
 # FLOW TRIGGERS
 # ============================================================================
+# When certain conditions are met, these flows should be suggested or run
 
 flow_triggers:
 
@@ -248,19 +241,10 @@ flow_triggers:
       - "complete"
     suggested_flow: finish-branch
 
-  - trigger: "user_works_trello_task"
-    patterns: ["TRELLO-", "work on task", "next task", "finish task"]
-    suggested_skill: paircoder-task-lifecycle
-    requires: trello_connected
-
-  - trigger: "user_plans_with_trello"
-    patterns: ["create tasks", "organize sprint", "break down"]
-    suggested_skill: trello-aware-planning
-    requires: trello_connected
-
 # ============================================================================
 # ROLE DEFINITIONS
 # ============================================================================
+# Different "personas" the LLM can adopt based on the work being done
 
 roles:
   navigator:
