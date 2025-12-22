@@ -18,13 +18,13 @@
 | T19.2 | Session Restart Enforcement | done | P0 | 45 |
 | T19.3 | Compaction Detection and Recovery | done | P1 | 55 |
 | T19.4 | Token-Aware Batch Planning | done | P1 | 40 |
-| T19.5 | Skill Validator CLI | pending | P2 | 40 |
+| T19.5 | Skill Validator CLI | done | P2 | 40 |
 | T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
 | T19.7 | Document Built-in Claude Code Commands | pending | P2 | 25 |
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | done | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | done | P1 | 30 |
 
-**Progress:** 6/9 tasks (255/340 complexity points)
+**Progress:** 7/9 tasks (295/340 complexity points)
 
 ## Sprint History
 
@@ -47,7 +47,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 1. P0 tasks complete (T19.1, T19.2)
 2. P1 tasks complete (T19.3 ✓, T19.4 ✓, T19.8 ✓, T19.9 ✓)
-3. Remaining P2/P3 tasks: T19.5, T19.6, T19.7
+3. P2 tasks: T19.5 ✓, remaining: T19.6, T19.7
 
 **Sprint Goal:** Make PairCoder methodology enforcement automatic.
 
@@ -62,6 +62,29 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.5 Complete
+
+- **T19.5: Skill Validator CLI** ✓
+  - Created `tools/cli/bpsai_pair/skills/` module with:
+    - `validator.py`: `SkillValidator` class with validation rules
+    - `cli_commands.py`: `skill validate` and `skill list` CLI commands
+  - Validation checks:
+    - Frontmatter has only `name` and `description` fields (error if extra)
+    - Description under 1024 characters (error if exceeded)
+    - 3rd-person voice (warning on 2nd person like "you")
+    - File under 500 lines (error if exceeded)
+    - Name matches directory name (error if mismatch)
+    - Gerund naming preferred (warning on non-gerund like "code-review")
+  - CLI commands:
+    - `bpsai-pair skill validate` - Validates all skills in .claude/skills/
+    - `bpsai-pair skill validate <name>` - Validates specific skill
+    - `bpsai-pair skill validate --fix` - Auto-corrects simple issues
+    - `bpsai-pair skill validate --json` - JSON output
+    - `bpsai-pair skill list` - Lists all skills
+  - Created `tests/test_skill_validator.py` with 16 tests covering all rules
+  - All 16 tests passing
+  - Validates 7 existing skills: 7 pass, 1 warning (code-review naming)
 
 ### 2025-12-22 - T19.9 Complete
 
