@@ -34,6 +34,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 16 | Real Sub-agents | v2.5.3 | Complete |
 | 17 | Time, Tokens & Metrics | v2.5.4 | Complete |
 | 17.5 | Backlog Remediation | v2.6.0 | Complete |
+| 17.6 | Trello Field Validation Hotfix | v2.6.1 | Complete |
 | 0 | Transition | - | Complete |
 
 ## What's Next
@@ -54,6 +55,13 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - v2.6.1 Release
+
+- Bumped version to 2.6.1 in pyproject.toml
+- Updated CHANGELOG.md with Trello field validation improvements
+- Added sprint 17.6 (hotfix) to history
+- Created and pushed git tag v2.6.1
 
 ### 2025-12-21 - Sprint 18 Planning
 

@@ -5,6 +5,32 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.6.1] - 2025-12-22 (Hotfix: Trello Field Validation)
+
+### Added
+- **Trello Custom Field Discovery** — Auto-discover available custom field values from board
+  - `discover_custom_fields()` method retrieves valid dropdown options
+  - Validates field values before card creation/updates
+  - Prevents API errors from invalid custom field values
+
+### Changed
+- **Streamlined Trello Validation** — Refactored `map_and_validate()` method
+  - Improved value mapping with better error messages
+  - Cleaner validation logic for custom fields
+- **Documentation Cleanup** — Removed outdated ADR documents
+  - Removed context loop ADR (superseded by v2 architecture)
+  - Removed PairCoder v1 workflow ADR (obsolete)
+- **Sprint 18 Planning** — Updated backlog for release engineering focus
+  - Consolidated task structure with T18.x naming convention
+  - Release tooling and automation priorities
+
+### Fixed
+- **Version String Source of Truth** — `__version__` now reads from `pyproject.toml` via `importlib.metadata`
+  - Previously hardcoded, causing version mismatches
+  - `bpsai-pair --version` now correctly reports package version
+
+---
+
 ## [v2.6.0] - 2025-12-18 (Release: Sprints 14-17 Consolidated)
 
 ### Added
