@@ -7,11 +7,26 @@
 
 ---
 
+## Trello Card Defaults
+
+When syncing to Trello, use these values for ALL cards in this sprint:
+
+```yaml
+Project: PairCoder
+Stack: Worker/Function
+Repo URL: https://github.com/BPSAI/paircoder
+Status: Planning
+```
+
+---
+
 ## Sprint Goal
 
-Make PairCoder methodology enforcement automatic. Prevent context loss during sessions and ensure state.md is always current.
+Make PairCoder methodology enforcement automatic. Prevent context loss during sessions, ensure state.md is always current, and close gaps in task completion workflow.
 
-**Note:** Sprint 17.5 already completed sprint completion checklist (TASK-160).
+**Prerequisites Completed:**
+- Sprint 17.5: Sprint completion checklist (TASK-160)
+- Hotfix 2.6.1: Trello field validation, `trello fields` command
 
 ---
 
@@ -20,7 +35,7 @@ Make PairCoder methodology enforcement automatic. Prevent context loss during se
 ### T19.1: Mandatory state.md Update Hook
 
 **Priority:** P0
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
 
 #### Description
@@ -80,7 +95,7 @@ bpsai-pair task update T19.1 --status done --skip-state-check
 ### T19.2: Session Restart Enforcement
 
 **Priority:** P0
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
 
 #### Description
@@ -126,7 +141,7 @@ Continue with T18.2 or run `bpsai-pair status` for full context?
 ### T19.3: Compaction Detection and Recovery
 
 **Priority:** P1
-**Effort:** L (6 hrs)
+**Effort:** L
 **Type:** feature
 
 #### Description
@@ -173,7 +188,7 @@ When user runs `/compact`, PairCoder should:
 ### T19.4: Token-Aware Batch Planning
 
 **Priority:** P1
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
 
 #### Description
@@ -210,7 +225,7 @@ Plan Token Estimate:
 ⚠️ This plan may exceed comfortable session limits.
 
 Recommendations:
-  1. Split into 2 batches (T19.1-T19.3, T19.4-T19.7)
+  1. Split into 2 batches (T19.1-T19.4, T19.5-T19.9)
   2. Use intermediate commits for recovery points
   3. Update state.md frequently
 ```
@@ -228,7 +243,7 @@ Recommendations:
 ### T19.5: Skill Validator CLI
 
 **Priority:** P2
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
 
 #### Description
@@ -276,7 +291,7 @@ Summary: 6 pass, 2 warnings, 0 errors
 ### T19.6: Merge trello-task-workflow into paircoder-task-lifecycle
 
 **Priority:** P3
-**Effort:** S (2 hrs)
+**Effort:** S
 **Type:** chore
 
 #### Description
@@ -303,7 +318,7 @@ Summary: 6 pass, 2 warnings, 0 errors
 ### T19.7: Document Built-in Claude Code Commands
 
 **Priority:** P2
-**Effort:** S (1 hr)
+**Effort:** S
 **Type:** docs
 
 #### Description
@@ -338,15 +353,121 @@ Add section to docs/USER_GUIDE.md or create docs/CLAUDE_CODE_INTEGRATION.md:
 
 ---
 
+### T19.8: `ttask done` Should Verify/Auto-Check Acceptance Criteria
+
+**Priority:** P1
+**Effort:** M
+**Type:** feature
+
+#### Description
+
+When completing Trello tasks with `ttask done`, acceptance criteria checklist items are not verified or checked off. This leads to tasks marked "done" with unchecked AC items.
+
+#### Root Cause (Sprint 18 Incident)
+
+During Sprint 18, tasks were completed without:
+- AC checklist items being checked off
+- Trello cards being moved properly
+- Velocity/timer hooks firing
+
+The `trello check` command exists but requires manual invocation for each item.
+
+#### Implementation
+
+Add AC verification to `ttask done`:
+
+```bash
+# Default: warns if AC incomplete
+bpsai-pair ttask done CARD-123 --summary "Done"
+# → Error: 2 of 4 acceptance criteria unchecked
+
+# Auto-check all AC items (recommended)
+bpsai-pair ttask done CARD-123 --summary "Done" --check-all
+
+# Force complete without checking (escape hatch)
+bpsai-pair ttask done CARD-123 --summary "Done" --force
+```
+
+#### Behavior
+
+1. Fetch card checklists
+2. Find "Acceptance Criteria" checklist (case-insensitive)
+3. If unchecked items and no flags: block with list of unchecked items
+4. `--check-all`: check all AC items, then complete
+5. `--force`: skip verification (logs warning)
+
+#### Acceptance Criteria
+
+- [ ] `ttask done` fetches card checklists before completion
+- [ ] Identifies "Acceptance Criteria" checklist (case-insensitive, common names)
+- [ ] If unchecked items exist and no flags: shows warning, lists items, exits with error
+- [ ] `--check-all` flag checks all AC items then completes
+- [ ] `--force` flag skips AC verification
+- [ ] Works with cards that have no checklists (no-op)
+- [ ] Completion comment mentions AC status
+- [ ] Unit tests for all scenarios
+
+---
+
+### T19.9: Detect Manual Task File Edits (Guard Against Bypassing Hooks)
+
+**Priority:** P1
+**Effort:** S
+**Type:** feature
+
+#### Description
+
+When task file status is changed by direct file edit (not CLI), hooks don't fire. This causes Trello desync, missed timers, and broken velocity tracking.
+
+#### Root Cause (Sprint 18 Incident)
+
+Claude manually edited task files:
+```yaml
+status: in_progress  →  status: done  # Manual edit - NO hooks fired
+```
+
+Result: Trello cards not moved, timers not stopped, velocity not recorded.
+
+#### Implementation
+
+Add a pre-commit hook or CLI warning that detects manual status changes:
+
+**Option A: CLI Warning on Next Run**
+```bash
+$ bpsai-pair task list
+
+⚠️ Warning: T18.2 status changed outside CLI (hooks may not have fired)
+   File modified: 2025-12-22 10:30
+   Last CLI update: 2025-12-22 09:15
+   
+   To sync: bpsai-pair task update T18.2 --status done --resync
+```
+
+**Option B: Git Pre-commit Hook**
+```bash
+# .git/hooks/pre-commit
+# Warn if .task.md files have status changes without corresponding hook log
+```
+
+#### Acceptance Criteria
+
+- [ ] Detects status changes made outside CLI
+- [ ] Shows warning on next CLI command
+- [ ] Provides resync command to trigger hooks
+- [ ] Optional: pre-commit hook for prevention
+- [ ] Tracks last CLI update timestamp per task
+
+---
+
 ## Sprint Totals
 
 | Priority | Count | Effort |
 |----------|-------|--------|
 | P0 | 2 | M + M |
-| P1 | 2 | L + M |
+| P1 | 4 | L + M + M + S |
 | P2 | 2 | M + S |
 | P3 | 1 | S |
-| **Total** | **7** | ~24-28 hrs |
+| **Total** | **9** | ~28-32 hrs |
 
 ---
 
@@ -355,13 +476,30 @@ Add section to docs/USER_GUIDE.md or create docs/CLAUDE_CODE_INTEGRATION.md:
 | Task | Depends On |
 |------|------------|
 | T19.6 | T19.5 (skill validator to verify after merge) |
+| T19.8 | None (builds on existing Trello integration) |
+| T19.9 | T19.1 (both enforce proper workflow) |
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation |
+|------|------------|
+| Hooks too strict, block legitimate work | All enforcement has `--force` or `--skip-*` flags |
+| Session detection false positives | Conservative thresholds, clear messaging |
+| Token estimation inaccurate | Start with rough estimates, refine based on feedback |
 
 ---
 
 ## Definition of Done
 
 - [ ] All acceptance criteria met
-- [ ] Tests pass
-- [ ] state.md enforcement working
-- [ ] Session continuity improved
+- [ ] Tests pass (`bpsai-pair ci`)
+- [ ] state.md enforcement working (T19.1)
+- [ ] ttask done verifies AC (T19.8)
+- [ ] Manual edit detection in place (T19.9)
+- [ ] Session continuity improved (T19.2, T19.3)
+- [ ] Skills consolidated (T19.6)
+- [ ] Documentation updated (T19.7)
 - [ ] Version bumped to 2.8.0
+- [ ] CHANGELOG updated
