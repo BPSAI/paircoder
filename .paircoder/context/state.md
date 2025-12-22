@@ -21,10 +21,10 @@
 | T19.5 | Skill Validator CLI | pending | P2 | 40 |
 | T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
 | T19.7 | Document Built-in Claude Code Commands | pending | P2 | 25 |
-| T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
-| T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
+| T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | done | P1 | 45 |
+| T19.9 | Detect Manual Task File Edits | done | P1 | 30 |
 
-**Progress:** 4/9 tasks (180/340 complexity points)
+**Progress:** 6/9 tasks (255/340 complexity points)
 
 ## Sprint History
 
@@ -46,8 +46,8 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 ## What's Next
 
 1. P0 tasks complete (T19.1, T19.2)
-2. P1 tasks in progress: T19.3 ✓, T19.4 ✓, continue with T19.8, T19.9
-3. Finally P2/P3 tasks: T19.5, T19.6, T19.7
+2. P1 tasks complete (T19.3 ✓, T19.4 ✓, T19.8 ✓, T19.9 ✓)
+3. Remaining P2/P3 tasks: T19.5, T19.6, T19.7
 
 **Sprint Goal:** Make PairCoder methodology enforcement automatic.
 
@@ -62,6 +62,50 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.9 Complete
+
+- **T19.9: Detect Manual Task File Edits** ✓
+  - Created `tools/cli/bpsai_pair/planning/cli_update_cache.py` module with:
+    - `CLIUpdateCache` class for tracking CLI status updates per task
+    - `detect_manual_edit()` function to detect file edits outside CLI
+    - `get_cli_update_cache()` helper function
+  - Updated `tools/cli/bpsai_pair/planning/cli_commands.py`:
+    - `task update` now records to CLI cache on successful updates
+    - Added `--resync` flag to re-trigger hooks for current status
+    - `task list` now checks for manual edits and shows warnings
+    - Added `_check_for_manual_edits()` helper function
+  - Created `tests/test_manual_edit_detection.py` with 13 tests:
+    - CLIUpdateCache CRUD operations
+    - Manual edit detection logic
+    - Resync flag functionality
+    - CLI integration tests
+  - All 13 tests passing
+  - Detection shows: task ID, file status vs CLI status, resync command
+
+### 2025-12-22 - T19.8 Complete
+
+- **T19.8: ttask done Should Verify/Auto-Check Acceptance Criteria** ✓
+  - Updated `tools/cli/bpsai_pair/trello/task_commands.py`:
+    - Added `_get_unchecked_ac_items()` helper function
+    - Refactored `task_done` command with new AC verification behavior:
+      - Default: verifies AC items are checked, blocks with list of unchecked items
+      - `--check-all` flag: auto-checks all AC items then completes
+      - `--force` flag: skips verification, logs warning
+      - `--skip-checklist` flag: legacy behavior preserved
+    - Completion comment now includes AC status
+  - Created `tests/test_ttask_done_ac_verification.py` with 13 tests:
+    - Warns with unchecked AC items (default behavior)
+    - --check-all checks items and completes
+    - --force skips verification
+    - No checklists/No AC checklist succeeds
+    - All AC checked succeeds
+    - Case-insensitive AC checklist matching
+    - Completion comment mentions AC status
+    - Backwards compatibility with --skip-checklist
+    - Helper function unit tests
+  - All 13 tests passing
+  - Full Trello test suite passing (243/244, 1 pre-existing failure unrelated)
 
 ### 2025-12-22 - T19.4 Complete
 

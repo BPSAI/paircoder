@@ -79,6 +79,31 @@ def log_activity(card, action: str, summary: str) -> None:
         console.print(f"[yellow]Warning: Could not add comment: {e}[/yellow]")
 
 
+def _get_unchecked_ac_items(card, checklist_name: str = "Acceptance Criteria") -> list:
+    """Get all unchecked items in the Acceptance Criteria checklist.
+
+    Args:
+        card: Trello card object
+        checklist_name: Name of the checklist to check (default: "Acceptance Criteria")
+
+    Returns:
+        List of unchecked item dicts with 'id' and 'name' keys
+    """
+    if not card.checklists:
+        return []
+
+    unchecked = []
+    for checklist in card.checklists:
+        if checklist.name.lower() != checklist_name.lower():
+            continue
+
+        for item in checklist.items:
+            if not item.get("checked"):
+                unchecked.append(item)
+
+    return unchecked
+
+
 def _check_all_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
     """Check off all items in the Acceptance Criteria checklist.
 
@@ -323,12 +348,18 @@ def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: In Review)"),
-    skip_checklist: bool = typer.Option(False, "--skip-checklist", help="Don't auto-check acceptance criteria"),
+    skip_checklist: bool = typer.Option(False, "--skip-checklist", help="Skip AC verification entirely (legacy, prefer --force)"),
+    check_all: bool = typer.Option(False, "--check-all", help="Auto-check all acceptance criteria items"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force completion even with unchecked AC items"),
 ):
     """Complete a task (moves to In Review or Done).
 
-    By default, all items in the 'Acceptance Criteria' checklist are marked as complete.
-    Use --skip-checklist to disable this behavior.
+    By default, verifies that all 'Acceptance Criteria' checklist items are checked.
+    If items are unchecked, the command will block and show which items need attention.
+
+    Use --check-all to automatically check all AC items before completing.
+    Use --force to skip verification and complete with unchecked items (logs warning).
+    Use --skip-checklist to skip AC handling entirely (legacy behavior).
     """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
@@ -343,11 +374,40 @@ def task_done(
     except Exception:
         pass
 
-    # Check off all acceptance criteria items
-    if not skip_checklist:
+    # Handle AC verification based on flags
+    ac_status_msg = ""
+    if skip_checklist:
+        # Legacy behavior: skip all AC handling
+        ac_status_msg = "AC verification skipped"
+    elif check_all:
+        # Auto-check all AC items
         checked_count = _check_all_acceptance_criteria(card, client)
         if checked_count > 0:
             console.print(f"[green]✓ Checked {checked_count} acceptance criteria item(s)[/green]")
+            ac_status_msg = f"All {checked_count} AC items checked"
+        else:
+            ac_status_msg = "All AC items already complete"
+    elif force:
+        # Skip verification but log warning
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[yellow]⚠ Force completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
+            ac_status_msg = f"Forced with {len(unchecked)} unchecked AC items"
+        else:
+            ac_status_msg = "All AC items complete"
+    else:
+        # Default: verify AC items are checked
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[red]Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
+            console.print("\n[dim]Unchecked items:[/dim]")
+            for item in unchecked:
+                console.print(f"  ○ {item.get('name', '')}")
+            console.print("\n[dim]Options:[/dim]")
+            console.print("  --check-all  Auto-check all AC items and complete")
+            console.print("  --force      Complete anyway (not recommended)")
+            raise typer.Exit(1)
+        ac_status_msg = "All AC items complete"
 
     # Determine target list
     if list_name is None:
@@ -356,8 +416,9 @@ def task_done(
     # Move to target list
     client.move_card(card, list_name)
 
-    # Log activity
-    log_activity(card, "completed", summary)
+    # Log activity with AC status
+    completion_msg = f"{summary} | {ac_status_msg}"
+    log_activity(card, "completed", completion_msg)
 
     console.print(f"[green]✓ Completed: {card.name}[/green]")
     console.print(f"  Moved to: {list_name}")

@@ -910,6 +910,16 @@ def task_list(
         console.print("[dim]No tasks found.[/dim]")
         return
 
+    # Check for manual edits
+    manual_edits = _check_for_manual_edits(paircoder_dir, tasks)
+    if manual_edits:
+        console.print()
+        for edit in manual_edits:
+            console.print(f"[yellow]⚠️  Warning: {edit['task_id']} status changed outside CLI (hooks may not have fired)[/yellow]")
+            console.print(f"   [dim]File status: {edit['current_status']} | Last CLI status: {edit['last_cli_status']}[/dim]")
+            console.print(f"   [dim]To sync: bpsai-pair task update {edit['task_id']} --resync[/dim]")
+        console.print()
+
     table = Table(title=f"Tasks ({len(tasks)})")
     table.add_column("Status", width=3)
     table.add_column("ID", style="cyan")
@@ -929,6 +939,51 @@ def task_list(
         )
 
     console.print(table)
+
+
+def _check_for_manual_edits(paircoder_dir: Path, tasks: list) -> list:
+    """Check for manual edits to task files.
+
+    Args:
+        paircoder_dir: Path to .paircoder directory
+        tasks: List of Task objects
+
+    Returns:
+        List of dicts with detected manual edit info
+    """
+    import os
+    from .cli_update_cache import get_cli_update_cache, detect_manual_edit
+
+    cli_cache = get_cli_update_cache(paircoder_dir)
+    manual_edits = []
+
+    for task in tasks:
+        # Get task file path
+        task_file = paircoder_dir / "tasks" / f"{task.id}.task.md"
+        if not task_file.exists():
+            continue
+
+        # Get file modification time
+        file_mtime = datetime.fromtimestamp(os.path.getmtime(task_file))
+
+        # Check for manual edit
+        result = detect_manual_edit(
+            cache=cli_cache,
+            task_id=task.id,
+            file_mtime=file_mtime,
+            current_status=task.status.value,
+        )
+
+        if result["detected"]:
+            manual_edits.append({
+                "task_id": task.id,
+                "current_status": result["current_status"],
+                "last_cli_status": result["last_cli_status"],
+                "last_cli_update": result["last_cli_update"],
+                "file_mtime": result["file_mtime"],
+            })
+
+    return manual_edits
 
 
 def _show_time_tracking(task: Task, paircoder_dir: Path) -> None:
@@ -1017,7 +1072,7 @@ def task_show(
 def task_update(
     task_id: str = typer.Argument(..., help="Task ID"),
     status: str = typer.Option(
-        ..., "--status", "-s",
+        None, "--status", "-s",
         help="New status: pending|in_progress|review|done|blocked|cancelled"
     ),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to narrow search"),
@@ -1025,6 +1080,10 @@ def task_update(
     skip_state_check: bool = typer.Option(
         False, "--skip-state-check",
         help="Skip checking if state.md was updated (not recommended)"
+    ),
+    resync: bool = typer.Option(
+        False, "--resync",
+        help="Re-trigger hooks for current status (use after manual file edits)"
     ),
 ):
     """Update a task's status.
@@ -1034,6 +1093,9 @@ def task_update(
 
     When completing a task (--status done), state.md must be updated first.
     Use --skip-state-check to bypass this check (logs a warning).
+
+    If a task file was manually edited, use --resync to re-trigger hooks
+    for the current status without changing it.
     """
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
@@ -1052,6 +1114,31 @@ def task_update(
         raise typer.Exit(1)
 
     old_status = task.status.value
+
+    # Handle --resync: use current status from file and trigger hooks
+    if resync:
+        if status:
+            console.print("[yellow]Warning: --status ignored when using --resync[/yellow]")
+        status = old_status  # Use current status from file
+
+        # Record CLI update to cache
+        from .cli_update_cache import get_cli_update_cache
+        cli_cache = get_cli_update_cache(paircoder_dir)
+        cli_cache.record_update(task_id, status)
+
+        console.print(f"[cyan]Resyncing {task_id} (status: {status})[/cyan]")
+
+        # Run hooks for current status
+        if not no_hooks:
+            _run_status_hooks(paircoder_dir, task_id, status, task)
+
+        console.print(f"[green]✓ Resync complete for {task_id}[/green]")
+        return
+
+    # Require --status when not using --resync
+    if not status:
+        console.print("[red]--status is required (or use --resync to re-trigger hooks)[/red]")
+        raise typer.Exit(1)
 
     # Check state.md update requirement when completing a task
     if status == "done" and not skip_state_check:
@@ -1082,6 +1169,11 @@ def task_update(
         }
         checkmark = "\u2713"
         console.print(f"{emoji_map.get(status, checkmark)} Updated {task_id} -> {status}")
+
+        # Record CLI update to cache (for manual edit detection)
+        from .cli_update_cache import get_cli_update_cache
+        cli_cache = get_cli_update_cache(paircoder_dir)
+        cli_cache.record_update(task_id, status)
 
         # Run hooks if status actually changed and hooks not disabled
         if not no_hooks and old_status != status:
