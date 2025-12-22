@@ -163,12 +163,22 @@ class TestVelocityTracker:
         with tempfile.TemporaryDirectory() as tmpdir:
             tracker = VelocityTracker(Path(tmpdir))
             now = datetime.now()
+            # Use weekday-aware offset: stay within current week (Mon=0, Sun=6)
+            days_into_week = now.weekday()  # 0 on Monday, 6 on Sunday
 
-            # Record tasks completed this week
-            tracker.record_completion("TASK-100", 40, "sprint-17", now - timedelta(days=1))
-            tracker.record_completion("TASK-101", 25, "sprint-17", now - timedelta(days=2))
+            # Record tasks completed this week (within days_into_week range)
+            if days_into_week >= 1:
+                tracker.record_completion("TASK-100", 40, "sprint-17", now - timedelta(days=1))
+            else:
+                # On Monday, record for today
+                tracker.record_completion("TASK-100", 40, "sprint-17", now)
+            if days_into_week >= 2:
+                tracker.record_completion("TASK-101", 25, "sprint-17", now - timedelta(days=2))
+            else:
+                # Record for earlier today or same day
+                tracker.record_completion("TASK-101", 25, "sprint-17", now - timedelta(hours=1))
 
-            # Record task from last week (should not count)
+            # Record task from last week (should not count) - always 10+ days back
             tracker.record_completion("TASK-102", 60, "sprint-17", now - timedelta(days=10))
 
             points = tracker.get_points_this_week()
@@ -197,23 +207,25 @@ class TestVelocityTracker:
         with tempfile.TemporaryDirectory() as tmpdir:
             tracker = VelocityTracker(Path(tmpdir))
             now = datetime.now()
+            # Get start of current week (Monday 00:00:00)
+            week_start = tracker._get_week_start(now)
 
-            # Record tasks across 4 weeks
-            # Week 1 (current): 45 points
-            tracker.record_completion("T1", 25, "s17", now - timedelta(days=1))
-            tracker.record_completion("T2", 20, "s17", now - timedelta(days=2))
+            # Record tasks across 4 weeks using week boundaries
+            # Week 1 (current): 45 points - place at start of week + a few hours
+            tracker.record_completion("T1", 25, "s17", week_start + timedelta(hours=10))
+            tracker.record_completion("T2", 20, "s17", week_start + timedelta(hours=12))
 
-            # Week 2: 50 points
-            tracker.record_completion("T3", 30, "s17", now - timedelta(days=8))
-            tracker.record_completion("T4", 20, "s17", now - timedelta(days=9))
+            # Week 2 (previous): 50 points
+            tracker.record_completion("T3", 30, "s17", week_start - timedelta(days=7) + timedelta(hours=10))
+            tracker.record_completion("T4", 20, "s17", week_start - timedelta(days=7) + timedelta(hours=12))
 
             # Week 3: 60 points
-            tracker.record_completion("T5", 40, "s17", now - timedelta(days=15))
-            tracker.record_completion("T6", 20, "s17", now - timedelta(days=16))
+            tracker.record_completion("T5", 40, "s17", week_start - timedelta(days=14) + timedelta(hours=10))
+            tracker.record_completion("T6", 20, "s17", week_start - timedelta(days=14) + timedelta(hours=12))
 
             # Week 4: 55 points
-            tracker.record_completion("T7", 35, "s17", now - timedelta(days=22))
-            tracker.record_completion("T8", 20, "s17", now - timedelta(days=23))
+            tracker.record_completion("T7", 35, "s17", week_start - timedelta(days=21) + timedelta(hours=10))
+            tracker.record_completion("T8", 20, "s17", week_start - timedelta(days=21) + timedelta(hours=12))
 
             avg = tracker.get_weekly_velocity_average(weeks=4)
 
@@ -251,10 +263,14 @@ class TestVelocityTracker:
         with tempfile.TemporaryDirectory() as tmpdir:
             tracker = VelocityTracker(Path(tmpdir))
             now = datetime.now()
+            # Get start of current week (Monday 00:00:00)
+            week_start = tracker._get_week_start(now)
 
-            # Record some completions
-            tracker.record_completion("T1", 45, "sprint-17", now - timedelta(days=1))
-            tracker.record_completion("T2", 75, "sprint-17", now - timedelta(days=8))
+            # Record some completions - use week boundaries to avoid day-of-week issues
+            # This week: 45 points
+            tracker.record_completion("T1", 45, "sprint-17", week_start + timedelta(hours=10))
+            # Last week: 75 points
+            tracker.record_completion("T2", 75, "sprint-17", week_start - timedelta(days=7) + timedelta(hours=10))
 
             stats = tracker.get_velocity_stats(
                 current_sprint="sprint-17",

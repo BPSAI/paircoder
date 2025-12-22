@@ -5,6 +5,85 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.7.0] - 2025-12-22 (Sprint 19: Methodology & Session Management)
+
+### Added
+
+#### Sprint 19: Methodology Enforcement
+- **Mandatory state.md Update Hook** (T19.1) — Pre-completion validation
+  - `task update --status done` now checks if state.md was updated since task started
+  - Uses timer start time as reference, falls back to task file modification time
+  - `--skip-state-check` flag for emergency bypass (logs warning)
+  - Helpful error message tells user what to update
+
+- **Session Restart Enforcement** (T19.2) — Session context management
+  - `SessionManager` class for tracking session state
+  - `bpsai-pair session check` — Detects new session (>30 min gap), displays context
+  - `bpsai-pair session status` — Shows current session info
+  - `UserPromptSubmit` hook auto-runs on every user message
+  - Configurable session timeout via `.paircoder/config.yaml`
+
+- **Compaction Detection and Recovery** (T19.3) — Context preservation
+  - `CompactionManager` for pre-compaction snapshots
+  - `bpsai-pair compaction snapshot save/list` — Manage snapshots
+  - `bpsai-pair compaction check` — Detect unrecovered compaction
+  - `bpsai-pair compaction recover` — Restore context after compaction
+  - `PreCompact` hook saves snapshot before `/compact` or auto-compaction
+  - Integrated into `session check` for automatic recovery
+
+- **Token-Aware Batch Planning** (T19.4) — Plan estimation
+  - `PlanTokenEstimator` for plan-level token estimation
+  - `bpsai-pair plan estimate <plan-id>` — Shows breakdown by component
+  - Batching algorithm suggests task groupings under threshold
+  - `--threshold` flag for custom token limit (default 50k)
+  - `--json` for machine-readable output
+
+- **Skill Validator CLI** (T19.5) — Skill quality assurance
+  - `bpsai-pair skill validate` — Validates all skills against Anthropic specs
+  - `bpsai-pair skill validate <name>` — Validate specific skill
+  - `bpsai-pair skill list` — Lists all skills
+  - Validation checks: frontmatter fields, description length, voice, line count
+  - `--fix` flag to auto-correct simple issues
+
+- **Skill Consolidation** (T19.6) — Merged `trello-task-workflow` into `paircoder-task-lifecycle`
+  - Single skill for all task lifecycle management
+  - BPS conventions moved to `paircoder-task-lifecycle/reference/`
+  - Flow renamed: `paircoder-task-lifecycle.flow.md`
+
+- **Claude Code Integration Documentation** (T19.7) — Integration guide
+  - `docs/CLAUDE_CODE_INTEGRATION.md` — Built-in commands we leverage
+  - Commands to avoid conflicting with
+  - Context management best practices
+  - Skills and tools comparison
+
+- **Trello AC Verification** (T19.8) — Acceptance criteria enforcement
+  - `ttask done` verifies all AC items are checked before completion
+  - `--check-all` flag to auto-check all AC items
+  - `--force` flag to skip verification (logs warning)
+  - Completion comment includes AC status
+
+- **Manual Edit Detection** (T19.9) — CLI bypass detection
+  - `CLIUpdateCache` tracks CLI status updates per task
+  - `task list` shows warnings for manually edited task files
+  - `--resync` flag to re-trigger hooks for current status
+
+- **Migration Command** (T19.10) — Legacy structure upgrade
+  - `bpsai-pair migrate` — Run migration with confirmation
+  - `bpsai-pair migrate status` — Show current version status
+  - `--dry-run` to preview changes, `--no-backup` to skip backup
+  - Supports v1.x → v2.5 full migration and v2.0-2.3 → v2.5 partial migration
+
+### Changed
+- Skill count reduced from 6 to 5 after consolidation
+- Test count increased from 1698 to 1705
+
+### Fixed
+- Skill validator CLI now properly registered (`bpsai-pair skill` command)
+- Velocity tests now handle week boundary edge cases correctly
+- `map_and_validate` test now correctly passes mappings parameter
+
+---
+
 ## [v2.6.1] - 2025-12-22 (Hotfix: Trello Field Validation)
 
 ### Added

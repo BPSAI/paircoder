@@ -333,7 +333,10 @@ class TestFieldValidator:
                 }
             }
             validator = FieldValidator("board123", mock_client)
-            mapped, opt_id, error = validator.map_and_validate("Stack", "cli")
+            # Pass explicit mappings for alias support
+            mappings = {"cli": "Worker/Function"}
+            is_valid, mapped, opt_id, error = validator.map_and_validate("Stack", "cli", mappings=mappings)
+            assert is_valid is True
             assert mapped == "Worker/Function"
             assert opt_id == "opt3"
             assert error is None
