@@ -76,41 +76,56 @@ BPS_LABELS = {
 
 # Task status to Trello Status custom field mapping
 # Maps local task status values to Trello Status dropdown options
-# Valid options: To do, In progress, Done, In review, Approved, Not sure
+# Valid BPS board options: Planning, Enqueued, In progress, Testing, Done, Waiting, Blocked
 TASK_STATUS_TO_TRELLO_STATUS = {
-    "pending": "To do",
-    "ready": "To do",
-    "planned": "To do",
+    "pending": "Planning",
+    "ready": "Enqueued",
+    "planned": "Planning",
     "in_progress": "In progress",
-    "review": "In review",
-    "testing": "In review",
-    "blocked": "Not sure",
+    "review": "Testing",
+    "testing": "Testing",
+    "blocked": "Blocked",
+    "waiting": "Waiting",
     "done": "Done",
     "deployed": "Done",
-    "approved": "Approved",
 }
 
 # Trello Status to task status mapping (reverse of above)
 # Maps Status custom field dropdown values back to task status
 TRELLO_STATUS_TO_TASK_STATUS = {
-    "To do": "pending",
+    "Planning": "pending",
+    "Enqueued": "ready",
     "In progress": "in_progress",
-    "In review": "review",
+    "Testing": "review",
     "Done": "done",
-    "Approved": "done",
+    "Waiting": "blocked",
+    "Blocked": "blocked",
     "Not sure": "blocked",
 }
 
-# Keywords to infer stack from task title/tags
+# Keywords to infer labels from task title/tags
 STACK_KEYWORDS = {
     "Frontend": ["frontend", "ui", "react", "vue", "angular", "css", "html", "component"],
     "Backend": ["backend", "api", "flask", "fastapi", "django", "server", "endpoint"],
-    "Worker/Function": ["worker", "function", "lambda", "celery", "task", "job", "queue"],
+    "Worker/Function": ["worker", "function", "lambda", "celery", "task", "job", "queue", "cli"],
     "Deployment": ["deploy", "docker", "k8s", "kubernetes", "ci", "cd", "pipeline"],
     "Bug/Issue": ["bug", "fix", "issue", "error", "crash"],
     "Security/Admin": ["security", "auth", "admin", "permission", "role", "soc2"],
     "Documentation": ["doc", "readme", "guide", "tutorial", "comment"],
     "AI/ML": ["ai", "ml", "model", "llm", "claude", "gpt", "embedding"],
+}
+
+# Map inferred labels to valid Stack dropdown values
+# Valid Stack values: React, Flask, Worker/Function, Infra, Collection
+LABEL_TO_STACK_MAPPING = {
+    "Frontend": "React",
+    "Backend": "Flask",
+    "Worker/Function": "Worker/Function",
+    "Deployment": "Infra",
+    "Bug/Issue": None,  # Not a stack, just a label
+    "Security/Admin": "Infra",
+    "Documentation": "Collection",
+    "AI/ML": "Worker/Function",
 }
 
 
@@ -123,6 +138,10 @@ class TaskSyncConfig:
     status_field: str = "Status"
     effort_field: str = "Effort"
     deployment_tag_field: str = "Deployment Tag"
+
+    # Default values for custom fields
+    default_project: Optional[str] = None  # e.g., "PairCoder"
+    default_stack: Optional[str] = None  # e.g., "Worker/Function"
 
     # Effort mapping ranges
     effort_mapping: EffortMapping = field(default_factory=EffortMapping)
@@ -194,12 +213,17 @@ class TaskSyncConfig:
         else:
             status_mapping = TASK_STATUS_TO_TRELLO_STATUS.copy()
 
+        # Get default values from config (trello.defaults section)
+        defaults = config.get("defaults", {})
+
         return cls(
             project_field=custom_fields.get("project", "Project"),
             stack_field=custom_fields.get("stack", "Stack"),
             status_field=custom_fields.get("status", "Status"),
             effort_field=custom_fields.get("effort", "Effort"),
             deployment_tag_field=custom_fields.get("deployment_tag", "Deployment Tag"),
+            default_project=defaults.get("project"),  # e.g., "PairCoder"
+            default_stack=defaults.get("stack"),  # e.g., "Worker/Function"
             effort_mapping=effort_mapping,
             status_mapping=status_mapping,
             create_missing_labels=sync_config.get("create_missing_labels", True),
@@ -215,7 +239,7 @@ class TaskSyncConfig:
         Returns:
             Dictionary suitable for saving to config.yaml
         """
-        return {
+        result = {
             "sync": {
                 "custom_fields": {
                     "project": self.project_field,
@@ -236,6 +260,14 @@ class TaskSyncConfig:
                 "use_butler_workflow": self.use_butler_workflow,
             }
         }
+        # Add defaults section if any defaults are set
+        if self.default_project or self.default_stack:
+            result["defaults"] = {}
+            if self.default_project:
+                result["defaults"]["project"] = self.default_project
+            if self.default_stack:
+                result["defaults"]["stack"] = self.default_stack
+        return result
 
     def get_trello_status(self, task_status: str) -> str:
         """Map task status to Trello Status custom field value.
@@ -352,7 +384,7 @@ class TrelloSyncManager:
 
         validated = {}
         for field_name, value in custom_fields.items():
-            mapped_value, option_id, error = self.field_validator.map_and_validate(
+            is_valid, mapped_value, option_id, error = self.field_validator.map_and_validate(
                 field_name, value
             )
             if error:
@@ -367,29 +399,55 @@ class TrelloSyncManager:
 
         return validated
 
-    def infer_stack(self, task: TaskData) -> Optional[str]:
-        """Infer stack/label from task title and tags.
+    def infer_label(self, task: TaskData) -> Optional[str]:
+        """Infer label category from task title and tags.
 
         Args:
             task: Task data
 
         Returns:
-            Stack name or None if cannot infer
+            Label name (e.g., "Frontend", "Documentation") or None
         """
         # Check tags first
         for tag in task.tags:
             tag_lower = tag.lower()
-            for stack, keywords in STACK_KEYWORDS.items():
+            for label, keywords in STACK_KEYWORDS.items():
                 if tag_lower in keywords or any(kw in tag_lower for kw in keywords):
-                    return stack
+                    return label
 
         # Check title
         title_lower = task.title.lower()
-        for stack, keywords in STACK_KEYWORDS.items():
+        for label, keywords in STACK_KEYWORDS.items():
             if any(kw in title_lower for kw in keywords):
-                return stack
+                return label
 
         return None
+
+    def label_to_stack(self, label: Optional[str]) -> Optional[str]:
+        """Convert an inferred label to a valid Stack dropdown value.
+
+        Args:
+            label: Inferred label name (e.g., "Documentation")
+
+        Returns:
+            Valid Stack dropdown value (e.g., "Collection") or None
+        """
+        if not label:
+            return None
+        return LABEL_TO_STACK_MAPPING.get(label)
+
+    # Keep old method name for backwards compatibility
+    def infer_stack(self, task: TaskData) -> Optional[str]:
+        """Infer valid Stack dropdown value from task.
+
+        Args:
+            task: Task data
+
+        Returns:
+            Valid Stack dropdown value or None
+        """
+        label = self.infer_label(task)
+        return self.label_to_stack(label)
 
     def build_card_description(self, task: TaskData) -> str:
         """Build BPS-formatted card description.
@@ -486,12 +544,13 @@ class TrelloSyncManager:
         # Build custom fields
         custom_fields = {}
 
-        # Project field
-        if task.plan_title:
-            custom_fields[self.config.project_field] = task.plan_title
+        # Project field - use config default if set, otherwise plan_title
+        project = self.config.default_project or task.plan_title
+        if project:
+            custom_fields[self.config.project_field] = project
 
-        # Stack field (inferred)
-        stack = self.infer_stack(task)
+        # Stack field - use config default if set, otherwise infer from task
+        stack = self.config.default_stack or self.infer_stack(task)
         if stack:
             custom_fields[self.config.stack_field] = stack
 
@@ -515,10 +574,10 @@ class TrelloSyncManager:
         # Set effort field (separate because it uses complexity mapping)
         self.service.set_effort_field(card, task.complexity, self.config.effort_field)
 
-        # Add labels
-        stack = self.infer_stack(task)
-        if stack:
-            self.service.add_label_to_card(card, stack)
+        # Add labels (use infer_label for label names, not Stack dropdown values)
+        label = self.infer_label(task)
+        if label:
+            self.service.add_label_to_card(card, label)
 
         # Add labels from tags
         for tag in task.tags:
@@ -562,10 +621,13 @@ class TrelloSyncManager:
         # Update custom fields
         custom_fields = {}
 
-        if task.plan_title:
-            custom_fields[self.config.project_field] = task.plan_title
+        # Project field - use config default if set, otherwise plan_title
+        project = self.config.default_project or task.plan_title
+        if project:
+            custom_fields[self.config.project_field] = project
 
-        stack = self.infer_stack(task)
+        # Stack field - use config default if set, otherwise infer from task
+        stack = self.config.default_stack or self.infer_stack(task)
         if stack:
             custom_fields[self.config.stack_field] = stack
 
@@ -577,9 +639,10 @@ class TrelloSyncManager:
         self.service.set_card_custom_fields(card, validated_fields)
         self.service.set_effort_field(card, task.complexity, self.config.effort_field)
 
-        # Add labels (stack-based and tag-based)
-        if stack:
-            self.service.add_label_to_card(card, stack)
+        # Add labels (use infer_label for label names, not Stack dropdown values)
+        label = self.infer_label(task)
+        if label:
+            self.service.add_label_to_card(card, label)
 
         for tag in task.tags:
             tag_title = tag.title()

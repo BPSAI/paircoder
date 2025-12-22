@@ -181,9 +181,9 @@ class TestTaskSyncConfig:
     def test_get_trello_status_mapped(self):
         """Test get_trello_status returns mapped value."""
         config = TaskSyncConfig()
-        assert config.get_trello_status("pending") == "Enqueued"
-        assert config.get_trello_status("in_progress") == "In Progress"
-        assert config.get_trello_status("done") == "Deployed/Done"
+        assert config.get_trello_status("pending") == "Planning"
+        assert config.get_trello_status("in_progress") == "In progress"
+        assert config.get_trello_status("done") == "Done"
         assert config.get_trello_status("blocked") == "Blocked"
         assert config.get_trello_status("review") == "Testing"
 
@@ -233,9 +233,9 @@ class TestTaskSyncConfig:
         assert config.use_butler_workflow is False
 
     def test_from_config_default_list_intake(self):
-        """Test default list is Intake / Backlog for Butler workflow."""
+        """Test default list is Intake/Backlog for Butler workflow."""
         config = TaskSyncConfig.from_config({})
-        assert config.default_list == "Intake / Backlog"
+        assert config.default_list == "Intake/Backlog"
 
 
 class TestCustomFieldDefinition:
@@ -332,51 +332,54 @@ class TestTrelloSyncManager:
         return TrelloSyncManager(mock_service)
 
     def test_infer_stack_from_tags(self, sync_manager):
-        """Test stack inference from task tags."""
+        """Test stack inference from task tags returns valid Stack dropdown value."""
         task = TaskData(
             id="TASK-001",
             title="Add endpoint",
             tags=["backend", "api"]
         )
-        assert sync_manager.infer_stack(task) == "Backend"
+        # Backend label maps to Flask Stack
+        assert sync_manager.infer_stack(task) == "Flask"
 
     def test_infer_stack_from_title(self, sync_manager):
-        """Test stack inference from task title."""
+        """Test stack inference from task title returns valid Stack dropdown value."""
         task = TaskData(
             id="TASK-001",
             title="Fix React component bug",
             tags=[]
         )
-        # "React" should map to Frontend
-        stack = sync_manager.infer_stack(task)
-        assert stack == "Frontend"
+        # Frontend label maps to React Stack
+        assert sync_manager.infer_stack(task) == "React"
 
     def test_infer_stack_deployment(self, sync_manager):
-        """Test stack inference for deployment tasks."""
+        """Test stack inference for deployment tasks returns valid Stack dropdown value."""
         task = TaskData(
             id="TASK-001",
             title="Deploy to production",
             tags=["docker"]
         )
-        assert sync_manager.infer_stack(task) == "Deployment"
+        # Deployment label maps to Infra Stack
+        assert sync_manager.infer_stack(task) == "Infra"
 
     def test_infer_stack_security(self, sync_manager):
-        """Test stack inference for security tasks."""
+        """Test stack inference for security tasks returns valid Stack dropdown value."""
         task = TaskData(
             id="TASK-001",
             title="Add authentication",
             tags=[]
         )
-        assert sync_manager.infer_stack(task) == "Security/Admin"
+        # Security/Admin label maps to Infra Stack
+        assert sync_manager.infer_stack(task) == "Infra"
 
     def test_infer_stack_documentation(self, sync_manager):
-        """Test stack inference for documentation tasks."""
+        """Test stack inference for documentation tasks returns valid Stack dropdown value."""
         task = TaskData(
             id="TASK-001",
             title="Update README",
             tags=["doc"]
         )
-        assert sync_manager.infer_stack(task) == "Documentation"
+        # Documentation label maps to Collection Stack
+        assert sync_manager.infer_stack(task) == "Collection"
 
     def test_infer_stack_none(self, sync_manager):
         """Test stack inference returns None when cannot infer."""
@@ -386,6 +389,25 @@ class TestTrelloSyncManager:
             tags=[]
         )
         assert sync_manager.infer_stack(task) is None
+
+    def test_infer_label_returns_label_name(self, sync_manager):
+        """Test infer_label returns label name (not Stack dropdown value)."""
+        task = TaskData(
+            id="TASK-001",
+            title="Update README",
+            tags=["doc"]
+        )
+        # infer_label should return "Documentation" (the label name)
+        assert sync_manager.infer_label(task) == "Documentation"
+
+    def test_label_to_stack_mapping(self, sync_manager):
+        """Test label_to_stack converts labels to valid Stack dropdown values."""
+        assert sync_manager.label_to_stack("Frontend") == "React"
+        assert sync_manager.label_to_stack("Backend") == "Flask"
+        assert sync_manager.label_to_stack("Deployment") == "Infra"
+        assert sync_manager.label_to_stack("Documentation") == "Collection"
+        assert sync_manager.label_to_stack("Bug/Issue") is None  # Not a stack
+        assert sync_manager.label_to_stack(None) is None
 
     def test_build_card_description(self, sync_manager):
         """Test card description building."""
@@ -799,27 +821,32 @@ class TestTaskStatusToTrelloStatus:
             assert status in TASK_STATUS_TO_TRELLO_STATUS, f"Status '{status}' not mapped"
 
     def test_mapping_values(self):
-        """Test exact mapping values for Butler automation."""
-        assert TASK_STATUS_TO_TRELLO_STATUS["pending"] == "Enqueued"
-        assert TASK_STATUS_TO_TRELLO_STATUS["in_progress"] == "In Progress"
+        """Test exact mapping values for BPS board."""
+        assert TASK_STATUS_TO_TRELLO_STATUS["pending"] == "Planning"
+        assert TASK_STATUS_TO_TRELLO_STATUS["in_progress"] == "In progress"
         assert TASK_STATUS_TO_TRELLO_STATUS["review"] == "Testing"
         assert TASK_STATUS_TO_TRELLO_STATUS["blocked"] == "Blocked"
-        assert TASK_STATUS_TO_TRELLO_STATUS["done"] == "Deployed/Done"
+        assert TASK_STATUS_TO_TRELLO_STATUS["done"] == "Done"
 
     def test_reverse_mapping_exists(self):
         """Test reverse mapping (Trello to task status) exists."""
-        # Reverse mapping has 6 entries (includes both "Done" and "Deployed/Done" -> "done")
-        assert len(TRELLO_STATUS_TO_TASK_STATUS) == 6
+        # Valid BPS Status options: Planning, Enqueued, In progress, Testing, Done, Waiting, Blocked
+        assert len(TRELLO_STATUS_TO_TASK_STATUS) == 8  # 7 statuses + "Not sure"
 
     def test_reverse_mapping_consistent(self):
-        """Test that forward and reverse mappings are consistent."""
-        for task_status, trello_status in TASK_STATUS_TO_TRELLO_STATUS.items():
-            assert TRELLO_STATUS_TO_TASK_STATUS[trello_status] == task_status
+        """Test that forward and reverse mappings are consistent for unique values."""
+        # Note: "ready" and "pending" both map to different Trello statuses
+        # but "Blocked" and "Waiting" both map back to "blocked"
+        # So we test key mappings individually
+        assert TRELLO_STATUS_TO_TASK_STATUS["Planning"] == "pending"
+        assert TRELLO_STATUS_TO_TASK_STATUS["In progress"] == "in_progress"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Done"] == "done"
 
     def test_trello_to_task_status_values(self):
         """Test reverse mapping values."""
-        assert TRELLO_STATUS_TO_TASK_STATUS["Enqueued"] == "pending"
-        assert TRELLO_STATUS_TO_TASK_STATUS["In Progress"] == "in_progress"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Planning"] == "pending"
+        assert TRELLO_STATUS_TO_TASK_STATUS["Enqueued"] == "ready"
+        assert TRELLO_STATUS_TO_TASK_STATUS["In progress"] == "in_progress"
         assert TRELLO_STATUS_TO_TASK_STATUS["Testing"] == "review"
         assert TRELLO_STATUS_TO_TASK_STATUS["Blocked"] == "blocked"
         assert TRELLO_STATUS_TO_TASK_STATUS["Done"] == "done"
@@ -848,7 +875,7 @@ class TestSyncManagerStatusMapping:
         task = TaskData(
             id="TASK-001",
             title="Test task",
-            status="pending",  # Should map to "Enqueued"
+            status="pending",  # Should map to "Planning"
             complexity=25,
         )
 
@@ -857,7 +884,7 @@ class TestSyncManagerStatusMapping:
         # Verify create_card_with_custom_fields was called with mapped status
         call_args = mock_service.create_card_with_custom_fields.call_args
         custom_fields = call_args[1]["custom_fields"]
-        assert custom_fields["Status"] == "Enqueued"
+        assert custom_fields["Status"] == "Planning"
 
     def test_create_card_maps_in_progress(self, mock_service):
         """Test in_progress status is mapped correctly."""
@@ -870,7 +897,7 @@ class TestSyncManagerStatusMapping:
         task = TaskData(
             id="TASK-001",
             title="Test task",
-            status="in_progress",  # Should map to "In Progress"
+            status="in_progress",  # Should map to "In progress"
             complexity=25,
         )
 
@@ -878,7 +905,7 @@ class TestSyncManagerStatusMapping:
 
         call_args = mock_service.create_card_with_custom_fields.call_args
         custom_fields = call_args[1]["custom_fields"]
-        assert custom_fields["Status"] == "In Progress"
+        assert custom_fields["Status"] == "In progress"
 
     def test_create_card_maps_done(self, mock_service):
         """Test done status is mapped correctly."""
@@ -899,7 +926,7 @@ class TestSyncManagerStatusMapping:
 
         call_args = mock_service.create_card_with_custom_fields.call_args
         custom_fields = call_args[1]["custom_fields"]
-        assert custom_fields["Status"] == "Deployed/Done"
+        assert custom_fields["Status"] == "Done"
 
     def test_update_card_uses_status_mapping(self, mock_service):
         """Test that _update_card uses the status mapping for custom fields."""

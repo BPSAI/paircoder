@@ -4,9 +4,9 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-18-release-engineering
-**Title:** Sprint 18 - Release Engineering Foundation
-**Version Target:** v2.6.2
+**Plan:** plan-2025-12-sprint-19-methodology
+**Title:** Sprint 19: Methodology & Session Management
+**Version Target:** v2.8.0
 **Status:** Active
 **Trello:** Synced to PairCoder board (Planned/Ready list)
 
@@ -14,12 +14,17 @@
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T18.1 | Fix Version String Single Source of Truth | done | P0 | 10 |
-| T18.2 | Create Release Prep Command | done | P1 | 40 |
-| T18.3 | Cookie Cutter Drift Detection CLI | done | P1 | 40 |
-| T18.4 | Release Engineering Documentation | done | P2 | 30 |
+| T19.1 | Mandatory state.md Update Hook | pending | P0 | 40 |
+| T19.2 | Session Restart Enforcement | pending | P0 | 45 |
+| T19.3 | Compaction Detection and Recovery | pending | P1 | 55 |
+| T19.4 | Token-Aware Batch Planning | pending | P1 | 40 |
+| T19.5 | Skill Validator CLI | pending | P2 | 40 |
+| T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
+| T19.7 | Document Built-in Claude Code Commands | pending | P2 | 25 |
+| T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
+| T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
 
-**Progress:** 4/4 tasks (120/120 complexity points) - Sprint Complete!
+**Progress:** 0/9 tasks (0/340 complexity points)
 
 ## Sprint History
 
@@ -35,16 +40,16 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 17 | Time, Tokens & Metrics | v2.5.4 | Complete |
 | 17.5 | Backlog Remediation | v2.6.0 | Complete |
 | 17.6 | Trello Field Validation Hotfix | v2.6.1 | Complete |
+| 18 | Release Engineering | v2.6.2 | Complete |
 | 0 | Transition | - | Complete |
 
 ## What's Next
 
-1. ~~Start T18.1 (version string fix - 15 min quick win)~~ ✓
-2. ~~Implement release prep command (T18.2)~~ ✓
-3. ~~Add template drift detection (T18.3)~~ ✓
-4. ~~Document release process (T18.4)~~ ✓
+1. Start with P0 tasks: T19.1 (state.md update hook) or T19.2 (session restart)
+2. Then P1 tasks: T19.3, T19.4, T19.8, T19.9
+3. Finally P2/P3 tasks: T19.5, T19.6, T19.7
 
-**Sprint 18 Complete!** Ready for v2.6.2 release.
+**Sprint Goal:** Make PairCoder methodology enforcement automatic.
 
 ## Backlog (Deprioritized)
 
@@ -57,6 +62,35 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - Sprint 19 Planning Complete
+
+- **Sprint 19 Setup**
+  - Created plan: `plan-2025-12-sprint-19-methodology`
+  - Generated 9 task files (T19.1 through T19.9)
+  - Total complexity: 340 points
+  - Synced to Trello PairCoder board (Planned/Ready list)
+  - Fixed bug in `trello/sync.py` - `map_and_validate` returns 4 values, was unpacking 3
+
+- **E2E Test Coverage Added** (post-incident)
+  - Created `tools/cli/tests/test_plan_sync_trello_e2e.py` (10 tests)
+  - Tests exercise full path through `validate_and_map_custom_fields`
+  - Verified tests catch the tuple unpacking bug when fix is reverted
+  - Root cause: existing unit tests mocked `field_validator`, never exercising real `map_and_validate`
+
+- **Field Mapping Issues Fixed** (post-incident)
+  - Status mapping: `pending` → `Planning` (was "To do")
+  - Project field: Now uses `config.default_project` (was `task.plan_title`)
+  - Stack inference: Split `infer_label()` from `infer_stack()`, added `LABEL_TO_STACK_MAPPING`
+    - "Documentation" → "Collection", "Frontend" → "React", etc.
+  - Added `default_project` and `default_stack` to `TaskSyncConfig`
+  - Updated 149 tests to match new BPS board conventions
+
+**Tasks by Priority:**
+- P0 (Critical): T19.1, T19.2 - Methodology enforcement
+- P1 (High): T19.3, T19.4, T19.8, T19.9 - Session management, workflow
+- P2 (Medium): T19.5, T19.7 - Tooling, docs
+- P3 (Low): T19.6 - Skill consolidation
 
 ### 2025-12-22 - T18.4 Complete (Sprint 18 Finished!)
 
