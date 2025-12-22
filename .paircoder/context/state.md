@@ -4,11 +4,10 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-19-methodology
-**Title:** Sprint 19: Methodology & Session Management
-**Version Target:** v2.8.0
-**Status:** Active
-**Trello:** Synced to PairCoder board (Planned/Ready list)
+**Plan:** None (between sprints)
+**Last Release:** v2.7.0 (Sprint 19: Methodology & Session Management)
+**Status:** Released to PyPI
+**Next:** Plan Sprint 20
 
 ## Current Sprint Tasks
 
@@ -41,20 +40,23 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 17 | Time, Tokens & Metrics | v2.5.4 | Complete |
 | 17.5 | Backlog Remediation | v2.6.0 | Complete |
 | 17.6 | Trello Field Validation Hotfix | v2.6.1 | Complete |
-| 18 | Release Engineering | v2.6.2 | Complete |
-| 0 | Transition | - | Complete |
+| 18 | Release Engineering | v2.6.1 | Complete |
+| 19 | Methodology & Session Management | v2.7.0 | Complete |
 
 ## What's Next
 
-✅ **Sprint 19 Complete!** All 9 tasks done:
-- P0: T19.1, T19.2 (Methodology enforcement)
-- P1: T19.3, T19.4, T19.8, T19.9 (Session management, workflow)
-- P2: T19.5, T19.7 (Tooling, docs)
-- P3: T19.6 (Skill consolidation)
+✅ **v2.7.0 Released!** Sprint 19 complete and published to PyPI.
 
-**Sprint Goal Achieved:** PairCoder methodology enforcement is now automatic.
+**Sprint 19 Delivered:**
+- Methodology enforcement (state.md hooks, session management)
+- Compaction detection and recovery
+- Token-aware batch planning
+- Skill validator CLI
+- Trello AC verification
+- Manual edit detection
+- Migration command
 
-**Next:** Plan Sprint 20 or release v2.8.0.
+**Next:** Plan Sprint 20 based on backlog priorities.
 
 ## Backlog (Deprioritized)
 
@@ -67,6 +69,20 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - v2.7.0 Released
+
+- **Release v2.7.0** ✓
+  - Ran e2e documentation checks (release prep)
+  - Fixed skill validator CLI registration (missing import/registration in cli.py)
+  - Fixed velocity tests (week boundary edge cases on Mondays)
+  - Fixed map_and_validate test (4-tuple return value)
+  - All 1705 tests passing
+  - Bumped version to 2.7.0 in pyproject.toml
+  - Updated CHANGELOG.md with Sprint 19 features
+  - Built and validated package
+  - Committed and tagged v2.7.0
+  - Published to PyPI: https://pypi.org/project/bpsai-pair/2.7.0/
 
 ### 2025-12-22 - T19.10 Complete (Hotfix)
 
