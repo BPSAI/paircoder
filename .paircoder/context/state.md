@@ -15,7 +15,7 @@
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
 | T19.1 | Mandatory state.md Update Hook | done | P0 | 40 |
-| T19.2 | Session Restart Enforcement | pending | P0 | 45 |
+| T19.2 | Session Restart Enforcement | done | P0 | 45 |
 | T19.3 | Compaction Detection and Recovery | pending | P1 | 55 |
 | T19.4 | Token-Aware Batch Planning | pending | P1 | 40 |
 | T19.5 | Skill Validator CLI | pending | P2 | 40 |
@@ -24,7 +24,7 @@
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
 
-**Progress:** 1/9 tasks (40/340 complexity points)
+**Progress:** 2/9 tasks (85/340 complexity points)
 
 ## Sprint History
 
@@ -45,8 +45,8 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-1. Start with P0 tasks: T19.1 (state.md update hook) or T19.2 (session restart)
-2. Then P1 tasks: T19.3, T19.4, T19.8, T19.9
+1. P0 tasks complete (T19.1, T19.2)
+2. Continue with P1 tasks: T19.3, T19.4, T19.8, T19.9
 3. Finally P2/P3 tasks: T19.5, T19.6, T19.7
 
 **Sprint Goal:** Make PairCoder methodology enforcement automatic.
@@ -62,6 +62,32 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.2 Complete
+
+- **T19.2: Session Restart Enforcement** ✓
+  - Created `tools/cli/bpsai_pair/session.py` module with:
+    - `SessionManager` class for session tracking
+    - `SessionState` and `SessionContext` data classes
+    - Session detection based on 30 min timeout (configurable)
+    - Context parsing from state.md
+  - Added CLI commands:
+    - `bpsai-pair session check` - Detects new session and displays context
+    - `bpsai-pair session status` - Shows current session info
+  - Added `UserPromptSubmit` hook to `.claude/settings.json`
+    - Runs on every user message
+    - Shows context summary on new session (>30 min gap)
+    - Silent on continuing session
+  - Updated cookiecutter template with UserPromptSubmit hook
+  - Created `tests/test_session.py` with 12 tests covering:
+    - New session detection (no cache, timeout)
+    - Continuing session detection
+    - Timestamp updates
+    - Context output format
+    - Session history logging
+    - Custom timeout configuration
+    - Force flag functionality
+  - All 12 tests passing
 
 ### 2025-12-22 - T19.1 Complete
 

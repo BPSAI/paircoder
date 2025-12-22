@@ -416,6 +416,13 @@ cache_app = typer.Typer(
 )
 app.add_typer(cache_app, name="cache")
 
+# Session sub-app for session management
+session_app = typer.Typer(
+    help="Session management and context reload",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+app.add_typer(session_app, name="session")
+
 # MCP sub-app for Model Context Protocol server
 mcp_app = typer.Typer(
     help="MCP (Model Context Protocol) server commands",
@@ -1570,6 +1577,86 @@ def cache_invalidate(
         console.print(f"[green]Invalidated cache for {file_path}[/green]")
     else:
         console.print(f"[dim]No cache entry for {file_path}[/dim]")
+
+
+# --- Session Commands ---
+
+@session_app.command("check")
+def session_check(
+    force: bool = typer.Option(False, "--force", "-f", help="Force context display even if continuing session"),
+):
+    """Check session state and display context if new session.
+
+    This command detects if this is a new session (>30 min gap) and displays
+    relevant context from state.md. Used by Claude Code hooks to enforce
+    reading context at session start.
+
+    Output is designed for use with UserPromptSubmit hook - outputs context
+    summary if new session, minimal output if continuing session.
+    """
+    from .session import SessionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        # No PairCoder directory - skip silently
+        return
+
+    manager = SessionManager(paircoder_dir)
+    session = manager.check_session()
+
+    if session.is_new or force:
+        # New session or forced - show context
+        context = manager.get_context()
+        output = manager.format_context_output(context)
+        console.print(output)
+    # Continuing session - no output (silent continuation)
+
+
+@session_app.command("status")
+def session_status():
+    """Show current session status."""
+    from .session import SessionManager, SessionState
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = SessionManager(paircoder_dir)
+    session_file = manager.session_file
+
+    if not session_file.exists():
+        console.print("[dim]No active session[/dim]")
+        return
+
+    try:
+        import json
+        with open(session_file) as f:
+            data = json.load(f)
+        state = SessionState.from_dict(data)
+
+        from datetime import datetime
+        now = datetime.now()
+        gap = now - state.last_activity
+        gap_minutes = int(gap.total_seconds() / 60)
+
+        console.print(f"[cyan]Session ID:[/cyan] {state.session_id}")
+        console.print(f"[cyan]Last activity:[/cyan] {state.last_activity.isoformat()}")
+        console.print(f"[cyan]Gap:[/cyan] {gap_minutes} minutes")
+        console.print(f"[cyan]Timeout:[/cyan] {manager.timeout_minutes} minutes")
+
+        if gap_minutes > manager.timeout_minutes:
+            console.print("[yellow]Session expired - next check will start new session[/yellow]")
+        else:
+            remaining = manager.timeout_minutes - gap_minutes
+            console.print(f"[green]Session active ({remaining} min until timeout)[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error reading session: {e}[/red]")
 
 
 # --- MCP Commands ---
