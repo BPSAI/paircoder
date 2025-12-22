@@ -363,39 +363,31 @@ class FieldValidator:
     def map_and_validate(
         self,
         field_name: str,
-        value: str
-    ) -> tuple[str | None, str | None, str | None]:
-        """Map a value using aliases, then validate.
+        value: str,
+        mappings: dict[str, str] | None = None
+    ) -> tuple[bool, str | None, str | None, str | None]:
+        """Map and validate a field value."""
 
-        Args:
-            field_name: Name of the custom field
-            value: Value to map and validate
+        if field_name not in self.board_fields:
+            return (False, None, None, f"Field '{field_name}' not found on board")
 
-        Returns:
-            (mapped_value, option_id, error_message)
-        """
-        # Get mappings for this field
-        mappings = self.custom_mappings.get(field_name)
-        if mappings is None:
-            mappings = get_default_mappings_for_field(field_name)
+        field = self.board_fields[field_name]
 
-        # Try to map the value
-        mapped_value, option_id = map_value_to_option(
-            field_name, value, self.board_fields, mappings
-        )
+        # For list/dropdown fields, try mapping first
+        if field["type"] == "list":
+            mapped, option_id = map_value_to_option(
+                field_name, value, self.board_fields, mappings
+            )
+            if mapped:
+                return (True, mapped, option_id, None)
+            # Fall through to validate_field_value for error message
 
-        if mapped_value is not None:
-            return (mapped_value, option_id, None)
-
-        # If mapping failed, validate the original value for error message
+        # Validate all field types (including non-list)
         is_valid, option_id, error = validate_field_value(
             field_name, value, self.board_fields
         )
 
-        if is_valid:
-            return (value, option_id, None)
-
-        return (None, None, error)
+        return (is_valid, value if is_valid else None, option_id, error)
 
     def get_valid_options(self, field_name: str) -> list[str] | None:
         """Get valid options for a dropdown field.
