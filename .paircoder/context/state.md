@@ -15,11 +15,11 @@
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
 | T18.1 | Fix Version String Single Source of Truth | done | P0 | 10 |
-| T18.2 | Create Release Prep Command | pending | P1 | 40 |
+| T18.2 | Create Release Prep Command | done | P1 | 40 |
 | T18.3 | Cookie Cutter Drift Detection CLI | pending | P1 | 40 |
 | T18.4 | Release Engineering Documentation | pending | P2 | 30 |
 
-**Progress:** 1/4 tasks (10/120 complexity points)
+**Progress:** 2/4 tasks (50/120 complexity points)
 
 ## Sprint History
 
@@ -40,7 +40,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 ## What's Next
 
 1. ~~Start T18.1 (version string fix - 15 min quick win)~~ ✓
-2. Implement release prep command (T18.2)
+2. ~~Implement release prep command (T18.2)~~ ✓
 3. Add template drift detection (T18.3)
 4. Document release process (T18.4)
 
@@ -55,6 +55,18 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T18.2 Complete
+
+- **T18.2: Create Release Prep Command** ✓
+  - Added `bpsai-pair release prep` command to planning/cli_commands.py
+  - Checks: version consistency, CHANGELOG entry, git status, tests, doc freshness
+  - Supports `--since` flag for baseline comparison
+  - Supports `--create-tasks` flag to generate tasks for issues
+  - Uses status icons (✅ ❌ ⚠️) for clear output
+  - Created `tests/test_release_prep.py` with 14 tests
+  - Added release config section to `.paircoder/config.yaml`
+  - Cookie cutter integration placeholder for T18.3
 
 ### 2025-12-22 - T18.1 Complete
 

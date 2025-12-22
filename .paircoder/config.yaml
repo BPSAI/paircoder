@@ -158,6 +158,17 @@ hooks:
   - sync_trello
   - update_state
 
+release:
+  version_source: pyproject.toml
+  documentation:
+    - CHANGELOG.md
+    - README.md
+    - docs/FEATURE_MATRIX.md
+  cookie_cutter:
+    template_path: tools/cli/bpsai_pair/data/cookiecutter-paircoder
+    sync_required: true
+  freshness_days: 7
+
 trello:
   enabled: true
   board_id: 69487ba516aeeabe10976a23

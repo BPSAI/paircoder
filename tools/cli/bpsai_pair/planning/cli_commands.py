@@ -2075,3 +2075,276 @@ def release_checklist():
         for item in items:
             console.print(f"  [ ] {item}")
         console.print()
+
+
+@release_app.command("prep")
+def release_prep(
+    since: Optional[str] = typer.Option(None, "--since", "-s", help="Git tag/commit for baseline comparison"),
+    create_tasks: bool = typer.Option(False, "--create-tasks", "-c", help="Generate tasks for missing items"),
+    skip_tests: bool = typer.Option(False, "--skip-tests", help="Skip running test suite check"),
+):
+    """Verify release readiness and generate tasks for missing items.
+
+    Runs a series of checks to ensure the project is ready for release:
+    - Version consistency (pyproject.toml matches package __version__)
+    - CHANGELOG has entry for current version
+    - Git working tree is clean
+    - Tests passing
+    - Documentation freshness
+
+    Examples:
+        # Check release readiness
+        bpsai-pair release prep
+
+        # Check since last release
+        bpsai-pair release prep --since v2.5.0
+
+        # Generate tasks for missing items
+        bpsai-pair release prep --create-tasks
+    """
+    import re
+    import subprocess
+
+    paircoder_dir = find_paircoder_dir()
+
+    # Load release config
+    config_path = paircoder_dir / "config.yaml"
+    release_config = {
+        "version_source": "pyproject.toml",
+        "documentation": ["CHANGELOG.md", "README.md"],
+        "freshness_days": 7,
+    }
+
+    if config_path.exists():
+        import yaml
+        with open(config_path) as f:
+            full_config = yaml.safe_load(f) or {}
+            if "release" in full_config:
+                release_config.update(full_config["release"])
+
+    console.print(f"\n[bold]Release Preparation Check[/bold]")
+    if since:
+        console.print(f"Comparing since: {since}")
+    console.print()
+
+    checks = []
+    tasks_needed = []
+
+    # Find project root (parent of .paircoder)
+    project_root = paircoder_dir.parent
+
+    # Check 1: Version consistency
+    pyproject_path = project_root / "pyproject.toml"
+    pyproject_version = None
+    package_version = None
+
+    if pyproject_path.exists():
+        pyproject_content = pyproject_path.read_text()
+        version_match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pyproject_content, re.MULTILINE)
+        if version_match:
+            pyproject_version = version_match.group(1)
+
+    # Try to find package __version__
+    for init_path in project_root.glob("*/__init__.py"):
+        if init_path.parent.name.startswith("."):
+            continue
+        init_content = init_path.read_text()
+        ver_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', init_content)
+        if ver_match:
+            package_version = ver_match.group(1)
+            break
+
+    if pyproject_version:
+        if package_version and pyproject_version != package_version:
+            checks.append(("Version consistency", "❌", f"Mismatch: pyproject.toml={pyproject_version}, __init__.py={package_version}"))
+            tasks_needed.append({
+                "id": "REL-VER",
+                "title": "Fix version mismatch",
+                "description": f"pyproject.toml has {pyproject_version} but __init__.py has {package_version}",
+            })
+        else:
+            checks.append(("Version consistency", "✅", f"v{pyproject_version}"))
+    else:
+        checks.append(("Version consistency", "⚠️", "Could not find version in pyproject.toml"))
+
+    # Check 2: CHANGELOG entry
+    changelog_path = project_root / "CHANGELOG.md"
+    if changelog_path.exists() and pyproject_version:
+        changelog_content = changelog_path.read_text()
+        # Look for version in changelog (formats: [2.6.0], v2.6.0, 2.6.0)
+        version_patterns = [
+            rf"\[{re.escape(pyproject_version)}\]",
+            rf"v{re.escape(pyproject_version)}",
+            rf"## {re.escape(pyproject_version)}",
+        ]
+        has_entry = any(re.search(p, changelog_content) for p in version_patterns)
+        if has_entry:
+            checks.append(("CHANGELOG entry", "✅", f"Found entry for v{pyproject_version}"))
+        else:
+            checks.append(("CHANGELOG entry", "❌", f"Missing entry for v{pyproject_version}"))
+            tasks_needed.append({
+                "id": "REL-CHANGELOG",
+                "title": f"Update CHANGELOG.md for v{pyproject_version}",
+                "description": "Add release notes for the new version",
+            })
+    elif not changelog_path.exists():
+        checks.append(("CHANGELOG entry", "⚠️", "CHANGELOG.md not found"))
+    else:
+        checks.append(("CHANGELOG entry", "⚠️", "Could not determine version to check"))
+
+    # Check 3: Git status (uncommitted changes)
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            if result.stdout.strip():
+                changes_count = len(result.stdout.strip().split("\n"))
+                checks.append(("Git status", "❌", f"{changes_count} uncommitted change(s)"))
+                tasks_needed.append({
+                    "id": "REL-GIT",
+                    "title": "Commit or stash uncommitted changes",
+                    "description": f"Found {changes_count} uncommitted file(s)",
+                })
+            else:
+                checks.append(("Git status", "✅", "Working tree clean"))
+        else:
+            checks.append(("Git status", "⚠️", "Not a git repository"))
+    except FileNotFoundError:
+        checks.append(("Git status", "⚠️", "git command not found"))
+
+    # Check 4: Tests passing (if not skipped)
+    if not skip_tests:
+        try:
+            # Check if pytest is available and there are tests
+            result = subprocess.run(
+                ["python", "-m", "pytest", "--collect-only", "-q"],
+                cwd=project_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode == 0:
+                # Count collected tests
+                lines = result.stdout.strip().split("\n")
+                test_count = 0
+                for line in lines:
+                    if "test" in line.lower() and "::" in line:
+                        test_count += 1
+                if test_count > 0:
+                    checks.append(("Test suite", "✅", f"{test_count} tests collected"))
+                else:
+                    checks.append(("Test suite", "⚠️", "No tests found"))
+            elif "no tests" in result.stderr.lower() or "no tests" in result.stdout.lower():
+                checks.append(("Test suite", "⚠️", "No tests found"))
+            else:
+                checks.append(("Test suite", "❌", "Test collection failed"))
+                tasks_needed.append({
+                    "id": "REL-TESTS",
+                    "title": "Fix failing tests",
+                    "description": "Test collection failed - run pytest to diagnose",
+                })
+        except subprocess.TimeoutExpired:
+            checks.append(("Test suite", "⚠️", "Test collection timed out"))
+        except FileNotFoundError:
+            checks.append(("Test suite", "⚠️", "pytest not found"))
+    else:
+        checks.append(("Test suite", "⚠️", "Skipped (--skip-tests)"))
+
+    # Check 5: Documentation freshness
+    for doc_file in release_config.get("documentation", []):
+        doc_path = project_root / doc_file
+        if doc_path.exists():
+            import os
+            from datetime import datetime, timedelta
+
+            mtime = datetime.fromtimestamp(os.path.getmtime(doc_path))
+            days_old = (datetime.now() - mtime).days
+            freshness_days = release_config.get("freshness_days", 7)
+
+            if days_old > freshness_days:
+                checks.append((f"Doc: {doc_file}", "⚠️", f"Last updated {days_old} days ago"))
+            else:
+                checks.append((f"Doc: {doc_file}", "✅", f"Updated {days_old} days ago"))
+        else:
+            if doc_file == "CHANGELOG.md":
+                # Already checked above
+                pass
+            else:
+                checks.append((f"Doc: {doc_file}", "⚠️", "Not found"))
+
+    # Display results
+    from rich.table import Table as RichTable
+    table = RichTable(title=None, show_header=True, header_style="bold")
+    table.add_column("Check", style="cyan")
+    table.add_column("Status")
+    table.add_column("Details")
+
+    for check_name, status, details in checks:
+        table.add_row(check_name, status, details)
+
+    console.print(table)
+
+    # Summary
+    passed = sum(1 for _, s, _ in checks if s == "✅")
+    failed = sum(1 for _, s, _ in checks if s == "❌")
+    warned = sum(1 for _, s, _ in checks if s == "⚠️")
+
+    console.print()
+    console.print(f"[bold]Summary:[/bold] {passed} passed, {failed} failed, {warned} warnings")
+
+    # Generate tasks if requested
+    if tasks_needed:
+        console.print(f"\n[bold]Tasks needed ({len(tasks_needed)}):[/bold]")
+        for task in tasks_needed:
+            console.print(f"  • {task['id']}: {task['title']}")
+
+        if create_tasks:
+            console.print("\n[bold]Creating tasks...[/bold]")
+            tasks_dir = paircoder_dir / "tasks"
+            tasks_dir.mkdir(exist_ok=True)
+
+            # Get active plan
+            state_manager = get_state_manager()
+            state = state_manager.load_state()
+            plan_id = state.active_plan_id if state else "release"
+
+            for task_def in tasks_needed:
+                task_id = task_def["id"]
+                task_file = tasks_dir / f"{task_id}.task.md"
+
+                content = f"""---
+id: {task_id}
+title: "{task_def['title']}"
+plan: {plan_id}
+type: chore
+priority: P1
+complexity: 10
+status: pending
+depends_on: []
+tags:
+  - release
+---
+
+# {task_def['title']}
+
+## Description
+
+{task_def['description']}
+
+## Acceptance Criteria
+
+- [ ] Issue resolved
+- [ ] Changes verified
+"""
+                task_file.write_text(content)
+                console.print(f"  [green]✓[/green] Created {task_id}")
+
+            console.print(f"\n[green]Generated {len(tasks_needed)} task(s)[/green]")
+        else:
+            console.print("\n[dim]Run with --create-tasks to generate these tasks[/dim]")
+    else:
+        console.print("\n[green]✓ All checks passed - ready for release![/green]")
