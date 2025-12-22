@@ -40,3 +40,10 @@ Overall goal is: <...> Last action was: <...> Next action will be: <...> Blocker
 - [ ] Coverage ≥ target or unchanged
 - [ ] ADR updated/added when design or contracts change
 - [ ] No secrets/PII introduced; `.agentpackignore` updated if needed
+
+## Release Checklist (for version bump PRs only)
+- [ ] Version bumped in `tools/cli/pyproject.toml`
+- [ ] CHANGELOG.md updated with new version entry
+- [ ] `bpsai-pair release prep` shows all green
+- [ ] Cookie cutter template synced (`bpsai-pair template check`)
+- [ ] Package exports verified: `python -c "import bpsai_pair; print(bpsai_pair.__all__)"`

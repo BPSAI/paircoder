@@ -17,9 +17,9 @@
 | T18.1 | Fix Version String Single Source of Truth | done | P0 | 10 |
 | T18.2 | Create Release Prep Command | done | P1 | 40 |
 | T18.3 | Cookie Cutter Drift Detection CLI | done | P1 | 40 |
-| T18.4 | Release Engineering Documentation | pending | P2 | 30 |
+| T18.4 | Release Engineering Documentation | done | P2 | 30 |
 
-**Progress:** 3/4 tasks (90/120 complexity points)
+**Progress:** 4/4 tasks (120/120 complexity points) - Sprint Complete!
 
 ## Sprint History
 
@@ -42,7 +42,9 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 1. ~~Start T18.1 (version string fix - 15 min quick win)~~ ✓
 2. ~~Implement release prep command (T18.2)~~ ✓
 3. ~~Add template drift detection (T18.3)~~ ✓
-4. Document release process (T18.4)
+4. ~~Document release process (T18.4)~~ ✓
+
+**Sprint 18 Complete!** Ready for v2.6.2 release.
 
 ## Backlog (Deprioritized)
 
@@ -55,6 +57,29 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T18.4 Complete (Sprint 18 Finished!)
+
+- **T18.4: Release Engineering Documentation** ✓
+  - Created `docs/RELEASING.md` with step-by-step release guide
+    - Version location (single source: pyproject.toml)
+    - CHANGELOG format and conventions
+    - How to use `bpsai-pair release prep`
+    - Cookie cutter sync process with `template check`
+    - CI/CD pipeline overview
+    - Git tagging and GitHub release creation
+    - Troubleshooting section
+  - Updated `CONTRIBUTING.md` with release section
+    - Who can release
+    - Release cadence
+    - Pre-release checklist
+  - Updated `.github/PULL_REQUEST_TEMPLATE.md` with release checklist
+    - Version bump verification
+    - CHANGELOG check
+    - release prep validation
+    - Template sync check
+    - Package exports verification
+  - References T18.1, T18.2, T18.3 tooling throughout
 
 ### 2025-12-22 - T18.3 Complete
 

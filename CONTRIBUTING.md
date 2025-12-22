@@ -66,3 +66,34 @@ bpsai-pair feature auth-cleanup --type refactor \
 This repo includes both smoke tests (GitHub Actions) and pytest-based validation. Contributors should:
 - Run `pytest` locally before opening a PR.
 - Use `bpsai-pair context-sync` after each change to keep the Context Loop updated.
+
+## Releases
+
+### Who Can Release
+
+Releases are managed by maintainers with write access to the repository.
+
+### Release Cadence
+
+- **Patch releases (X.Y.Z):** As needed for bug fixes
+- **Minor releases (X.Y.0):** At sprint boundaries (typically weekly)
+- **Major releases (X.0.0):** For breaking changes (rare, with migration guide)
+
+### Pre-Release Checklist
+
+Before creating a release:
+
+1. **Run release prep:**
+   ```bash
+   bpsai-pair release prep
+   ```
+
+2. **Verify all checks pass:**
+   - Version bumped in `tools/cli/pyproject.toml`
+   - CHANGELOG.md updated with new version entry
+   - Cookie cutter template synced (`bpsai-pair template check`)
+   - All tests passing
+
+3. **For version bump PRs**, use the release checklist in the PR template.
+
+See [docs/RELEASING.md](docs/RELEASING.md) for the complete step-by-step release process.
