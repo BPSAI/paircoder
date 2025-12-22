@@ -10,6 +10,16 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bpsai-pair compaction snapshot save --trigger \"$CLAUDE_COMPACT_TRIGGER\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",

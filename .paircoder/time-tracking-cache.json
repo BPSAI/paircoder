@@ -205,9 +205,9 @@
     "total_seconds": 2.580809
   },
   "_active": {
-    "task_id": "T19.2",
-    "timer_id": "local-20251222122902",
-    "description": "T19.2: Session Restart Enforcement",
-    "start": "2025-12-22T12:29:02.093157"
+    "task_id": "T19.3",
+    "timer_id": "local-20251222130535",
+    "description": "T19.3: Compaction Detection and Recovery",
+    "start": "2025-12-22T13:05:35.076745"
   }
 }

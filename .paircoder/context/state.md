@@ -16,7 +16,7 @@
 |-------|-------|--------|----------|------------|
 | T19.1 | Mandatory state.md Update Hook | done | P0 | 40 |
 | T19.2 | Session Restart Enforcement | done | P0 | 45 |
-| T19.3 | Compaction Detection and Recovery | pending | P1 | 55 |
+| T19.3 | Compaction Detection and Recovery | done | P1 | 55 |
 | T19.4 | Token-Aware Batch Planning | pending | P1 | 40 |
 | T19.5 | Skill Validator CLI | pending | P2 | 40 |
 | T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
@@ -24,7 +24,7 @@
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
 
-**Progress:** 2/9 tasks (85/340 complexity points)
+**Progress:** 3/9 tasks (140/340 complexity points)
 
 ## Sprint History
 
@@ -62,6 +62,36 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.3 Complete
+
+- **T19.3: Compaction Detection and Recovery** ✓
+  - Created `tools/cli/bpsai_pair/compaction.py` module with:
+    - `CompactionManager` class for snapshot management
+    - `CompactionSnapshot` and `CompactionMarker` data classes
+    - Snapshot creation with state.md context extraction
+    - Recent files tracking from changes.log
+    - Compaction event logging to history
+  - Added CLI commands:
+    - `bpsai-pair compaction snapshot save` - Creates pre-compaction snapshot
+    - `bpsai-pair compaction snapshot list` - Lists available snapshots
+    - `bpsai-pair compaction check` - Detects unrecovered compaction
+    - `bpsai-pair compaction recover` - Restores context after compaction
+    - `bpsai-pair compaction cleanup` - Removes old snapshots
+  - Added `PreCompact` hook to `.claude/settings.json`
+    - Runs before `/compact` or auto-compaction
+    - Saves snapshot with trigger type ($CLAUDE_COMPACT_TRIGGER)
+  - Integrated compaction check into `session check` command
+    - Auto-recovers context if compaction detected
+    - Runs via UserPromptSubmit hook on each message
+  - Updated cookiecutter template with PreCompact hook
+  - Created `tests/test_compaction.py` with 14 tests covering:
+    - Snapshot creation and listing
+    - Compaction detection with/without markers
+    - Context recovery and marker updates
+    - History logging
+    - CLI command help and functionality
+  - All 14 tests passing
 
 ### 2025-12-22 - T19.2 Complete
 
