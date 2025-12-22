@@ -7,27 +7,27 @@
 **Plan:** plan-2025-12-sprint-22-cli-refactor-phase1
 **Epic:** EPIC-003: CLI Architecture Refactor
 **Phase:** Phase 1 of 5 - Extract Commands from cli.py
-**Status:** Planned (ready to start)
-**Goal:** Reduce cli.py from 2,892 → ~200 lines
+**Status:** Complete
+**Goal:** Reduce cli.py from 2,892 → ~200 lines (achieved: 194 lines!)
 
 ## Current Sprint Tasks (Sprint 22)
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T22.1 | Extract preset commands to commands/preset.py | pending | P1 | 20 |
-| T22.2 | Extract config commands to commands/config.py | pending | P1 | 25 |
-| T22.3 | Extract orchestrate commands to commands/orchestrate.py | pending | P1 | 35 |
-| T22.4 | Extract metrics commands to commands/metrics.py | pending | P1 | 40 |
-| T22.5 | Extract timer commands to commands/timer.py | pending | P1 | 20 |
-| T22.6 | Extract benchmark commands to commands/benchmark.py | pending | P1 | 25 |
-| T22.7 | Extract cache commands to commands/cache.py | pending | P2 | 15 |
-| T22.8 | Extract mcp commands to commands/mcp.py | pending | P2 | 20 |
-| T22.9 | Extract flow commands to commands/flow.py | pending | P1 | 25 |
-| T22.10 | Extract security commands to commands/security.py | pending | P1 | 30 |
-| T22.11 | Extract core commands to commands/core.py | pending | P0 | 45 |
-| T22.12 | Refactor cli.py to registration only | pending | P0 | 30 |
+| T22.1 | Extract preset commands to commands/preset.py | done | P1 | 20 |
+| T22.2 | Extract config commands to commands/config.py | done | P1 | 25 |
+| T22.3 | Extract orchestrate commands to commands/orchestrate.py | done | P1 | 35 |
+| T22.4 | Extract metrics commands to commands/metrics.py | done | P1 | 40 |
+| T22.5 | Extract timer commands to commands/timer.py | done | P1 | 20 |
+| T22.6 | Extract benchmark commands to commands/benchmark.py | done | P1 | 25 |
+| T22.7 | Extract cache commands to commands/cache.py | done | P2 | 15 |
+| T22.8 | Extract mcp commands to commands/mcp.py | done | P2 | 20 |
+| T22.9 | Extract flow commands to commands/flow.py | done | P1 | 25 |
+| T22.10 | Extract security commands to commands/security.py | done | P1 | 30 |
+| T22.11 | Extract core commands to commands/core.py | done | P0 | 45 |
+| T22.12 | Refactor cli.py to registration only | done | P0 | 30 |
 
-**Progress:** 0/12 tasks (0/330 complexity points)
+**Progress:** 12/12 tasks (330/330 complexity points) - **SPRINT COMPLETE!**
 
 ## Sprint History
 
@@ -72,6 +72,156 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T22.12 Complete (Sprint 22 Finished!)
+
+- **T22.12: Refactor cli.py to registration only** ✓
+  - Extracted session/compaction commands to `commands/session.py` (301 lines)
+    - `session check`, `session status`
+    - `compaction snapshot save/list`, `compaction check/recover/cleanup`
+  - Updated `commands/__init__.py` to export `session_app`, `compaction_app`
+  - Refactored `cli.py` to registration-only architecture:
+    - **Final line count: 194 lines** (target: < 200)
+    - Reduced from original 2,892 lines to 194 lines (93% reduction!)
+    - Contains only: imports, app creation, sub-app registration, shortcut commands, version callback
+  - All 1705 tests passing
+  - All CLI commands work identically (no behavior change)
+
+**Sprint 22 Summary:**
+- Created `commands/` package with 12 modules (including session.py)
+- Extracted all command implementations from cli.py
+- Total line count of command modules: ~3,500 lines
+- cli.py reduced by 93%: 2,892 → 194 lines
+- Zero behavior changes, pure refactor
+
+### 2025-12-22 - T22.11 Complete
+
+- **T22.11: Extract core commands to commands/core.py** ✓
+  - Created `commands/core.py` (782 lines) with 7 commands:
+    - `init`, `feature`, `pack`, `context-sync`, `status`, `validate`, `ci`
+  - Includes helper functions:
+    - `repo_root()`, `_select_ci_workflow()`, `ensure_v2_config()`
+    - `print_json()`, `console` initialization
+  - Created `register_core_commands(app)` function for registration
+  - Updated `commands/__init__.py` to export `register_core_commands`
+  - Updated `cli.py`:
+    - Removed ~700 lines of core command code
+    - Added import for `register_core_commands`
+    - Cleaned up unused imports (init_bundled_cli, Config, presets, etc.)
+    - Removed unused environment variables (MAIN_BRANCH, CONTEXT_DIR, FLOWS_DIR)
+    - Removed unused `_flows_root()` function
+  - cli.py now at 441 lines (down from 1172)
+  - Updated test imports in `test_cli.py` and `test_config_v2.py`
+  - All 1705 tests passing
+  - **Note:** core.py is 782 lines (exceeds 500 line target) due to inherent complexity of init, status, and validate commands
+
+### 2025-12-22 - T22.10 Complete
+
+- **T22.10: Extract security commands to commands/security.py** ✓
+  - Created `commands/security.py` (270 lines) with 4 commands:
+    - `security scan-secrets`, `security pre-commit`, `security install-hook`, `security scan-deps`
+  - Included helper function: `_get_secret_scanner()`
+  - Kept shortcut commands in cli.py: `bpsai-pair scan-secrets`, `bpsai-pair scan-deps`
+  - Updated `commands/__init__.py` to export security_app
+  - Removed ~240 lines of security code from cli.py
+  - cli.py now at 1172 lines (down from ~2892!)
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.9 Complete
+
+- **T22.9: Extract flow commands to commands/flow.py** ✓
+  - Created `commands/flow.py` (296 lines) with 4 commands:
+    - `flow list`, `flow show`, `flow run`, `flow validate`
+  - Included helper functions: `_flows_root()`, `_find_flow_v2()`
+  - Updated `commands/__init__.py` to export flow_app
+  - Removed ~230 lines of flow code from cli.py (scattered)
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.8 Complete
+
+- **T22.8: Extract mcp commands to commands/mcp.py** ✓
+  - Created `commands/mcp.py` (127 lines) with 3 commands:
+    - `mcp serve`, `mcp tools`, `mcp test`
+  - Updated `commands/__init__.py` to export mcp_app
+  - Removed ~90 lines of mcp code from cli.py
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.7 Complete
+
+- **T22.7: Extract cache commands to commands/cache.py** ✓
+  - Created `commands/cache.py` (103 lines) with 3 commands:
+    - `cache stats`, `cache clear`, `cache invalidate`
+  - Updated `commands/__init__.py` to export cache_app
+  - Removed ~53 lines of cache code from cli.py
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.6 Complete
+
+- **T22.6: Extract benchmark commands to commands/benchmark.py** ✓
+  - Created `commands/benchmark.py` (193 lines) with 4 commands:
+    - `benchmark run`, `benchmark results`, `benchmark compare`, `benchmark list`
+  - Included helper function: `_get_benchmark_paths()`
+  - Updated `commands/__init__.py` to export benchmark_app
+  - Removed ~137 lines of benchmark code from cli.py
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.5 Complete
+
+- **T22.5: Extract timer commands to commands/timer.py** ✓
+  - Created `commands/timer.py` (199 lines) with 5 commands:
+    - `timer start`, `timer stop`, `timer status`, `timer show`, `timer summary`
+  - Included helper function: `_get_time_manager()`
+  - Updated `commands/__init__.py` to export timer_app
+  - Removed ~145 lines of timer code from cli.py
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.4 Complete
+
+- **T22.4: Extract metrics commands to commands/metrics.py** ✓
+  - Created `commands/metrics.py` (547 lines) with 10 commands:
+    - `summary`, `task`, `breakdown`, `budget`, `export`
+    - `velocity`, `burndown`, `accuracy`, `tokens`
+  - Included helper functions for metrics, velocity, burndown, accuracy, tokens
+  - Removed ~480 lines of metrics code from cli.py
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.3 Complete
+
+- **T22.3: Extract orchestrate commands to commands/orchestrate.py** ✓
+  - Created `commands/orchestrate.py` (381 lines) with 7 commands:
+    - `orchestrate task`, `analyze`, `select-agent`, `handoff`
+    - `auto-run`, `auto-session`, `workflow-status`
+  - Included helper functions: `repo_root()`, `_load_task_metadata()`
+  - Updated `commands/__init__.py` to export orchestrate_app
+  - Removed ~320 lines of orchestrate code from cli.py
+  - All 47 related tests passing
+
+### 2025-12-22 - T22.2 Complete
+
+- **T22.2: Extract config commands to commands/config.py** ✓
+  - Created `commands/config.py` (195 lines) with:
+    - `config validate` command
+    - `config update` command
+    - `config show` command
+  - Updated `commands/__init__.py` to export config_app
+  - Updated `cli.py` imports to use new module
+  - Removed ~170 lines of config code from cli.py
+  - All 14 config-related tests passing
+  - All 45 test_cli.py tests passing
+
+### 2025-12-22 - T22.1 Complete
+
+- **T22.1: Extract preset commands to commands/preset.py** ✓
+  - Created `tools/cli/bpsai_pair/commands/` directory
+  - Created `commands/__init__.py` with preset_app export
+  - Created `commands/preset.py` (149 lines) with:
+    - `preset list` command
+    - `preset show` command
+    - `preset preview` command
+  - Updated `cli.py` imports to use new module
+  - Removed 120 lines of preset code from cli.py
+  - All 40 preset-related tests passing
+  - All 45 test_cli.py tests passing
 
 ### 2025-12-22 - Sprint 22 Planning Complete
 

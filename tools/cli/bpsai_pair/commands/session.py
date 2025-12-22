@@ -1,0 +1,301 @@
+"""Session and compaction commands for bpsai-pair CLI.
+
+Extracted from cli.py as part of EPIC-003 CLI Architecture Refactor (Sprint 22).
+
+Commands:
+- session check: Check session state and display context if new session
+- session status: Show current session status
+- compaction snapshot save: Save a compaction snapshot
+- compaction snapshot list: List available compaction snapshots
+- compaction check: Check if compaction recently occurred
+- compaction recover: Recover context after compaction
+- compaction cleanup: Remove old compaction snapshots
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
+import typer
+from rich.console import Console
+
+# Try relative imports first, fall back to absolute
+try:
+    from .. import ops
+except ImportError:
+    from bpsai_pair import ops
+
+# Initialize Rich console
+console = Console()
+
+
+def repo_root() -> Path:
+    """Get repo root with better error message."""
+    p = Path.cwd()
+    if not ops.GitOps.is_repo(p):
+        console.print(
+            "[red]x Not in a git repository.[/red]\n"
+            "Please run from your project root directory (where .git exists).\n"
+            "[dim]Hint: cd to your project directory first[/dim]"
+        )
+        raise typer.Exit(1)
+    return p
+
+
+# Session sub-app for session management
+session_app = typer.Typer(
+    help="Session management and context reload",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+# Compaction sub-app for context compaction management
+compaction_app = typer.Typer(
+    help="Context compaction detection and recovery",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+# Snapshot sub-app under compaction
+compaction_snapshot_app = typer.Typer(
+    help="Manage compaction snapshots",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+compaction_app.add_typer(compaction_snapshot_app, name="snapshot")
+
+
+# --- Session Commands ---
+
+@session_app.command("check")
+def session_check(
+    force: bool = typer.Option(False, "--force", "-f", help="Force context display even if continuing session"),
+):
+    """Check session state and display context if new session.
+
+    This command detects if this is a new session (>30 min gap) and displays
+    relevant context from state.md. Also checks for compaction recovery needs.
+    Used by Claude Code hooks to enforce reading context at session start.
+
+    Output is designed for use with UserPromptSubmit hook - outputs context
+    summary if new session or after compaction, minimal output otherwise.
+    """
+    try:
+        from ..session import SessionManager
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.session import SessionManager
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        # No PairCoder directory - skip silently
+        return
+
+    # Check for compaction recovery first
+    compaction_mgr = CompactionManager(paircoder_dir)
+    compaction_marker = compaction_mgr.check_compaction()
+
+    if compaction_marker:
+        # Compaction detected - recover context
+        output = compaction_mgr.recover_context()
+        console.print(output)
+        return
+
+    # Check session state
+    session_mgr = SessionManager(paircoder_dir)
+    session = session_mgr.check_session()
+
+    if session.is_new or force:
+        # New session or forced - show context
+        context = session_mgr.get_context()
+        output = session_mgr.format_context_output(context)
+        console.print(output)
+    # Continuing session - no output (silent continuation)
+
+
+@session_app.command("status")
+def session_status():
+    """Show current session status."""
+    try:
+        from ..session import SessionManager, SessionState
+    except ImportError:
+        from bpsai_pair.session import SessionManager, SessionState
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = SessionManager(paircoder_dir)
+    session_file = manager.session_file
+
+    if not session_file.exists():
+        console.print("[dim]No active session[/dim]")
+        return
+
+    try:
+        import json
+        with open(session_file) as f:
+            data = json.load(f)
+        state = SessionState.from_dict(data)
+
+        from datetime import datetime
+        now = datetime.now()
+        gap = now - state.last_activity
+        gap_minutes = int(gap.total_seconds() / 60)
+
+        console.print(f"[cyan]Session ID:[/cyan] {state.session_id}")
+        console.print(f"[cyan]Last activity:[/cyan] {state.last_activity.isoformat()}")
+        console.print(f"[cyan]Gap:[/cyan] {gap_minutes} minutes")
+        console.print(f"[cyan]Timeout:[/cyan] {manager.timeout_minutes} minutes")
+
+        if gap_minutes > manager.timeout_minutes:
+            console.print("[yellow]Session expired - next check will start new session[/yellow]")
+        else:
+            remaining = manager.timeout_minutes - gap_minutes
+            console.print(f"[green]Session active ({remaining} min until timeout)[/green]")
+
+    except Exception as e:
+        console.print(f"[red]Error reading session: {e}[/red]")
+
+
+# --- Compaction Commands ---
+
+@compaction_snapshot_app.command("save")
+def compaction_snapshot_save(
+    trigger: str = typer.Option("manual", "--trigger", "-t", help="Trigger type: auto or manual"),
+    reason: Optional[str] = typer.Option(None, "--reason", "-r", help="Reason for snapshot"),
+):
+    """Save a compaction snapshot with current context.
+
+    Creates a snapshot of the current state before compaction occurs.
+    Called automatically by PreCompact hook or manually for backup.
+    """
+    try:
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = CompactionManager(paircoder_dir)
+    snapshot_path = manager.save_snapshot(trigger=trigger, reason=reason)
+
+    console.print(f"[green]Snapshot saved:[/green] {snapshot_path.name}")
+    console.print(f"[dim]Trigger: {trigger}[/dim]")
+
+
+@compaction_snapshot_app.command("list")
+def compaction_snapshot_list():
+    """List available compaction snapshots."""
+    try:
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = CompactionManager(paircoder_dir)
+    snapshots = manager.list_snapshots()
+
+    if not snapshots:
+        console.print("[dim]No compaction snapshots found[/dim]")
+        return
+
+    console.print(f"[cyan]Compaction Snapshots ({len(snapshots)}):[/cyan]")
+    for snap in snapshots[:10]:  # Show last 10
+        task_info = snap.current_task_id or "none"
+        console.print(f"  {snap.timestamp.strftime('%Y-%m-%d %H:%M')} [{snap.trigger}] task={task_info}")
+
+
+@compaction_app.command("check")
+def compaction_check():
+    """Check if compaction recently occurred.
+
+    Detects if context compaction happened and recovery is needed.
+    Used by UserPromptSubmit hook to auto-recover context.
+    """
+    try:
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        # Silent exit if not in a PairCoder project
+        return
+
+    manager = CompactionManager(paircoder_dir)
+    marker = manager.check_compaction()
+
+    if marker:
+        console.print(f"[yellow]Compaction detected[/yellow] ({marker.trigger})")
+        console.print(f"[dim]Timestamp: {marker.timestamp.isoformat()}[/dim]")
+        console.print("[dim]Run 'bpsai-pair compaction recover' to restore context[/dim]")
+    else:
+        console.print("[dim]No unrecovered compaction detected[/dim]")
+
+
+@compaction_app.command("recover")
+def compaction_recover():
+    """Recover context after compaction.
+
+    Reads state.md and any available snapshots to restore context
+    that was lost during compaction.
+    """
+    try:
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = CompactionManager(paircoder_dir)
+    output = manager.recover_context()
+    console.print(output)
+
+
+@compaction_app.command("cleanup")
+def compaction_cleanup(
+    keep: int = typer.Option(5, "--keep", "-k", help="Number of snapshots to keep"),
+):
+    """Remove old compaction snapshots."""
+    try:
+        from ..compaction import CompactionManager
+    except ImportError:
+        from bpsai_pair.compaction import CompactionManager
+
+    root = repo_root()
+    paircoder_dir = root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[yellow]No .paircoder directory found[/yellow]")
+        raise typer.Exit(1)
+
+    manager = CompactionManager(paircoder_dir)
+    removed = manager.cleanup_old_snapshots(keep=keep)
+
+    if removed > 0:
+        console.print(f"[green]Removed {removed} old snapshot(s)[/green]")
+    else:
+        console.print("[dim]No snapshots to remove[/dim]")

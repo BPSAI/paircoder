@@ -23,7 +23,7 @@ def test_save_v2_creates_paircoder_config_yaml(tmp_path: Path):
 
 
 def test_ensure_v2_config_writes_config_if_missing(tmp_path: Path):
-    from bpsai_pair.cli import ensure_v2_config
+    from bpsai_pair.commands.core import ensure_v2_config
 
     path = ensure_v2_config(tmp_path)
     assert path == tmp_path / ".paircoder" / "config.yaml"

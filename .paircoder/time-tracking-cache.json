@@ -274,10 +274,172 @@
     ],
     "total_seconds": 181.234278
   },
-  "_active": {
-    "task_id": "T19.6",
-    "timer_id": "local-20251222135340",
-    "description": "T19.6: Merge trello-task-workflow into paircoder-task-lifecycle",
-    "start": "2025-12-22T13:53:40.145451"
+  "T22.1": {
+    "entries": [
+      {
+        "id": "local-20251222153417",
+        "task_id": "T22.1",
+        "description": "T22.1: Extract preset commands to commands/preset.py",
+        "start": "2025-12-22T15:34:17.296551",
+        "end": "2025-12-22T15:39:17.816834",
+        "duration_seconds": 300.520283,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 300.520283
+  },
+  "T22.2": {
+    "entries": [
+      {
+        "id": "local-20251222153948",
+        "task_id": "T22.2",
+        "description": "T22.2: Extract config commands to commands/config.py",
+        "start": "2025-12-22T15:39:48.787511",
+        "end": "2025-12-22T15:43:00.351268",
+        "duration_seconds": 191.563757,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 191.563757
+  },
+  "T22.3": {
+    "entries": [
+      {
+        "id": "local-20251222154311",
+        "task_id": "T22.3",
+        "description": "T22.3: Extract orchestrate commands to commands/orchestrate.py",
+        "start": "2025-12-22T15:43:11.680502",
+        "end": "2025-12-22T15:48:01.184562",
+        "duration_seconds": 289.50406,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 289.50406
+  },
+  "T22.4": {
+    "entries": [
+      {
+        "id": "local-20251222154815",
+        "task_id": "T22.4",
+        "description": "T22.4: Extract metrics commands to commands/metrics.py",
+        "start": "2025-12-22T15:48:15.420544",
+        "end": "2025-12-22T15:53:15.619778",
+        "duration_seconds": 300.199234,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 300.199234
+  },
+  "T22.5": {
+    "entries": [
+      {
+        "id": "local-20251222155422",
+        "task_id": "T22.5",
+        "description": "T22.5: Extract timer commands to commands/timer.py",
+        "start": "2025-12-22T15:54:22.224876",
+        "end": "2025-12-22T15:58:28.899042",
+        "duration_seconds": 246.674166,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 246.674166
+  },
+  "T22.6": {
+    "entries": [
+      {
+        "id": "local-20251222155835",
+        "task_id": "T22.6",
+        "description": "T22.6: Extract benchmark commands to commands/benchmark.py",
+        "start": "2025-12-22T15:58:35.958967",
+        "end": "2025-12-22T16:01:30.498092",
+        "duration_seconds": 174.539125,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 174.539125
+  },
+  "T22.7": {
+    "entries": [
+      {
+        "id": "local-20251222160139",
+        "task_id": "T22.7",
+        "description": "T22.7: Extract cache commands to commands/cache.py",
+        "start": "2025-12-22T16:01:39.409858",
+        "end": "2025-12-22T16:03:49.297863",
+        "duration_seconds": 129.888005,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 129.888005
+  },
+  "T22.8": {
+    "entries": [
+      {
+        "id": "local-20251222160357",
+        "task_id": "T22.8",
+        "description": "T22.8: Extract mcp commands to commands/mcp.py",
+        "start": "2025-12-22T16:03:57.930702",
+        "end": "2025-12-22T16:06:29.293872",
+        "duration_seconds": 151.36317,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 151.36317
+  },
+  "T22.9": {
+    "entries": [
+      {
+        "id": "local-20251222160639",
+        "task_id": "T22.9",
+        "description": "T22.9: Extract flow commands to commands/flow.py",
+        "start": "2025-12-22T16:06:39.223611",
+        "end": "2025-12-22T16:10:52.868753",
+        "duration_seconds": 253.645142,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 253.645142
+  },
+  "T22.10": {
+    "entries": [
+      {
+        "id": "local-20251222161105",
+        "task_id": "T22.10",
+        "description": "T22.10: Extract security commands to commands/security.py",
+        "start": "2025-12-22T16:11:05.868316",
+        "end": "2025-12-22T16:14:51.619569",
+        "duration_seconds": 225.751253,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 225.751253
+  },
+  "T22.11": {
+    "entries": [
+      {
+        "id": "local-20251222162743",
+        "task_id": "T22.11",
+        "description": "T22.11: Extract core commands to commands/core.py",
+        "start": "2025-12-22T16:27:43.740144",
+        "end": "2025-12-22T16:40:22.163116",
+        "duration_seconds": 758.422972,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 758.422972
+  },
+  "T22.12": {
+    "entries": [
+      {
+        "id": "local-20251222164310",
+        "task_id": "T22.12",
+        "description": "T22.12: Refactor cli.py to registration only",
+        "start": "2025-12-22T16:43:10.785707",
+        "end": "2025-12-22T16:46:56.627531",
+        "duration_seconds": 225.841824,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 225.841824
   }
 }

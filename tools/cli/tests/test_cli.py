@@ -563,7 +563,7 @@ def test_preset_show_json_includes_ci_type():
 
 def test_select_ci_workflow_python(tmp_path, monkeypatch):
     """Test _select_ci_workflow selects python workflow."""
-    from bpsai_pair.cli import _select_ci_workflow
+    from bpsai_pair.commands.core import _select_ci_workflow
 
     # Create workflows directory with all three files
     workflows_dir = tmp_path / ".github" / "workflows"
@@ -582,7 +582,7 @@ def test_select_ci_workflow_python(tmp_path, monkeypatch):
 
 def test_select_ci_workflow_node(tmp_path, monkeypatch):
     """Test _select_ci_workflow selects node workflow."""
-    from bpsai_pair.cli import _select_ci_workflow
+    from bpsai_pair.commands.core import _select_ci_workflow
 
     # Create workflows directory with all three files
     workflows_dir = tmp_path / ".github" / "workflows"
@@ -601,7 +601,7 @@ def test_select_ci_workflow_node(tmp_path, monkeypatch):
 
 def test_select_ci_workflow_fullstack(tmp_path, monkeypatch):
     """Test _select_ci_workflow keeps fullstack workflow."""
-    from bpsai_pair.cli import _select_ci_workflow
+    from bpsai_pair.commands.core import _select_ci_workflow
 
     # Create workflows directory with all three files
     workflows_dir = tmp_path / ".github" / "workflows"
@@ -620,7 +620,7 @@ def test_select_ci_workflow_fullstack(tmp_path, monkeypatch):
 
 def test_select_ci_workflow_no_workflows_dir(tmp_path):
     """Test _select_ci_workflow handles missing workflows directory."""
-    from bpsai_pair.cli import _select_ci_workflow
+    from bpsai_pair.commands.core import _select_ci_workflow
 
     # Should not raise an error
     _select_ci_workflow(tmp_path, "python")

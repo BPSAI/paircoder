@@ -16,3 +16,15 @@
 {"task_id": "T19.9", "estimated_hours": 2.0, "actual_hours": 0.09, "variance_hours": -1.91, "variance_percent": -95.7, "completed_at": "2025-12-22T13:39:51.818440"}
 {"task_id": "T19.5", "estimated_hours": 4.0, "actual_hours": 0.1, "variance_hours": -3.9, "variance_percent": -97.6, "completed_at": "2025-12-22T13:48:37.853187"}
 {"task_id": "T19.7", "estimated_hours": 2.0, "actual_hours": 0.05, "variance_hours": -1.95, "variance_percent": -97.5, "completed_at": "2025-12-22T13:52:40.839061"}
+{"task_id": "T22.1", "estimated_hours": 2.0, "actual_hours": 0.08, "variance_hours": -1.92, "variance_percent": -95.8, "completed_at": "2025-12-22T15:39:17.817483"}
+{"task_id": "T22.2", "estimated_hours": 2.0, "actual_hours": 0.05, "variance_hours": -1.95, "variance_percent": -97.3, "completed_at": "2025-12-22T15:43:00.351942"}
+{"task_id": "T22.3", "estimated_hours": 4.0, "actual_hours": 0.08, "variance_hours": -3.92, "variance_percent": -98.0, "completed_at": "2025-12-22T15:48:01.185237"}
+{"task_id": "T22.4", "estimated_hours": 4.0, "actual_hours": 0.08, "variance_hours": -3.92, "variance_percent": -97.9, "completed_at": "2025-12-22T15:53:15.620436"}
+{"task_id": "T22.5", "estimated_hours": 2.0, "actual_hours": 0.07, "variance_hours": -1.93, "variance_percent": -96.6, "completed_at": "2025-12-22T15:58:28.899707"}
+{"task_id": "T22.6", "estimated_hours": 2.0, "actual_hours": 0.05, "variance_hours": -1.95, "variance_percent": -97.6, "completed_at": "2025-12-22T16:01:30.498863"}
+{"task_id": "T22.7", "estimated_hours": 1.0, "actual_hours": 0.04, "variance_hours": -0.96, "variance_percent": -96.4, "completed_at": "2025-12-22T16:03:49.298960"}
+{"task_id": "T22.8", "estimated_hours": 2.0, "actual_hours": 0.04, "variance_hours": -1.96, "variance_percent": -97.9, "completed_at": "2025-12-22T16:06:29.294549"}
+{"task_id": "T22.9", "estimated_hours": 2.0, "actual_hours": 0.07, "variance_hours": -1.93, "variance_percent": -96.5, "completed_at": "2025-12-22T16:10:52.869492"}
+{"task_id": "T22.10", "estimated_hours": 2.0, "actual_hours": 0.06, "variance_hours": -1.94, "variance_percent": -96.9, "completed_at": "2025-12-22T16:14:51.620272"}
+{"task_id": "T22.11", "estimated_hours": 4.0, "actual_hours": 0.21, "variance_hours": -3.79, "variance_percent": -94.7, "completed_at": "2025-12-22T16:40:22.163941"}
+{"task_id": "T22.12", "estimated_hours": 2.0, "actual_hours": 0.06, "variance_hours": -1.94, "variance_percent": -96.9, "completed_at": "2025-12-22T16:46:56.628280"}
