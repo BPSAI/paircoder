@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2025-12-21
+> Last updated: 2025-12-22
 
 ## Active Plan
 
@@ -14,12 +14,12 @@
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T18.1 | Fix Version String Single Source of Truth | pending | P0 | 10 |
+| T18.1 | Fix Version String Single Source of Truth | done | P0 | 10 |
 | T18.2 | Create Release Prep Command | pending | P1 | 40 |
 | T18.3 | Cookie Cutter Drift Detection CLI | pending | P1 | 40 |
 | T18.4 | Release Engineering Documentation | pending | P2 | 30 |
 
-**Progress:** 0/4 tasks (120 complexity points)
+**Progress:** 1/4 tasks (10/120 complexity points)
 
 ## Sprint History
 
@@ -39,7 +39,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-1. Start T18.1 (version string fix - 15 min quick win)
+1. ~~Start T18.1 (version string fix - 15 min quick win)~~ ✓
 2. Implement release prep command (T18.2)
 3. Add template drift detection (T18.3)
 4. Document release process (T18.4)
@@ -55,6 +55,18 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T18.1 Complete
+
+- **T18.1: Fix Version String Single Source of Truth** ✓
+  - Confirmed `__init__.py` already uses `importlib.metadata.version("bpsai-pair")`
+  - Created `tests/test_version.py` with 5 tests:
+    - Version matches pyproject.toml
+    - No hardcoded version in __init__.py
+    - Uses importlib.metadata correctly
+    - CLI --version shows correct version
+    - Version follows semver format
+  - All acceptance criteria verified and passing
 
 ### 2025-12-22 - v2.6.1 Release
 
