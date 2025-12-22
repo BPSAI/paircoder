@@ -16,10 +16,10 @@
 |-------|-------|--------|----------|------------|
 | T18.1 | Fix Version String Single Source of Truth | done | P0 | 10 |
 | T18.2 | Create Release Prep Command | done | P1 | 40 |
-| T18.3 | Cookie Cutter Drift Detection CLI | pending | P1 | 40 |
+| T18.3 | Cookie Cutter Drift Detection CLI | done | P1 | 40 |
 | T18.4 | Release Engineering Documentation | pending | P2 | 30 |
 
-**Progress:** 2/4 tasks (50/120 complexity points)
+**Progress:** 3/4 tasks (90/120 complexity points)
 
 ## Sprint History
 
@@ -41,7 +41,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 1. ~~Start T18.1 (version string fix - 15 min quick win)~~ ✓
 2. ~~Implement release prep command (T18.2)~~ ✓
-3. Add template drift detection (T18.3)
+3. ~~Add template drift detection (T18.3)~~ ✓
 4. Document release process (T18.4)
 
 ## Backlog (Deprioritized)
@@ -55,6 +55,20 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T18.3 Complete
+
+- **T18.3: Cookie Cutter Drift Detection CLI** ✓
+  - Added `bpsai-pair template check` command
+  - Compares source files with cookiecutter template
+  - Shows drift with line diff counts
+  - Supports `--fail-on-drift` for CI enforcement
+  - Supports `--fix` to auto-sync template from source
+  - Added `bpsai-pair template list` command to list template files
+  - Created `.github/workflows/template-check.yml` for CI
+  - Integrated template drift check into `release prep` command
+  - Created `tests/test_template_check.py` with 13 tests
+  - All 32 related tests passing
 
 ### 2025-12-22 - T18.2 Complete
 

@@ -28,7 +28,7 @@ try:
     from .config import Config
     from .flows import FlowParser, FlowValidationError
     from .flows.parser_v2 import FlowParser as FlowParserV2
-    from .planning.cli_commands import plan_app, task_app, intent_app, standup_app, sprint_app, release_app
+    from .planning.cli_commands import plan_app, task_app, intent_app, standup_app, sprint_app, release_app, template_app
     from .orchestration import Orchestrator, HeadlessSession, HandoffManager
     from .orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
     from .metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig, VelocityTracker
@@ -49,7 +49,7 @@ except ImportError:
     from bpsai_pair.config import Config
     from bpsai_pair.flows import FlowParser, FlowValidationError
     from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
-    from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app, sprint_app, release_app
+    from bpsai_pair.planning.cli_commands import plan_app, task_app, intent_app, standup_app, sprint_app, release_app, template_app
     from bpsai_pair.orchestration import Orchestrator, HeadlessSession, HandoffManager
     from bpsai_pair.orchestration import AgentSelector, SelectionCriteria, select_agent_for_task
     from bpsai_pair.metrics import MetricsCollector, MetricsReporter, BudgetEnforcer, BudgetConfig, VelocityTracker
@@ -89,6 +89,7 @@ app.add_typer(intent_app, name="intent")
 app.add_typer(standup_app, name="standup")
 app.add_typer(sprint_app, name="sprint")
 app.add_typer(release_app, name="release")
+app.add_typer(template_app, name="template")
 
 # Orchestration sub-app for multi-agent coordination
 orchestrate_app = typer.Typer(
