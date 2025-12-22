@@ -2405,7 +2405,7 @@ def release_prep(
     config_path = paircoder_dir / "config.yaml"
     release_config = {
         "version_source": "pyproject.toml",
-        "documentation": ["CHANGELOG.md", "README.md"],
+        "documentation": ["CHANGELOG.md", "README.md", ".paircoder/docs/FEATURE_MATRIX.md"],
         "freshness_days": 7,
     }
 
@@ -2428,11 +2428,21 @@ def release_prep(
     project_root = paircoder_dir.parent
 
     # Check 1: Version consistency
-    pyproject_path = project_root / "pyproject.toml"
+    # Search for pyproject.toml in multiple locations
+    pyproject_candidates = [
+        project_root / "pyproject.toml",
+        project_root / "tools" / "cli" / "pyproject.toml",  # PairCoder structure
+    ]
+    pyproject_path = None
+    for candidate in pyproject_candidates:
+        if candidate.exists():
+            pyproject_path = candidate
+            break
+
     pyproject_version = None
     package_version = None
 
-    if pyproject_path.exists():
+    if pyproject_path and pyproject_path.exists():
         pyproject_content = pyproject_path.read_text()
         version_match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pyproject_content, re.MULTILINE)
         if version_match:
