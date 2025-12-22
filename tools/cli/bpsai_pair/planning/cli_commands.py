@@ -919,11 +919,18 @@ def task_update(
     ),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID to narrow search"),
     no_hooks: bool = typer.Option(False, "--no-hooks", help="Skip running hooks"),
+    skip_state_check: bool = typer.Option(
+        False, "--skip-state-check",
+        help="Skip checking if state.md was updated (not recommended)"
+    ),
 ):
     """Update a task's status.
 
     Automatically runs hooks (Trello sync, timer, metrics) on status changes.
     Use --no-hooks to skip hook execution.
+
+    When completing a task (--status done), state.md must be updated first.
+    Use --skip-state-check to bypass this check (logs a warning).
     """
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
@@ -942,6 +949,21 @@ def task_update(
         raise typer.Exit(1)
 
     old_status = task.status.value
+
+    # Check state.md update requirement when completing a task
+    if status == "done" and not skip_state_check:
+        check_result = _check_state_md_updated(paircoder_dir, task_id)
+        if not check_result["updated"]:
+            console.print(f"\n[red]Cannot complete task: state.md not updated since task started.[/red]\n")
+            console.print(f"Please update [cyan].paircoder/context/state.md[/cyan] with:")
+            console.print(f"  - Mark [yellow]{task_id}[/yellow] as done in task list")
+            console.print(f"  - Add session entry under [yellow]\"What Was Just Done\"[/yellow]")
+            console.print(f"  - Update [yellow]\"What's Next\"[/yellow] section\n")
+            console.print(f"Then retry: [cyan]bpsai-pair task update {task_id} --status done[/cyan]")
+            console.print(f"\n[dim]Use --skip-state-check to bypass (not recommended)[/dim]")
+            raise typer.Exit(1)
+    elif status == "done" and skip_state_check:
+        console.print("[yellow]Warning: Skipping state.md check - task completion not documented[/yellow]")
 
     # Update the status
     success = task_parser.update_status(task_id, status, plan_slug)
@@ -964,6 +986,83 @@ def task_update(
     else:
         console.print(f"[red]Failed to update task: {task_id}[/red]")
         raise typer.Exit(1)
+
+
+def _check_state_md_updated(paircoder_dir: Path, task_id: str) -> dict:
+    """Check if state.md was updated since the task started.
+
+    Uses the task's timer start time (from time-tracking-cache.json) to determine
+    when the task was started. If no timer exists, checks if state.md was modified
+    after the task file's modification time.
+
+    Args:
+        paircoder_dir: Path to .paircoder directory
+        task_id: The task ID being completed
+
+    Returns:
+        dict with:
+            - updated: bool - True if state.md was updated since task started
+            - reason: str - Explanation of the check result
+    """
+    import os
+
+    state_path = paircoder_dir / "context" / "state.md"
+
+    # If state.md doesn't exist, we can't check
+    if not state_path.exists():
+        return {"updated": True, "reason": "state.md not found - skipping check"}
+
+    state_mtime = os.path.getmtime(state_path)
+
+    # Try to get task start time from timer cache
+    timer_cache_path = paircoder_dir / "time-tracking-cache.json"
+    task_start_time = None
+
+    if timer_cache_path.exists():
+        try:
+            import json
+            with open(timer_cache_path) as f:
+                cache_data = json.load(f)
+
+            # Check for active timer for this task
+            active = cache_data.get("_active", {})
+            if active.get("task_id") == task_id and active.get("start"):
+                start_str = active["start"]
+                task_start_time = datetime.fromisoformat(start_str).timestamp()
+
+            # Also check for completed entries for this task (last entry)
+            if task_start_time is None and task_id in cache_data:
+                entries = cache_data[task_id].get("entries", [])
+                if entries:
+                    # Use the last entry's start time
+                    last_entry = entries[-1]
+                    if last_entry.get("start"):
+                        task_start_time = datetime.fromisoformat(last_entry["start"]).timestamp()
+
+        except (json.JSONDecodeError, KeyError, ValueError):
+            pass
+
+    # If we couldn't get timer start time, use task file modification time
+    if task_start_time is None:
+        task_files = list(paircoder_dir.glob(f"tasks/**/{task_id}.task.md"))
+        task_files.extend(list(paircoder_dir.glob(f"tasks/{task_id}.task.md")))
+        if task_files:
+            # Use the file creation or modification time as fallback
+            task_file = task_files[0]
+            task_start_time = os.path.getmtime(task_file)
+
+    # If we still can't determine start time, allow the update
+    if task_start_time is None:
+        return {"updated": True, "reason": "Could not determine task start time - skipping check"}
+
+    # Check if state.md was modified after task started
+    if state_mtime > task_start_time:
+        return {"updated": True, "reason": "state.md updated after task started"}
+    else:
+        return {
+            "updated": False,
+            "reason": f"state.md was last modified before task started",
+        }
 
 
 def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) -> None:

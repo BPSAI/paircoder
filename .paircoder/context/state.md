@@ -14,7 +14,7 @@
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T19.1 | Mandatory state.md Update Hook | pending | P0 | 40 |
+| T19.1 | Mandatory state.md Update Hook | done | P0 | 40 |
 | T19.2 | Session Restart Enforcement | pending | P0 | 45 |
 | T19.3 | Compaction Detection and Recovery | pending | P1 | 55 |
 | T19.4 | Token-Aware Batch Planning | pending | P1 | 40 |
@@ -24,7 +24,7 @@
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
 
-**Progress:** 0/9 tasks (0/340 complexity points)
+**Progress:** 1/9 tasks (40/340 complexity points)
 
 ## Sprint History
 
@@ -62,6 +62,24 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.1 Complete
+
+- **T19.1: Mandatory state.md Update Hook** ✓
+  - Added pre-completion check to `task update --status done` command
+  - Block completion if state.md wasn't updated since task started
+  - Uses timer start time from `time-tracking-cache.json` as reference
+  - Falls back to task file modification time if no timer
+  - Added `--skip-state-check` flag for emergency bypass (logs warning)
+  - Helpful error message tells user what to update in state.md
+  - Created `tests/test_state_check.py` with 7 tests covering:
+    - Blocking when state.md not updated
+    - Allowing when state.md was updated
+    - Bypass flag functionality
+    - Only applies to `done` status
+    - Handling tasks without active timer
+    - Error message includes instructions and task ID
+  - All 7 tests passing
 
 ### 2025-12-22 - Sprint 19 Planning Complete
 
