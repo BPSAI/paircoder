@@ -1,7 +1,9 @@
 """bpsai_pair package"""
-from importlib.metadata import version
-
-__version__ = version("bpsai-pair")
+try:
+    from importlib.metadata import version, PackageNotFoundError
+    __version__ = version("bpsai-pair")
+except PackageNotFoundError:
+    __version__ = "dev"
 
 # Core modules
 from . import cli
