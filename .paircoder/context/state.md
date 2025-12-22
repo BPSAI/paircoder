@@ -4,27 +4,30 @@
 
 ## Active Plan
 
-**Plan:** None (between sprints)
-**Last Release:** v2.7.0 (Sprint 19: Methodology & Session Management)
-**Status:** Released to PyPI
-**Next:** Plan Sprint 20
+**Plan:** plan-2025-12-sprint-22-cli-refactor-phase1
+**Epic:** EPIC-003: CLI Architecture Refactor
+**Phase:** Phase 1 of 5 - Extract Commands from cli.py
+**Status:** Planned (ready to start)
+**Goal:** Reduce cli.py from 2,892 → ~200 lines
 
-## Current Sprint Tasks
+## Current Sprint Tasks (Sprint 22)
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T19.1 | Mandatory state.md Update Hook | done | P0 | 40 |
-| T19.2 | Session Restart Enforcement | done | P0 | 45 |
-| T19.3 | Compaction Detection and Recovery | done | P1 | 55 |
-| T19.4 | Token-Aware Batch Planning | done | P1 | 40 |
-| T19.5 | Skill Validator CLI | done | P2 | 40 |
-| T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | done | P3 | 20 |
-| T19.7 | Document Built-in Claude Code Commands | done | P2 | 25 |
-| T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | done | P1 | 45 |
-| T19.9 | Detect Manual Task File Edits | done | P1 | 30 |
-| T19.10 | Add `bpsai-pair migrate` command | done | P2 | 45 |
+| T22.1 | Extract preset commands to commands/preset.py | pending | P1 | 20 |
+| T22.2 | Extract config commands to commands/config.py | pending | P1 | 25 |
+| T22.3 | Extract orchestrate commands to commands/orchestrate.py | pending | P1 | 35 |
+| T22.4 | Extract metrics commands to commands/metrics.py | pending | P1 | 40 |
+| T22.5 | Extract timer commands to commands/timer.py | pending | P1 | 20 |
+| T22.6 | Extract benchmark commands to commands/benchmark.py | pending | P1 | 25 |
+| T22.7 | Extract cache commands to commands/cache.py | pending | P2 | 15 |
+| T22.8 | Extract mcp commands to commands/mcp.py | pending | P2 | 20 |
+| T22.9 | Extract flow commands to commands/flow.py | pending | P1 | 25 |
+| T22.10 | Extract security commands to commands/security.py | pending | P1 | 30 |
+| T22.11 | Extract core commands to commands/core.py | pending | P0 | 45 |
+| T22.12 | Refactor cli.py to registration only | pending | P0 | 30 |
 
-**Progress:** 10/10 tasks (385/385 complexity points) ✅ Sprint Complete!
+**Progress:** 0/12 tasks (0/330 complexity points)
 
 ## Sprint History
 
@@ -45,18 +48,18 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-✅ **v2.7.0 Released!** Sprint 19 complete and published to PyPI.
+**Sprint 22: CLI Architecture Refactor (Phase 1)** is planned and ready to start.
 
-**Sprint 19 Delivered:**
-- Methodology enforcement (state.md hooks, session management)
-- Compaction detection and recovery
-- Token-aware batch planning
-- Skill validator CLI
-- Trello AC verification
-- Manual edit detection
-- Migration command
+**Recommended Task Order:**
+1. **T22.1** - Create commands/ directory and first extraction (preset)
+2. **T22.2-T22.10** - Extract remaining command groups (can be parallelized)
+3. **T22.11** - Extract core commands (depends on 1-10)
+4. **T22.12** - Final cli.py cleanup (depends on all above)
 
-**Next:** Plan Sprint 20 based on backlog priorities.
+**Sprint Goal:**
+- Reduce `cli.py` from 2,892 lines to ~200 lines
+- Create `commands/` module with 11 command files
+- No behavior changes - pure refactor
 
 ## Backlog (Deprioritized)
 
@@ -69,6 +72,23 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - Sprint 22 Planning Complete
+
+- **Sprint 22: CLI Architecture Refactor (Phase 1)** planned
+  - Created plan: `plan-2025-12-sprint-22-cli-refactor-phase1`
+  - Generated 12 task files (T22.1 through T22.12)
+  - Total complexity: 330 points
+  - Synced to Trello PairCoder board (Planned/Ready list)
+  - 12 cards created on Trello
+
+- **EPIC-003 Analysis:**
+  - Total effort: XL (~80-100 hours across 4-5 sprints)
+  - Phase 1: Extract from cli.py (Sprint 22) - 12 tasks
+  - Phase 2: Extract from planning/cli_commands.py (Sprint 23) - 9 tasks
+  - Phase 3: Consolidate root files (Sprint 24) - 10 tasks
+  - Phase 4: Consolidate parsers (Sprint 24-25) - 3 tasks
+  - Phase 5: Documentation & cleanup (Sprint 25) - 5 tasks
 
 ### 2025-12-22 - v2.7.0 Released
 
