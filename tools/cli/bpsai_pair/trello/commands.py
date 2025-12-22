@@ -109,19 +109,38 @@ def disconnect():
 
 
 @app.command()
-def boards():
+def boards(
+    as_json: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
     """List available Trello boards."""
+    import json
+
     client = get_client()
     board_list = client.list_boards()
 
-    table = Table(title="Trello Boards")
-    table.add_column("ID", style="dim")
-    table.add_column("Name")
-    table.add_column("URL")
+    # Filter out closed boards
+    open_boards = [b for b in board_list if not b.closed]
 
-    for board in board_list:
-        if not board.closed:
-            table.add_row(board.id, board.name, board.url)
+    if as_json:
+        boards_data = [
+            {
+                "id": board.id,
+                "name": board.name,
+                "url": board.url,
+                "shortUrl": getattr(board, "shortUrl", board.url),
+            }
+            for board in open_boards
+        ]
+        console.print(json.dumps(boards_data, indent=2))
+        return
+
+    table = Table(title="Trello Boards")
+    table.add_column("Name", style="cyan")
+    table.add_column("ID", style="green", no_wrap=True)  # no_wrap prevents truncation
+    table.add_column("URL", style="blue")
+
+    for board in open_boards:
+        table.add_row(board.name, board.id, board.url)
 
     console.print(table)
 
@@ -568,7 +587,7 @@ def init_board(
 
 @app.command("list-fields")
 def list_fields():
-    """List all custom fields on the active board.
+    """List all custom fields on the active board (table format).
 
     Shows field names, types, and available options for dropdown fields.
 
@@ -603,6 +622,70 @@ def list_fields():
         table.add_row(field.name, field.field_type, options)
 
     console.print(table)
+
+
+@app.command("fields")
+def fields_cmd(
+    board: Optional[str] = typer.Option(None, "--board", "-b", help="Board ID (uses config default if not specified)"),
+    refresh: bool = typer.Option(False, "--refresh", help="Force refresh from API"),
+    as_json: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show custom fields and their valid options for a board.
+
+    This command shows all custom fields on the board with their types
+    and valid option values. Use this to discover what values can be
+    set on cards.
+
+    Examples:
+        bpsai-pair trello fields
+        bpsai-pair trello fields --json
+        bpsai-pair trello fields --refresh
+        bpsai-pair trello fields --board abc123
+    """
+    import json
+
+    from .fields import get_cached_board_fields
+
+    config = _load_config()
+    board_id = board or config.get("trello", {}).get("board_id")
+
+    if not board_id:
+        console.print("[red]Board ID required. Either:[/red]")
+        console.print("  1. Use --board <board-id>")
+        console.print("  2. Set trello.board_id in .paircoder/config.yaml")
+        console.print("\n[dim]Run 'bpsai-pair trello boards --json' to see available boards.[/dim]")
+        raise typer.Exit(1)
+
+    client = get_client()
+    client.set_board(board_id)
+
+    fields = get_cached_board_fields(board_id, client, force_refresh=refresh)
+
+    if not fields:
+        console.print("[yellow]No custom fields found on this board[/yellow]")
+        raise typer.Exit(0)
+
+    if as_json:
+        console.print(json.dumps(fields, indent=2))
+        return
+
+    # Display fields with options in a readable format
+    for field_name, field_data in sorted(fields.items()):
+        console.print(f"\n[bold]{field_name}[/bold] ({field_data['type']})")
+
+        if field_data["options"]:
+            for opt in sorted(field_data["options"].keys()):
+                console.print(f"  • {opt}")
+        elif field_data["type"] == "text":
+            console.print("  (free text)")
+        elif field_data["type"] == "checkbox":
+            console.print("  (true/false)")
+        elif field_data["type"] == "number":
+            console.print("  (numeric value)")
+        elif field_data["type"] == "date":
+            console.print("  (ISO date format)")
+
+    console.print()  # Final newline
 
 
 @app.command("set-field")

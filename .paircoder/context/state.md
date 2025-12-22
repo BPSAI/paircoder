@@ -4,20 +4,22 @@
 
 ## Active Plan
 
-**Plan:** Sprint 18 - Release Engineering Foundation
-**Version Target:** v2.7.0
-**Status:** Ready to start
+**Plan:** plan-2025-12-sprint-18-release-engineering
+**Title:** Sprint 18 - Release Engineering Foundation
+**Version Target:** v2.6.2
+**Status:** Active
+**Trello:** Synced to PairCoder board (Planned/Ready list)
 
 ## Current Sprint Tasks
 
-| ID | Title | Status | Priority | Effort |
-|----|-------|--------|----------|--------|
-| T18.1 | Fix version string single source | pending | P0 | XS |
-| T18.2 | Create release prep command | pending | P1 | M |
-| T18.3 | Cookie cutter drift detection CLI | pending | P1 | M |
-| T18.4 | Release engineering documentation | pending | P2 | M |
+| ID    | Title | Status | Priority | Complexity |
+|-------|-------|--------|----------|------------|
+| T18.1 | Fix Version String Single Source of Truth | pending | P0 | 10 |
+| T18.2 | Create Release Prep Command | pending | P1 | 40 |
+| T18.3 | Cookie Cutter Drift Detection CLI | pending | P1 | 40 |
+| T18.4 | Release Engineering Documentation | pending | P2 | 30 |
 
-**Progress:** 0/4 tasks (~12 hrs estimated)
+**Progress:** 0/4 tasks (120 complexity points)
 
 ## Sprint History
 
@@ -52,6 +54,13 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-21 - Sprint 18 Planning
+
+- Created plan: `plan-2025-12-sprint-18-release-engineering`
+- Generated 4 task files (T18.1 through T18.4)
+- Synced to Trello PairCoder board (Planned/Ready list)
+- Total complexity: 120 points
 
 ### 2025-12-21 - Context Cleanup
 

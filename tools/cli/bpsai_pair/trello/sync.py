@@ -10,6 +10,7 @@ import re
 
 from .client import TrelloService, EffortMapping
 from .templates import CardDescriptionTemplate, CardDescriptionData, should_preserve_description
+from .fields import FieldValidator, map_value_to_option, get_default_mappings_for_field
 from ..constants import extract_task_id_from_card_name
 
 logger = logging.getLogger(__name__)
@@ -310,6 +311,61 @@ class TrelloSyncManager:
         """
         self.service = service
         self.config = config or TaskSyncConfig()
+        self._field_validator: Optional[FieldValidator] = None
+
+    @property
+    def field_validator(self) -> Optional[FieldValidator]:
+        """Lazy-load field validator for the board."""
+        if self._field_validator is None:
+            try:
+                if self.service.board:
+                    self._field_validator = FieldValidator(
+                        self.service.board.id,
+                        self.service,
+                        use_cache=True
+                    )
+            except (AttributeError, TypeError):
+                # Handle mock objects or missing board
+                pass
+        return self._field_validator
+
+    def validate_and_map_custom_fields(
+        self,
+        custom_fields: Dict[str, str]
+    ) -> Dict[str, str]:
+        """Validate and map custom field values before setting them.
+
+        This method:
+        1. Validates each field value against the board's actual options
+        2. Maps aliases (e.g., 'cli' -> 'Worker/Function') to valid values
+        3. Logs warnings for invalid values that will be skipped
+
+        Args:
+            custom_fields: Dict of field_name -> value to validate
+
+        Returns:
+            Dict of validated field_name -> value (invalid fields removed)
+        """
+        if not self.field_validator:
+            logger.warning("No field validator available, skipping validation")
+            return custom_fields
+
+        validated = {}
+        for field_name, value in custom_fields.items():
+            mapped_value, option_id, error = self.field_validator.map_and_validate(
+                field_name, value
+            )
+            if error:
+                logger.warning(f"Skipping invalid field: {error}")
+            elif mapped_value is not None:
+                validated[field_name] = mapped_value
+                if mapped_value != value:
+                    logger.debug(f"Mapped {field_name}: '{value}' -> '{mapped_value}'")
+            else:
+                # For non-dropdown fields, keep original value
+                validated[field_name] = value
+
+        return validated
 
     def infer_stack(self, task: TaskData) -> Optional[str]:
         """Infer stack/label from task title and tags.
@@ -442,12 +498,15 @@ class TrelloSyncManager:
         # Status field - use proper mapping for Butler workflow
         custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
 
+        # Validate and map custom field values before setting
+        validated_fields = self.validate_and_map_custom_fields(custom_fields)
+
         # Create card
         card = self.service.create_card_with_custom_fields(
             list_name=list_name,
             name=card_name,
             desc=description,
-            custom_fields=custom_fields
+            custom_fields=validated_fields
         )
 
         if not card:
@@ -513,7 +572,9 @@ class TrelloSyncManager:
         # Status field - use proper mapping for Butler workflow
         custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
 
-        self.service.set_card_custom_fields(card, custom_fields)
+        # Validate and map custom field values before setting
+        validated_fields = self.validate_and_map_custom_fields(custom_fields)
+        self.service.set_card_custom_fields(card, validated_fields)
         self.service.set_effort_field(card, task.complexity, self.config.effort_field)
 
         # Add labels (stack-based and tag-based)

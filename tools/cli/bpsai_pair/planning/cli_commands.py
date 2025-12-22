@@ -444,7 +444,7 @@ def plan_status(
 @plan_app.command("sync-trello")
 def plan_sync_trello(
     plan_id: str = typer.Argument(..., help="Plan ID to sync"),
-    board_id: Optional[str] = typer.Option(None, "--board", "-b", help="Target Trello board ID"),
+    board_id: Optional[str] = typer.Option(None, "--board", "-b", help="Target Trello board ID (uses config default if not specified)"),
     target_list: Optional[str] = typer.Option(None, "--target-list", "-t", help="Target list for cards (default: Intake/Backlog, use 'Planned/Ready' for sprint planning)"),
     create_lists: bool = typer.Option(False, "--create-lists/--no-create-lists", help="Create sprint lists if missing"),
     link_cards: bool = typer.Option(True, "--link/--no-link", help="Store card IDs in task files"),
@@ -453,6 +453,8 @@ def plan_sync_trello(
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Sync plan tasks to Trello board as cards.
+
+    Uses board_id from .paircoder/config.yaml if --board is not specified.
 
     By default, cards are created in 'Intake/Backlog'. For sprint planning,
     use --target-list "Planned/Ready" to place cards directly in the ready queue.
@@ -475,9 +477,20 @@ def plan_sync_trello(
         console.print(f"[yellow]No tasks found for plan: {plan_id}[/yellow]")
         raise typer.Exit(1)
 
+    # Load config to get board_id if not provided
+    import yaml
+    config_file = paircoder_dir / "config.yaml"
+    full_config = {}
+    if config_file.exists():
+        with open(config_file) as f:
+            full_config = yaml.safe_load(f) or {}
+
+    # Use config board_id as default if --board not specified
+    effective_board_id = board_id or full_config.get("trello", {}).get("board_id")
+
     results = {
         "plan_id": plan_id,
-        "board_id": board_id,
+        "board_id": effective_board_id,
         "lists_created": [],
         "cards_created": [],
         "cards_updated": [],
@@ -496,7 +509,10 @@ def plan_sync_trello(
     if dry_run:
         # Preview mode
         console.print(f"\n[bold]Would sync plan:[/bold] {plan_id}")
-        console.print(f"[bold]Target board:[/bold] {board_id or '(not specified)'}")
+        if effective_board_id:
+            console.print(f"[bold]Target board:[/bold] {effective_board_id}")
+        else:
+            console.print(f"[bold]Target board:[/bold] [yellow](not specified)[/yellow]")
         console.print(f"\n[bold]Tasks to sync:[/bold]")
 
         for sprint_name, sprint_tasks in sorted(sprints_tasks.items()):
@@ -516,10 +532,14 @@ def plan_sync_trello(
         return
 
     # Check for Trello connection
-    if not board_id:
-        console.print("[red]Board ID required. Use --board <board-id>[/red]")
-        console.print("[dim]List boards: bpsai-pair trello boards[/dim]")
+    if not effective_board_id:
+        console.print("[red]Board ID required. Either:[/red]")
+        console.print("  1. Use --board <board-id>")
+        console.print("  2. Set trello.board_id in .paircoder/config.yaml")
+        console.print("\n[dim]Run 'bpsai-pair trello boards --json' to see available boards.[/dim]")
         raise typer.Exit(1)
+
+    board_id = effective_board_id  # Use effective board_id for the rest of the function
 
     try:
         from ..trello.auth import load_token
@@ -540,14 +560,8 @@ def plan_sync_trello(
         service.set_board(board_id)
         results["board_id"] = board_id
 
-        # Load sync configuration from config.yaml if available
-        import yaml
-        config_file = paircoder_dir / "config.yaml"
-        trello_config = {}
-        if config_file.exists():
-            with open(config_file) as f:
-                full_config = yaml.safe_load(f) or {}
-                trello_config = full_config.get("trello", {})
+        # Use config already loaded earlier
+        trello_config = full_config.get("trello", {})
 
         # Create sync config from file or use defaults
         sync_config = TaskSyncConfig.from_config(trello_config)

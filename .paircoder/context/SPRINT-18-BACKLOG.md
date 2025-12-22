@@ -1,9 +1,22 @@
 # Sprint 18: Release Engineering Foundation
 
-> **Target Version:** v2.7.0
-> **Type:** maintenance
+> **Target Version:** v2.6.2
+> **Type:** chore
 > **Slug:** sprint-18-release-engineering
 > **Focus:** Automate releases, create release prep tooling
+
+---
+
+## Trello Card Defaults
+
+When syncing to Trello, use these values for ALL cards in this sprint:
+
+```yaml
+Project: PairCoder
+Stack: Worker/Function
+Repo URL: https://github.com/BPSAI/paircoder
+Status: Planning
+```
 
 ---
 
@@ -25,9 +38,8 @@ Establish automated release engineering processes. Build on Sprint 17.5's cookie
 ### T18.1: Fix Version String Single Source of Truth
 
 **Priority:** P0
-**Effort:** XS (15 min)
+**Effort:** S
 **Type:** bugfix
-**Source:** BUG-004
 
 #### Description
 
@@ -53,7 +65,7 @@ __version__ = version("bpsai-pair")
 
 - [ ] Single source of truth for version (pyproject.toml)
 - [ ] `bpsai-pair --version` shows correct version
-- [ ] No hardcoded version strings remain
+- [ ] No hardcoded version strings remain in __init__.py
 - [ ] Test verifies version matches pyproject.toml
 
 ---
@@ -61,9 +73,8 @@ __version__ = version("bpsai-pair")
 ### T18.2: Create Release Prep Command
 
 **Priority:** P1
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
-**Source:** ENH-005
 
 #### Description
 
@@ -95,20 +106,6 @@ Generated tasks:
 5. Test suite passing
 6. No uncommitted changes
 
-#### Config Section
-
-```yaml
-release:
-  version_source: pyproject.toml
-  documentation:
-    - CHANGELOG.md
-    - README.md
-    - docs/FEATURE_MATRIX.md
-  cookie_cutter:
-    template_path: tools/cli/bpsai_pair/data/cookiecutter-paircoder
-    sync_required: true
-```
-
 #### Acceptance Criteria
 
 - [ ] `release prep` command exists
@@ -116,7 +113,6 @@ release:
 - [ ] Detects CHANGELOG gaps
 - [ ] Detects cookie cutter drift
 - [ ] Generates release tasks automatically
-- [ ] Config section for customization
 - [ ] `--since` flag for comparison baseline
 
 ---
@@ -124,9 +120,8 @@ release:
 ### T18.3: Cookie Cutter Drift Detection CLI
 
 **Priority:** P1
-**Effort:** M (4 hrs)
+**Effort:** M
 **Type:** feature
-**Source:** ENH-007
 
 #### Description
 
@@ -154,12 +149,6 @@ All critical files in sync.
   run: bpsai-pair template check --fail-on-drift
 ```
 
-#### Implementation
-
-Compare key files between:
-- Source: Current repo files
-- Template: `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`
-
 #### Acceptance Criteria
 
 - [ ] `template check` command exists
@@ -174,9 +163,8 @@ Compare key files between:
 ### T18.4: Release Engineering Documentation
 
 **Priority:** P2
-**Effort:** M (3 hrs)
-**Type:** docs
-**Source:** DOC-005
+**Effort:** M
+**Type:** chore
 
 #### Description
 
@@ -209,7 +197,7 @@ Document the release process to prevent future release issues.
 
 | Priority | Count | Effort |
 |----------|-------|--------|
-| P0 | 1 | XS |
+| P0 | 1 | S |
 | P1 | 2 | M + M |
 | P2 | 1 | M |
 | **Total** | **4** | ~12 hrs |
