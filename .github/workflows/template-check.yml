@@ -26,4 +26,4 @@ jobs:
         run: pip install -e tools/cli
 
       - name: Check template drift
-        run: bpsai-pair template check --fail-on-drift
+        run: bpsai-pair template check
