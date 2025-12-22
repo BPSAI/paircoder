@@ -1,218 +1,163 @@
 # BPS Trello Board Conventions
 
 > Reference document for AI agents working with BPS AI Software Trello boards.
+> **CRITICAL:** Use ONLY the exact values listed below for custom fields.
+
+---
+
+## Custom Field Options (EXACT VALUES)
+
+These are the **only valid values** for custom fields. Do not invent new values.
+
+### Project Field (Dropdown)
+
+| Value                 | Use For                     |
+|-----------------------|-----------------------------|
+| `--`                  | Not specified               |
+| `Aurora`              | Aurora project              |
+| `CodexAgent-Trello`   | CodexAgent-Trello project   |
+| `DanHil AP Invoices`  | DanHil AP Invoices project  |
+| `DanHil RFQ`          | DanHil RFQ project          |
+| `Prompt Acadamy`      | Prompt Acadamy project      |
+| `Weber SSRS Analysis` | Weber SSRS Analysis project |
+| `PairCoder`           | **All PairCoder tasks**     |
+| `Support App`         | BPS Support App SDK project |
+
+
+### Stack Field (Dropdown)
+
+| Value | Use For |
+|-------|---------|
+| `--` | Not specified |
+| `React` | Frontend React work |
+| `Flask` | Flask/Python API work |
+| `Worker/Function` | Background jobs, CLI tools, utilities |
+| `Infra` | Infrastructure, CI/CD, deployment |
+| `Collection` | Documentation, meta-tasks |
+
+**For PairCoder CLI tasks, use `Worker/Function`** (CLI is not a separate option).
+
+### Status Field (Dropdown)
+
+| Value | Maps To | Use When |
+|-------|---------|----------|
+| `--` | Not set | Never use |
+| `Planning` | pending | Task is being planned |
+| `In progress` | in_progress | Work has started |
+| `Testing` | review | Under test/review |
+| `Done` | done | Completed |
+| `Enqueued` | ready | Ready to start, waiting |
+| `Waiting` | blocked | Waiting on external dependency |
+| `Blocked` | blocked | Cannot proceed |
+
+### Effort Field (Dropdown)
+
+| Value | Complexity Range | Hours |
+|-------|------------------|-------|
+| `--` | Not specified | - |
+| `S` | 0-30 | < 4 hrs |
+| `M` | 31-60 | 4-8 hrs |
+| `L` | 61-100 | 1+ days |
+
+**Note:** Only S, M, L are available. No XS or XL options exist.
+
+### Repo URL Field (Dropdown)
+
+| Value | Use For |
+|-------|---------|
+| `--` | Not specified |
+| `https://github.com/BPSAI/paircoder` | PairCoder tasks |
+
+---
+
+## PairCoder Task Defaults
+
+When creating cards for PairCoder, **always use these values**:
+
+```yaml
+Project: PairCoder
+Stack: Worker/Function
+Repo URL: https://github.com/BPSAI/paircoder
+Status: Planning  # or Enqueued for ready tasks
+Effort: [S/M/L based on task complexity]
+```
 
 ---
 
 ## Protected Cards (NEVER MOVE)
 
-The **"Info"** list contains dashboard/header cards that aggregate board metrics. These cards must NEVER be moved, modified, or deleted.
+The **"Info"** list contains dashboard/header cards. NEVER move, modify, or delete:
 
-### Dashboard Cards to Protect
-
-| Card Name | Purpose |
-|-----------|---------|
-| Weekly Completed | Tracks weekly completion count |
-| Frontend Completed | Counts frontend task completions |
-| Backend Completed | Counts backend task completions |
-| Worker/Function Completed | Tracks worker/function completions |
-| Aging WIP | Shows work-in-progress aging metrics |
-| Board Setup | Board configuration card |
-
-### How to Identify Protected Cards
-
-- Located in the "Info" list
-- Often have colored counter backgrounds
-- Display aggregate numbers or metrics
-- Have automation rules attached
-
-**Rule:** If a card is in the "Info" list, assume it's protected and leave it alone.
+- Weekly Completed
+- Frontend Completed
+- Backend Completed
+- Worker/Function Completed
+- Aging WIP
+- Board Setup card
+- Any card with colored counter backgrounds
 
 ---
 
-## Required Custom Fields
+## Valid Plan Types
 
-When creating or completing Trello cards, these custom fields MUST be populated:
+The CLI only accepts these plan types:
 
-### On Card Creation
+| Type | Use For |
+|------|---------|
+| `feature` | New functionality |
+| `bugfix` | Bug fixes |
+| `refactor` | Code improvements |
+| `chore` | Maintenance, cleanup, docs |
 
-| Field | Required | Description | Example |
-|-------|----------|-------------|---------|
-| **Project** | Yes | The project name | "Support App", "PairCoder" |
-| **Stack** | Yes | Technology stack | "React", "Python", "Flask", "CLI" |
-| **Repo URL** | Yes | GitHub repository URL | `https://github.com/org/repo` |
-| **Effort** | Yes | Task size estimate | XS, S, M, L, XL |
-| **Agent Task** | If AI-assignable | Check if AI can work on this | Checkbox |
-
-### On Card Completion
-
-| Field | When | Description |
-|-------|------|-------------|
-| **PR URL** | When PR created | Link to the pull request |
-
-### Effort Sizing Guide
-
-| Size | Time Estimate | Complexity Range |
-|------|---------------|------------------|
-| XS | < 1 hour | 0-10 |
-| S | 1-4 hours | 11-25 |
-| M | 4-8 hours (half to full day) | 26-50 |
-| L | 1-2 days | 51-75 |
-| XL | 3+ days | 76+ |
+**Note:** `maintenance` is NOT valid. Use `chore` instead.
 
 ---
 
-## Acceptance Criteria Workflow
+## Task Naming Convention
 
-### Creating Acceptance Criteria
-
-When creating cards, add acceptance criteria as a checklist named "Acceptance Criteria":
-
-```markdown
-Checklist: Acceptance Criteria
-- [ ] Feature X is implemented
-- [ ] Unit tests pass
-- [ ] Documentation updated
-- [ ] No console errors
-```
-
-### Checking Off Acceptance Criteria
-
-**CRITICAL:** All acceptance criteria items MUST be checked before moving a card to "Deployed/Done".
-
-Use the `ttask done` command which automatically checks all items:
-
-```bash
-bpsai-pair ttask done TRELLO-XX --summary "What was accomplished" --list "Deployed/Done"
-```
-
-**What this does:**
-1. Moves card to specified list
-2. **Automatically checks ALL acceptance criteria items**
-3. Adds completion summary as comment
-
-**DO NOT** manually move cards to Done without checking acceptance criteria.
-
----
-
-## PR URL Workflow
-
-### When Creating a Pull Request
-
-1. Create the PR on GitHub
-2. Add the PR URL to the Trello card:
-
-```bash
-bpsai-pair ttask update TRELLO-XX --pr-url "https://github.com/org/repo/pull/123"
-```
-
-Or manually set the "PR URL" custom field on the card.
-
-### PR Link in Card Description
-
-Also include in the PR description:
-
-```markdown
-## Related
-- Trello: https://trello.com/c/shortId
-```
+| Format | Example | Use For |
+|--------|---------|---------|
+| `T{sprint}.{seq}` | T18.1, T18.2 | Sprint tasks (preferred) |
+| `TASK-{num}` | TASK-150 | Legacy format |
+| `REL-{sprint}-{seq}` | REL-18-01 | Release tasks |
+| `BUG-{num}` | BUG-005 | Bug fixes |
 
 ---
 
 ## Board List Structure
 
-Standard BPS board has 7 lists:
-
-| List | Purpose | Cards Move Here When... |
-|------|---------|------------------------|
-| **Info** | Dashboard cards (PROTECTED) | Never - these are static |
-| **Intake / Backlog** | New ideas, unplanned work | Newly created, not yet planned |
-| **Planned / Ready** | Selected for upcoming work | Prioritized for next 1-2 weeks |
-| **In Progress** | Active development | Work has started |
-| **Review / Testing** | Under review | Implementation complete, needs review |
-| **Deployed / Done** | Completed and live | Merged and deployed |
-| **Issues / Tech Debt** | Bugs, improvements | Issues found, tech debt identified |
+| List | Purpose |
+|------|---------|
+| **Info** | Dashboard cards (PROTECTED) |
+| **Intake / Backlog** | New unplanned work |
+| **Planned / Ready** | Ready for upcoming work |
+| **In Progress** | Active development |
+| **Review / Testing** | Under review |
+| **Deployed / Done** | Completed |
+| **Issues / Tech Debt** | Bugs, improvements |
 
 ---
 
-## Card Title Format
-
-```
-[Stack] Task Name
-```
-
-### Examples
-
-- `[CLI] Implement MCP server core`
-- `[Docs] Update README with v2.4 features`
-- `[Flask] Add authentication middleware`
-- `[React] Fix login form validation`
-
----
-
-## Labels by Stack
-
-| Label | Color | Use For |
-|-------|-------|---------|
-| Frontend | Green | React, UI, UX |
-| Backend | Blue | Flask, API, Python |
-| Worker | Purple | Background jobs, AI pipelines |
-| Deployment | Red | CI/CD, infrastructure |
-| Bug / Issue | Orange | Bugs, runtime issues |
-| Security | Yellow | Auth, compliance |
-| Documentation | Brown | Docs, guides |
-| AI / ML | Black | Models, LLM, MCP |
-
----
-
-## Quick Reference Commands
-
-### Card Operations
+## Quick Reference for `plan sync-trello`
 
 ```bash
-# Start a task (moves to In Progress)
-bpsai-pair ttask start TRELLO-XX
+# Sync plan to Trello (uses board_id from config)
+bpsai-pair plan sync-trello <plan-id> --target-list "Planned/Ready"
 
-# Complete a task (checks AC, moves to Done)
-bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"
-
-# Add PR URL
-bpsai-pair ttask update TRELLO-XX --pr-url "https://..."
-
-# Add progress comment
-bpsai-pair ttask comment TRELLO-XX "Progress update..."
-
-# Move to specific list
-bpsai-pair ttask move TRELLO-XX "List Name"
-```
-
-### Checking Custom Fields
-
-```bash
-# View card details including custom fields
-bpsai-pair ttask show TRELLO-XX
+# If board_id not in config, specify explicitly
+bpsai-pair plan sync-trello <plan-id> --board <board-id> --target-list "Planned/Ready"
 ```
 
 ---
 
-## Common Mistakes to Avoid
+## Common Mistakes to AVOID
 
-| Mistake | Correct Action |
-|---------|----------------|
-| Moving Info list cards | Never touch Info list cards |
-| Leaving custom fields empty | Always set Project, Stack, Repo URL, Effort |
-| Moving to Done without checking AC | Use `ttask done` to auto-check criteria |
-| Not adding PR URL | Add PR URL when creating pull request |
-| Using `task update --status done` only | Use `ttask done` first, then `task update` |
-
----
-
-## Completion Checklist
-
-Before marking any task as done:
-
-1. [ ] All acceptance criteria checked on Trello card
-2. [ ] Custom fields populated (Project, Stack, Repo URL, Effort)
-3. [ ] PR URL added (if applicable)
-4. [ ] Completion summary added as comment
-5. [ ] Card in correct list ("Deployed/Done")
+| Mistake | Correct |
+|---------|---------|
+| `Project: "Sprint 18 - Release Engineering"` | `Project: PairCoder` |
+| `Stack: CLI` | `Stack: Worker/Function` |
+| `Stack: Bug/Issue` | Use **labels** for Bug/Issue, not Stack |
+| `Stack: Documentation` | `Stack: Collection` |
+| `Status: To do` | `Status: Planning` or `Status: Enqueued` |
+| `Type: maintenance` | `Type: chore` |
+| Inventing new dropdown values | Use ONLY values listed above |

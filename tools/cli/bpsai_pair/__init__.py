@@ -1,25 +1,40 @@
-"""
-bpsai_pair package
-"""
+"""bpsai_pair package"""
+from importlib.metadata import version
 
-__version__ = "2.6.0"
+__version__ = version("bpsai-pair")
 
-# Make modules available at package level
+# Core modules
 from . import cli
-from . import ops
 from . import config
 from . import utils
-from . import jsonio
-from . import pyutils
-from . import init_bundled_cli
+
+# Feature modules (public API)
+from . import planning
+from . import tasks
+from . import flows
+from . import trello
+from . import github
+from . import metrics
+from . import orchestration
+from . import mcp
+from . import context
+from . import presets
 
 __all__ = [
     "__version__",
+    # Core
     "cli",
-    "ops",
     "config",
     "utils",
-    "jsonio",
-    "pyutils",
-    "init_bundled_cli"
+    # Features
+    "planning",
+    "tasks",
+    "flows",
+    "trello",
+    "github",
+    "metrics",
+    "orchestration",
+    "mcp",
+    "context",
+    "presets",
 ]

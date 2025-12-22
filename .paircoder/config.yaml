@@ -1,8 +1,8 @@
-version: '2.4'
+version: '2.6.1'
 project:
   name: paircoder
   description: AI-augmented pair programming framework
-  primary_goal: 'Ship Paircoder v2: planning system, flows, LLM integration'
+  primary_goal: 'Ship Paircoder v2.6.2: Release Engineering Foundation'
   coverage_target: 80
 workflow:
   default_branch_type: feature
@@ -157,166 +157,167 @@ hooks:
   on_task_block:
   - sync_trello
   - update_state
+
 trello:
+  enabled: true
+  board_id: 69487ba516aeeabe10976a23
+  board_name: PairCoder
+
+  defaults:
+    project: PairCoder
+    stack: Worker/Function
+    repo_url: https://github.com/BPSAI/paircoder
+
   board_structure:
     lists:
-    - name: Intake/Backlog
-      maps_to_status:
-      - pending
-      - backlog
-      description: New ideas, bugs, or tickets
-    - name: Planned/Ready
-      maps_to_status:
-      - ready
-      - planned
-      description: Tasks selected for upcoming work (1-2 weeks)
-    - name: In Progress
-      maps_to_status:
-      - in_progress
-      description: Active development tasks
-    - name: Review/Testing
-      maps_to_status:
-      - review
-      - testing
-      description: Tasks under review or verification
-    - name: Deployed/Done
-      maps_to_status:
-      - done
-      - deployed
-      description: Completed and live work
-    - name: Issues/Tech Debt
-      maps_to_status:
-      - blocked
-      - issue
-      description: Bugs, regressions, or improvements
-    - name: Notes/Ops Log
-      maps_to_status:
-      - log
-      description: Deployment notes, decisions, operational logs
-  card_format:
-    title_template: '[{stack}] {title}'
-    custom_fields:
-    - name: Project
-      type: text
-      maps_to: plan.title
-    - name: Stack
+      - name: Intake/Backlog
+        maps_to_status: [pending, backlog]
+      - name: Planned/Ready
+        maps_to_status: [ready, planned]
+      - name: In Progress
+        maps_to_status: [in_progress]
+      - name: Review/Testing
+        maps_to_status: [review, testing]
+      - name: Deployed/Done
+        maps_to_status: [done, deployed]
+      - name: Issues/Tech Debt
+        maps_to_status: [blocked, issue]
+
+  custom_fields:
+    project:
       type: dropdown
       options:
-      - CLI
-      - Flask
-      - React
-      - Worker
-      - Infra
-      - Docs
-    - name: Status
+        - "--"
+        - Aurora
+        - CodexAgent-Trello
+        - DanHil AP Invoices
+        - DanHil RFQ
+        - Prompt Acadamy
+        - Weber SSRS Analysis
+        - PairCoder
+        - Support App
+      default: PairCoder
+
+    stack:
       type: dropdown
       options:
-      - Pending
-      - In Progress
-      - Review
-      - Done
-      - Blocked
-    - name: Effort
-      type: dropdown
-      options:
-      - S
-      - M
-      - L
-      maps_to: complexity
+        - "--"
+        - React
+        - Flask
+        - Worker/Function
+        - Infra
+        - Collection
       mapping:
-        S:
-        - 0
-        - 25
-        M:
-        - 26
-        - 50
-        L:
-        - 51
-        - 100
-    - name: Deployment Tag
+        cli: Worker/Function
+        python: Flask
+        backend: Flask
+        frontend: React
+        ui: React
+        worker: Worker/Function
+        function: Worker/Function
+        infra: Infra
+        deploy: Infra
+        ci: Infra
+        docs: Collection
+        documentation: Collection
+        meta: Collection
+      default: Worker/Function
+
+    status:
+      type: dropdown
+      options:
+        - "--"
+        - Planning
+        - In progress
+        - Testing
+        - Done
+        - Enqueued
+        - Waiting
+        - Blocked
+      mapping:
+        pending: Planning
+        ready: Enqueued
+        in_progress: In progress
+        review: Testing
+        testing: Testing
+        done: Done
+        blocked: Blocked
+        waiting: Waiting
+      default: Planning
+
+    effort:
+      type: dropdown
+      options:
+        - "--"
+        - S
+        - M
+        - L
+      mapping:
+        0-30: S
+        31-60: M
+        61-100: L
+      default: M
+
+    repo_url:
+      type: dropdown
+      options:
+        - "--"
+        - https://github.com/BPSAI/paircoder
+      default: https://github.com/BPSAI/paircoder
+
+    agent_task:
+      type: checkbox
+      default: false
+
+    adjusted_effort:
+      type: dropdown
+      options:
+        - "--"
+        - XS
+        - S
+        - M
+        - L
+        - XL
+
+    deployment_tag:
       type: text
-      optional: true
+
+    adjusted_effort_notes:
+      type: text
+
   labels:
-  - name: Frontend
-    color: green
-    matches:
-    - react
-    - ui
-    - frontend
-    - css
-  - name: Backend
-    color: blue
-    matches:
-    - flask
-    - api
-    - backend
-    - python
-  - name: Worker / Function
-    color: purple
-    matches:
-    - worker
-    - function
-    - background
-    - async
-  - name: Deployment
-    color: red
-    matches:
-    - deploy
-    - ci
-    - cd
-    - infra
-    - config
-  - name: Bug / Issue
-    color: orange
-    matches:
-    - bug
-    - fix
-    - issue
-    - error
-  - name: Security / Admin
-    color: yellow
-    matches:
-    - security
-    - auth
-    - mfa
-    - compliance
-  - name: Documentation
-    color: brown
-    matches:
-    - docs
-    - documentation
-    - readme
-    - guide
-  - name: AI / ML Integration
-    color: black
-    matches:
-    - ai
-    - ml
-    - model
-    - llm
-    - mcp
+    - name: Frontend
+      color: green
+      matches: [react, ui, frontend, css]
+    - name: Backend
+      color: blue
+      matches: [flask, api, backend, python]
+    - name: Worker / Function
+      color: purple
+      matches: [worker, function, background, async, cli]
+    - name: Deployment
+      color: red
+      matches: [deploy, ci, cd, infra, config]
+    - name: Bug / Issue
+      color: orange
+      matches: [bug, fix, issue, error]
+    - name: Documentation
+      color: sky
+      matches: [docs, documentation, readme, guide]
+
   automation:
     on_task_ready:
       move_to_list: Planned/Ready
-      add_comment: "\U0001F4CB Task planned and ready for work"
+      set_status: Enqueued
     on_task_start:
       move_to_list: In Progress
-      add_comment: "\U0001F916 Started by {agent}"
+      set_status: In progress
     on_task_review:
       move_to_list: Review/Testing
-      add_comment: "\U0001F50D Under review: {summary}"
+      set_status: Testing
     on_task_complete:
       move_to_list: Deployed/Done
-      add_comment: "\u2705 Completed: {summary}"
+      set_status: Done
     on_task_block:
       move_to_list: Issues/Tech Debt
-      add_label: Bug/Issue
-      add_comment: "\u2298 Blocked: {reason}"
-  weekly_workflow:
-    track_throughput: true
-    summary_card_template: "Week {week_number} ({date_range})\n\u2705 {completed_count}\
-      \ Completed\n\u2699\uFE0F {in_progress_count} In Progress\n\U0001F41E {issues_count}\
-      \ Issues\n"
-  board_id: 69487ba516aeeabe10976a23
-  board_name: PairCoder
-  enabled: true
+      set_status: Blocked

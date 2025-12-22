@@ -37,6 +37,53 @@ When completing tasks with Trello cards:
 3. **Check** if a flow applies to the user's request
 4. **If starting a task**: Run `bpsai-pair task update TASK-XXX --status in_progress`
 
+---
+
+## ⚠️ BEFORE ANY TRELLO OPERATIONS
+
+**MANDATORY:** Before creating plans, syncing to Trello, or updating cards:
+
+1. **READ** `.paircoder/context/bps-board-conventions.md` - Contains exact custom field values
+2. **USE ONLY** values listed in that document - do NOT invent new values
+3. **FOR PAIRCODER:** Always use these defaults:
+   - Project: `PairCoder`
+   - Stack: `Worker/Function`
+   - Repo URL: `https://github.com/BPSAI/paircoder`
+
+**NEVER:**
+- Create new dropdown values
+- Use `CLI` for Stack (it doesn't exist - use `Worker/Function`)
+- Use `Bug/Issue` or `Documentation` for Stack (those are labels, not Stack options)
+- Use `maintenance` as plan type (use `chore`)
+- Use `To do` for Status (use `Planning` or `Enqueued`)
+
+---
+
+## Task Naming Convention
+
+| Sprint Tasks | Format | Example |
+|--------------|--------|---------|
+| Current sprint | `T{sprint}.{seq}` | T18.1, T18.2, T19.1 |
+| Legacy | `TASK-{num}` | TASK-150 |
+| Release | `REL-{sprint}-{seq}` | REL-18-01 |
+
+**Use the format specified in the backlog document.** If backlog says `T18.1`, create task with id `T18.1`, not `TASK-###`.
+
+---
+
+## Valid Plan Types
+
+```
+feature  - New functionality
+bugfix   - Bug fixes  
+refactor - Code improvements
+chore    - Maintenance, cleanup, docs, releases
+```
+
+**`maintenance` is NOT valid.** Use `chore` instead.
+
+---
+
 ## Key Files
 
 | File | Purpose |
@@ -97,7 +144,7 @@ When you see these patterns, suggest the corresponding flow:
 
 This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
 
-Current focus: **v2.1 Released**
+Current focus: **v2.6.1 Released**
 - Planning system complete (plan, task commands)
 - Skills and flows implemented
 - Multi-agent architecture (skills, agents, hooks)
