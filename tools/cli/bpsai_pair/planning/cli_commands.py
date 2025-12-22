@@ -23,6 +23,7 @@ from rich.table import Table
 from .models import Plan, Task, TaskStatus, PlanStatus, PlanType, Sprint
 from .parser import PlanParser, TaskParser
 from .state import StateManager
+from .token_estimator import PlanTokenEstimator, DEFAULT_THRESHOLD
 
 # Import task lifecycle management
 try:
@@ -720,6 +721,108 @@ def _update_task_with_card_id(task: Task, card_id: str, task_parser: TaskParser)
         return False
     except Exception:
         return False
+
+
+@plan_app.command("estimate")
+def plan_estimate(
+    plan_id: str = typer.Argument(..., help="Plan ID to estimate"),
+    threshold: int = typer.Option(
+        DEFAULT_THRESHOLD, "--threshold", "-t",
+        help="Token threshold for warnings (default 50000)"
+    ),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    show_tasks: bool = typer.Option(True, "--show-tasks/--no-tasks", help="Show per-task breakdown"),
+):
+    """Estimate token usage for a plan and suggest batching if needed.
+
+    Analyzes all tasks in a plan to estimate total token usage.
+    Warns when the plan exceeds comfortable session limits and
+    suggests how to split the work into manageable batches.
+
+    Example:
+        bpsai-pair plan estimate plan-2025-12-sprint-19-methodology
+    """
+    paircoder_dir = find_paircoder_dir()
+    plan_parser = PlanParser(paircoder_dir / "plans")
+    task_parser = TaskParser(paircoder_dir / "tasks")
+
+    # Find the plan
+    plan = plan_parser.get_plan_by_id(plan_id)
+    if not plan:
+        console.print(f"[red]Plan not found: {plan_id}[/red]")
+        raise typer.Exit(1)
+
+    # Get tasks for this plan
+    tasks = task_parser.get_tasks_for_plan(plan_id)
+    if not tasks:
+        console.print(f"[yellow]No tasks found for plan: {plan_id}[/yellow]")
+        raise typer.Exit(0)
+
+    # Parse files_touched from task files
+    for task in tasks:
+        _populate_files_touched(task, paircoder_dir / "tasks")
+
+    # Create estimator and estimate
+    config_path = paircoder_dir / "config.yaml"
+    estimator = PlanTokenEstimator.from_config_file(config_path)
+    estimate = estimator.estimate_plan(plan_id, tasks, threshold=threshold)
+
+    if json_out:
+        console.print(json.dumps(estimate.to_dict(), indent=2))
+    else:
+        output = estimator.format_estimate(estimate, show_tasks=show_tasks)
+        console.print(output)
+
+
+def _populate_files_touched(task: Task, tasks_dir: Path) -> None:
+    """Parse files_touched from task file's 'Files to Modify' section.
+
+    Args:
+        task: Task object to populate
+        tasks_dir: Directory containing task files
+    """
+    # Find task file
+    task_file = None
+    for ext in [".task.md", ".md"]:
+        candidate = tasks_dir / f"{task.id}{ext}"
+        if candidate.exists():
+            task_file = candidate
+            break
+
+    if not task_file:
+        task.files_touched = []
+        return
+
+    try:
+        content = task_file.read_text()
+
+        # Find "Files to Modify" section
+        files = []
+        in_files_section = False
+
+        for line in content.split("\n"):
+            line_stripped = line.strip()
+
+            # Check for section header
+            if line_stripped.startswith("# Files") or line_stripped.startswith("## Files"):
+                in_files_section = True
+                continue
+
+            # Check for next section
+            if in_files_section and line_stripped.startswith("#"):
+                break
+
+            # Parse file entries
+            if in_files_section and line_stripped.startswith("- "):
+                file_path = line_stripped[2:].strip()
+                # Handle backticks around file paths
+                file_path = file_path.strip("`")
+                if file_path:
+                    files.append(file_path)
+
+        task.files_touched = files
+    except Exception:
+        task.files_touched = []
 
 
 @plan_app.command("add-task")

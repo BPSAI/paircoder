@@ -17,14 +17,14 @@
 | T19.1 | Mandatory state.md Update Hook | done | P0 | 40 |
 | T19.2 | Session Restart Enforcement | done | P0 | 45 |
 | T19.3 | Compaction Detection and Recovery | done | P1 | 55 |
-| T19.4 | Token-Aware Batch Planning | pending | P1 | 40 |
+| T19.4 | Token-Aware Batch Planning | done | P1 | 40 |
 | T19.5 | Skill Validator CLI | pending | P2 | 40 |
 | T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
 | T19.7 | Document Built-in Claude Code Commands | pending | P2 | 25 |
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | pending | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | pending | P1 | 30 |
 
-**Progress:** 3/9 tasks (140/340 complexity points)
+**Progress:** 4/9 tasks (180/340 complexity points)
 
 ## Sprint History
 
@@ -46,7 +46,7 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 ## What's Next
 
 1. P0 tasks complete (T19.1, T19.2)
-2. Continue with P1 tasks: T19.3, T19.4, T19.8, T19.9
+2. P1 tasks in progress: T19.3 ✓, T19.4 ✓, continue with T19.8, T19.9
 3. Finally P2/P3 tasks: T19.5, T19.6, T19.7
 
 **Sprint Goal:** Make PairCoder methodology enforcement automatic.
@@ -62,6 +62,34 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.4 Complete
+
+- **T19.4: Token-Aware Batch Planning** ✓
+  - Created `tools/cli/bpsai_pair/planning/token_estimator.py` module with:
+    - `PlanTokenEstimator` class for plan-level estimation
+    - `TaskTokenEstimate`, `BatchSuggestion`, `PlanTokenEstimate` dataclasses
+    - Batching algorithm that suggests task groupings to stay under threshold
+    - Formatted output with breakdown by component
+  - Added CLI command `bpsai-pair plan estimate <plan-id>`:
+    - Shows breakdown: base context, tasks, files touched
+    - Warns when plan exceeds threshold (default 50k tokens)
+    - Suggests batching strategy with specific task groupings
+    - Supports `--threshold` flag for custom limit
+    - Supports `--json` flag for JSON output
+    - Supports `--no-tasks` to hide per-task breakdown
+  - Added `_populate_files_touched` helper to parse "Files to Modify" from tasks
+  - Created `tests/test_plan_estimate.py` with 14 tests covering:
+    - Command existence and help
+    - Output breakdown verification
+    - Config values usage
+    - Task type multiplier effects
+    - File token calculation
+    - Threshold warnings and batching suggestions
+    - JSON output format
+    - Plan not found error handling
+    - PlanTokenEstimator class unit tests
+  - All 14 tests passing
 
 ### 2025-12-22 - T19.3 Complete
 
