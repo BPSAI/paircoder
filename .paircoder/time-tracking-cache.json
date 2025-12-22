@@ -441,5 +441,25 @@
       }
     ],
     "total_seconds": 225.841824
+  },
+  "T23.1": {
+    "entries": [
+      {
+        "id": "local-20251222170307",
+        "task_id": "T23.1",
+        "description": "T23.1: Create sprint/ module structure",
+        "start": "2025-12-22T17:03:07.493059",
+        "end": "2025-12-22T17:06:24.916663",
+        "duration_seconds": 197.423604,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 197.423604
+  },
+  "_active": {
+    "task_id": "T23.5",
+    "timer_id": "local-20251222173352",
+    "description": "T23.5: Extract template commands to release/template.py",
+    "start": "2025-12-22T17:33:52.786946"
   }
 }

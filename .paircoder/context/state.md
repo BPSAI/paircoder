@@ -4,30 +4,27 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-22-cli-refactor-phase1
+**Plan:** plan-2025-12-sprint-23-cli-refactor-phase2
 **Epic:** EPIC-003: CLI Architecture Refactor
-**Phase:** Phase 1 of 5 - Extract Commands from cli.py
-**Status:** Complete
-**Goal:** Reduce cli.py from 2,892 → ~200 lines (achieved: 194 lines!)
+**Phase:** Phase 2 of 5 - Extract Commands from planning/cli_commands.py
+**Status:** In Progress
+**Goal:** Reduce planning/cli_commands.py from ~2,602 → ~600 lines
 
-## Current Sprint Tasks (Sprint 22)
+## Current Sprint Tasks (Sprint 23)
 
 | ID    | Title | Status | Priority | Complexity |
 |-------|-------|--------|----------|------------|
-| T22.1 | Extract preset commands to commands/preset.py | done | P1 | 20 |
-| T22.2 | Extract config commands to commands/config.py | done | P1 | 25 |
-| T22.3 | Extract orchestrate commands to commands/orchestrate.py | done | P1 | 35 |
-| T22.4 | Extract metrics commands to commands/metrics.py | done | P1 | 40 |
-| T22.5 | Extract timer commands to commands/timer.py | done | P1 | 20 |
-| T22.6 | Extract benchmark commands to commands/benchmark.py | done | P1 | 25 |
-| T22.7 | Extract cache commands to commands/cache.py | done | P2 | 15 |
-| T22.8 | Extract mcp commands to commands/mcp.py | done | P2 | 20 |
-| T22.9 | Extract flow commands to commands/flow.py | done | P1 | 25 |
-| T22.10 | Extract security commands to commands/security.py | done | P1 | 30 |
-| T22.11 | Extract core commands to commands/core.py | done | P0 | 45 |
-| T22.12 | Refactor cli.py to registration only | done | P0 | 30 |
+| T23.1 | Create sprint/ module structure | done | P0 | 15 |
+| T23.2 | Extract sprint commands to sprint/commands.py | done | P1 | 30 |
+| T23.3 | Create release/ module structure | done | P0 | 15 |
+| T23.4 | Extract release commands to release/commands.py | done | P1 | 45 |
+| T23.5 | Extract template commands to release/template.py | pending | P1 | 35 |
+| T23.6 | Verify standup commands are in separate file | pending | P2 | 10 |
+| T23.7 | Verify intent commands are in separate file | pending | P2 | 10 |
+| T23.8 | Rename cli_commands.py to commands.py | pending | P1 | 25 |
+| T23.9 | Update imports and final cleanup | pending | P0 | 35 |
 
-**Progress:** 12/12 tasks (330/330 complexity points) - **SPRINT COMPLETE!**
+**Progress:** 4/9 tasks (105/220 complexity points)
 
 ## Sprint History
 
@@ -45,20 +42,25 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 17.6 | Trello Field Validation Hotfix | v2.6.1 | Complete |
 | 18 | Release Engineering | v2.6.1 | Complete |
 | 19 | Methodology & Session Management | v2.7.0 | Complete |
+| 22 | CLI Refactor Phase 1 | v2.7.0 | Complete |
 
 ## What's Next
 
-**Sprint 22: CLI Architecture Refactor (Phase 1)** is planned and ready to start.
+**Sprint 23: CLI Architecture Refactor (Phase 2)** is planned and ready to start.
 
 **Recommended Task Order:**
-1. **T22.1** - Create commands/ directory and first extraction (preset)
-2. **T22.2-T22.10** - Extract remaining command groups (can be parallelized)
-3. **T22.11** - Extract core commands (depends on 1-10)
-4. **T22.12** - Final cli.py cleanup (depends on all above)
+1. **T23.1 + T23.3** - Create sprint/ and release/ module structures (parallel)
+2. **T23.2** - Extract sprint commands (depends on T23.1)
+3. **T23.4 + T23.5** - Extract release and template commands (parallel, depend on T23.3)
+4. **T23.6 + T23.7** - Verify standup and intent separation (parallel, quick)
+5. **T23.8** - Rename cli_commands.py to commands.py (depends on T23.2, T23.4, T23.5)
+6. **T23.9** - Final imports update and cleanup (depends on all above)
 
 **Sprint Goal:**
-- Reduce `cli.py` from 2,892 lines to ~200 lines
-- Create `commands/` module with 11 command files
+- Reduce `planning/cli_commands.py` from ~2,602 lines to ~600 lines
+- Create `sprint/` module with sprint commands
+- Create `release/` module with release and template commands
+- Rename to `planning/commands.py` following convention
 - No behavior changes - pure refactor
 
 ## Backlog (Deprioritized)
@@ -72,6 +74,62 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T23.4 Complete
+
+- **T23.4: Extract release commands to release/commands.py** ✓
+  - Extracted `release plan`, `release checklist`, `release prep` commands
+  - Created `release/commands.py` (621 lines, target was < 500 - inherent complexity)
+  - Included helper functions: `find_paircoder_dir`, `get_state_manager`, `get_template_path`
+  - Updated `cli.py` to import `release_app` from new location
+  - Removed ~550 lines from `planning/cli_commands.py`
+  - All 1705 tests passing
+  - Commands work identically from new location
+
+### 2025-12-22 - T23.3 Complete
+
+- **T23.3: Create release/ module structure** ✓
+  - Created `tools/cli/bpsai_pair/release/` directory
+  - Created `__init__.py` with `release_app` and `template_app` exports
+  - Created placeholder `commands.py` and `template.py`
+  - Module imports successfully
+  - All 1705 tests passing
+
+### 2025-12-22 - T23.2 Complete
+
+- **T23.2: Extract sprint commands to sprint/commands.py** ✓
+  - Extracted `sprint list` and `sprint complete` commands
+  - Created `sprint/commands.py` (234 lines, target < 300)
+  - Updated `cli.py` to import `sprint_app` from new location
+  - Removed 192 lines from `planning/cli_commands.py`
+  - All 1705 tests passing
+  - Commands work identically from new location
+
+### 2025-12-22 - T23.1 Complete
+
+- **T23.1: Create sprint/ module structure** ✓
+  - Created `tools/cli/bpsai_pair/sprint/` directory
+  - Created `__init__.py` with `sprint_app` export
+  - Created `commands.py` with placeholder Typer app
+  - Module imports successfully
+  - All 1705 tests passing
+
+### 2025-12-22 - Sprint 23 Planning Complete
+
+- **Sprint 23: CLI Architecture Refactor (Phase 2)** planned
+  - Created plan: `plan-2025-12-sprint-23-cli-refactor-phase2`
+  - Generated 9 task files (T23.1 through T23.9)
+  - Total complexity: 220 points
+  - Synced to Trello PairCoder board (Planned/Ready list)
+  - 9 cards created on Trello
+
+- **Phase 2 Focus:**
+  - Extract sprint commands from `planning/cli_commands.py` → `sprint/commands.py`
+  - Extract release commands → `release/commands.py`
+  - Extract template commands → `release/template.py`
+  - Verify standup/intent already separated
+  - Rename `cli_commands.py` → `commands.py`
+  - Update imports across codebase
 
 ### 2025-12-22 - T22.12 Complete (Sprint 22 Finished!)
 
