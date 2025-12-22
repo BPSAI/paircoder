@@ -23,8 +23,9 @@
 | T19.7 | Document Built-in Claude Code Commands | done | P2 | 25 |
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | done | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | done | P1 | 30 |
+| T19.10 | Add `bpsai-pair migrate` command | done | P2 | 45 |
 
-**Progress:** 9/9 tasks (340/340 complexity points) ✅ Sprint Complete!
+**Progress:** 10/10 tasks (385/385 complexity points) ✅ Sprint Complete!
 
 ## Sprint History
 
@@ -66,6 +67,29 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.10 Complete (Hotfix)
+
+- **T19.10: Add `bpsai-pair migrate` command** ✓
+  - Created `tools/cli/bpsai_pair/migrate.py` with:
+    - `LegacyVersion` enum (V1_LEGACY, V2_EARLY, V2_PARTIAL, V2_CURRENT, UNKNOWN)
+    - `detect_version()` - detects PairCoder structure version
+    - `plan_migration()` - creates migration plan based on detected version
+    - `create_backup()` - timestamped backup of .paircoder/ and .claude/
+    - `execute_migration()` - executes migration plan
+    - `migrate_app` Typer CLI app with commands
+  - CLI commands:
+    - `bpsai-pair migrate` - Run migration (with confirmation)
+    - `bpsai-pair migrate --dry-run` - Show plan without changes
+    - `bpsai-pair migrate --no-backup` - Skip backup creation
+    - `bpsai-pair migrate --force` - Skip confirmation prompt
+    - `bpsai-pair migrate status` - Show current version status
+  - Migration capabilities:
+    - v1.x → v2.5: Full structure migration, file moves, config creation
+    - v2.0-2.3 → v2.5: Add missing dirs, config sections (trello, hooks, etc.)
+  - Created `tests/test_migrate.py` with 29 tests covering all functionality
+  - All 29 tests passing
+  - Registered in CLI as `bpsai-pair migrate`
 
 ### 2025-12-22 - T19.6 Complete (Sprint 19 Done!)
 

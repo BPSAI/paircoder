@@ -39,6 +39,7 @@ try:
     from .trello.task_commands import app as trello_task_app
     from .presets import get_preset, list_presets, get_preset_names, PresetManager
     from .github.commands import app as github_app
+    from .migrate import migrate_app
 except ImportError:
     # For development/testing when running as script
     import sys
@@ -60,6 +61,7 @@ except ImportError:
     from bpsai_pair.trello.task_commands import app as trello_task_app
     from bpsai_pair.presets import get_preset, list_presets, get_preset_names, PresetManager
     from bpsai_pair.github.commands import app as github_app
+    from bpsai_pair.migrate import migrate_app
 
 # Initialize Rich console
 console = Console()
@@ -90,6 +92,7 @@ app.add_typer(standup_app, name="standup")
 app.add_typer(sprint_app, name="sprint")
 app.add_typer(release_app, name="release")
 app.add_typer(template_app, name="template")
+app.add_typer(migrate_app, name="migrate")
 
 # Orchestration sub-app for multi-agent coordination
 orchestrate_app = typer.Typer(
