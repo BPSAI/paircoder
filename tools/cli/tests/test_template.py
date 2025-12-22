@@ -251,7 +251,7 @@ class TestFlowFiles:
             "review.flow.md",
             "finish-branch.flow.md",
             "trello-aware-planning.flow.md",
-            "trello-task-workflow.flow.md",
+            "paircoder-task-lifecycle.flow.md",
         ]
 
         for flow_name in required_flows:
@@ -273,7 +273,6 @@ class TestSkillFiles:
             "finish-branch",
             "paircoder-task-lifecycle",
             "trello-aware-planning",
-            "trello-task-workflow",
         ]
 
         for skill_name in required_skills:

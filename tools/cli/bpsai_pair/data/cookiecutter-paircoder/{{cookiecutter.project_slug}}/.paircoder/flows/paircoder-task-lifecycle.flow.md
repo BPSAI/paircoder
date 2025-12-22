@@ -1,13 +1,13 @@
 ---
-name: trello-task-workflow
+name: paircoder-task-lifecycle
 version: 1
 description: >
-  Work on tasks from Trello board. Claim tasks, update progress, and
-  complete work while keeping the board in sync.
+  Manage task lifecycle with optional Trello sync. Start tasks, update progress,
+  and complete work while keeping state in sync.
 when_to_use:
-  - Working on a task from Trello
-  - Starting or completing a Trello card
-  - Reporting blockers on Trello tasks
+  - Starting or completing a task
+  - Working on a task (local or Trello)
+  - Reporting blockers
   - Checking what to work on next
 roles:
   driver: { primary: true }

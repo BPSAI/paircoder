@@ -77,7 +77,7 @@ my-project/
 │   │   ├── tdd-implement/
 │   │   ├── code-review/
 │   │   ├── finish-branch/
-│   │   ├── trello-task-workflow/
+│   │   ├── paircoder-task-lifecycle/
 │   │   └── trello-aware-planning/
 │   └── agents/                   # Custom subagents
 │       ├── planner.md

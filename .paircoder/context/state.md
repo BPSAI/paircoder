@@ -19,12 +19,12 @@
 | T19.3 | Compaction Detection and Recovery | done | P1 | 55 |
 | T19.4 | Token-Aware Batch Planning | done | P1 | 40 |
 | T19.5 | Skill Validator CLI | done | P2 | 40 |
-| T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | pending | P3 | 20 |
-| T19.7 | Document Built-in Claude Code Commands | pending | P2 | 25 |
+| T19.6 | Merge trello-task-workflow into paircoder-task-lifecycle | done | P3 | 20 |
+| T19.7 | Document Built-in Claude Code Commands | done | P2 | 25 |
 | T19.8 | ttask done Should Verify/Auto-Check Acceptance Criteria | done | P1 | 45 |
 | T19.9 | Detect Manual Task File Edits | done | P1 | 30 |
 
-**Progress:** 7/9 tasks (295/340 complexity points)
+**Progress:** 9/9 tasks (340/340 complexity points) ✅ Sprint Complete!
 
 ## Sprint History
 
@@ -45,11 +45,15 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-1. P0 tasks complete (T19.1, T19.2)
-2. P1 tasks complete (T19.3 ✓, T19.4 ✓, T19.8 ✓, T19.9 ✓)
-3. P2 tasks: T19.5 ✓, remaining: T19.6, T19.7
+✅ **Sprint 19 Complete!** All 9 tasks done:
+- P0: T19.1, T19.2 (Methodology enforcement)
+- P1: T19.3, T19.4, T19.8, T19.9 (Session management, workflow)
+- P2: T19.5, T19.7 (Tooling, docs)
+- P3: T19.6 (Skill consolidation)
 
-**Sprint Goal:** Make PairCoder methodology enforcement automatic.
+**Sprint Goal Achieved:** PairCoder methodology enforcement is now automatic.
+
+**Next:** Plan Sprint 20 or release v2.8.0.
 
 ## Backlog (Deprioritized)
 
@@ -62,6 +66,42 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T19.6 Complete (Sprint 19 Done!)
+
+- **T19.6: Merge trello-task-workflow into paircoder-task-lifecycle** ✓
+  - Consolidated skills: deleted `.claude/skills/trello-task-workflow/`, kept `paircoder-task-lifecycle`
+  - Moved BPS conventions reference to `paircoder-task-lifecycle/reference/bps-trello-conventions.md`
+  - Renamed flow file: `trello-task-workflow.flow.md` → `paircoder-task-lifecycle.flow.md`
+  - Updated references in:
+    - `.paircoder/docs/FEATURE_MATRIX.md` (skill count 6→5, skill name)
+    - `README.md` (skill list)
+    - `CLAUDE.md` in cookiecutter template
+    - `capabilities.yaml` in cookiecutter template
+    - `test_template.py` (expected skills/flows)
+  - Deleted nested leftover directory in cookiecutter template
+  - Skill validates with `bpsai-pair skill validate paircoder-task-lifecycle`
+  - All 20 template tests passing
+
+### 2025-12-22 - T19.7 Complete
+
+- **T19.7: Document Built-in Claude Code Commands** ✓
+  - Created `docs/CLAUDE_CODE_INTEGRATION.md` with:
+    - Built-in Claude Code commands we leverage (/compact, /context, /plan)
+    - Commands to avoid conflicting with
+    - How PairCoder commands complement built-ins
+    - Context management best practices
+    - Session management workflow
+    - Planning integration guidance
+    - Skills and tools comparison
+    - Command quick reference
+    - Best practices section
+    - Troubleshooting tips
+  - Updated `.paircoder/docs/USER_GUIDE.md`:
+    - Added "Claude Code Integration" section (#24)
+    - Added reference to full integration guide
+    - Added key points summary
+    - Added quick reference table
 
 ### 2025-12-22 - T19.5 Complete
 

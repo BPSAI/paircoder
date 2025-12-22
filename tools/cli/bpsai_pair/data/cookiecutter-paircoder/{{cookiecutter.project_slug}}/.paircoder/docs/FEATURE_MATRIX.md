@@ -53,7 +53,7 @@ Quick reference for PairCoder capabilities in this project.
 | `tdd-implement` | Test-driven development |
 | `code-review` | Code review workflow |
 | `finish-branch` | Branch completion |
-| `trello-task-workflow` | Trello task management |
+| `paircoder-task-lifecycle` | Task lifecycle with Trello sync |
 | `trello-aware-planning` | Trello-integrated planning |
 
 ## CLI Commands

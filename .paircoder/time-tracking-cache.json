@@ -260,10 +260,24 @@
     ],
     "total_seconds": 346.003736
   },
+  "T19.7": {
+    "entries": [
+      {
+        "id": "local-20251222134939",
+        "task_id": "T19.7",
+        "description": "T19.7: Document Built-in Claude Code Commands",
+        "start": "2025-12-22T13:49:39.604232",
+        "end": "2025-12-22T13:52:40.838510",
+        "duration_seconds": 181.234278,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 181.234278
+  },
   "_active": {
-    "task_id": "T19.7",
-    "timer_id": "local-20251222134939",
-    "description": "T19.7: Document Built-in Claude Code Commands",
-    "start": "2025-12-22T13:49:39.604232"
+    "task_id": "T19.6",
+    "timer_id": "local-20251222135340",
+    "description": "T19.6: Merge trello-task-workflow into paircoder-task-lifecycle",
+    "start": "2025-12-22T13:53:40.145451"
   }
 }

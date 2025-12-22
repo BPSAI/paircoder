@@ -186,7 +186,7 @@ capabilities:
       - User says "work on task" or "finish task"
     how_to_invoke:
       cli: "bpsai-pair ttask start TRELLO-XXX"
-    skill_to_use: trello-task-workflow
+    skill_to_use: paircoder-task-lifecycle
     requires: trello_connected
 
   - id: trello_plan_tasks
@@ -250,7 +250,7 @@ flow_triggers:
 
   - trigger: "user_works_trello_task"
     patterns: ["TRELLO-", "work on task", "next task", "finish task"]
-    suggested_skill: trello-task-workflow
+    suggested_skill: paircoder-task-lifecycle
     requires: trello_connected
 
   - trigger: "user_plans_with_trello"

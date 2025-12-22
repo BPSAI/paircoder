@@ -27,7 +27,8 @@
 21. [Auto-Hooks](#auto-hooks)
 22. [CLI Reference](#cli-reference)
 23. [Configuration Reference](#configuration-reference)
-24. [Troubleshooting](#troubleshooting)
+24. [Claude Code Integration](#claude-code-integration)
+25. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -277,7 +278,6 @@ After completing work:
 │   ├── tdd-implement/SKILL.md
 │   ├── code-review/SKILL.md
 │   ├── finish-branch/SKILL.md
-│   ├── trello-task-workflow/SKILL.md
 │   └── trello-aware-planning/SKILL.md
 ├── agents/              # Custom subagents
 │   ├── planner.md      # Planning specialist
@@ -474,7 +474,7 @@ bpsai-pair flow validate tdd-implement
 | `tdd-implement` | "fix", "bug", "test" | Test-driven implementation |
 | `code-review` | "review", "check", "PR" | Code review workflow |
 | `finish-branch` | "finish", "merge", "complete" | Branch completion |
-| `trello-task-workflow` | "work on task", "TRELLO-" | Trello task execution |
+| `paircoder-task-lifecycle` | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
 | `trello-aware-planning` | "plan feature", "create tasks" | Planning with Trello |
 
 ---
@@ -1191,6 +1191,29 @@ trello:
     review: "In Review"
     done: "Done"
 ```
+
+---
+
+## Claude Code Integration
+
+PairCoder is designed to complement Claude Code's built-in features. For detailed documentation on how they work together, see [Claude Code Integration Guide](../../docs/CLAUDE_CODE_INTEGRATION.md).
+
+### Key Points
+
+- **Built-in commands**: Use `/compact`, `/context`, `/plan` alongside PairCoder
+- **Skills**: PairCoder skills in `.claude/skills/` are auto-loaded by Claude Code
+- **Context management**: Claude Code handles conversation; PairCoder handles project state
+- **Compaction recovery**: Use `bpsai-pair compaction reload` after `/compact`
+
+### Quick Reference
+
+| Need | Use |
+|------|-----|
+| Session planning | Claude Code `/plan` |
+| Sprint planning | `bpsai-pair plan` |
+| Check token usage | `/context` |
+| Check project state | `/status` or `bpsai-pair status` |
+| Start a task | `/start-task T19.1` |
 
 ---
 

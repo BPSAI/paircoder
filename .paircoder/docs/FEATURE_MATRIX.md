@@ -87,7 +87,7 @@
 | Trello connection | `trello connect/status/disconnect` | ✅ Works | API key + token |
 | Board management | `trello boards/use-board/lists/config` | ✅ Works | Board selection |
 | Task operations | `ttask list/show/start/done/block/comment/move` | ✅ Works | Card management |
-| Trello skills | - | ✅ Exists | trello-task-workflow, trello-aware-planning |
+| Trello skills | - | ✅ Exists | paircoder-task-lifecycle, trello-aware-planning |
 
 ### Sprint 11: MCP Server (v2.4)
 | Feature | CLI Command | Status | Notes |
@@ -162,7 +162,7 @@
 | paircoder_trello_sync_plan | Sync plan to Trello | plan_id, board_id, create_lists, link_cards |
 | paircoder_trello_update_card | Update Trello card | task_id, action, comment |
 
-## Skills (6 total)
+## Skills (5 total)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
@@ -170,7 +170,7 @@
 | tdd-implement | Test-driven implementation | "fix", "bug", "test" |
 | code-review | Code review workflow | "review", "check", "PR" |
 | finish-branch | Branch completion workflow | "finish", "merge", "complete" |
-| trello-task-workflow | Work on Trello tasks | "work on task", "TRELLO-" |
+| paircoder-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-" |
 | trello-aware-planning | Create plans synced to Trello | "plan feature", "create tasks" |
 
 ## Hooks (6 built-in)
@@ -205,7 +205,7 @@ my-project/
 │   │   ├── tdd-implement/SKILL.md
 │   │   ├── code-review/SKILL.md
 │   │   ├── finish-branch/SKILL.md
-│   │   ├── trello-task-workflow/SKILL.md
+│   │   ├── paircoder-task-lifecycle/SKILL.md
 │   │   └── trello-aware-planning/SKILL.md
 │   └── agents/                   # Custom subagents
 │       ├── planner.md
