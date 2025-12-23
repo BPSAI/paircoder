@@ -35,6 +35,13 @@ from .gap_detector import (
     detect_gaps_from_history,
     format_gap_notification,
 )
+from .generator import (
+    GeneratedSkill,
+    SkillGenerator,
+    SkillGeneratorError,
+    save_generated_skill,
+    generate_skill_from_gap_id,
+)
 
 __all__ = [
     "SkillValidator",
@@ -65,4 +72,9 @@ __all__ = [
     "GapPersistence",
     "detect_gaps_from_history",
     "format_gap_notification",
+    "GeneratedSkill",
+    "SkillGenerator",
+    "SkillGeneratorError",
+    "save_generated_skill",
+    "generate_skill_from_gap_id",
 ]

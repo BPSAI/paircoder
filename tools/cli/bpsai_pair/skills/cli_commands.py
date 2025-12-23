@@ -38,6 +38,13 @@ from .gap_detector import (
     detect_gaps_from_history,
     format_gap_notification,
 )
+from .generator import (
+    GeneratedSkill,
+    SkillGenerator,
+    SkillGeneratorError,
+    save_generated_skill,
+    generate_skill_from_gap_id,
+)
 
 console = Console()
 
@@ -583,4 +590,134 @@ def skill_gaps(
         console.print(f"   [dim]Detected: {gap.detected_at[:10]}[/dim]")
         console.print()
 
-    console.print("[dim]Use `bpsai-pair skill suggest --create N` to create a skill from a pattern[/dim]")
+    console.print("[dim]Use `bpsai-pair skill generate N` to create a skill from gap N[/dim]")
+
+
+@skill_app.command("generate")
+def skill_generate(
+    gap_id: Optional[int] = typer.Argument(None, help="Gap ID to generate from (1-based)"),
+    auto_approve: bool = typer.Option(False, "--auto-approve", "-y", help="Save without confirmation"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing skill"),
+    preview: bool = typer.Option(False, "--preview", "-p", help="Preview without saving"),
+):
+    """Generate a skill from a detected gap.
+
+    Creates a skill draft from patterns detected by `skill gaps`. The generated
+    skill follows Anthropic specs and includes observed commands as workflow steps.
+
+    Examples:
+
+        # List available gaps
+        bpsai-pair skill generate
+
+        # Preview generated skill
+        bpsai-pair skill generate 1 --preview
+
+        # Generate and save with confirmation
+        bpsai-pair skill generate 1
+
+        # Auto-approve and save
+        bpsai-pair skill generate 1 --auto-approve
+
+        # Overwrite existing skill
+        bpsai-pair skill generate 1 --force --auto-approve
+    """
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load gaps
+    persistence = GapPersistence(history_dir=history_dir)
+    gaps = persistence.load_gaps()
+
+    if not gaps:
+        console.print("[dim]No skill gaps found.[/dim]")
+        console.print("\n[dim]Run `bpsai-pair skill gaps --analyze` to detect patterns.[/dim]")
+        return
+
+    # If no gap_id provided, list available gaps
+    if gap_id is None:
+        console.print("[bold]Available Gaps:[/bold]\n")
+        for i, gap in enumerate(gaps, 1):
+            console.print(f"  {i}. [cyan]{gap.suggested_name}[/cyan] (confidence: {gap.confidence:.0%})")
+            console.print(f"     Pattern: {' → '.join(gap.pattern[:3])}{'...' if len(gap.pattern) > 3 else ''}")
+        console.print(f"\n[dim]Use `bpsai-pair skill generate <N>` to generate from gap N[/dim]")
+        return
+
+    # Validate gap_id
+    if gap_id < 1 or gap_id > len(gaps):
+        console.print(f"[red]Invalid gap ID: {gap_id}. Valid range: 1-{len(gaps)}[/red]")
+        raise typer.Exit(1)
+
+    gap = gaps[gap_id - 1]
+    console.print(f"[cyan]Generating skill from gap: {gap.suggested_name}[/cyan]\n")
+
+    # Generate skill
+    generator = SkillGenerator()
+    generated = generator.generate_from_gap(gap)
+
+    # Preview mode
+    if preview:
+        console.print("[bold]Generated Skill Preview:[/bold]\n")
+        console.print("─" * 60)
+        console.print(generated.content)
+        console.print("─" * 60)
+        console.print(f"\n[dim]Use `--auto-approve` to save this skill[/dim]")
+        return
+
+    # Show preview before saving (unless auto_approve)
+    if not auto_approve:
+        console.print("[bold]Generated Skill:[/bold]\n")
+        console.print("─" * 60)
+        # Show truncated preview
+        lines = generated.content.split("\n")
+        preview_lines = lines[:30]
+        console.print("\n".join(preview_lines))
+        if len(lines) > 30:
+            console.print(f"\n... ({len(lines) - 30} more lines)")
+        console.print("─" * 60)
+        console.print()
+
+        # Ask for confirmation
+        confirm = typer.confirm("Save this skill?")
+        if not confirm:
+            console.print("[dim]Cancelled.[/dim]")
+            return
+
+    # Save the skill
+    try:
+        result = save_generated_skill(
+            generated,
+            skills_dir,
+            force=force,
+            auto_approve=True,
+        )
+
+        if result["success"]:
+            console.print(f"[green]✅ Created skill: {result['path']}[/green]")
+
+            validation = result.get("validation", {})
+            if validation.get("valid"):
+                console.print("   [green]✓[/green] Passes validation")
+            else:
+                console.print("   [yellow]⚠[/yellow] Review validation warnings:")
+                for error in validation.get("errors", []):
+                    console.print(f"      [red]{error}[/red]")
+                for warning in validation.get("warnings", []):
+                    console.print(f"      [yellow]{warning}[/yellow]")
+
+            if result.get("requires_review"):
+                console.print("\n[dim]Note: Review and customize the generated skill before use.[/dim]")
+
+    except SkillGeneratorError as e:
+        console.print(f"[red]✖ Failed to save: {e}[/red]")
+        raise typer.Exit(1)

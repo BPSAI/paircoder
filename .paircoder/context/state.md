@@ -16,11 +16,11 @@
 |--------|-------|--------|----------|------------|
 | T25.17 | /update-skills Slash Command | done | P1 | 35 |
 | T25.18 | Skill Gap Detection | done | P1 | 50 |
-| T25.19 | Auto-Skill Creation | pending | P1 | 55 |
+| T25.19 | Auto-Skill Creation | done | P1 | 55 |
 | T25.20 | Skill Quality Scoring | pending | P2 | 45 |
 | T25.21 | Skill Marketplace Foundation | pending | P2 | 45 |
 
-**Progress:** 2/5 tasks (85/230 complexity points)
+**Progress:** 3/5 tasks (140/230 complexity points)
 
 ## Previous Sprint Summary (Sprint 25.5)
 
@@ -68,8 +68,8 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 **Sprint 25.6: Emergent Skill Discovery** (5 tasks, 230 pts) - IN PROGRESS
 - T25.17: /update-skills command ✓
 - T25.18: Skill gap detection ✓
-- T25.19: Auto-skill creation (next)
-- T25.20: Skill quality scoring
+- T25.19: Auto-skill creation ✓
+- T25.20: Skill quality scoring (next)
 - T25.21: Skill marketplace foundation
 
 **Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
@@ -85,6 +85,28 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.19 Complete (Auto-Skill Creation)
+
+- **T25.19: Auto-Skill Creation** ✓
+  - Created `bpsai_pair/skills/generator.py` module with:
+    - `GeneratedSkill` dataclass for skill drafts
+    - `SkillGenerator` class for generating from gaps
+    - `save_generated_skill()` for saving to disk
+    - `generate_skill_from_gap_id()` high-level function
+  - Added `bpsai-pair skill generate` CLI command:
+    - Lists available gaps if no ID provided
+    - `--preview` flag to preview without saving
+    - `--auto-approve` flag to save without confirmation
+    - `--force` flag to overwrite existing skill
+  - Generated skills include:
+    - Valid YAML frontmatter (name, description)
+    - Third-person voice descriptions
+    - Observed commands as workflow steps
+    - Placeholders for customization
+    - Auto-generation notice
+  - All generated skills pass validation
+  - 19 new tests, all 123 skill-related tests pass
 
 ### 2025-12-23 - T25.18 Complete (Skill Gap Detection)
 
