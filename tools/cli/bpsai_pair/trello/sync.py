@@ -137,11 +137,13 @@ class TaskSyncConfig:
     stack_field: str = "Stack"
     status_field: str = "Status"
     effort_field: str = "Effort"
+    repo_url_field: str = "Repo URL"
     deployment_tag_field: str = "Deployment Tag"
 
     # Default values for custom fields
     default_project: Optional[str] = None  # e.g., "PairCoder"
     default_stack: Optional[str] = None  # e.g., "Worker/Function"
+    default_repo_url: Optional[str] = None  # e.g., "https://github.com/org/repo"
 
     # Effort mapping ranges
     effort_mapping: EffortMapping = field(default_factory=EffortMapping)
@@ -221,9 +223,11 @@ class TaskSyncConfig:
             stack_field=custom_fields.get("stack", "Stack"),
             status_field=custom_fields.get("status", "Status"),
             effort_field=custom_fields.get("effort", "Effort"),
+            repo_url_field=custom_fields.get("repo_url", "Repo URL"),
             deployment_tag_field=custom_fields.get("deployment_tag", "Deployment Tag"),
             default_project=defaults.get("project"),  # e.g., "PairCoder"
             default_stack=defaults.get("stack"),  # e.g., "Worker/Function"
+            default_repo_url=defaults.get("repo_url"),  # e.g., "https://github.com/org/repo"
             effort_mapping=effort_mapping,
             status_mapping=status_mapping,
             create_missing_labels=sync_config.get("create_missing_labels", True),
@@ -246,6 +250,7 @@ class TaskSyncConfig:
                     "stack": self.stack_field,
                     "status": self.status_field,
                     "effort": self.effort_field,
+                    "repo_url": self.repo_url_field,
                     "deployment_tag": self.deployment_tag_field,
                 },
                 "effort_mapping": {
@@ -261,12 +266,14 @@ class TaskSyncConfig:
             }
         }
         # Add defaults section if any defaults are set
-        if self.default_project or self.default_stack:
+        if self.default_project or self.default_stack or self.default_repo_url:
             result["defaults"] = {}
             if self.default_project:
                 result["defaults"]["project"] = self.default_project
             if self.default_stack:
                 result["defaults"]["stack"] = self.default_stack
+            if self.default_repo_url:
+                result["defaults"]["repo_url"] = self.default_repo_url
         return result
 
     def get_trello_status(self, task_status: str) -> str:
@@ -557,6 +564,10 @@ class TrelloSyncManager:
         # Status field - use proper mapping for Butler workflow
         custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
 
+        # Repo URL field - use config default if set
+        if self.config.default_repo_url:
+            custom_fields[self.config.repo_url_field] = self.config.default_repo_url
+
         # Validate and map custom field values before setting
         validated_fields = self.validate_and_map_custom_fields(custom_fields)
 
@@ -633,6 +644,10 @@ class TrelloSyncManager:
 
         # Status field - use proper mapping for Butler workflow
         custom_fields[self.config.status_field] = self.config.get_trello_status(task.status)
+
+        # Repo URL field - use config default if set
+        if self.config.default_repo_url:
+            custom_fields[self.config.repo_url_field] = self.config.default_repo_url
 
         # Validate and map custom field values before setting
         validated_fields = self.validate_and_map_custom_fields(custom_fields)
