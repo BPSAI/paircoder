@@ -33,11 +33,10 @@ from rich.console import Console
 try:
     from . import __version__
     from .planning.cli_commands import (
-        plan_app, task_app, intent_app, standup_app,
-        template_app
+        plan_app, task_app, intent_app, standup_app
     )
     from .sprint import sprint_app
-    from .release import release_app
+    from .release import release_app, template_app
     from .skills.cli_commands import skill_app
     from .trello.commands import app as trello_app
     from .trello.task_commands import app as trello_task_app
@@ -56,11 +55,10 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from bpsai_pair import __version__
     from bpsai_pair.planning.cli_commands import (
-        plan_app, task_app, intent_app, standup_app,
-        template_app
+        plan_app, task_app, intent_app, standup_app
     )
     from bpsai_pair.sprint import sprint_app
-    from bpsai_pair.release import release_app
+    from bpsai_pair.release import release_app, template_app
     from bpsai_pair.skills.cli_commands import skill_app
     from bpsai_pair.trello.commands import app as trello_app
     from bpsai_pair.trello.task_commands import app as trello_task_app

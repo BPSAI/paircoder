@@ -18,13 +18,13 @@
 | T23.2 | Extract sprint commands to sprint/commands.py | done | P1 | 30 |
 | T23.3 | Create release/ module structure | done | P0 | 15 |
 | T23.4 | Extract release commands to release/commands.py | done | P1 | 45 |
-| T23.5 | Extract template commands to release/template.py | pending | P1 | 35 |
+| T23.5 | Extract template commands to release/template.py | done | P1 | 35 |
 | T23.6 | Verify standup commands are in separate file | pending | P2 | 10 |
 | T23.7 | Verify intent commands are in separate file | pending | P2 | 10 |
 | T23.8 | Rename cli_commands.py to commands.py | pending | P1 | 25 |
 | T23.9 | Update imports and final cleanup | pending | P0 | 35 |
 
-**Progress:** 4/9 tasks (105/220 complexity points)
+**Progress:** 5/9 tasks (140/220 complexity points)
 
 ## Sprint History
 
@@ -74,6 +74,16 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T23.5 Complete
+
+- **T23.5: Extract template commands to release/template.py** ✓
+  - Extracted `template check` and `template list` commands
+  - Created `release/template.py` (202 lines, target < 300)
+  - Imports `get_template_path` and `find_paircoder_dir` from `release/commands.py`
+  - Updated `cli.py` to import `template_app` from release module
+  - `planning/cli_commands.py` reduced to 1942 lines
+  - All 1705 tests passing
 
 ### 2025-12-22 - T23.4 Complete
 
