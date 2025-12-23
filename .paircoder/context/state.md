@@ -7,14 +7,14 @@
 **Plan:** plan-2025-12-sprint-24-cli-refactor-phase3
 **Epic:** EPIC-003: CLI Architecture Refactor
 **Phase:** Phase 3 of 5 - Consolidate Root Files
-**Status:** Ready to Start
+**Status:** In Progress
 **Goal:** Move orphaned root files into `core/` module
 
 ## Current Sprint Tasks (Sprint 24)
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T24.1  | Create core/ module structure | pending | P0 | 15 |
+| T24.1  | Create core/ module structure | done | P0 | 15 |
 | T24.2  | Move config.py to core/config.py | pending | P1 | 30 |
 | T24.3  | Move constants.py to core/constants.py | pending | P1 | 20 |
 | T24.4  | Move hooks.py to core/hooks.py | pending | P1 | 25 |
@@ -25,7 +25,7 @@
 | T24.9  | Update all imports across codebase | pending | P0 | 40 |
 | T24.10 | Update __init__.py exports and verify package structure | pending | P0 | 30 |
 
-**Progress:** 0/10 tasks (0/250 complexity points)
+**Progress:** 1/10 tasks (15/250 complexity points)
 
 ## Previous Sprint Summary (Sprint 23)
 
@@ -64,8 +64,8 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 **Sprint 24: CLI Architecture Refactor (Phase 3)** is planned and ready to start.
 
 **Recommended Task Order:**
-1. **T24.1** - Create core/ module structure (foundation)
-2. **T24.2, T24.3, T24.4, T24.5, T24.6** - Move config, constants, hooks, ops, presets (parallel, depend on T24.1)
+1. ~~**T24.1** - Create core/ module structure (foundation)~~ ✓ DONE
+2. **T24.2, T24.3, T24.4, T24.5, T24.6** - Move config, constants, hooks, ops, presets (parallel, depend on T24.1) ← NEXT
 3. **T24.7** - Merge utils + pyutils + jsonio (depends on T24.1)
 4. **T24.8** - Delete empty adapters.py (quick, can run anytime)
 5. **T24.9** - Update all imports (depends on T24.2-T24.7)
@@ -89,6 +89,16 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T24.1 Complete (Sprint 24 Started)
+
+- **T24.1: Create core/ module structure** ✓
+  - Created `tools/cli/bpsai_pair/core/` directory
+  - Created `core/__init__.py` with exports for all submodules
+  - Created placeholder files: config.py, constants.py, hooks.py, ops.py, presets.py, utils.py
+  - Created `tests/test_core_module.py` with 8 tests for module imports
+  - All 1713 tests passing (1705 existing + 8 new)
+  - Foundation ready for T24.2-T24.7 file moves
 
 ### 2025-12-22 - T23.12 Complete (Upgrade Command)
 
