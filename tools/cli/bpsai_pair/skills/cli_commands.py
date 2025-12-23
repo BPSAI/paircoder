@@ -293,7 +293,7 @@ def skill_install(
 @skill_app.command("export")
 def skill_export(
     skill_name: Optional[str] = typer.Argument(None, help="Skill to export (or use --all)"),
-    format: str = typer.Option("cursor", "--format", "-f", help="Export format: cursor, continue, windsurf"),
+    format: str = typer.Option("cursor", "--format", "-f", help="Export format: cursor, continue, windsurf, codex, chatgpt, all"),
     all_skills: bool = typer.Option(False, "--all", "-a", help="Export all skills"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Show what would be created without creating"),
 ):
@@ -303,11 +303,23 @@ def skill_export(
     - cursor: Export to .cursor/rules/
     - continue: Export to .continue/context/
     - windsurf: Export to .windsurfrules
+    - codex: Export to ~/.codex/skills/ (OpenAI Codex CLI)
+    - chatgpt: Export to ./chatgpt-skills/ (for custom GPTs)
+    - all: Export to all formats at once
 
     Examples:
 
         # Export single skill to Cursor
         bpsai-pair skill export my-skill --format cursor
+
+        # Export to Codex CLI
+        bpsai-pair skill export my-skill --format codex
+
+        # Export to ChatGPT format
+        bpsai-pair skill export my-skill --format chatgpt
+
+        # Export to all platforms at once
+        bpsai-pair skill export my-skill --format all
 
         # Export all skills to Continue.dev
         bpsai-pair skill export --all --format continue
@@ -323,7 +335,7 @@ def skill_export(
     try:
         export_format = ExportFormat(format.lower())
     except ValueError:
-        console.print(f"[red]Error: Invalid format '{format}'. Use: cursor, continue, windsurf[/red]")
+        console.print(f"[red]Error: Invalid format '{format}'. Use: cursor, continue, windsurf, codex, chatgpt, all[/red]")
         raise typer.Exit(1)
 
     # Get directories
@@ -366,9 +378,9 @@ def skill_export(
         else:
             console.print(f"[bold]Exporting {skill_name} to {format}...[/bold]\n")
 
-            # Check portability first
+            # Check portability first (skip for 'all' format, it's checked per-format)
             skill_dir = skills_dir / skill_name
-            if skill_dir.exists():
+            if skill_dir.exists() and export_format != ExportFormat.ALL:
                 warnings = check_portability(skill_dir)
                 for warning in warnings:
                     console.print(f"[yellow]⚠ {warning}[/yellow]")
@@ -383,7 +395,20 @@ def skill_export(
                 dry_run=dry_run,
             )
 
-            if dry_run:
+            # Handle 'all' format special result structure
+            if result.get("format") == "all":
+                # Display results for each format
+                exported_to = result.get("exported_to", {})
+                for fmt_name, path in exported_to.items():
+                    console.print(f"  [green]\u2713[/green] {fmt_name}: {path}")
+
+                # Display warnings
+                for warning in result.get("warnings", []):
+                    console.print(f"\n[yellow]⚠ {warning}[/yellow]")
+
+                # Summary
+                console.print(f"\n{result.get('summary', 'Export complete')}")
+            elif dry_run:
                 console.print(f"[dim]Would create: {result.get('would_create')}[/dim]")
             else:
                 console.print(f"[green]\u2705 Exported to {result.get('path')}[/green]")

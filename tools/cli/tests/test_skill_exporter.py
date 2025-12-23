@@ -26,6 +26,24 @@ class TestExportFormat:
 
         assert ExportFormat.WINDSURF.value == "windsurf"
 
+    def test_codex_format_exists(self):
+        """Should have Codex CLI export format."""
+        from bpsai_pair.skills.exporter import ExportFormat
+
+        assert ExportFormat.CODEX.value == "codex"
+
+    def test_chatgpt_format_exists(self):
+        """Should have ChatGPT export format."""
+        from bpsai_pair.skills.exporter import ExportFormat
+
+        assert ExportFormat.CHATGPT.value == "chatgpt"
+
+    def test_all_format_exists(self):
+        """Should have ALL export format for bulk export."""
+        from bpsai_pair.skills.exporter import ExportFormat
+
+        assert ExportFormat.ALL.value == "all"
+
 
 class TestExportToCursor:
     """Tests for Cursor export format."""
@@ -270,6 +288,279 @@ description: A helpful skill.
             # Should contain both existing and new content
             assert "Existing rules" in content
             assert "my-skill" in content.lower()
+
+
+class TestExportToCodex:
+    """Tests for Codex CLI export format."""
+
+    def test_exports_skill_to_codex_directory(self):
+        """Should export skill to ~/.codex/skills/ directory."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A helpful skill for coding.
+---
+
+# My Skill
+
+## Instructions
+
+Follow these steps.
+""")
+
+            project_dir = Path(tmpdir)
+            # Mock home directory to avoid writing to real home
+            with patch('pathlib.Path.home', return_value=Path(tmpdir)):
+                result = export_skill(
+                    skill_name="my-skill",
+                    format=ExportFormat.CODEX,
+                    skills_dir=skills_dir,
+                    project_dir=project_dir,
+                )
+
+            assert result["success"] is True
+            assert "codex" in result["path"].lower()
+            codex_file = Path(tmpdir) / ".codex" / "skills" / "my-skill" / "SKILL.md"
+            assert codex_file.exists()
+
+    def test_codex_export_preserves_content(self):
+        """Codex export should preserve original content (same format as Claude)."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            original_content = """---
+name: my-skill
+description: Test skill.
+---
+
+# My Skill
+
+Content preserved exactly.
+"""
+            (skill_dir / "SKILL.md").write_text(original_content)
+
+            project_dir = Path(tmpdir)
+            with patch('pathlib.Path.home', return_value=Path(tmpdir)):
+                export_skill(
+                    skill_name="my-skill",
+                    format=ExportFormat.CODEX,
+                    skills_dir=skills_dir,
+                    project_dir=project_dir,
+                )
+
+            codex_file = Path(tmpdir) / ".codex" / "skills" / "my-skill" / "SKILL.md"
+            exported_content = codex_file.read_text()
+            # Codex uses same format as Claude Code
+            assert exported_content == original_content
+
+
+class TestExportToChatGPT:
+    """Tests for ChatGPT export format."""
+
+    def test_exports_skill_to_chatgpt_directory(self):
+        """Should export skill to ./chatgpt-skills/ directory."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A helpful skill for coding.
+---
+
+# My Skill
+
+Instructions here.
+""")
+
+            project_dir = Path(tmpdir)
+            result = export_skill(
+                skill_name="my-skill",
+                format=ExportFormat.CHATGPT,
+                skills_dir=skills_dir,
+                project_dir=project_dir,
+            )
+
+            assert result["success"] is True
+            chatgpt_file = project_dir / "chatgpt-skills" / "my-skill" / "skill.md"
+            assert chatgpt_file.exists()
+
+    def test_chatgpt_export_strips_frontmatter(self):
+        """ChatGPT export should strip YAML frontmatter."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A helpful skill.
+---
+
+# My Skill
+
+Content here.
+""")
+
+            project_dir = Path(tmpdir)
+            export_skill(
+                skill_name="my-skill",
+                format=ExportFormat.CHATGPT,
+                skills_dir=skills_dir,
+                project_dir=project_dir,
+            )
+
+            chatgpt_file = project_dir / "chatgpt-skills" / "my-skill" / "skill.md"
+            content = chatgpt_file.read_text()
+
+            # Should not contain YAML frontmatter delimiters
+            assert "name: my-skill" not in content
+            # Should contain the content
+            assert "Content here" in content
+
+    def test_chatgpt_export_uses_title_case_name(self):
+        """ChatGPT export should convert skill name to title case."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-test-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-test-skill
+description: Test skill.
+---
+
+# Content
+""")
+
+            project_dir = Path(tmpdir)
+            export_skill(
+                skill_name="my-test-skill",
+                format=ExportFormat.CHATGPT,
+                skills_dir=skills_dir,
+                project_dir=project_dir,
+            )
+
+            chatgpt_file = project_dir / "chatgpt-skills" / "my-test-skill" / "skill.md"
+            content = chatgpt_file.read_text()
+
+            # Should have title-cased name as heading
+            assert "# My Test Skill" in content
+
+    def test_chatgpt_export_adds_export_footer(self):
+        """ChatGPT export should add footer noting export source."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: Test skill.
+---
+
+# Content
+""")
+
+            project_dir = Path(tmpdir)
+            export_skill(
+                skill_name="my-skill",
+                format=ExportFormat.CHATGPT,
+                skills_dir=skills_dir,
+                project_dir=project_dir,
+            )
+
+            chatgpt_file = project_dir / "chatgpt-skills" / "my-skill" / "skill.md"
+            content = chatgpt_file.read_text()
+
+            # Should have export footer
+            assert "Exported from PairCoder" in content
+
+
+class TestExportToAllFormats:
+    """Tests for exporting to all formats at once."""
+
+    def test_exports_to_all_formats(self):
+        """--format all should export to all supported formats."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A helpful skill.
+---
+
+# My Skill
+
+Content.
+""")
+
+            project_dir = Path(tmpdir)
+            with patch('pathlib.Path.home', return_value=Path(tmpdir)):
+                result = export_skill(
+                    skill_name="my-skill",
+                    format=ExportFormat.ALL,
+                    skills_dir=skills_dir,
+                    project_dir=project_dir,
+                )
+
+            assert result["success"] is True
+            assert result["format"] == "all"
+            assert "exported_to" in result
+            # Should have exported to multiple formats
+            assert len(result["exported_to"]) > 1
+
+    def test_all_format_returns_summary(self):
+        """ALL format should return a summary of exports."""
+        from bpsai_pair.skills.exporter import export_skill, ExportFormat
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            skills_dir = Path(tmpdir) / ".claude" / "skills"
+            skills_dir.mkdir(parents=True)
+            skill_dir = skills_dir / "my-skill"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: Test.
+---
+
+# Content
+""")
+
+            project_dir = Path(tmpdir)
+            with patch('pathlib.Path.home', return_value=Path(tmpdir)):
+                result = export_skill(
+                    skill_name="my-skill",
+                    format=ExportFormat.ALL,
+                    skills_dir=skills_dir,
+                    project_dir=project_dir,
+                )
+
+            assert "summary" in result
+            assert "Exported to" in result["summary"]
 
 
 class TestExportAll:

@@ -1,6 +1,9 @@
 """Flow commands for managing flows (Paircoder-native skills).
 
 Extracted from cli.py as part of EPIC-003 CLI Architecture Refactor.
+
+NOTE: Flows are DEPRECATED in favor of cross-platform Agent Skills.
+See docs/MIGRATION.md for migration guidance.
 """
 
 from __future__ import annotations
@@ -15,11 +18,20 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from ..core.deprecation import (
+    deprecated_command,
+    show_migration_hint_once,
+    suppress_deprecation_warnings,
+)
+
 # Initialize Rich console
 console = Console()
 
 # Environment variable support
 FLOWS_DIR = os.getenv("PAIRCODER_FLOWS_DIR", ".paircoder/flows")
+
+# Track if we've shown the migration hint this session
+_migration_hint_shown = False
 
 
 def print_json(data: dict) -> None:
@@ -76,16 +88,47 @@ def _find_flow_v2(root: Path, name: str):
 
 # Flow sub-app
 app = typer.Typer(
-    help="Manage flows (Paircoder-native skills)",
+    help="Manage flows (Paircoder-native skills) [DEPRECATED - use skills instead]",
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 
 
+@app.callback()
+def flow_callback(
+    no_deprecation_warnings: bool = typer.Option(
+        False,
+        "--no-deprecation-warnings",
+        help="Suppress deprecation warnings (for CI/CD pipelines)",
+        is_eager=True,
+    ),
+) -> None:
+    """Manage flows (Paircoder-native skills). [DEPRECATED]
+
+    Flows are deprecated in favor of cross-platform Agent Skills.
+    Use 'bpsai-pair skill' commands instead.
+
+    To suppress deprecation warnings in CI/CD, use --no-deprecation-warnings.
+    """
+    if no_deprecation_warnings:
+        suppress_deprecation_warnings(True)
+    else:
+        # Show migration hint once per day
+        global _migration_hint_shown
+        if not _migration_hint_shown:
+            show_migration_hint_once("flows_to_skills")
+            _migration_hint_shown = True
+
+
 @app.command("list")
+@deprecated_command(
+    message="Flows are deprecated in favor of cross-platform Agent Skills.",
+    alternative="bpsai-pair skill list",
+    removal_version="2.11.0",
+)
 def flow_list(
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
-    """List available flows."""
+    """List available flows. [DEPRECATED - use 'skill list' instead]"""
     root = repo_root()
     flows_dir = _flows_root(root)
 
@@ -133,11 +176,16 @@ def flow_list(
 
 
 @app.command("show")
+@deprecated_command(
+    message="Flows are deprecated. Consider migrating to skills.",
+    alternative="bpsai-pair skill show <name>",
+    removal_version="2.11.0",
+)
 def flow_show(
     name: str = typer.Argument(..., help="Flow name"),
     json_out: bool = typer.Option(False, "--json"),
 ):
-    """Show details of a flow."""
+    """Show details of a flow. [DEPRECATED - use 'skill show' instead]"""
     root = repo_root()
     flows_dir = _flows_root(root)
 
@@ -186,6 +234,11 @@ def flow_show(
 
 
 @app.command("run")
+@deprecated_command(
+    message="Flows are deprecated. Skills are automatically invoked by Claude.",
+    alternative="Skills don't need explicit 'run' - Claude uses them automatically",
+    removal_version="2.11.0",
+)
 def flow_run(
     name: str = typer.Argument(..., help="Flow name or filename"),
     var: Optional[List[str]] = typer.Option(
@@ -193,7 +246,7 @@ def flow_run(
     ),
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
-    """Run a flow and output as checklist (no LLM calls - renders steps only)."""
+    """Run a flow and output as checklist. [DEPRECATED - skills auto-invoke]"""
     root = repo_root()
 
     # Find the flow using v2 parser
@@ -249,11 +302,16 @@ def flow_run(
 
 
 @app.command("validate")
+@deprecated_command(
+    message="Flows are deprecated. Use skill validation instead.",
+    alternative="bpsai-pair skill validate",
+    removal_version="2.11.0",
+)
 def flow_validate(
     name: str = typer.Argument(..., help="Flow name or filename"),
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
-    """Validate a flow definition."""
+    """Validate a flow definition. [DEPRECATED - use 'skill validate']"""
     root = repo_root()
 
     # Find the flow using v2 parser

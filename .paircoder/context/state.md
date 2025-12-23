@@ -18,14 +18,14 @@
 | T25.18 | Skill Gap Detection | done | P1 | 50 | L |
 | T25.19 | Auto-Skill Creation | done | P1 | 55 | L |
 | T25.20 | Skill Quality Scoring | done | P2 | 45 | M |
-| T25.21 | Skill Marketplace Foundation | pending | P2 | 45 | M |
+| T25.21 | Skill Marketplace Foundation | dropped | P2 | 45 | M |
 | T25.22 | Flows → Skills Migration RFC | done | P1 | 35 | M |
 | T25.23 | Subagent Gap Detection | done | P1 | 45 | M |
 | T25.24 | Unified Gap Classifier | done | P1 | 40 | M |
-| T25.25 | Flow Commands Deprecation Warnings | pending | P2 | 25 | S |
-| T25.26 | Codex/ChatGPT Skill Export Formats | pending | P2 | 30 | M |
+| T25.25 | Flow Commands Deprecation Warnings | done | P2 | 25 | S |
+| T25.26 | Codex/ChatGPT Skill Export Formats | done | P2 | 30 | M |
 
-**Progress:** 7/10 tasks (305/405 complexity points)
+**Progress:** 9/9 tasks (360/360 complexity points) ✓ Sprint Complete!
 
 ## Task Dependencies & Implementation Sequence
 
@@ -39,10 +39,12 @@ COMPLETED:
   T25.23 (Subagent Gap Detection) ✓
   T25.24 (Unified Gap Classifier) ✓
 
-REMAINING:
-  1. T25.25 (Deprecation) ─► Add warnings (after RFC approved) [P2]
-  2. T25.26 (Codex/ChatGPT) ─► Independent, extends T25.16 [P2]
-  3. T25.21 ────────────────► Skill marketplace foundation [P2]
+ALL TASKS COMPLETE:
+  1. T25.25 (Deprecation) ✓
+  2. T25.26 (Codex/ChatGPT) ✓
+
+DROPPED:
+  T25.21 ─────────────────► Skill marketplace foundation (focusing on personalized skill gen)
 ```
 
 ### Priority Breakdown
@@ -54,7 +56,7 @@ REMAINING:
 
 **P2 (Medium) - Enhancements:**
 - ✓ T25.20: Skill quality scoring with pre-generation gates
-- T25.21: Skill marketplace foundation
+- ~~T25.21: Skill marketplace foundation~~ (dropped)
 - T25.25: Deprecation warnings (low risk, after RFC)
 - T25.26: Codex/ChatGPT export (independent work)
 
@@ -128,8 +130,8 @@ Phase 4 - Implementation (P2 - Next):
 - T25.25: Flow commands deprecation warnings
 - T25.26: Codex/ChatGPT skill export formats
 
-Phase 5 - Distribution (P2):
-- T25.21: Skill marketplace foundation
+Phase 5 - Distribution (P2): DROPPED
+- ~~T25.21: Skill marketplace foundation~~ (focusing on personalized skill generation)
 
 **Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
 Make PairCoder usable by non-technical "vibe-coders". Tasks: T26.1-T26.10 - Interactive welcome wizard, Trello setup wizard with pre-checks, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session.
@@ -151,6 +153,37 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.26 Complete (Codex/ChatGPT Skill Export Formats)
+
+- **T25.26: Codex/ChatGPT Skill Export Formats** ✓
+  - Extended `ExportFormat` enum with CODEX, CHATGPT, and ALL options
+  - Implemented `_format_for_codex()` - preserves content (same Agent Skills spec)
+  - Implemented `_format_for_chatgpt()` - strips frontmatter, title-case heading, export footer
+  - Implemented `export_to_all_formats()` - exports to all platforms at once
+  - Updated `check_portability()` with format-specific warnings (MCP tools for Codex)
+  - Updated CLI help text with new formats in examples
+  - 11 new tests for Codex/ChatGPT/ALL formats (33 total exporter tests pass)
+  - Updated CHANGELOG.md
+
+### 2025-12-23 - T25.25 Complete (Flow Commands Deprecation Warnings)
+
+- **T25.25: Flow Commands Deprecation Warnings** ✓
+  - Created `bpsai_pair/core/deprecation.py` - Deprecation utilities:
+    - `deprecated_command` decorator for marking CLI commands as deprecated
+    - `suppress_deprecation_warnings()` for CI/CD pipelines
+    - `show_migration_hint_once()` with daily rate limiting
+    - `warn_deprecated_config()` for config option deprecation
+  - Updated `bpsai_pair/commands/flow.py`:
+    - Added deprecation decorator to all 4 flow commands (list, show, run, validate)
+    - Added `--no-deprecation-warnings` flag to suppress warnings
+    - Added migration hint that shows once per day
+    - Updated all docstrings with [DEPRECATED] suffix
+    - Updated app help text to indicate deprecation
+  - 20 new tests in `tests/test_flow_deprecation.py`:
+    - All deprecation warning tests pass
+    - All existing flow CLI tests still pass
+  - Updated CHANGELOG.md with deprecation documentation
 
 ### 2025-12-23 - T25.20 Complete (Skill Quality Scoring with Pre-Generation Gates)
 

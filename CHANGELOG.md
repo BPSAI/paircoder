@@ -46,6 +46,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ASCII diagram in FEATURE_MATRIX.md showing 5-layer architecture
   - Key architectural principles documented
 
+### Added
+
+#### Sprint 25.6: Emergent Skills (continued)
+- **Codex/ChatGPT Skill Export** (T25.26) — Export skills to additional platforms
+  - `bpsai-pair skill export --format codex` exports to ~/.codex/skills/
+  - `bpsai-pair skill export --format chatgpt` exports to ./chatgpt-skills/
+  - `bpsai-pair skill export --format all` exports to all platforms at once
+  - ChatGPT format: strips frontmatter, title-case heading, export footer
+  - Codex format: preserves original content (same Agent Skills spec)
+  - Format-specific portability warnings (MCP tools, scripts)
+
 ### Changed
 - **CLI module count** — Grew from 80+ to 112 commands
 - **Test count** — Increased to 1774 tests (from 1705)
@@ -53,6 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **File organization** — cli.py reduced to ~200 lines (registration only)
 
 ### Deprecated
+- **Flow commands deprecated** (T25.25) — Flows are deprecated in favor of Agent Skills
+  - All flow commands (`flow list`, `flow show`, `flow run`, `flow validate`) now emit deprecation warnings
+  - Warnings include alternative commands and removal timeline (v2.11.0)
+  - Use `--no-deprecation-warnings` flag to suppress warnings in CI/CD pipelines
+  - Migration hint shown once per day on first flow command
+  - See docs/MIGRATION.md for migration guidance
+
 - **v1 flow format** — YAML-only flows now emit deprecation warnings
   - Use `.flow.md` format with YAML frontmatter instead
   - See migration guide in docs/flows.md
