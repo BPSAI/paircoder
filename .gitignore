@@ -106,7 +106,8 @@ agent_pack.tgz
 __pycache__/
 *.pyc
 /.paircoder/history/
-/.paircoder/history/
 /.paircoder/plans/
-/.paircoder/history/
 /.paircoder/cache/
+
+# Prevent accidental .paircoder in wrong location
+tools/cli/.paircoder/
