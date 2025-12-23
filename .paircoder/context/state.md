@@ -18,9 +18,9 @@
 | T25.13 | Third-Person Voice in Skill Descriptions | done | P2 | 10 |
 | T25.14 | Create skill-creation Skill | done | P1 | 35 |
 | T25.15 | Skill Installer Command | done | P1 | 40 |
-| T25.16 | Cross-Platform Skill Structure | pending | P2 | 50 |
+| T25.16 | Cross-Platform Skill Structure | done | P2 | 50 |
 
-**Progress:** 4/5 tasks (100/150 complexity points)
+**Progress:** 5/5 tasks (150/150 complexity points) - SPRINT COMPLETE!
 
 ## Recommended Execution Order
 
@@ -83,6 +83,38 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.16 Complete (Cross-Platform Skill Structure) - SPRINT 25.5 COMPLETE!
+
+- **T25.16: Cross-Platform Skill Structure** ✓
+  - Created `bpsai_pair/skills/exporter.py` module with:
+    - `ExportFormat` enum (CURSOR, CONTINUE, WINDSURF)
+    - `export_skill()` - export single skill to target format
+    - `export_all_skills()` - export all skills
+    - `check_portability()` - detect platform-specific features
+  - Added `bpsai-pair skill export` CLI command:
+    - `skill export <name> --format cursor` - Cursor AI (.cursor/rules/)
+    - `skill export <name> --format continue` - Continue.dev (.continue/context/)
+    - `skill export <name> --format windsurf` - Windsurf (.windsurfrules)
+    - `--all` flag to export all skills
+    - `--dry-run` flag to preview without creating
+  - Export formats:
+    - Cursor: Individual .md files with metadata comments
+    - Continue: Individual .md files with context headers
+    - Windsurf: Appends to single file with section markers
+  - Portability warnings for:
+    - Skills with scripts/ directory
+    - Skills referencing bpsai-pair commands
+    - Skills referencing Claude Code features
+  - Created `docs/CROSS_PLATFORM_SKILLS.md` documentation
+  - 22 new tests, all 63 skill-related tests pass
+
+**Sprint 25.5: Cross-Platform Skills - COMPLETE!**
+- T25.12: Skill naming conventions (gerund form)
+- T25.13: Third-person voice descriptions
+- T25.14: Creating-skills meta-skill
+- T25.15: Skill install command
+- T25.16: Skill export command
 
 ### 2025-12-23 - T25.15 Complete (Skill Installer Command)
 

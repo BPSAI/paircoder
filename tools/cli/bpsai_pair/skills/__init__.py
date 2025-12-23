@@ -13,6 +13,13 @@ from .installer import (
     get_target_dir,
     extract_skill_name,
 )
+from .exporter import (
+    SkillExporterError,
+    ExportFormat,
+    export_skill,
+    export_all_skills,
+    check_portability,
+)
 
 __all__ = [
     "SkillValidator",
@@ -27,4 +34,9 @@ __all__ = [
     "check_conflicts",
     "get_target_dir",
     "extract_skill_name",
+    "SkillExporterError",
+    "ExportFormat",
+    "export_skill",
+    "export_all_skills",
+    "check_portability",
 ]
