@@ -37,7 +37,7 @@ try:
     )
     from .sprint import sprint_app
     from .release import release_app, template_app
-    from .skills.cli_commands import skill_app
+    from .skills.cli_commands import skill_app, subagent_app, gaps_app
     from .trello.commands import app as trello_app
     from .trello.task_commands import app as trello_task_app
     from .github.commands import app as github_app
@@ -59,7 +59,7 @@ except ImportError:
     )
     from bpsai_pair.sprint import sprint_app
     from bpsai_pair.release import release_app, template_app
-    from bpsai_pair.skills.cli_commands import skill_app
+    from bpsai_pair.skills.cli_commands import skill_app, subagent_app, gaps_app
     from bpsai_pair.trello.commands import app as trello_app
     from bpsai_pair.trello.task_commands import app as trello_task_app
     from bpsai_pair.github.commands import app as github_app
@@ -98,6 +98,8 @@ app.add_typer(release_app, name="release")
 app.add_typer(template_app, name="template")
 app.add_typer(migrate_app, name="migrate")
 app.add_typer(skill_app, name="skill")
+app.add_typer(subagent_app, name="subagent")
+app.add_typer(gaps_app, name="gaps")
 
 # Extracted command sub-apps (Sprint 22)
 app.add_typer(flow_app, name="flow")

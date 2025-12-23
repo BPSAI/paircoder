@@ -42,6 +42,24 @@ from .generator import (
     save_generated_skill,
     generate_skill_from_gap_id,
 )
+from .subagent_detector import (
+    SubagentGap,
+    SubagentGapDetector,
+    SubagentGapPersistence,
+    detect_subagent_gaps,
+    format_subagent_gap_notification,
+)
+from .classifier import (
+    GapType,
+    ClassifiedGap,
+    ClassificationScores,
+    SkillRecommendation,
+    SubagentRecommendation,
+    AllGaps,
+    GapClassifier,
+    detect_and_classify_all,
+    format_classification_report,
+)
 
 __all__ = [
     "SkillValidator",
@@ -77,4 +95,18 @@ __all__ = [
     "SkillGeneratorError",
     "save_generated_skill",
     "generate_skill_from_gap_id",
+    "SubagentGap",
+    "SubagentGapDetector",
+    "SubagentGapPersistence",
+    "detect_subagent_gaps",
+    "format_subagent_gap_notification",
+    "GapType",
+    "ClassifiedGap",
+    "ClassificationScores",
+    "SkillRecommendation",
+    "SubagentRecommendation",
+    "AllGaps",
+    "GapClassifier",
+    "detect_and_classify_all",
+    "format_classification_report",
 ]

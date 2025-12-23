@@ -45,6 +45,20 @@ from .generator import (
     save_generated_skill,
     generate_skill_from_gap_id,
 )
+from .subagent_detector import (
+    SubagentGap,
+    SubagentGapDetector,
+    SubagentGapPersistence,
+    detect_subagent_gaps,
+)
+from .classifier import (
+    GapType,
+    ClassifiedGap,
+    GapClassifier,
+    AllGaps,
+    detect_and_classify_all,
+    format_classification_report,
+)
 
 console = Console()
 
@@ -721,3 +735,430 @@ def skill_generate(
     except SkillGeneratorError as e:
         console.print(f"[red]✖ Failed to save: {e}[/red]")
         raise typer.Exit(1)
+
+
+# ============================================================================
+# Subagent Gap Commands
+# ============================================================================
+
+subagent_app = typer.Typer(
+    help="Manage Claude Code subagents",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@subagent_app.command("gaps")
+def subagent_gaps(
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    clear: bool = typer.Option(False, "--clear", help="Clear gap history"),
+    analyze: bool = typer.Option(False, "--analyze", help="Run fresh analysis"),
+):
+    """List detected subagent gaps from session history.
+
+    Shows patterns that suggest subagents would be beneficial, such as
+    context isolation needs, specialized personas, or resumable workflows.
+
+    Examples:
+
+        # List detected gaps
+        bpsai-pair subagent gaps
+
+        # Output as JSON
+        bpsai-pair subagent gaps --json
+
+        # Clear gap history
+        bpsai-pair subagent gaps --clear
+
+        # Run fresh analysis
+        bpsai-pair subagent gaps --analyze
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+
+    persistence = SubagentGapPersistence(history_dir=history_dir)
+
+    # Handle --clear
+    if clear:
+        persistence.clear_gaps()
+        console.print("[green]Subagent gap history cleared[/green]")
+        return
+
+    # Load or detect gaps
+    if analyze:
+        console.print("[cyan]Analyzing session history for subagent patterns...[/cyan]\n")
+        gaps = detect_subagent_gaps(history_dir=history_dir)
+        # Save newly detected gaps
+        for gap in gaps:
+            persistence.save_gap(gap)
+    else:
+        gaps = persistence.load_gaps()
+
+    # JSON output
+    if json_out:
+        output = {
+            "gaps": [g.to_dict() for g in gaps],
+            "total": len(gaps),
+        }
+        console.print(json.dumps(output, indent=2))
+        return
+
+    # Display gaps
+    if not gaps:
+        console.print("[dim]No subagent gaps detected.[/dim]")
+        console.print("\n[dim]Tips:[/dim]")
+        console.print("  - Use --analyze to run fresh detection")
+        console.print("  - Subagent gaps are detected from patterns like:")
+        console.print("    • Requests for specific personas or roles")
+        console.print("    • Context isolation needs")
+        console.print("    • Multi-session/resumable workflows")
+        console.print("    • Read-only analysis patterns")
+        return
+
+    console.print(f"[bold]Detected Subagent Gaps ({len(gaps)}):[/bold]\n")
+
+    for i, gap in enumerate(gaps, 1):
+        # Confidence indicator
+        if gap.confidence >= 0.7:
+            conf_style = "green"
+        elif gap.confidence >= 0.5:
+            conf_style = "yellow"
+        else:
+            conf_style = "dim"
+
+        console.print(f"[bold]{i}. {gap.suggested_name}[/bold] [{conf_style}](confidence: {gap.confidence:.0%})[/{conf_style}]")
+        console.print(f"   {gap.description}")
+
+        if gap.indicators:
+            console.print(f"   Indicators: {', '.join(gap.indicators)}")
+
+        if gap.suggested_model:
+            console.print(f"   Suggested model: {gap.suggested_model}")
+
+        if gap.suggested_tools:
+            console.print(f"   Suggested tools: {', '.join(gap.suggested_tools[:3])}{'...' if len(gap.suggested_tools) > 3 else ''}")
+
+        features = []
+        if gap.needs_context_isolation:
+            features.append("context isolation")
+        if gap.needs_resumability:
+            features.append("resumable")
+        if features:
+            console.print(f"   Features: {', '.join(features)}")
+
+        console.print(f"   Occurrences: {gap.occurrence_count}")
+        console.print(f"   [dim]Detected: {gap.detected_at[:10]}[/dim]")
+        console.print()
+
+    console.print("[dim]Subagent creation from gaps will be available in a future release.[/dim]")
+
+
+# ============================================================================
+# Unified Gap Commands
+# ============================================================================
+
+gaps_app = typer.Typer(
+    help="Unified gap detection and classification",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@gaps_app.command("detect")
+def gaps_detect(
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    analyze: bool = typer.Option(False, "--analyze", help="Force fresh analysis"),
+):
+    """Detect and classify all gaps from session history.
+
+    Runs both skill and subagent gap detection, then classifies each gap
+    to determine whether it should become a skill, subagent, or either.
+
+    Examples:
+
+        # Detect and classify gaps
+        bpsai-pair gaps detect
+
+        # Output as JSON
+        bpsai-pair gaps detect --json
+
+        # Force fresh analysis
+        bpsai-pair gaps detect --analyze
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+
+    subagents_dir = project_dir / ".claude" / "agents"
+
+    console.print("[cyan]Detecting and classifying gaps...[/cyan]\n")
+
+    # Detect and classify
+    classified = detect_and_classify_all(
+        history_dir=history_dir,
+        skills_dir=skills_dir,
+        subagents_dir=subagents_dir,
+    )
+
+    # JSON output
+    if json_out:
+        output = {
+            "gaps": [g.to_dict() for g in classified],
+            "total": len(classified),
+            "by_type": {
+                "skill": len([g for g in classified if g.gap_type == GapType.SKILL]),
+                "subagent": len([g for g in classified if g.gap_type == GapType.SUBAGENT]),
+                "ambiguous": len([g for g in classified if g.gap_type == GapType.AMBIGUOUS]),
+            }
+        }
+        console.print(json.dumps(output, indent=2))
+        return
+
+    # Display results
+    if not classified:
+        console.print("[dim]No gaps detected.[/dim]")
+        console.print("\n[dim]Tips:[/dim]")
+        console.print("  - Gaps are detected from repeated workflows in history")
+        console.print("  - Use `skill suggest` for pattern-based skill suggestions")
+        console.print("  - Use `subagent gaps` for subagent-specific detection")
+        return
+
+    # Group by type
+    skills = [g for g in classified if g.gap_type == GapType.SKILL]
+    subagents = [g for g in classified if g.gap_type == GapType.SUBAGENT]
+    ambiguous = [g for g in classified if g.gap_type == GapType.AMBIGUOUS]
+
+    console.print(f"[bold]Classified Gaps ({len(classified)} total):[/bold]\n")
+
+    if skills:
+        console.print("[bold green]SKILLS:[/bold green]")
+        for gap in skills:
+            _display_classified_gap(gap)
+        console.print()
+
+    if subagents:
+        console.print("[bold blue]SUBAGENTS:[/bold blue]")
+        for gap in subagents:
+            _display_classified_gap(gap)
+        console.print()
+
+    if ambiguous:
+        console.print("[bold yellow]AMBIGUOUS (user decision needed):[/bold yellow]")
+        for gap in ambiguous:
+            _display_classified_gap(gap)
+        console.print()
+
+    # Summary
+    console.print("[dim]Summary:[/dim]")
+    console.print(f"  Skills: {len(skills)} | Subagents: {len(subagents)} | Ambiguous: {len(ambiguous)}")
+
+
+@gaps_app.command("list")
+def gaps_list(
+    gap_type: Optional[str] = typer.Option(None, "--type", "-t", help="Filter by type: skill, subagent, ambiguous"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """List all classified gaps.
+
+    Shows gaps that have been detected and classified. Use --type to filter
+    by classification.
+
+    Examples:
+
+        # List all gaps
+        bpsai-pair gaps list
+
+        # List only skill gaps
+        bpsai-pair gaps list --type skill
+
+        # List ambiguous gaps
+        bpsai-pair gaps list --type ambiguous
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+
+    subagents_dir = project_dir / ".claude" / "agents"
+
+    # Detect and classify
+    classified = detect_and_classify_all(
+        history_dir=history_dir,
+        skills_dir=skills_dir,
+        subagents_dir=subagents_dir,
+    )
+
+    # Filter by type if specified
+    if gap_type:
+        try:
+            filter_type = GapType(gap_type.lower())
+            classified = [g for g in classified if g.gap_type == filter_type]
+        except ValueError:
+            console.print(f"[red]Invalid type: {gap_type}. Use: skill, subagent, ambiguous[/red]")
+            raise typer.Exit(1)
+
+    # JSON output
+    if json_out:
+        output = {
+            "gaps": [g.to_dict() for g in classified],
+            "total": len(classified),
+        }
+        console.print(json.dumps(output, indent=2))
+        return
+
+    if not classified:
+        console.print("[dim]No gaps found.[/dim]")
+        return
+
+    console.print(f"[bold]Gaps ({len(classified)}):[/bold]\n")
+
+    for gap in classified:
+        _display_classified_gap(gap)
+
+
+@gaps_app.command("show")
+def gaps_show(
+    gap_id: str = typer.Argument(..., help="Gap ID to show details for"),
+):
+    """Show detailed classification for a specific gap.
+
+    Displays full classification details including scores, reasoning,
+    and recommendations.
+
+    Examples:
+
+        # Show gap details
+        bpsai-pair gaps show skill-testing-workflows
+    """
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+
+    subagents_dir = project_dir / ".claude" / "agents"
+
+    # Detect and classify
+    classified = detect_and_classify_all(
+        history_dir=history_dir,
+        skills_dir=skills_dir,
+        subagents_dir=subagents_dir,
+    )
+
+    # Find the gap
+    gap = None
+    for g in classified:
+        if g.id == gap_id or g.suggested_name == gap_id:
+            gap = g
+            break
+
+    if not gap:
+        console.print(f"[red]Gap not found: {gap_id}[/red]")
+        console.print("\n[dim]Available gaps:[/dim]")
+        for g in classified[:5]:
+            console.print(f"  - {g.id}")
+        raise typer.Exit(1)
+
+    # Display detailed view
+    console.print(f"\n[bold]Gap: {gap.suggested_name}[/bold]")
+    console.print(f"ID: {gap.id}")
+    console.print(f"Type: [{'green' if gap.gap_type == GapType.SKILL else 'blue' if gap.gap_type == GapType.SUBAGENT else 'yellow'}]{gap.gap_type.value.upper()}[/]")
+    console.print(f"Confidence: {gap.confidence:.0%}")
+    console.print(f"\n{gap.description}")
+
+    console.print("\n[bold]Classification Scores:[/bold]")
+    _display_score_bar("Portability", gap.portability_score)
+    _display_score_bar("Isolation", gap.isolation_score)
+    _display_score_bar("Persona", gap.persona_score)
+    _display_score_bar("Resumability", gap.resumability_score)
+    _display_score_bar("Simplicity", gap.simplicity_score)
+
+    console.print(f"\n[bold]Reasoning:[/bold]")
+    console.print(f"  {gap.reasoning}")
+
+    if gap.skill_recommendation:
+        console.print("\n[bold green]Skill Recommendation:[/bold green]")
+        console.print(f"  Name: {gap.skill_recommendation.suggested_name}")
+        if gap.skill_recommendation.allowed_tools:
+            console.print(f"  Tools: {', '.join(gap.skill_recommendation.allowed_tools)}")
+        console.print(f"  Portability: {', '.join(gap.skill_recommendation.estimated_portability)}")
+
+    if gap.subagent_recommendation:
+        console.print("\n[bold blue]Subagent Recommendation:[/bold blue]")
+        console.print(f"  Name: {gap.subagent_recommendation.suggested_name}")
+        if gap.subagent_recommendation.suggested_model:
+            console.print(f"  Model: {gap.subagent_recommendation.suggested_model}")
+        if gap.subagent_recommendation.suggested_tools:
+            console.print(f"  Tools: {', '.join(gap.subagent_recommendation.suggested_tools)}")
+        if gap.subagent_recommendation.persona_hint:
+            console.print(f"  Persona: {gap.subagent_recommendation.persona_hint[:60]}...")
+
+
+def _display_classified_gap(gap: ClassifiedGap) -> None:
+    """Display a single classified gap.
+
+    Args:
+        gap: ClassifiedGap to display
+    """
+    # Type color
+    if gap.gap_type == GapType.SKILL:
+        type_style = "green"
+    elif gap.gap_type == GapType.SUBAGENT:
+        type_style = "blue"
+    else:
+        type_style = "yellow"
+
+    # Confidence color
+    if gap.confidence >= 0.7:
+        conf_style = "green"
+    elif gap.confidence >= 0.5:
+        conf_style = "yellow"
+    else:
+        conf_style = "dim"
+
+    console.print(f"  [{type_style}]{gap.gap_type.value.upper():10}[/{type_style}] "
+                  f"[bold]{gap.suggested_name}[/bold] "
+                  f"[{conf_style}]({gap.confidence:.0%})[/{conf_style}]")
+    console.print(f"             [dim]{gap.description[:60]}{'...' if len(gap.description) > 60 else ''}[/dim]")
+
+
+def _display_score_bar(label: str, score: float) -> None:
+    """Display a score as a visual bar.
+
+    Args:
+        label: Score label
+        score: Score value (0-1)
+    """
+    filled = int(score * 10)
+    bar = "█" * filled + "░" * (10 - filled)
+    console.print(f"  {label:12} [{bar}] {score:.2f}")

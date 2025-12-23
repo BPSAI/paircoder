@@ -19,13 +19,13 @@
 | T25.19 | Auto-Skill Creation | done | P1 | 55 | L |
 | T25.20 | Skill Quality Scoring | pending | P2 | 45 | M |
 | T25.21 | Skill Marketplace Foundation | pending | P2 | 45 | M |
-| T25.22 | Flows → Skills Migration RFC | pending | P1 | 35 | M |
-| T25.23 | Subagent Gap Detection | pending | P1 | 45 | M |
-| T25.24 | Unified Gap Classifier | pending | P1 | 40 | M |
+| T25.22 | Flows → Skills Migration RFC | done | P1 | 35 | M |
+| T25.23 | Subagent Gap Detection | done | P1 | 45 | M |
+| T25.24 | Unified Gap Classifier | done | P1 | 40 | M |
 | T25.25 | Flow Commands Deprecation Warnings | pending | P2 | 25 | S |
 | T25.26 | Codex/ChatGPT Skill Export Formats | pending | P2 | 30 | M |
 
-**Progress:** 3/10 tasks (140/405 complexity points)
+**Progress:** 6/10 tasks (260/405 complexity points)
 
 ## Task Dependencies & Implementation Sequence
 
@@ -34,27 +34,22 @@ COMPLETED:
   T25.17 (/update-skills) ✓
   T25.18 (Skill Gap Detection) ✓
   T25.19 (Auto-Skill Creation) ✓
+  T25.22 (Flows → Skills Migration RFC) ✓
+  T25.23 (Subagent Gap Detection) ✓
+  T25.24 (Unified Gap Classifier) ✓
 
-RECOMMENDED SEQUENCE:
-  1. T25.22 (RFC) ─────────────► Documents migration plan, no code changes
-        │
-        └──► T25.25 (Deprecation) ─► Add warnings after RFC approved
-  
-  2. T25.23 (Subagent Gaps) ───► Extends T25.18 infrastructure
-        │
-        └──► T25.24 (Classifier) ─► Unifies skill + subagent detection
-  
-  3. T25.26 (Codex/ChatGPT) ───► Independent, extends T25.16
-  
-  4. T25.20, T25.21 ───────────► Can parallelize after core work done
+REMAINING:
+  1. T25.25 (Deprecation) ─► Add warnings (after RFC approved) [P2]
+  2. T25.26 (Codex/ChatGPT) ─► Independent, extends T25.16 [P2]
+  3. T25.20, T25.21 ────────► Quality scoring & marketplace [P2]
 ```
 
 ### Priority Breakdown
 
-**P1 (High) - Core Architecture:**
-- T25.22: RFC first - documents breaking changes and timeline
-- T25.23: Subagent gap detection - extends existing gap system  
-- T25.24: Unified classifier - determines skill vs subagent
+**P1 (High) - Core Architecture: ALL COMPLETE ✓**
+- ✓ T25.22: RFC documents breaking changes and timeline
+- ✓ T25.23: Subagent gap detection extends existing gap system
+- ✓ T25.24: Unified classifier determines skill vs subagent
 
 **P2 (Medium) - Enhancements:**
 - T25.20: Skill quality scoring
@@ -113,23 +108,23 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-**Sprint 25.6: Emergent Skill Discovery** (10 tasks, 405 pts) - IN PROGRESS
+**Sprint 25.6: Emergent Skill Discovery** (10 tasks, 405 pts) - P1 COMPLETE
 
 Phase 1 - Core (Complete):
 - ✓ T25.17: /update-skills command
 - ✓ T25.18: Skill gap detection
 - ✓ T25.19: Auto-skill creation
 
-Phase 2 - Migration Planning (Next):
-- T25.22: Flows → Skills Migration RFC **(START HERE)**
-- T25.23: Subagent gap detection
-- T25.24: Unified gap classifier (skill vs subagent)
+Phase 2 - Migration Planning (Complete):
+- ✓ T25.22: Flows → Skills Migration RFC
+- ✓ T25.23: Subagent gap detection
+- ✓ T25.24: Unified gap classifier (skill vs subagent)
 
-Phase 3 - Implementation:
+Phase 3 - Implementation (P2 - Next):
 - T25.25: Flow commands deprecation warnings
 - T25.26: Codex/ChatGPT skill export formats
 
-Phase 4 - Quality & Distribution:
+Phase 4 - Quality & Distribution (P2):
 - T25.20: Skill quality scoring
 - T25.21: Skill marketplace foundation
 
@@ -153,6 +148,55 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - P1 Tasks Complete (T25.22, T25.23, T25.24)
+
+- **T25.22: Flows → Skills Migration RFC** ✓
+  - Created `docs/rfcs/RFC-005-flows-to-skills.md`:
+    - Current state analysis of flows infrastructure
+    - Migration mapping table (flows → skills concepts)
+    - Breaking changes enumeration with mitigation strategies
+    - Deprecation timeline: v2.10.x warnings → v2.11.x removal
+    - Conversion utility specification (`bpsai-pair migrate`)
+  - Created `docs/MIGRATION.md` with flows→skills migration guide
+  - RFC ready for review
+
+- **T25.23: Subagent Gap Detection** ✓
+  - Created `bpsai_pair/skills/subagent_detector.py`:
+    - `SubagentGap` dataclass with serialization support
+    - `SubagentGapDetector` class detects:
+      - Persona patterns ("act as", "you are a")
+      - Context isolation patterns ("separately", "in parallel")
+      - Resumability patterns ("continue", "resume")
+      - Tool restriction patterns (read-only operations)
+    - `SubagentGapPersistence` for history storage
+    - Confidence scoring based on indicators
+  - Added `bpsai-pair subagent gaps` command:
+    - `--analyze` for fresh detection
+    - `--json` for JSON output
+    - `--clear` to clear history
+  - Persists to `.paircoder/history/subagent-gaps.jsonl`
+  - 17 new tests, all passing
+
+- **T25.24: Unified Gap Classifier** ✓
+  - Created `bpsai_pair/skills/classifier.py`:
+    - `GapType` enum: SKILL, SUBAGENT, AMBIGUOUS
+    - `ClassifiedGap` dataclass with scores and recommendations
+    - `GapClassifier` implements decision tree:
+      - Portability/simplicity → SKILL
+      - Isolation/persona/resumability → SUBAGENT
+      - Close scores → AMBIGUOUS
+    - Human-readable reasoning generation
+  - Added `bpsai-pair gaps` command group:
+    - `gaps detect` - unified detection and classification
+    - `gaps list [--type skill|subagent|ambiguous]` - filtered listing
+    - `gaps show <id>` - detailed view with score bars
+  - Deduplication of overlapping skill/subagent gaps
+  - 19 new tests, all passing
+
+**All P1 tasks for Sprint 25.6 are now complete!**
+- Progress: 6/10 tasks (260/405 complexity points)
+- Remaining: P2 tasks only
 
 ### 2025-12-23 - Sprint 25.6 Extended with Skills/Subagent Strategy
 
