@@ -95,3 +95,64 @@ def test_pack_respects_directory_ignore(tmp_path):
 
     assert "context/development.md" in names
     assert "private/secret.txt" not in names
+
+
+class TestFindProjectRoot:
+    """Tests for find_project_root function."""
+
+    def test_finds_root_from_paircoder_dir(self, tmp_path):
+        """find_project_root finds root when .paircoder/ exists."""
+        (tmp_path / ".paircoder").mkdir()
+        subdir = tmp_path / "tools" / "cli"
+        subdir.mkdir(parents=True)
+
+        # Test from subdir
+        root = ops.find_project_root(subdir)
+        assert root == tmp_path
+
+    def test_finds_root_from_git_dir(self, tmp_path):
+        """find_project_root finds root when .git/ exists."""
+        (tmp_path / ".git").mkdir()
+        subdir = tmp_path / "src" / "utils"
+        subdir.mkdir(parents=True)
+
+        root = ops.find_project_root(subdir)
+        assert root == tmp_path
+
+    def test_prefers_paircoder_over_git(self, tmp_path):
+        """find_project_root prefers .paircoder over .git."""
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".paircoder").mkdir()
+
+        root = ops.find_project_root(tmp_path)
+        assert root == tmp_path  # Both exist, finds at same level
+
+    def test_returns_cwd_when_not_found(self, tmp_path):
+        """find_project_root returns start_path when not found."""
+        subdir = tmp_path / "random" / "dir"
+        subdir.mkdir(parents=True)
+
+        root = ops.find_project_root(subdir)
+        assert root == subdir  # No .paircoder or .git, returns start
+
+
+class TestFindPaircoderDir:
+    """Tests for find_paircoder_dir function."""
+
+    def test_finds_existing_dir(self, tmp_path):
+        """find_paircoder_dir returns existing .paircoder/."""
+        (tmp_path / ".paircoder").mkdir()
+        subdir = tmp_path / "src"
+        subdir.mkdir()
+
+        result = ops.find_paircoder_dir(subdir)
+        assert result == tmp_path / ".paircoder"
+
+    def test_returns_path_at_git_root(self, tmp_path):
+        """find_paircoder_dir returns .paircoder at git root."""
+        (tmp_path / ".git").mkdir()
+        subdir = tmp_path / "src"
+        subdir.mkdir()
+
+        result = ops.find_paircoder_dir(subdir)
+        assert result == tmp_path / ".paircoder"

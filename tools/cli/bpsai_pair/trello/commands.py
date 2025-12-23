@@ -33,10 +33,11 @@ def _load_config() -> dict:
     """Load project config with error handling."""
     try:
         from ..core.config import Config
+        from ..core.ops import find_project_root
         from pathlib import Path
         import yaml
 
-        root = Path.cwd()
+        root = find_project_root()
         config_file = root / ".paircoder" / "config.yaml"
         if config_file.exists():
             with open(config_file) as f:
@@ -49,10 +50,11 @@ def _load_config() -> dict:
 def _save_config(config: dict) -> None:
     """Save project config."""
     try:
+        from ..core.ops import find_project_root
         from pathlib import Path
         import yaml
 
-        root = Path.cwd()
+        root = find_project_root()
         config_dir = root / ".paircoder"
         config_dir.mkdir(exist_ok=True)
         config_file = config_dir / "config.yaml"
@@ -310,8 +312,9 @@ def progress_comment(
     """
     from pathlib import Path
     from .progress import create_progress_reporter
+    from ..core.ops import find_paircoder_dir
 
-    paircoder_dir = Path.cwd() / ".paircoder"
+    paircoder_dir = find_paircoder_dir()
     if not paircoder_dir.exists():
         console.print("[red]Not in a PairCoder project directory[/red]")
         raise typer.Exit(1)
@@ -386,8 +389,9 @@ def trello_sync(
     from rich.table import Table
     from .sync import TrelloToLocalSync
     from .auth import load_token
+    from ..core.ops import find_paircoder_dir
 
-    paircoder_dir = Path.cwd() / ".paircoder"
+    paircoder_dir = find_paircoder_dir()
     if not paircoder_dir.exists():
         console.print("[red]Not in a PairCoder project directory[/red]")
         raise typer.Exit(1)

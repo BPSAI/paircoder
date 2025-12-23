@@ -15,6 +15,39 @@ import shutil
 import json
 
 
+def find_project_root(start_path: Path = None) -> Path:
+    """Find project root by walking up to find .paircoder/ or .git/
+
+    Args:
+        start_path: Starting path (defaults to cwd)
+
+    Returns:
+        Path to project root, or cwd if not found
+    """
+    cwd = start_path or Path.cwd()
+
+    for parent in [cwd, *cwd.parents]:
+        if (parent / ".paircoder").exists():
+            return parent
+        if (parent / ".git").exists():
+            return parent
+
+    return cwd
+
+
+def find_paircoder_dir(start_path: Path = None) -> Path:
+    """Find .paircoder directory in current or parent directories.
+
+    Args:
+        start_path: Starting path (defaults to cwd)
+
+    Returns:
+        Path to .paircoder directory (may not exist yet)
+    """
+    root = find_project_root(start_path)
+    return root / ".paircoder"
+
+
 class GitOps:
     """Git operations helper."""
 

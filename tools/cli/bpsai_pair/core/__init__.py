@@ -54,6 +54,11 @@ from .utils import (
     dump,
 )
 
+from .ops import (
+    find_project_root,
+    find_paircoder_dir,
+)
+
 __all__ = [
     # Modules
     "config",
@@ -90,4 +95,7 @@ __all__ = [
     "ensure_executable",
     "project_files",
     "dump",
+    # Ops helpers
+    "find_project_root",
+    "find_paircoder_dir",
 ]

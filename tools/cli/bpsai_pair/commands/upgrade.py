@@ -315,7 +315,7 @@ def upgrade_command(
     if ctx.invoked_subcommand is not None:
         return
 
-    project_root = Path.cwd()
+    project_root = ops.find_project_root()
 
     # Check this is a v2.x project
     paircoder_dir = project_root / ".paircoder"

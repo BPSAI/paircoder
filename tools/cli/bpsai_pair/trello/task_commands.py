@@ -34,8 +34,9 @@ def get_board_client() -> tuple[TrelloService, dict]:
     # Load config
     try:
         from pathlib import Path
+        from ..core.ops import find_project_root
         import yaml
-        config_file = Path.cwd() / ".paircoder" / "config.yaml"
+        config_file = find_project_root() / ".paircoder" / "config.yaml"
         if config_file.exists():
             with open(config_file) as f:
                 config = yaml.safe_load(f) or {}
@@ -109,9 +110,10 @@ def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
     import json
     from pathlib import Path
     from datetime import datetime
+    from ..core.ops import find_paircoder_dir
 
     try:
-        paircoder_dir = Path.cwd() / ".paircoder"
+        paircoder_dir = find_paircoder_dir()
         log_path = paircoder_dir / "history" / "bypass_log.jsonl"
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -150,7 +152,8 @@ def _update_local_task_status(card_name: str, status: str) -> bool:
         task_id = match.group(1)
 
         # Find paircoder dir
-        paircoder_dir = Path.cwd() / ".paircoder"
+        from ..core.ops import find_paircoder_dir
+        paircoder_dir = find_paircoder_dir()
         if not paircoder_dir.exists():
             return False
 
