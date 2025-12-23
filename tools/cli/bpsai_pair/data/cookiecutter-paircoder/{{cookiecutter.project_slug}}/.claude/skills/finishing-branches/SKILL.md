@@ -1,6 +1,6 @@
 ---
 name: finishing-branches
-description: Completes and finalizes feature branch work for merge readiness. Runs verification checks, updates documentation, and prepares pull requests. Activated when work is complete and ready for integration.
+description: Use when work is complete and ready for integration, merge, or PR creation.
 ---
 
 # Finish Branch Workflow

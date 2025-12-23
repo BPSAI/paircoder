@@ -1,6 +1,6 @@
 ---
 name: implementing-with-tdd
-description: Implements features and fixes using test-driven development methodology. Follows the red-green-refactor cycle to ensure code correctness and maintainability. Activated for bug fixes, feature implementation, or test-first development requests.
+description: Use when implementing bug fixes, features, or any code changes where test-first development is appropriate.
 ---
 
 # TDD Implementation

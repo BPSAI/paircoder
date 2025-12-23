@@ -1,6 +1,6 @@
 ---
 name: designing-and-implementing
-description: Transforms feature requests into validated designs and structured implementation plans. Guides developers through requirement clarification, design alternatives, and task breakdown. Activated by feature descriptions, architectural discussions, or multi-step implementation needs.
+description: Use when receiving feature requests, architectural discussions, or multi-step implementation needs that require design before coding.
 ---
 
 # Design → Plan → Implement

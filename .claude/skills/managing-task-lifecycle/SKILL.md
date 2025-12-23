@@ -1,6 +1,6 @@
 ---
 name: managing-task-lifecycle
-description: Manages PairCoder task status transitions throughout the development lifecycle. Coordinates Trello card movements, triggers automation hooks, and maintains workflow compliance. Essential for task tracking and project management integration.
+description: Use when starting, pausing, completing, or transitioning task status in the development workflow.
 ---
 
 # PairCoder Task Lifecycle

@@ -1,6 +1,6 @@
 ---
 name: creating-skills
-description: Guides the creation of new Claude Code skills following Anthropic specifications. Provides templates, validation rules, and best practices for skill development. Activated by requests to create, document, or standardize workflows.
+description: Use when creating new skills, documenting workflows, or standardizing processes into reusable skill definitions.
 ---
 
 # Creating Skills

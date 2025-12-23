@@ -1,6 +1,6 @@
 ---
 name: reviewing-code
-description: Provides systematic code review workflow for identifying issues, verifying quality, and ensuring best practices. Analyzes changes for correctness, security, and maintainability. Activated by review requests, PR checks, or code evaluation needs.
+description: Use when reviewing code changes, checking PRs, or evaluating code quality.
 ---
 
 # Code Review
