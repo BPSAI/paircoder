@@ -68,6 +68,7 @@ compaction_app.add_typer(compaction_snapshot_app, name="snapshot")
 @session_app.command("check")
 def session_check(
     force: bool = typer.Option(False, "--force", "-f", help="Force context display even if continuing session"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress errors and always exit 0 (for hooks)"),
 ):
     """Check session state and display context if new session.
 
@@ -77,6 +78,8 @@ def session_check(
 
     Output is designed for use with UserPromptSubmit hook - outputs context
     summary if new session or after compaction, minimal output otherwise.
+
+    Use --quiet for cross-platform hooks (instead of '2>/dev/null || true').
     """
     try:
         from ..session import SessionManager
@@ -85,33 +88,44 @@ def session_check(
         from bpsai_pair.session import SessionManager
         from bpsai_pair.compaction import CompactionManager
 
-    root = repo_root()
+    try:
+        root = repo_root()
+    except (SystemExit, typer.Exit):
+        if quiet:
+            return  # Silent exit for hooks
+        raise
+
     paircoder_dir = root / ".paircoder"
 
     if not paircoder_dir.exists():
         # No PairCoder directory - skip silently
         return
 
-    # Check for compaction recovery first
-    compaction_mgr = CompactionManager(paircoder_dir)
-    compaction_marker = compaction_mgr.check_compaction()
+    try:
+        # Check for compaction recovery first
+        compaction_mgr = CompactionManager(paircoder_dir)
+        compaction_marker = compaction_mgr.check_compaction()
 
-    if compaction_marker:
-        # Compaction detected - recover context
-        output = compaction_mgr.recover_context()
-        console.print(output)
-        return
+        if compaction_marker:
+            # Compaction detected - recover context
+            output = compaction_mgr.recover_context()
+            console.print(output)
+            return
 
-    # Check session state
-    session_mgr = SessionManager(paircoder_dir)
-    session = session_mgr.check_session()
+        # Check session state
+        session_mgr = SessionManager(paircoder_dir)
+        session = session_mgr.check_session()
 
-    if session.is_new or force:
-        # New session or forced - show context
-        context = session_mgr.get_context()
-        output = session_mgr.format_context_output(context)
-        console.print(output)
-    # Continuing session - no output (silent continuation)
+        if session.is_new or force:
+            # New session or forced - show context
+            context = session_mgr.get_context()
+            output = session_mgr.format_context_output(context)
+            console.print(output)
+        # Continuing session - no output (silent continuation)
+    except Exception as e:
+        if quiet:
+            return  # Silent exit for hooks
+        raise
 
 
 @session_app.command("status")
@@ -168,29 +182,46 @@ def session_status():
 def compaction_snapshot_save(
     trigger: str = typer.Option("manual", "--trigger", "-t", help="Trigger type: auto or manual"),
     reason: Optional[str] = typer.Option(None, "--reason", "-r", help="Reason for snapshot"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress errors and always exit 0 (for hooks)"),
 ):
     """Save a compaction snapshot with current context.
 
     Creates a snapshot of the current state before compaction occurs.
     Called automatically by PreCompact hook or manually for backup.
+
+    Use --quiet for cross-platform hooks (instead of '2>/dev/null || true').
     """
     try:
         from ..compaction import CompactionManager
     except ImportError:
         from bpsai_pair.compaction import CompactionManager
 
-    root = repo_root()
+    try:
+        root = repo_root()
+    except (SystemExit, typer.Exit):
+        if quiet:
+            return  # Silent exit for hooks
+        raise
+
     paircoder_dir = root / ".paircoder"
 
     if not paircoder_dir.exists():
+        if quiet:
+            return  # Silent exit for hooks
         console.print("[yellow]No .paircoder directory found[/yellow]")
         raise typer.Exit(1)
 
-    manager = CompactionManager(paircoder_dir)
-    snapshot_path = manager.save_snapshot(trigger=trigger, reason=reason)
+    try:
+        manager = CompactionManager(paircoder_dir)
+        snapshot_path = manager.save_snapshot(trigger=trigger, reason=reason)
 
-    console.print(f"[green]Snapshot saved:[/green] {snapshot_path.name}")
-    console.print(f"[dim]Trigger: {trigger}[/dim]")
+        if not quiet:
+            console.print(f"[green]Snapshot saved:[/green] {snapshot_path.name}")
+            console.print(f"[dim]Trigger: {trigger}[/dim]")
+    except Exception as e:
+        if quiet:
+            return  # Silent exit for hooks
+        raise
 
 
 @compaction_snapshot_app.command("list")

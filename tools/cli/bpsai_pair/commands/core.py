@@ -392,13 +392,36 @@ def pack_command(
 
 def context_sync_command(
     overall: Optional[str] = typer.Option(None, "--overall", help="Overall goal override"),
-    last: str = typer.Option(..., "--last", "-l", help="What changed and why"),
-    next: str = typer.Option(..., "--next", "--nxt", "-n", help="Next smallest valuable step"),
+    last: Optional[str] = typer.Option(None, "--last", "-l", help="What changed and why"),
+    next_step: Optional[str] = typer.Option(None, "--next", "--nxt", "-n", help="Next smallest valuable step"),
     blockers: str = typer.Option("", "--blockers", "-b", help="Blockers/Risks"),
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
+    auto: bool = typer.Option(False, "--auto", help="Auto-mode: skip silently if no explicit values (for hooks)"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress errors and always exit 0 (for hooks)"),
 ):
-    """Update the Context Loop in /context/state.md (or legacy development.md)."""
-    root = repo_root()
+    """Update the Context Loop in /context/state.md (or legacy development.md).
+
+    Use --auto for cross-platform hooks (instead of '2>/dev/null || true').
+    In auto mode, the command exits silently if --last and --next are not provided.
+    """
+    # In auto/quiet mode with no values provided, just exit silently
+    if (auto or quiet) and not last and not next_step:
+        return
+
+    # Require --last and --next in non-auto mode
+    if not last or not next_step:
+        if quiet:
+            return
+        console.print("[red]x --last and --next are required[/red]")
+        console.print("[dim]Use --auto for hook mode that exits silently[/dim]")
+        raise typer.Exit(1)
+
+    try:
+        root = repo_root()
+    except (SystemExit, typer.Exit):
+        if quiet or auto:
+            return
+        raise
     context_dir = root / CONTEXT_DIR
 
     # Check for state.md (v2) first, then fallback to development.md (legacy)
@@ -412,74 +435,81 @@ def context_sync_command(
         context_file = dev_file
         is_v2 = False
     else:
+        if quiet or auto:
+            return
         console.print(
             f"[red]x No context file found[/red]\n"
             "Run 'bpsai-pair init' first to set up the project structure"
         )
         raise typer.Exit(1)
 
-    # Update context
-    content = context_file.read_text()
+    try:
+        # Update context
+        content = context_file.read_text()
 
-    if is_v2:
-        # v2 state.md format - update sections
-        # Update "What Was Just Done" section
-        content = re.sub(
-            r'(## What Was Just Done\n\n).*?(?=\n## |\Z)',
-            f'\\1- {last}\n\n',
-            content,
-            flags=re.DOTALL
-        )
-        # Update "What's Next" section
-        content = re.sub(
-            r"(## What's Next\n\n).*?(?=\n## |\Z)",
-            f'\\g<1>1. {next}\n\n',
-            content,
-            flags=re.DOTALL
-        )
-        # Update "Blockers" section if provided
-        if blockers:
+        if is_v2:
+            # v2 state.md format - update sections
+            # Update "What Was Just Done" section
             content = re.sub(
-                r'(## Blockers\n\n).*?(?=\n## |\Z)',
-                f'\\1{blockers if blockers else "None"}\n\n',
+                r'(## What Was Just Done\n\n).*?(?=\n## |\Z)',
+                f'\\1- {last}\n\n',
                 content,
                 flags=re.DOTALL
             )
-        # Update "Active Plan" if overall provided
-        if overall:
+            # Update "What's Next" section
             content = re.sub(
-                r'(\*\*Plan:\*\*) .*',
-                f'\\1 {overall}',
-                content
+                r"(## What's Next\n\n).*?(?=\n## |\Z)",
+                f'\\g<1>1. {next_step}\n\n',
+                content,
+                flags=re.DOTALL
             )
-    else:
-        # Legacy development.md format
-        if overall:
-            content = re.sub(r'Overall goal is:.*', f'Overall goal is: {overall}', content)
-        content = re.sub(r'Last action was:.*', f'Last action was: {last}', content)
-        content = re.sub(r'Next action will be:.*', f'Next action will be: {next}', content)
-        if blockers:
-            content = re.sub(r'Blockers(/Risks)?:.*', f'Blockers/Risks: {blockers}', content)
+            # Update "Blockers" section if provided
+            if blockers:
+                content = re.sub(
+                    r'(## Blockers\n\n).*?(?=\n## |\Z)',
+                    f'\\1{blockers if blockers else "None"}\n\n',
+                    content,
+                    flags=re.DOTALL
+                )
+            # Update "Active Plan" if overall provided
+            if overall:
+                content = re.sub(
+                    r'(\*\*Plan:\*\*) .*',
+                    f'\\1 {overall}',
+                    content
+                )
+        else:
+            # Legacy development.md format
+            if overall:
+                content = re.sub(r'Overall goal is:.*', f'Overall goal is: {overall}', content)
+            content = re.sub(r'Last action was:.*', f'Last action was: {last}', content)
+            content = re.sub(r'Next action will be:.*', f'Next action will be: {next_step}', content)
+            if blockers:
+                content = re.sub(r'Blockers(/Risks)?:.*', f'Blockers/Risks: {blockers}', content)
 
-    context_file.write_text(content)
+        context_file.write_text(content)
 
-    if json_out:
-        result = {
-            "updated": True,
-            "file": str(context_file.relative_to(root)),
-            "format": "v2" if is_v2 else "legacy",
-            "context": {
-                "overall": overall,
-                "last": last,
-                "next": next,
-                "blockers": blockers
+        if json_out:
+            result = {
+                "updated": True,
+                "file": str(context_file.relative_to(root)),
+                "format": "v2" if is_v2 else "legacy",
+                "context": {
+                    "overall": overall,
+                    "last": last,
+                    "next": next_step,
+                    "blockers": blockers
+                }
             }
-        }
-        print_json(result)
-    else:
-        console.print("[green]![/green] Context Sync updated")
-        console.print(f"  [dim]Last: {last}[/dim]")
-        console.print(f"  [dim]Next: {next}[/dim]")
+            print_json(result)
+        else:
+            console.print("[green]![/green] Context Sync updated")
+            console.print(f"  [dim]Last: {last}[/dim]")
+            console.print(f"  [dim]Next: {next_step}[/dim]")
+    except Exception as e:
+        if quiet or auto:
+            return
+        raise
 
 
 def status_command(

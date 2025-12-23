@@ -1085,6 +1085,10 @@ def task_update(
         False, "--resync",
         help="Re-trigger hooks for current status (use after manual file edits)"
     ),
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Force update, bypass Trello enforcement (not recommended)"
+    ),
 ):
     """Update a task's status.
 
@@ -1096,7 +1100,36 @@ def task_update(
 
     If a task file was manually edited, use --resync to re-trigger hooks
     for the current status without changing it.
+
+    For Trello-connected projects, use 'ttask done' instead of '--status done'.
+    This ensures acceptance criteria are verified and the card is properly moved.
     """
+    # ENFORCEMENT: Block status=done on Trello projects unless forced
+    if status and status.lower() == "done" and not force:
+        if _is_trello_enabled():
+            console.print("\n[red]❌ BLOCKED: This project uses Trello integration.[/red]")
+            console.print("")
+            console.print("[yellow]Use the Trello command to complete tasks:[/yellow]")
+            console.print("")
+            console.print("  1. Find the card ID:")
+            console.print(f"     [cyan]bpsai-pair ttask list | grep {task_id}[/cyan]")
+            console.print("")
+            console.print("  2. Complete with ttask done:")
+            console.print("     [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"What was done\"[/cyan]")
+            console.print("")
+            console.print("[dim]This ensures:[/dim]")
+            console.print("[dim]  • Acceptance criteria are verified/checked[/dim]")
+            console.print("[dim]  • Completion summary is recorded[/dim]")
+            console.print("[dim]  • Card is moved to the correct list[/dim]")
+            console.print("[dim]  • Local task file is updated automatically[/dim]")
+            console.print("")
+            console.print("[dim]To bypass (not recommended): --force[/dim]")
+            raise typer.Exit(1)
+    elif status and status.lower() == "done" and force:
+        if _is_trello_enabled():
+            console.print("[yellow]⚠ Bypassing Trello enforcement with --force[/yellow]")
+            _log_bypass("task update --status done", task_id, "forced bypass of Trello enforcement")
+
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
     plan_parser = PlanParser(paircoder_dir / "plans")
@@ -1181,6 +1214,44 @@ def task_update(
     else:
         console.print(f"[red]Failed to update task: {task_id}[/red]")
         raise typer.Exit(1)
+
+
+def _is_trello_enabled() -> bool:
+    """Check if Trello integration is enabled for this project."""
+    try:
+        paircoder_dir = find_paircoder_dir()
+        config_path = paircoder_dir / "config.yaml"
+        if not config_path.exists():
+            return False
+
+        import yaml
+        with open(config_path) as f:
+            config = yaml.safe_load(f) or {}
+
+        trello_config = config.get("trello", {})
+        return trello_config.get("enabled", False) and trello_config.get("board_id")
+    except Exception:
+        return False
+
+
+def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
+    """Log when safety checks are bypassed."""
+    try:
+        paircoder_dir = find_paircoder_dir()
+        log_path = paircoder_dir / "history" / "bypass_log.jsonl"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "command": command,
+            "task_id": task_id,
+            "reason": reason,
+        }
+
+        with open(log_path, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass  # Best effort logging
 
 
 def _check_state_md_updated(paircoder_dir: Path, task_id: str) -> dict:

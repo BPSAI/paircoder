@@ -104,6 +104,71 @@ def _get_unchecked_ac_items(card, checklist_name: str = "Acceptance Criteria") -
     return unchecked
 
 
+def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
+    """Log when safety checks are bypassed."""
+    import json
+    from pathlib import Path
+    from datetime import datetime
+
+    try:
+        paircoder_dir = Path.cwd() / ".paircoder"
+        log_path = paircoder_dir / "history" / "bypass_log.jsonl"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "command": command,
+            "task_id": task_id,
+            "reason": reason,
+        }
+
+        with open(log_path, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass  # Best effort logging
+
+
+def _update_local_task_status(card_name: str, status: str) -> bool:
+    """Update the corresponding local task file after ttask operation.
+
+    Args:
+        card_name: The Trello card name (e.g., "[T23.1] Create module structure")
+        status: The new status to set
+
+    Returns:
+        True if a task was updated, False otherwise
+    """
+    from pathlib import Path
+    import re
+
+    try:
+        # Extract task ID from card name (e.g., "[T23.1]" or "[TASK-123]")
+        match = re.search(r'\[(T\d+\.\d+|TASK-\d+)\]', card_name)
+        if not match:
+            return False
+
+        task_id = match.group(1)
+
+        # Find paircoder dir
+        paircoder_dir = Path.cwd() / ".paircoder"
+        if not paircoder_dir.exists():
+            return False
+
+        # Import task parser
+        from ..planning.parser import TaskParser
+
+        task_parser = TaskParser(paircoder_dir / "tasks")
+        success = task_parser.update_status(task_id, status)
+
+        if success:
+            console.print(f"[dim]Local task {task_id} updated to {status}[/dim]")
+
+        return success
+    except Exception as e:
+        console.print(f"[dim]Note: Could not update local task file: {e}[/dim]")
+        return False
+
+
 def _check_all_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
     """Check off all items in the Acceptance Criteria checklist.
 
@@ -347,19 +412,30 @@ def task_start(
 def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
-    list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: In Review)"),
-    skip_checklist: bool = typer.Option(False, "--skip-checklist", help="Skip AC verification entirely (legacy, prefer --force)"),
-    check_all: bool = typer.Option(False, "--check-all", help="Auto-check all acceptance criteria items"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force completion even with unchecked AC items"),
+    list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: Deployed/Done)"),
+    check_all: bool = typer.Option(True, "--check-all/--no-check-all", help="Auto-check all AC items (default: yes)"),
+    strict: bool = typer.Option(False, "--strict", help="Block if any AC items are unchecked"),
+    skip_checklist: bool = typer.Option(False, "--skip-checklist", hidden=True, help="[DEPRECATED] Use --no-check-all"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force completion, bypass all verification"),
 ):
-    """Complete a task (moves to In Review or Done).
+    """Complete a task (moves to Done list).
 
-    By default, verifies that all 'Acceptance Criteria' checklist items are checked.
-    If items are unchecked, the command will block and show which items need attention.
+    By default, automatically checks all 'Acceptance Criteria' checklist items.
+    Also updates the corresponding local task file to 'done' status.
 
-    Use --check-all to automatically check all AC items before completing.
-    Use --force to skip verification and complete with unchecked items (logs warning).
-    Use --skip-checklist to skip AC handling entirely (legacy behavior).
+    Use --strict to require AC items to be manually checked first (blocks if unchecked).
+    Use --no-check-all to skip AC handling entirely.
+    Use --force to bypass all verification (logs warning).
+
+    Examples:
+        # Standard completion (auto-checks AC)
+        bpsai-pair ttask done TRELLO-123 --summary "Implemented feature X"
+
+        # Require manual AC verification
+        bpsai-pair ttask done TRELLO-123 --summary "..." --strict
+
+        # Skip AC handling
+        bpsai-pair ttask done TRELLO-123 --summary "..." --no-check-all
     """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
@@ -374,40 +450,46 @@ def task_done(
     except Exception:
         pass
 
+    # Handle deprecated flag
+    if skip_checklist:
+        console.print("[yellow]⚠ --skip-checklist is deprecated. Use --no-check-all[/yellow]")
+        check_all = False
+
     # Handle AC verification based on flags
     ac_status_msg = ""
-    if skip_checklist:
-        # Legacy behavior: skip all AC handling
-        ac_status_msg = "AC verification skipped"
-    elif check_all:
-        # Auto-check all AC items
-        checked_count = _check_all_acceptance_criteria(card, client)
-        if checked_count > 0:
-            console.print(f"[green]✓ Checked {checked_count} acceptance criteria item(s)[/green]")
-            ac_status_msg = f"All {checked_count} AC items checked"
-        else:
-            ac_status_msg = "All AC items already complete"
-    elif force:
-        # Skip verification but log warning
+    if force:
+        # Bypass all verification
         unchecked = _get_unchecked_ac_items(card)
         if unchecked:
             console.print(f"[yellow]⚠ Force completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
             ac_status_msg = f"Forced with {len(unchecked)} unchecked AC items"
+            _log_bypass("ttask done", card_id, f"forced with {len(unchecked)} unchecked AC items")
         else:
             ac_status_msg = "All AC items complete"
-    else:
-        # Default: verify AC items are checked
+    elif strict:
+        # Strict mode: block if any AC unchecked
         unchecked = _get_unchecked_ac_items(card)
         if unchecked:
-            console.print(f"[red]Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
+            console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
             console.print("\n[dim]Unchecked items:[/dim]")
             for item in unchecked:
                 console.print(f"  ○ {item.get('name', '')}")
-            console.print("\n[dim]Options:[/dim]")
-            console.print("  --check-all  Auto-check all AC items and complete")
-            console.print("  --force      Complete anyway (not recommended)")
+            console.print("\n[dim]Check items manually on Trello, or use --force to bypass[/dim]")
             raise typer.Exit(1)
-        ac_status_msg = "All AC items complete"
+        console.print("[green]✓ All acceptance criteria verified[/green]")
+        ac_status_msg = "All AC items manually verified"
+    elif check_all:
+        # Default: auto-check all AC items
+        checked_count = _check_all_acceptance_criteria(card, client)
+        if checked_count > 0:
+            console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
+            ac_status_msg = f"Auto-checked {checked_count} AC items"
+        else:
+            ac_status_msg = "All AC items already complete"
+    else:
+        # --no-check-all: skip AC handling entirely
+        console.print("[dim]AC verification skipped (--no-check-all)[/dim]")
+        ac_status_msg = "AC verification skipped"
 
     # Determine target list
     if list_name is None:
@@ -423,6 +505,9 @@ def task_done(
     console.print(f"[green]✓ Completed: {card.name}[/green]")
     console.print(f"  Moved to: {list_name}")
     console.print(f"  Summary: {summary}")
+
+    # Auto-update local task file
+    _update_local_task_status(card.name, "done")
 
 
 @app.command("block")

@@ -26,6 +26,14 @@
 
 **Progress:** 9/9 tasks (220/220 complexity points) ✓ COMPLETE
 
+## Critical Fixes (Post-Sprint 23)
+
+| ID | Title | Status | Complexity |
+|----|-------|--------|------------|
+| T23.10 | Enforce ttask done for Trello projects | done | 35 |
+| T23.11 | Windows shell compatibility | done | 20 |
+| T23.12 | Upgrade command | done | 50 |
+
 ## Sprint History
 
 Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
@@ -74,6 +82,62 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - T23.12 Complete (Upgrade Command)
+
+- **T23.12: Upgrade command** ✓
+  - Created `commands/upgrade.py` with `upgrade_app`
+  - Features:
+    - `bpsai-pair upgrade --dry-run` - preview changes
+    - `bpsai-pair upgrade --skills` - only update skills
+    - `bpsai-pair upgrade --agents` - only update agents
+    - `bpsai-pair upgrade --docs` - only update safe docs
+    - `bpsai-pair upgrade --config` - add missing config sections
+    - `bpsai-pair upgrade --force` - skip confirmation
+  - Safe files (always update): CLAUDE.md, AGENTS.md, capabilities.yaml, workflow.md, all skills, all agents
+  - Never touched: state.md, project.md, plans/, tasks/, existing config values
+  - Config merge is additive (only adds missing sections)
+  - Registered in `commands/__init__.py` and `cli.py`
+  - All 1705 tests passing
+
+**All Sprint 23 Critical Fixes Complete!**
+- T23.10: Enforce ttask done for Trello projects (35 complexity)
+- T23.11: Windows shell compatibility (20 complexity)
+- T23.12: Upgrade command (50 complexity)
+- Total: 105 additional complexity points
+
+### 2025-12-22 - T23.11 Complete (Windows Shell Compatibility)
+
+- **T23.11: Windows shell compatibility** ✓
+  - Added `--quiet` flag to `session check` command:
+    - Suppresses errors and always exits 0
+    - Cross-platform alternative to `2>/dev/null || true`
+  - Added `--quiet` flag to `compaction snapshot save` command
+  - Added `--auto` and `--quiet` flags to `context-sync` command:
+    - `--auto` mode: silently skips if no --last/--next values provided
+    - Enables cross-platform hook execution
+  - Updated `.claude/settings.json` (local and template):
+    - `session check --quiet` instead of `2>/dev/null || true`
+    - `compaction snapshot save --quiet` instead of `2>/dev/null || true`
+    - `context-sync --auto` instead of `--auto 2>/dev/null || true`
+  - All 1705 tests passing
+
+### 2025-12-22 - T23.10 Complete (Critical Fix)
+
+- **T23.10: Enforce ttask done for Trello projects** ✓
+  - Added `_is_trello_enabled()` helper to `planning/commands.py`
+  - Added `_log_bypass()` helper for audit trail
+  - Modified `task update` to BLOCK `--status done` on Trello projects
+    - Shows helpful message with `ttask done` instructions
+    - `--force` flag bypasses (with warning and logging)
+  - Modified `ttask done` command defaults:
+    - `--check-all` is now TRUE by default (was False)
+    - Added `--strict` flag to require manual AC verification
+    - `--skip-checklist` deprecated (use `--no-check-all`)
+  - Added `_update_local_task_status()` to auto-update local task file
+  - Bypass events logged to `.paircoder/history/bypass_log.jsonl`
+  - Updated tests to match new default behavior
+  - All 1705 tests passing
 
 ### 2025-12-22 - T23.9 Complete (Sprint 23 Finished!)
 

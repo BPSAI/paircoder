@@ -31,8 +31,8 @@ def runner():
 class TestTtaskDoneACVerification:
     """Tests for AC verification when completing tasks."""
 
-    def test_done_warns_with_unchecked_ac_items(self, mock_board_client, runner):
-        """When AC items are unchecked and no flags, should block with warning."""
+    def test_done_strict_blocks_with_unchecked_ac_items(self, mock_board_client, runner):
+        """With --strict flag and unchecked AC items, should block with warning."""
         mock_client, mock_config = mock_board_client
 
         # Create mock card with unchecked AC items
@@ -57,7 +57,7 @@ class TestTtaskDoneACVerification:
         mock_client.find_card.return_value = (mock_card, mock_list)
 
         from bpsai_pair.trello.task_commands import app
-        result = runner.invoke(app, ["done", "123", "--summary", "Completed"])
+        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--strict"])
 
         # Should exit with error
         assert result.exit_code == 1
@@ -210,8 +210,8 @@ class TestTtaskDoneACVerification:
         assert result.exit_code == 0
         mock_client.move_card.assert_called_once()
 
-    def test_done_ac_case_insensitive(self, mock_board_client, runner):
-        """Should find AC checklist regardless of case."""
+    def test_done_strict_ac_case_insensitive(self, mock_board_client, runner):
+        """With --strict, should find AC checklist regardless of case."""
         mock_client, mock_config = mock_board_client
 
         mock_checklist = MagicMock()
@@ -231,7 +231,7 @@ class TestTtaskDoneACVerification:
         mock_client.find_card.return_value = (mock_card, mock_list)
 
         from bpsai_pair.trello.task_commands import app
-        result = runner.invoke(app, ["done", "123", "--summary", "Completed"])
+        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--strict"])
 
         # Should block because there are unchecked AC items
         assert result.exit_code == 1

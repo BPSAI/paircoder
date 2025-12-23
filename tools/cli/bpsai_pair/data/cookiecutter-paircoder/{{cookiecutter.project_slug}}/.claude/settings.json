@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair session check 2>/dev/null || true"
+            "command": "bpsai-pair session check --quiet"
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair compaction snapshot save --trigger \"$CLAUDE_COMPACT_TRIGGER\" 2>/dev/null || true"
+            "command": "bpsai-pair compaction snapshot save --trigger \"$CLAUDE_COMPACT_TRIGGER\" --quiet"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bpsai-pair context-sync --auto 2>/dev/null || true"
+            "command": "bpsai-pair context-sync --auto"
           }
         ]
       }
