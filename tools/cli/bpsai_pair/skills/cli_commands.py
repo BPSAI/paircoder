@@ -1,7 +1,7 @@
 """CLI commands for skill validation and installation."""
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -58,6 +58,17 @@ from .classifier import (
     AllGaps,
     detect_and_classify_all,
     format_classification_report,
+)
+from .gates import (
+    GateStatus,
+    GapQualityGate,
+    QualityGateResult,
+    evaluate_gap_quality,
+)
+from .scorer import (
+    SkillScorer,
+    SkillScore,
+    score_skills,
 )
 
 console = Console()
@@ -873,16 +884,23 @@ gaps_app = typer.Typer(
 def gaps_detect(
     json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
     analyze: bool = typer.Option(False, "--analyze", help="Force fresh analysis"),
+    with_gates: bool = typer.Option(True, "--with-gates/--no-gates", help="Evaluate quality gates"),
 ):
     """Detect and classify all gaps from session history.
 
     Runs both skill and subagent gap detection, then classifies each gap
     to determine whether it should become a skill, subagent, or either.
 
+    Quality gates are evaluated by default to filter out low-value patterns.
+    Use --no-gates to skip gate evaluation.
+
     Examples:
 
-        # Detect and classify gaps
+        # Detect and classify gaps with quality gates
         bpsai-pair gaps detect
+
+        # Skip quality gate evaluation
+        bpsai-pair gaps detect --no-gates
 
         # Output as JSON
         bpsai-pair gaps detect --json
@@ -915,6 +933,13 @@ def gaps_detect(
         subagents_dir=subagents_dir,
     )
 
+    # Evaluate quality gates if enabled
+    gate_results: dict[str, QualityGateResult] = {}
+    if with_gates:
+        gate = GapQualityGate()
+        for gap in classified:
+            gate_results[gap.id] = gate.evaluate(gap)
+
     # JSON output
     if json_out:
         output = {
@@ -926,6 +951,21 @@ def gaps_detect(
                 "ambiguous": len([g for g in classified if g.gap_type == GapType.AMBIGUOUS]),
             }
         }
+        if with_gates:
+            output["gates"] = {
+                gap_id: {
+                    "passed": result.can_generate,
+                    "status": result.overall_status.value,
+                    "blocking_gates": [r.gate_name for r in result.gate_results if r.status == GateStatus.BLOCK],
+                    "warnings": [r.gate_name for r in result.gate_results if r.status == GateStatus.WARN],
+                }
+                for gap_id, result in gate_results.items()
+            }
+            output["summary"] = {
+                "passed": len([r for r in gate_results.values() if r.can_generate]),
+                "blocked": len([r for r in gate_results.values() if r.overall_status == GateStatus.BLOCK]),
+                "warned": len([r for r in gate_results.values() if r.overall_status == GateStatus.WARN]),
+            }
         console.print(json.dumps(output, indent=2))
         return
 
@@ -948,24 +988,34 @@ def gaps_detect(
     if skills:
         console.print("[bold green]SKILLS:[/bold green]")
         for gap in skills:
-            _display_classified_gap(gap)
+            gate_result = gate_results.get(gap.id) if with_gates else None
+            _display_classified_gap(gap, gate_result)
         console.print()
 
     if subagents:
         console.print("[bold blue]SUBAGENTS:[/bold blue]")
         for gap in subagents:
-            _display_classified_gap(gap)
+            gate_result = gate_results.get(gap.id) if with_gates else None
+            _display_classified_gap(gap, gate_result)
         console.print()
 
     if ambiguous:
         console.print("[bold yellow]AMBIGUOUS (user decision needed):[/bold yellow]")
         for gap in ambiguous:
-            _display_classified_gap(gap)
+            gate_result = gate_results.get(gap.id) if with_gates else None
+            _display_classified_gap(gap, gate_result)
         console.print()
 
     # Summary
     console.print("[dim]Summary:[/dim]")
     console.print(f"  Skills: {len(skills)} | Subagents: {len(subagents)} | Ambiguous: {len(ambiguous)}")
+
+    # Gate summary if enabled
+    if with_gates and gate_results:
+        passed = len([r for r in gate_results.values() if r.can_generate])
+        blocked = len([r for r in gate_results.values() if r.overall_status == GateStatus.BLOCK])
+        warned = len([r for r in gate_results.values() if r.overall_status == GateStatus.WARN])
+        console.print(f"  Gates: [green]{passed} passed[/green] | [red]{blocked} blocked[/red] | [yellow]{warned} warned[/yellow]")
 
 
 @gaps_app.command("list")
@@ -1124,11 +1174,15 @@ def gaps_show(
             console.print(f"  Persona: {gap.subagent_recommendation.persona_hint[:60]}...")
 
 
-def _display_classified_gap(gap: ClassifiedGap) -> None:
-    """Display a single classified gap.
+def _display_classified_gap(
+    gap: ClassifiedGap,
+    gate_result: Optional[QualityGateResult] = None,
+) -> None:
+    """Display a single classified gap with optional gate status.
 
     Args:
         gap: ClassifiedGap to display
+        gate_result: Optional quality gate evaluation result
     """
     # Type color
     if gap.gap_type == GapType.SKILL:
@@ -1146,10 +1200,32 @@ def _display_classified_gap(gap: ClassifiedGap) -> None:
     else:
         conf_style = "dim"
 
+    # Gate status
+    gate_str = ""
+    if gate_result is not None:
+        if gate_result.can_generate and gate_result.overall_status == GateStatus.PASS:
+            gate_str = " [green]✓ PASS[/green]"
+        elif gate_result.overall_status == GateStatus.BLOCK:
+            gate_str = " [red]✗ BLOCKED[/red]"
+        else:
+            gate_str = " [yellow]⚠ WARNING[/yellow]"
+
     console.print(f"  [{type_style}]{gap.gap_type.value.upper():10}[/{type_style}] "
                   f"[bold]{gap.suggested_name}[/bold] "
-                  f"[{conf_style}]({gap.confidence:.0%})[/{conf_style}]")
+                  f"[{conf_style}]({gap.confidence:.0%})[/{conf_style}]"
+                  f"{gate_str}")
     console.print(f"             [dim]{gap.description[:60]}{'...' if len(gap.description) > 60 else ''}[/dim]")
+
+    # Show blocking reasons if gate failed
+    if gate_result is not None and not gate_result.can_generate:
+        blocking = [r for r in gate_result.gate_results if r.status == GateStatus.BLOCK]
+        warnings = [r for r in gate_result.gate_results if r.status == GateStatus.WARN]
+        if blocking:
+            reasons = ", ".join(r.reason for r in blocking)
+            console.print(f"             [red]Blocked: {reasons}[/red]")
+        elif warnings:
+            reasons = ", ".join(r.reason for r in warnings)
+            console.print(f"             [yellow]Warning: {reasons}[/yellow]")
 
 
 def _display_score_bar(label: str, score: float) -> None:
@@ -1162,3 +1238,267 @@ def _display_score_bar(label: str, score: float) -> None:
     filled = int(score * 10)
     bar = "█" * filled + "░" * (10 - filled)
     console.print(f"  {label:12} [{bar}] {score:.2f}")
+
+
+# ============================================================================
+# Gaps Check Command (Quality Gates)
+# ============================================================================
+
+@gaps_app.command("check")
+def gaps_check(
+    gap_id: str = typer.Argument(..., help="Gap ID or name to check"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Check quality gates for a specific gap.
+
+    Evaluates a gap against pre-generation quality gates to determine
+    if it should become a skill or be blocked.
+
+    Examples:
+
+        # Check a specific gap
+        bpsai-pair gaps check skill-testing-workflows
+
+        # Output as JSON
+        bpsai-pair gaps check GAP-001 --json
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+
+    # Detect and classify to find the gap
+    classified = detect_and_classify_all(
+        history_dir=history_dir,
+        skills_dir=skills_dir,
+    )
+
+    # Find the gap
+    gap = None
+    for g in classified:
+        if g.id == gap_id or g.suggested_name == gap_id:
+            gap = g
+            break
+
+    if not gap:
+        console.print(f"[red]Gap not found: {gap_id}[/red]")
+        if classified:
+            console.print("\n[dim]Available gaps:[/dim]")
+            for g in classified[:5]:
+                console.print(f"  - {g.suggested_name} ({g.id})")
+        raise typer.Exit(1)
+
+    # Evaluate quality gates
+    result = evaluate_gap_quality(gap, skills_dir=skills_dir)
+
+    # JSON output
+    if json_out:
+        console.print(json.dumps(result.to_dict(), indent=2))
+        return
+
+    # Display results
+    console.print(f"\n[bold]Quality Gate Results: {result.gap_name}[/bold]")
+    console.print("=" * 50)
+
+    # Overall status
+    if result.overall_status == GateStatus.PASS:
+        console.print("[green]Overall: ✅ PASS[/green]")
+    elif result.overall_status == GateStatus.WARN:
+        console.print("[yellow]Overall: ⚠️ WARN[/yellow]")
+    else:
+        console.print("[red]Overall: ❌ BLOCKED[/red]")
+
+    console.print(f"\nCan Generate: {'Yes' if result.can_generate else 'No'}")
+    console.print("\n[bold]Gate Results:[/bold]")
+
+    for gate in result.gate_results:
+        if gate.status == GateStatus.PASS:
+            icon = "[green]✅[/green]"
+        elif gate.status == GateStatus.WARN:
+            icon = "[yellow]⚠️[/yellow]"
+        else:
+            icon = "[red]❌[/red]"
+
+        score_bar = "█" * int(gate.score * 10) + "░" * (10 - int(gate.score * 10))
+        console.print(f"  {icon} {gate.gate_name:12} [{score_bar}] {gate.score:.2f}")
+        console.print(f"     {gate.reason}")
+        if gate.details:
+            console.print(f"     [dim]{gate.details}[/dim]")
+
+    console.print(f"\n[bold]Recommendation:[/bold]\n  {result.recommendation}")
+
+
+# ============================================================================
+# Skill Score Command
+# ============================================================================
+
+@skill_app.command("score")
+def skill_score_cmd(
+    skill_name: Optional[str] = typer.Argument(None, help="Specific skill to score"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Score skills on quality dimensions.
+
+    Evaluates skills on token efficiency, trigger clarity, completeness,
+    usage frequency, and portability.
+
+    Examples:
+
+        # Score all skills
+        bpsai-pair skill score
+
+        # Score specific skill
+        bpsai-pair skill score implementing-with-tdd
+
+        # Output as JSON
+        bpsai-pair skill score --json
+    """
+    import json
+
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        console.print("[red]Could not find .claude/skills directory[/red]")
+        raise typer.Exit(1)
+
+    scorer = SkillScorer(skills_dir)
+
+    if skill_name:
+        # Score single skill
+        score = scorer.score_skill(skill_name)
+        if not score:
+            console.print(f"[red]Skill not found: {skill_name}[/red]")
+            raise typer.Exit(1)
+
+        if json_out:
+            console.print(json.dumps(score.to_dict(), indent=2))
+            return
+
+        _display_skill_score(score)
+    else:
+        # Score all skills
+        scores = scorer.score_all()
+
+        if not scores:
+            console.print("[dim]No skills found to score.[/dim]")
+            return
+
+        if json_out:
+            output = {
+                "skills": [s.to_dict() for s in scores],
+                "total": len(scores),
+                "average_score": sum(s.overall_score for s in scores) // len(scores),
+            }
+            console.print(json.dumps(output, indent=2))
+            return
+
+        _display_score_table(scores)
+
+
+def _display_skill_score(score: SkillScore) -> None:
+    """Display a single skill score.
+
+    Args:
+        score: SkillScore to display
+    """
+    # Grade color
+    grade_colors = {
+        "A": "green",
+        "B": "cyan",
+        "C": "yellow",
+        "D": "red",
+        "F": "red",
+    }
+    grade_color = grade_colors.get(score.grade, "white")
+
+    console.print(f"\n[bold]Skill: {score.skill_name}[/bold]")
+    console.print("=" * 50)
+    console.print(f"Overall Score: {score.overall_score}/100 (Grade: [{grade_color}]{score.grade}[/{grade_color}])")
+    console.print("\n[bold]Dimension Scores:[/bold]")
+
+    for dim in score.dimensions:
+        score_bar = "█" * int(dim.score * 10) + "░" * (10 - int(dim.score * 10))
+        weight_pct = int(dim.weight * 100)
+        console.print(f"  {dim.name:18} [{score_bar}] {dim.score:.2f} (weight: {weight_pct}%)")
+        console.print(f"    [dim]{dim.reason}[/dim]")
+
+    if score.recommendations:
+        console.print("\n[bold]Recommendations:[/bold]")
+        for i, rec in enumerate(score.recommendations, 1):
+            console.print(f"  {i}. {rec}")
+
+
+def _display_score_table(scores: List[SkillScore]) -> None:
+    """Display skills as a score table.
+
+    Args:
+        scores: List of SkillScore
+    """
+    from rich.table import Table
+
+    table = Table(title="Skill Quality Report")
+    table.add_column("Skill", style="cyan")
+    table.add_column("Score", justify="right")
+    table.add_column("Grade", justify="center")
+    table.add_column("Token", justify="right")
+    table.add_column("Trigger", justify="right")
+    table.add_column("Complete", justify="right")
+    table.add_column("Portable", justify="right")
+
+    grade_colors = {
+        "A": "green",
+        "B": "cyan",
+        "C": "yellow",
+        "D": "red",
+        "F": "red",
+    }
+
+    for score in scores:
+        token = next((d for d in score.dimensions if d.name == "token_efficiency"), None)
+        trigger = next((d for d in score.dimensions if d.name == "trigger_clarity"), None)
+        complete = next((d for d in score.dimensions if d.name == "completeness"), None)
+        portable = next((d for d in score.dimensions if d.name == "portability"), None)
+
+        grade_style = grade_colors.get(score.grade, "white")
+
+        table.add_row(
+            score.skill_name,
+            str(score.overall_score),
+            f"[{grade_style}]{score.grade}[/{grade_style}]",
+            f"{int(token.score * 100)}" if token else "-",
+            f"{int(trigger.score * 100)}" if trigger else "-",
+            f"{int(complete.score * 100)}" if complete else "-",
+            f"{int(portable.score * 100)}" if portable else "-",
+        )
+
+    console.print(table)
+
+    # Summary stats
+    avg_score = sum(s.overall_score for s in scores) // len(scores)
+    grade_counts = {}
+    for s in scores:
+        grade_counts[s.grade] = grade_counts.get(s.grade, 0) + 1
+
+    console.print(f"\n[bold]Summary:[/bold]")
+    console.print(f"  Total: {len(scores)} skills")
+    console.print(f"  Average Score: {avg_score}")
+    grade_str = ", ".join(f"{g}: {c}" for g, c in sorted(grade_counts.items()))
+    console.print(f"  Grades: {grade_str}")
+
+    # Identify skills needing attention
+    low_scores = [s for s in scores if s.overall_score < 60]
+    if low_scores:
+        console.print(f"\n[yellow]Skills needing attention ({len(low_scores)}):[/yellow]")
+        for s in low_scores[:3]:
+            console.print(f"  - {s.skill_name}: {s.overall_score} ({s.grade})")
+            if s.recommendations:
+                console.print(f"    → {s.recommendations[0]}")

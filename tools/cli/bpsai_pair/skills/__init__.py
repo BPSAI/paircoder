@@ -60,6 +60,23 @@ from .classifier import (
     detect_and_classify_all,
     format_classification_report,
 )
+from .gates import (
+    GateStatus,
+    GateResult,
+    QualityGateResult,
+    GapQualityGate,
+    GENERIC_COMMANDS,
+    evaluate_gap_quality,
+    format_gate_result,
+)
+from .scorer import (
+    DimensionScore,
+    SkillScore,
+    SkillScorer,
+    score_skills,
+    format_skill_score,
+    format_score_table,
+)
 
 __all__ = [
     "SkillValidator",
@@ -109,4 +126,17 @@ __all__ = [
     "GapClassifier",
     "detect_and_classify_all",
     "format_classification_report",
+    "GateStatus",
+    "GateResult",
+    "QualityGateResult",
+    "GapQualityGate",
+    "GENERIC_COMMANDS",
+    "evaluate_gap_quality",
+    "format_gate_result",
+    "DimensionScore",
+    "SkillScore",
+    "SkillScorer",
+    "score_skills",
+    "format_skill_score",
+    "format_score_table",
 ]

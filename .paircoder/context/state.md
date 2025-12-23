@@ -17,7 +17,7 @@
 | T25.17 | /update-skills Slash Command | done | P1 | 35 | M |
 | T25.18 | Skill Gap Detection | done | P1 | 50 | L |
 | T25.19 | Auto-Skill Creation | done | P1 | 55 | L |
-| T25.20 | Skill Quality Scoring | pending | P2 | 45 | M |
+| T25.20 | Skill Quality Scoring | done | P2 | 45 | M |
 | T25.21 | Skill Marketplace Foundation | pending | P2 | 45 | M |
 | T25.22 | Flows → Skills Migration RFC | done | P1 | 35 | M |
 | T25.23 | Subagent Gap Detection | done | P1 | 45 | M |
@@ -25,7 +25,7 @@
 | T25.25 | Flow Commands Deprecation Warnings | pending | P2 | 25 | S |
 | T25.26 | Codex/ChatGPT Skill Export Formats | pending | P2 | 30 | M |
 
-**Progress:** 6/10 tasks (260/405 complexity points)
+**Progress:** 7/10 tasks (305/405 complexity points)
 
 ## Task Dependencies & Implementation Sequence
 
@@ -34,6 +34,7 @@ COMPLETED:
   T25.17 (/update-skills) ✓
   T25.18 (Skill Gap Detection) ✓
   T25.19 (Auto-Skill Creation) ✓
+  T25.20 (Skill Quality Scoring) ✓
   T25.22 (Flows → Skills Migration RFC) ✓
   T25.23 (Subagent Gap Detection) ✓
   T25.24 (Unified Gap Classifier) ✓
@@ -41,7 +42,7 @@ COMPLETED:
 REMAINING:
   1. T25.25 (Deprecation) ─► Add warnings (after RFC approved) [P2]
   2. T25.26 (Codex/ChatGPT) ─► Independent, extends T25.16 [P2]
-  3. T25.20, T25.21 ────────► Quality scoring & marketplace [P2]
+  3. T25.21 ────────────────► Skill marketplace foundation [P2]
 ```
 
 ### Priority Breakdown
@@ -52,7 +53,7 @@ REMAINING:
 - ✓ T25.24: Unified classifier determines skill vs subagent
 
 **P2 (Medium) - Enhancements:**
-- T25.20: Skill quality scoring
+- ✓ T25.20: Skill quality scoring with pre-generation gates
 - T25.21: Skill marketplace foundation
 - T25.25: Deprecation warnings (low risk, after RFC)
 - T25.26: Codex/ChatGPT export (independent work)
@@ -120,12 +121,14 @@ Phase 2 - Migration Planning (Complete):
 - ✓ T25.23: Subagent gap detection
 - ✓ T25.24: Unified gap classifier (skill vs subagent)
 
-Phase 3 - Implementation (P2 - Next):
+Phase 3 - Quality (Complete):
+- ✓ T25.20: Skill quality scoring with pre-generation gates
+
+Phase 4 - Implementation (P2 - Next):
 - T25.25: Flow commands deprecation warnings
 - T25.26: Codex/ChatGPT skill export formats
 
-Phase 4 - Quality & Distribution (P2):
-- T25.20: Skill quality scoring
+Phase 5 - Distribution (P2):
 - T25.21: Skill marketplace foundation
 
 **Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
@@ -148,6 +151,42 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.20 Complete (Skill Quality Scoring with Pre-Generation Gates)
+
+- **T25.20: Skill Quality Scoring** ✓
+  - Created `bpsai_pair/skills/gates.py` - Pre-generation quality gates:
+    - `GateStatus` enum: PASS, WARN, BLOCK
+    - `GateResult` and `QualityGateResult` dataclasses
+    - `GapQualityGate` class with 4 gates:
+      - Redundancy: Checks overlap with existing skills
+      - Novelty: Blocks generic commands (pytest, git add, etc.)
+      - Complexity: Requires 3+ distinct commands
+      - Time Value: Estimates time savings value
+    - `GENERIC_COMMANDS` blocklist (30+ commands)
+    - `evaluate_gap_quality()` and `format_gate_result()` functions
+  - Created `bpsai_pair/skills/scorer.py` - Post-creation quality scoring:
+    - `DimensionScore` and `SkillScore` dataclasses
+    - `SkillScorer` class with 5 dimensions:
+      - Token efficiency (25%): Lines/info density
+      - Trigger clarity (20%): "When to use" clarity
+      - Completeness (20%): Workflow coverage
+      - Usage frequency (20%): Historical invocation counts
+      - Portability (15%): Cross-platform compatibility
+    - Letter grades (A-F) based on 0-100 scores
+    - `score_skills()`, `format_skill_score()`, `format_score_table()`
+  - Added CLI commands:
+    - `bpsai-pair gaps check <gap-id>` - Check gap against quality gates
+    - `bpsai-pair skill score [name]` - Score skill quality
+  - Integrated gates into `gaps detect`:
+    - `--with-gates/--no-gates` option (default: with gates)
+    - Shows gate status (✓ PASS, ✗ BLOCKED, ⚠ WARNING) for each gap
+    - Blocking reasons displayed for failed gates
+    - Gate summary in output
+  - 30 new tests for gates, 34 new tests for scorer
+  - All 223 skill-related tests pass
+
+**This completes the "testing-fixes" problem!** Patterns like running pytest repeatedly will now be blocked by the novelty gate because they contain only generic commands.
 
 ### 2025-12-23 - P1 Tasks Complete (T25.22, T25.23, T25.24)
 
