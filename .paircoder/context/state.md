@@ -4,41 +4,59 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-24-cli-refactor-phase3
+**Plan:** plan-2025-12-sprint-25-epic003-token-budget
 **Epic:** EPIC-003: CLI Architecture Refactor
-**Phase:** Phase 3 of 5 - Consolidate Root Files
+**Phase:** Phase 4-5 of 5 - Parser Consolidation + Documentation
 **Status:** In Progress
-**Goal:** Move orphaned root files into `core/` module
+**Goal:** Complete EPIC-003 + Token Budget System
+**Version Target:** v2.8.0
 
-## Current Sprint Tasks (Sprint 24)
+## Current Sprint Tasks (Sprint 25)
+
+### Part A: EPIC-003 Phase 4 - Parser Consolidation
+
+| ID      | Title | Status | Priority | Complexity |
+|---------|-------|--------|----------|------------|
+| T24.11  | Merge flows/parser.py + parser_v2.py | pending | P0 | 35 |
+| T24.12  | Deprecate v1 flow format | pending | P1 | 15 |
+| T24.13  | Update all flow references to unified parser | pending | P1 | 20 |
+
+### Part B: EPIC-003 Phase 5 - Documentation & Cleanup
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T24.1  | Create core/ module structure | done | P0 | 15 |
-| T24.2  | Move config.py to core/config.py | done | P1 | 30 |
-| T24.3  | Move constants.py to core/constants.py | done | P1 | 20 |
-| T24.4  | Move hooks.py to core/hooks.py | done | P1 | 25 |
-| T24.5  | Move ops.py to core/ops.py | done | P1 | 25 |
-| T24.6  | Move presets.py to core/presets.py | done | P1 | 25 |
-| T24.7  | Merge utils.py + pyutils.py + jsonio.py to core/utils.py | done | P1 | 35 |
-| T24.8  | Delete empty adapters.py | done | P2 | 5 |
-| T24.9  | Update all imports across codebase | done | P0 | 40 |
-| T24.10 | Update __init__.py exports and verify package structure | done | P0 | 30 |
+| T25.1  | Update FEATURE_MATRIX.md with new structure | pending | P2 | 15 |
+| T25.2  | Update developer documentation | pending | P2 | 25 |
+| T25.3  | Add architecture diagram | pending | P2 | 15 |
+| T25.4  | Remove deprecated code paths | pending | P1 | 20 |
+| T25.5  | Final review and cleanup | pending | P2 | 25 |
 
-**Progress:** 10/10 tasks (250/250 complexity points) - COMPLETE!
+### Part C: Bug Fix
 
-## Previous Sprint Summary (Sprint 23)
+| ID     | Title | Status | Priority | Complexity |
+|--------|-------|--------|----------|------------|
+| T25.6  | Fix project root detection in all commands | ✓ done | P0 | 20 |
 
-**Phase 2 Complete:** Extract Commands from planning/cli_commands.py
-- Created `sprint/` module with sprint commands
-- Created `release/` module with release and template commands
-- Renamed `planning/cli_commands.py` → `planning/commands.py`
-- Reduced `planning/commands.py` from ~2,602 to 1,942 lines (660 lines extracted)
+### Part D: Token Budget System
 
-**Critical Fixes:**
-- T23.10: Enforce ttask done for Trello projects
-- T23.11: Windows shell compatibility
-- T23.12: Upgrade command
+| ID      | Title | Status | Priority | Complexity |
+|---------|-------|--------|----------|------------|
+| T25.7   | Add tiktoken dependency | pending | P1 | 5 |
+| T25.8   | Create tokens.py estimation module | pending | P1 | 50 |
+| T25.9   | Add budget CLI commands | pending | P1 | 35 |
+| T25.10  | Integrate budget into session status | pending | P2 | 20 |
+| T25.11  | Add pre-task budget hook | pending | P2 | 20 |
+
+**Progress:** 1/14 tasks (20/320 complexity points)
+
+## Previous Sprint Summary (Sprint 24)
+
+**Phase 3 Complete:** Consolidate Root Files
+- Created `core/` module for shared infrastructure
+- Moved 6 files from root to core/: config.py, constants.py, hooks.py, ops.py, presets.py
+- Merged 3 utils files into core/utils.py
+- Deleted unused adapters.py
+- Root level now much cleaner
 
 ## Sprint History
 
@@ -58,39 +76,60 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 19 | Methodology & Session Management | v2.7.0 | Complete |
 | 22 | CLI Refactor Phase 1 | v2.7.0 | Complete |
 | 23 | CLI Refactor Phase 2 | v2.7.0 | Complete |
+| 24 | CLI Refactor Phase 3 | v2.7.0 | Complete |
+| 25 | EPIC-003 Complete + Token Budget | v2.8.0 | In Progress |
 
 ## What's Next
 
-**Sprint 24: CLI Architecture Refactor (Phase 3)** is planned and ready to start.
+**Sprint 25: Complete EPIC-003 + Token Budget System**
 
-**All tasks complete!** Sprint 24 finished.
+**Suggested Order:**
+1. T25.6 (bug fix - quick win, prevents future issues)
+2. T24.11-T24.13 (parsers - complete Phase 4)
+3. T25.7-T25.11 (token budget - can parallel with docs)
+4. T25.1-T25.5 (docs - finalize after code stable)
 
-**Completed:**
-1. ✓ T24.1 - Created core/ module structure
-2. ✓ T24.2-T24.6 - Moved config, constants, hooks, ops, presets to core/
-3. ✓ T24.7 - Merged utils/pyutils/jsonio to core/utils.py
-4. ✓ T24.8 - Deleted unused adapters.py
-5. ✓ T24.9 - Verified all imports updated
-6. ✓ T24.10 - Updated FEATURE_MATRIX.md, verified package structure
-
-**Sprint Goal:**
-- Create `core/` module for shared infrastructure
-- Move root-level config, constants, hooks, ops, presets to core/
-- Consolidate utils.py + pyutils.py + jsonio.py into core/utils.py
-- Root level has only: `__init__.py`, `__main__.py`, `cli.py`
-- No behavior changes - pure refactor
+**Sprint Goals:**
+- Complete EPIC-003 (Phase 4: Parser Consolidation + Phase 5: Documentation)
+- Fix project root detection bug
+- Implement token budget system to prevent context compaction
+- Version bump to v2.8.0
 
 ## Backlog (Deprioritized)
 
 See `.paircoder/tasks/backlog/`:
-- TASK-063: VS Code extension
-- TASK-074: Dashboard UI
-- TASK-075: Slack notifications
-- TASK-076: Multi-project support
+- TASK-065: VS Code extension
+
 
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.6 Complete (Bug Fix)
+
+- **T25.6: Fix project root detection in all commands** ✓
+  - Updated 10 command files to use `ops.find_project_root()` instead of `Path.cwd()`:
+    - benchmark.py, orchestrate.py, metrics.py, session.py
+    - security.py, flow.py, timer.py, core.py, cache.py, config.py
+  - Updated `core/utils.py` `repo_root()` to use `find_project_root()`
+  - Verified `upgrade` and `trello connect` already use `find_project_root()`
+  - All 1719 tests passing
+  - No stray `.paircoder/` directories found
+
+### 2025-12-22 - Sprint 25 Planning Complete
+
+- **Sprint 25 Setup**
+  - Created plan: `plan-2025-12-sprint-25-epic003-token-budget`
+  - Generated 14 task files (T24.11-T24.13, T25.1-T25.11)
+  - Total complexity: 320 points
+  - Synced to Trello PairCoder board (Planned/Ready list)
+  - 14 cards created on Trello
+
+- **Sprint 25 Focus Areas:**
+  - Part A: EPIC-003 Phase 4 - Parser Consolidation (3 tasks, 70 pts)
+  - Part B: EPIC-003 Phase 5 - Documentation (5 tasks, 100 pts)
+  - Part C: Bug Fix - Project Root Detection (1 task, 20 pts)
+  - Part D: Token Budget System (5 tasks, 130 pts)
 
 ### 2025-12-22 - Sprint 24 Complete!
 

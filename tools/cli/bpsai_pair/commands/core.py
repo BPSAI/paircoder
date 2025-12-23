@@ -55,7 +55,7 @@ CONTEXT_DIR = os.getenv("PAIRCODER_CONTEXT_DIR", ".paircoder/context")
 
 def repo_root() -> Path:
     """Get repo root with better error message."""
-    p = Path.cwd()
+    p = ops.find_project_root()
     if not ops.GitOps.is_repo(p):
         console.print(
             "[red]x Not in a git repository.[/red]\n"

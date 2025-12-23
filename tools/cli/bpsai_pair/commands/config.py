@@ -11,6 +11,12 @@ from typing import Optional
 import typer
 from rich.console import Console
 
+# Try relative imports first, fall back to absolute
+try:
+    from ..core import ops
+except ImportError:
+    from bpsai_pair.core import ops
+
 # Initialize Rich console
 console = Console()
 
@@ -47,7 +53,7 @@ def config_validate(
     except ImportError:
         from bpsai_pair.core.config import validate_config, CURRENT_CONFIG_VERSION
 
-    root = Path.cwd()
+    root = ops.find_project_root()
     result = validate_config(root, preset)
 
     if json_output:
@@ -122,7 +128,7 @@ def config_update(
     except ImportError:
         from bpsai_pair.core.config import update_config, save_raw_config
 
-    root = Path.cwd()
+    root = ops.find_project_root()
 
     try:
         updated_config, changes = update_config(root, preset)
@@ -174,7 +180,7 @@ def config_show(
     except ImportError:
         from bpsai_pair.core.config import load_raw_config
 
-    root = Path.cwd()
+    root = ops.find_project_root()
     raw_config, config_file = load_raw_config(root)
 
     if raw_config is None:

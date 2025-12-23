@@ -1,15 +1,14 @@
 ---
-id: TASK-065
+id: HF-001
 title: Auto-update context on file save
-plan: plan-2025-12-sprint-13-autonomy
+plan: hotfix
 type: feature
 priority: P3
 complexity: 30
 status: planned
-sprint: sprint-13
+sprint: hotfix
 tags:
 - ide
-- vscode
 - context
 - file-watcher
 ---

@@ -499,9 +499,9 @@
     "total_seconds": 128.900242
   },
   "_active": {
-    "task_id": "T24.10",
-    "timer_id": "local-20251222204254",
-    "description": "T24.10: Update __init__.py exports and verify package structure",
-    "start": "2025-12-22T20:42:54.143916"
+    "task_id": "T25.6",
+    "timer_id": "local-20251223092955",
+    "description": "T25.6: Fix project root detection in all commands",
+    "start": "2025-12-23T09:29:55.942401"
   }
 }

@@ -17,14 +17,16 @@ def repo_root() -> Path:
     """Get the repository root directory.
 
     Returns:
-        Path to the repository root (directory containing .git)
+        Path to the repository root (directory containing .git or .paircoder)
 
     Raises:
         SystemExit: If not run from within a git repository
     """
-    p = Path.cwd()
-    if not (p / ".git").exists():
-        raise SystemExit("Run from repo root (where .git exists).")
+    from .ops import find_project_root
+
+    p = find_project_root()
+    if not (p / ".git").exists() and not (p / ".paircoder").exists():
+        raise SystemExit("Run from repo root (where .git or .paircoder exists).")
     return p
 
 
