@@ -258,9 +258,6 @@ Add settings for auto-update behavior:
 - [ ] Update failures don't crash the extension
 - [ ] Recent changes section shows last 10 changes
 
-# Dependencies
-
-- TASK-063: VS Code extension wrapper for MCP (base extension)
 
 # Verification
 
