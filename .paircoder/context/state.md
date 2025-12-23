@@ -1,62 +1,42 @@
 # Current State
 
-> Last updated: 2025-12-22
+> Last updated: 2025-12-23
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-25-epic003-token-budget
-**Epic:** EPIC-003: CLI Architecture Refactor ✅ COMPLETE
-**Phase:** Phase 5 of 5 - Documentation & Cleanup ✅
-**Status:** COMPLETE
-**Goal:** Complete EPIC-003 + Token Budget System ✅
-**Version Target:** v2.8.0 (Ready for Release)
+**Plan:** plan-2025-12-sprint-25.5-cross-platform-skills
+**Sprint:** 25.5 - Cross-Platform Skills
+**Status:** Planning Complete
+**Goal:** Make skills portable, improve skill creation and installation
+**Version Target:** v2.9
 
-## Current Sprint Tasks (Sprint 25)
-
-### Part A: EPIC-003 Phase 4 - Parser Consolidation
-
-| ID      | Title | Status | Priority | Complexity |
-|---------|-------|--------|----------|------------|
-| T24.11  | Merge flows/parser.py + parser_v2.py | ✓ done | P0 | 35 |
-| T24.12  | Deprecate v1 flow format | ✓ done | P1 | 15 |
-| T24.13  | Update all flow references to unified parser | ✓ done | P1 | 20 |
-
-### Part B: EPIC-003 Phase 5 - Documentation & Cleanup
+## Current Sprint Tasks (Sprint 25.5)
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T25.1  | Update FEATURE_MATRIX.md with new structure | ✓ done | P2 | 15 |
-| T25.2  | Update developer documentation | ✓ done | P2 | 25 |
-| T25.3  | Add architecture diagram | ✓ done | P2 | 15 |
-| T25.4  | Remove deprecated code paths | ✓ done | P1 | 20 |
-| T25.5  | Final review and cleanup | ✓ done | P2 | 25 |
+| T25.12 | Skill Naming Convention Update | pending | P2 | 15 |
+| T25.13 | Third-Person Voice in Skill Descriptions | pending | P2 | 10 |
+| T25.14 | Create skill-creation Skill | pending | P1 | 35 |
+| T25.15 | Skill Installer Command | pending | P1 | 40 |
+| T25.16 | Cross-Platform Skill Structure | pending | P2 | 50 |
 
-### Part C: Bug Fix
+**Progress:** 0/5 tasks (0/150 complexity points)
 
-| ID     | Title | Status | Priority | Complexity |
-|--------|-------|--------|----------|------------|
-| T25.6  | Fix project root detection in all commands | ✓ done | P0 | 20 |
+## Recommended Execution Order
 
-### Part D: Token Budget System
+1. **T25.12** (P2) - Rename skills to gerund form
+2. **T25.13** (P2) - Update descriptions to third-person voice
+3. **T25.14** (P1) - Create skill-creation skill (depends on 12, 13)
+4. **T25.15** (P1) - Add skill install command
+5. **T25.16** (P2) - Add cross-platform export (depends on 14, 15)
 
-| ID      | Title | Status | Priority | Complexity |
-|---------|-------|--------|----------|------------|
-| T25.7   | Add tiktoken dependency | ✓ done | P1 | 5 |
-| T25.8   | Create tokens.py estimation module | ✓ done | P1 | 50 |
-| T25.9   | Add budget CLI commands | ✓ done | P1 | 35 |
-| T25.10  | Integrate budget into session status | ✓ done | P2 | 20 |
-| T25.11  | Add pre-task budget hook | ✓ done | P2 | 20 |
+## Previous Sprint Summary (Sprint 25)
 
-**Progress:** 14/14 tasks (320/320 complexity points) ✅ COMPLETE
-
-## Previous Sprint Summary (Sprint 24)
-
-**Phase 3 Complete:** Consolidate Root Files
-- Created `core/` module for shared infrastructure
-- Moved 6 files from root to core/: config.py, constants.py, hooks.py, ops.py, presets.py
-- Merged 3 utils files into core/utils.py
-- Deleted unused adapters.py
-- Root level now much cleaner
+**Sprint 25 COMPLETE:** EPIC-003 + Token Budget System
+- EPIC-003 CLI Architecture Refactor complete (Phases 1-5)
+- Token Budget System with tiktoken integration
+- 112 CLI commands, 1774 tests
+- v2.8.0 ready for release
 
 ## Sprint History
 
@@ -78,22 +58,20 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 23 | CLI Refactor Phase 2 | v2.7.0 | Complete |
 | 24 | CLI Refactor Phase 3 | v2.7.0 | Complete |
 | 25 | EPIC-003 Complete + Token Budget | v2.8.0 | Complete |
+| 25.5 | Cross-Platform Skills | v2.9 | Planned |
+| 25.6 | Emergent Skill Discovery | v2.9.2 | Planned |
+| 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
 
 ## What's Next
 
-**Sprint 25 COMPLETE!** v2.8.0 is ready for release.
+**Sprint 25.5: Cross-Platform Skills** (5 tasks, 150 pts)
+Start with T25.12 (Skill Naming Convention Update) and T25.13 (Third-Person Voice) to establish conventions, then proceed to T25.14-T25.16 for feature implementation.
 
-**Release Preparation:**
-1. Bump version in pyproject.toml to 2.8.0
-2. Run `bpsai-pair release prep` for final checks
-3. Create git tag v2.8.0
-4. Publish to PyPI
+**Sprint 25.6: Emergent Skill Discovery** (5 tasks, 230 pts)
+AI-driven skill creation following 25.5. Tasks: T25.17-T25.21 - /update-skills command, skill gap detection, auto-skill creation, quality scoring, marketplace foundation.
 
-**Sprint 25 Achievements:**
-- ✅ EPIC-003 complete (CLI Architecture Refactor)
-- ✅ Token Budget System implemented
-- ✅ 112 CLI commands, 1774 tests
-- ✅ All documentation updated to v2.8.0
+**Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
+Make PairCoder usable by non-technical "vibe-coders". Tasks: T26.1-T26.10 - Interactive welcome wizard, Trello setup wizard with pre-checks, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session.
 
 ## Backlog (Deprioritized)
 
