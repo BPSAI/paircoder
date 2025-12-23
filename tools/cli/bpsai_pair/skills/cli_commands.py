@@ -31,6 +31,13 @@ from .suggestion import (
     HistoryParser,
     SkillSuggestionError,
 )
+from .gap_detector import (
+    SkillGap,
+    SkillGapDetector,
+    GapPersistence,
+    detect_gaps_from_history,
+    format_gap_notification,
+)
 
 console = Console()
 
@@ -478,3 +485,102 @@ def skill_suggest(
             raise typer.Exit(1)
     else:
         console.print("[dim]Use --create N to create a draft for suggestion N[/dim]")
+
+
+@skill_app.command("gaps")
+def skill_gaps(
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    clear: bool = typer.Option(False, "--clear", help="Clear gap history"),
+    analyze: bool = typer.Option(False, "--analyze", help="Run fresh analysis"),
+):
+    """List detected skill gaps from session history.
+
+    Shows patterns that were repeated frequently but don't have matching skills.
+    Use this to identify opportunities for new skill creation.
+
+    Examples:
+
+        # List detected gaps
+        bpsai-pair skill gaps
+
+        # Output as JSON
+        bpsai-pair skill gaps --json
+
+        # Clear gap history
+        bpsai-pair skill gaps --clear
+
+        # Run fresh analysis
+        bpsai-pair skill gaps --analyze
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+
+    persistence = GapPersistence(history_dir=history_dir)
+
+    # Handle --clear
+    if clear:
+        persistence.clear_gaps()
+        console.print("[green]Gap history cleared[/green]")
+        return
+
+    # Load or detect gaps
+    if analyze:
+        console.print("[cyan]Analyzing session history for gaps...[/cyan]\n")
+        gaps = detect_gaps_from_history(
+            history_dir=history_dir,
+            skills_dir=skills_dir,
+        )
+        # Save newly detected gaps
+        for gap in gaps:
+            persistence.save_gap(gap)
+    else:
+        gaps = persistence.load_gaps()
+
+    # JSON output
+    if json_out:
+        output = {
+            "gaps": [g.to_dict() for g in gaps],
+            "total": len(gaps),
+        }
+        console.print(json.dumps(output, indent=2))
+        return
+
+    # Display gaps
+    if not gaps:
+        console.print("[dim]No skill gaps detected.[/dim]")
+        console.print("\n[dim]Tips:[/dim]")
+        console.print("  - Use --analyze to run fresh detection")
+        console.print("  - Gaps are detected from repeated workflows")
+        console.print("  - Use `skill suggest` for pattern-based suggestions")
+        return
+
+    console.print(f"[bold]Detected Skill Gaps ({len(gaps)}):[/bold]\n")
+
+    for i, gap in enumerate(gaps, 1):
+        # Confidence indicator
+        if gap.confidence >= 0.8:
+            conf_style = "green"
+        elif gap.confidence >= 0.5:
+            conf_style = "yellow"
+        else:
+            conf_style = "dim"
+
+        console.print(f"[bold]{i}. {gap.suggested_name}[/bold] [{conf_style}](confidence: {gap.confidence:.0%})[/{conf_style}]")
+        console.print(f"   Pattern: {' → '.join(gap.pattern[:4])}{'...' if len(gap.pattern) > 4 else ''}")
+        console.print(f"   Frequency: {gap.frequency} occurrences")
+        console.print(f"   Estimated savings: {gap.time_saved_estimate}")
+        console.print(f"   [dim]Detected: {gap.detected_at[:10]}[/dim]")
+        console.print()
+
+    console.print("[dim]Use `bpsai-pair skill suggest --create N` to create a skill from a pattern[/dim]")

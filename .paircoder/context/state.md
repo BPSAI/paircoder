@@ -84,6 +84,29 @@ See `.paircoder/tasks/backlog/`:
 
 _Add entries here as work is completed._
 
+### 2025-12-23 - T25.18 Complete (Skill Gap Detection)
+
+- **T25.18: Skill Gap Detection** ✓
+  - Created `bpsai_pair/skills/gap_detector.py` module with:
+    - `SkillGap` dataclass with serialization support
+    - `SkillGapDetector` class for session analysis
+    - `GapPersistence` class for saving/loading gaps to history
+    - `detect_gaps_from_history()` high-level function
+    - `format_gap_notification()` for user notifications
+  - Added `bpsai-pair skill gaps` CLI command:
+    - Lists detected gaps from history
+    - `--analyze` flag to run fresh detection
+    - `--json` flag for JSON output
+    - `--clear` flag to clear gap history
+  - Gap detection features:
+    - Detects repeated command sequences (3+ occurrences)
+    - Calculates confidence scores based on frequency
+    - Reduces confidence for overlaps with existing skills
+    - Generates gerund-form skill names
+    - Estimates time savings
+  - Persists gaps to `.paircoder/history/skill-gaps.jsonl`
+  - 22 new tests, all 104 skill-related tests pass
+
 ### 2025-12-23 - T25.17 Complete (/update-skills Slash Command)
 
 - **T25.17: /update-skills Slash Command** ✓

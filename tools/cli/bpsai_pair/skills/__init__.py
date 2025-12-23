@@ -28,6 +28,13 @@ from .suggestion import (
     SkillDraftCreator,
     suggest_skills,
 )
+from .gap_detector import (
+    SkillGap,
+    SkillGapDetector,
+    GapPersistence,
+    detect_gaps_from_history,
+    format_gap_notification,
+)
 
 __all__ = [
     "SkillValidator",
@@ -53,4 +60,9 @@ __all__ = [
     "SkillSuggester",
     "SkillDraftCreator",
     "suggest_skills",
+    "SkillGap",
+    "SkillGapDetector",
+    "GapPersistence",
+    "detect_gaps_from_history",
+    "format_gap_notification",
 ]
