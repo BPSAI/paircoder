@@ -246,12 +246,12 @@ class TestFlowFiles:
         flows_dir = PROJECT_TEMPLATE / ".paircoder" / "flows"
 
         required_flows = [
-            "design-plan-implement.flow.md",
-            "tdd-implement.flow.md",
-            "review.flow.md",
-            "finish-branch.flow.md",
-            "trello-aware-planning.flow.md",
-            "paircoder-task-lifecycle.flow.md",
+            "designing-and-implementing.flow.md",
+            "implementing-with-tdd.flow.md",
+            "reviewing-code.flow.md",
+            "finishing-branches.flow.md",
+            "planning-with-trello.flow.md",
+            "managing-task-lifecycle.flow.md",
         ]
 
         for flow_name in required_flows:
@@ -267,12 +267,12 @@ class TestSkillFiles:
         skills_dir = PROJECT_TEMPLATE / ".claude" / "skills"
 
         required_skills = [
-            "design-plan-implement",
-            "tdd-implement",
-            "code-review",
-            "finish-branch",
-            "paircoder-task-lifecycle",
-            "trello-aware-planning",
+            "designing-and-implementing",
+            "implementing-with-tdd",
+            "reviewing-code",
+            "finishing-branches",
+            "managing-task-lifecycle",
+            "planning-with-trello",
         ]
 
         for skill_name in required_skills:

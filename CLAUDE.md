@@ -122,10 +122,10 @@ When you see these patterns, suggest the corresponding flow:
 
 | User Says | Suggested Flow |
 |-----------|---------------|
-| "build a...", "create a...", "add a..." | `design-plan-implement` |
-| "fix", "bug", "broken", "error" | `tdd-implement` |
-| "review", "check", "look at" | `review` |
-| "done", "finished", "ready to merge" | `finish-branch` |
+| "build a...", "create a...", "add a..." | `designing-and-implementing` |
+| "fix", "bug", "broken", "error" | `implementing-with-tdd` |
+| "review", "check", "look at" | `reviewing-code` |
+| "done", "finished", "ready to merge" | `finishing-branches` |
 
 ## After Completing Work
 

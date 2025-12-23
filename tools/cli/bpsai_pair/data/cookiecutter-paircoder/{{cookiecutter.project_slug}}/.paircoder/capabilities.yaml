@@ -56,7 +56,7 @@ capabilities:
         1. Create .paircoder/plans/plan-YYYY-MM-<slug>.plan.yaml
         2. Define goals, tasks with priorities and complexity
         3. Update .paircoder/context/state.md to reference new plan
-    flow_to_run: design-plan-implement
+    flow_to_run: designing-and-implementing
     outputs:
       - ".paircoder/plans/<plan-id>.plan.yaml"
       - ".paircoder/tasks/<plan-slug>/TASK-*.task.md"
@@ -104,10 +104,10 @@ capabilities:
     description: |
       Executes a defined workflow (flow) for structured work.
     when_to_use:
-      - Starting a new feature (run design-plan-implement)
-      - Implementing a task (run tdd-implement)
-      - Reviewing code (run review)
-      - Finishing a branch (run finish-branch)
+      - Starting a new feature (run designing-and-implementing)
+      - Implementing a task (run implementing-with-tdd)
+      - Reviewing code (run reviewing-code)
+      - Finishing a branch (run finishing-branches)
     how_to_invoke:
       cli: "bpsai-pair flow run <flow-name> [--plan <plan>] [--task <task>]"
       programmatic: |
@@ -214,7 +214,7 @@ flow_triggers:
       - "add a"
       - "implement"
       - "new feature"
-    suggested_flow: design-plan-implement
+    suggested_flow: designing-and-implementing
 
   - trigger: "user_reports_bug"
     patterns:
@@ -223,7 +223,7 @@ flow_triggers:
       - "not working"
       - "error"
       - "fix"
-    suggested_flow: tdd-implement
+    suggested_flow: implementing-with-tdd
 
   - trigger: "user_wants_review"
     patterns:
@@ -231,7 +231,7 @@ flow_triggers:
       - "check my"
       - "look at"
       - "is this right"
-    suggested_flow: review
+    suggested_flow: reviewing-code
 
   - trigger: "user_finishing_work"
     patterns:
@@ -239,7 +239,7 @@ flow_triggers:
       - "finished"
       - "ready to merge"
       - "complete"
-    suggested_flow: finish-branch
+    suggested_flow: finishing-branches
 
 # ============================================================================
 # ROLE DEFINITIONS
@@ -252,7 +252,7 @@ roles:
       Strategic thinking, planning, design decisions.
       Asks clarifying questions, proposes approaches, creates plans.
     when_active:
-      - During design-plan-implement flow (phases 1-2)
+      - During designing-and-implementing flow (phases 1-2)
       - When creating or modifying plans
       - When user needs guidance on approach
 
@@ -261,7 +261,7 @@ roles:
       Implementation, writing code, running tests.
       Follows plans, implements tasks, runs verification.
     when_active:
-      - During tdd-implement flow
+      - During implementing-with-tdd flow
       - When implementing specific tasks
       - When user says "let's code" or "implement this"
 
@@ -270,7 +270,7 @@ roles:
       Code review, quality checks, final verification.
       Checks correctness, suggests improvements, ensures gates pass.
     when_active:
-      - During review flow
+      - During reviewing-code flow
       - When user asks for review
       - Before merging
 

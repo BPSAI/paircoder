@@ -14,13 +14,13 @@
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T25.12 | Skill Naming Convention Update | pending | P2 | 15 |
+| T25.12 | Skill Naming Convention Update | done | P2 | 15 |
 | T25.13 | Third-Person Voice in Skill Descriptions | pending | P2 | 10 |
 | T25.14 | Create skill-creation Skill | pending | P1 | 35 |
 | T25.15 | Skill Installer Command | pending | P1 | 40 |
 | T25.16 | Cross-Platform Skill Structure | pending | P2 | 50 |
 
-**Progress:** 0/5 tasks (0/150 complexity points)
+**Progress:** 1/5 tasks (15/150 complexity points)
 
 ## Recommended Execution Order
 
@@ -83,6 +83,33 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.12 Complete (Skill Naming Convention Update)
+
+- **T25.12: Skill Naming Convention Update** ✓
+  - Renamed all skill directories to use third-person gerund form:
+    - `code-review` → `reviewing-code`
+    - `design-plan-implement` → `designing-and-implementing`
+    - `finish-branch` → `finishing-branches`
+    - `tdd-implement` → `implementing-with-tdd`
+    - `paircoder-task-lifecycle` → `managing-task-lifecycle`
+    - `trello-aware-planning` → `planning-with-trello`
+  - Renamed all flow files to match:
+    - `design-plan-implement.flow.md` → `designing-and-implementing.flow.md`
+    - `tdd-implement.flow.md` → `implementing-with-tdd.flow.md`
+    - `review.flow.md` → `reviewing-code.flow.md`
+    - `finish-branch.flow.md` → `finishing-branches.flow.md`
+    - `trello-aware-planning.flow.md` → `planning-with-trello.flow.md`
+    - `paircoder-task-lifecycle.flow.md` → `managing-task-lifecycle.flow.md`
+  - Updated SKILL.md frontmatter `name` field in all skills
+  - Updated all cross-references between skills and flows
+  - Updated CLAUDE.md flow trigger table
+  - Updated capabilities.yaml flow triggers and references
+  - Updated .claude/commands/ (start-task.md, pc-plan.md)
+  - Updated cookiecutter template (skills, flows, capabilities.yaml, CLAUDE.md)
+  - Updated test_template.py expected flow/skill names
+  - All skills validate: `bpsai-pair skill validate` → 6 pass
+  - All 1774 tests pass
 
 ### 2025-12-23 - Sprint 25 COMPLETE! (EPIC-003 + Token Budget System)
 

@@ -1,4 +1,4 @@
-Enter Navigator role. Read `.claude/skills/trello-aware-planning/SKILL.md` and `.claude/agents/planner.md` for context.
+Enter Navigator role. Read `.claude/skills/planning-with-trello/SKILL.md` and `.claude/agents/planner.md` for context.
 
 Read the backlog file: `.paircoder/context/$ARGUMENTS`
 
