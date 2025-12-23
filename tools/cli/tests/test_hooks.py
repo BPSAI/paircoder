@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
-from bpsai_pair.hooks import (
+from bpsai_pair.core.hooks import (
     HookContext,
     HookResult,
     HookRunner,
@@ -297,19 +297,19 @@ class TestGetHookRunner:
         config_file = paircoder_dir / "config.yaml"
         config_file.write_text("hooks:\n  enabled: true\n")
 
-        with patch("bpsai_pair.hooks.load_config") as mock_load:
+        with patch("bpsai_pair.core.hooks.load_config") as mock_load:
             mock_load.return_value = {"hooks": {"enabled": True}}
             runner = get_hook_runner(paircoder_dir)
             assert isinstance(runner, HookRunner)
 
     def test_creates_new_runner(self, tmp_path):
         """Test creating new runner each time."""
-        import bpsai_pair.hooks as hooks_module
+        import bpsai_pair.core.hooks as hooks_module
 
         paircoder_dir = tmp_path / ".paircoder"
         paircoder_dir.mkdir()
 
-        with patch("bpsai_pair.hooks.load_config") as mock_load:
+        with patch("bpsai_pair.core.hooks.load_config") as mock_load:
             mock_load.return_value = {"hooks": {"enabled": True}}
             runner1 = get_hook_runner(paircoder_dir)
             runner2 = get_hook_runner(paircoder_dir)

@@ -1341,7 +1341,7 @@ def _run_status_hooks(paircoder_dir: Path, task_id: str, new_status: str, task) 
         task: The task object
     """
     try:
-        from ..hooks import HookRunner, HookContext, load_config
+        from ..core.hooks import HookRunner, HookContext, load_config
 
         config = load_config(paircoder_dir)
         runner = HookRunner(config, paircoder_dir)

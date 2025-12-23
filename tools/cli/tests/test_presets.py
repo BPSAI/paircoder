@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import yaml
 
-from bpsai_pair.presets import (
+from bpsai_pair.core.presets import (
     Preset,
     PRESETS,
     COMMON_EXCLUDES,

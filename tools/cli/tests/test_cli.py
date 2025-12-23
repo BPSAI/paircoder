@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from bpsai_pair.cli import app
-from bpsai_pair import ops
+from bpsai_pair.core import ops
 
 runner = CliRunner()
 

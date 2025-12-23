@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import stat
 
-from bpsai_pair.utils import repo_root, ensure_executable
+from bpsai_pair.core.utils import repo_root, ensure_executable
 
 
 class TestRepoRoot:

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Callable
 
 from .client import GitHubClient, GitHubService
-from ..constants import TASK_ID_REGEX, extract_task_id
+from ..core.constants import TASK_ID_REGEX, extract_task_id
 
 logger = logging.getLogger(__name__)
 

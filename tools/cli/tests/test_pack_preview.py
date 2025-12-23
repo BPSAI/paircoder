@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from bpsai_pair import ops
+from bpsai_pair.core import ops
 from bpsai_pair.cli import app
 from typer.testing import CliRunner
 

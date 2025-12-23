@@ -153,7 +153,7 @@ def register_task_tools(server: Any) -> None:
             # Run hooks
             hooks_executed = []
             try:
-                from ...hooks import get_hook_runner, HookContext
+                from ...core.hooks import get_hook_runner, HookContext
 
                 hook_runner = get_hook_runner(paircoder_dir)
                 ctx = HookContext(
@@ -219,7 +219,7 @@ def register_task_tools(server: Any) -> None:
             # Run hooks
             hooks_executed = []
             try:
-                from ...hooks import get_hook_runner, HookContext
+                from ...core.hooks import get_hook_runner, HookContext
 
                 hook_runner = get_hook_runner(paircoder_dir)
                 ctx = HookContext(

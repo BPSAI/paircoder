@@ -17,7 +17,7 @@ class TestHookRunner:
 
     def test_hook_runner_initializes(self, mcp_paircoder_dir):
         """HookRunner initializes correctly."""
-        from bpsai_pair.hooks import HookRunner
+        from bpsai_pair.core.hooks import HookRunner
 
         config = {
             "hooks": {
@@ -33,7 +33,7 @@ class TestHookRunner:
 
     def test_hook_runner_disabled(self, mcp_paircoder_dir):
         """HookRunner respects enabled=False."""
-        from bpsai_pair.hooks import HookRunner, HookContext
+        from bpsai_pair.core.hooks import HookRunner, HookContext
 
         config = {
             "hooks": {
@@ -53,7 +53,7 @@ class TestHookRunner:
 
     def test_hook_runner_runs_configured_hooks(self, mcp_paircoder_dir, sample_task_file, sample_plan_file):
         """HookRunner executes configured hooks."""
-        from bpsai_pair.hooks import HookRunner, HookContext
+        from bpsai_pair.core.hooks import HookRunner, HookContext
         from bpsai_pair.planning.parser import TaskParser
 
         config = {
@@ -78,7 +78,7 @@ class TestHookRunner:
 
     def test_hook_unknown_hook_fails_gracefully(self, mcp_paircoder_dir):
         """Unknown hooks are handled gracefully."""
-        from bpsai_pair.hooks import HookRunner, HookContext
+        from bpsai_pair.core.hooks import HookRunner, HookContext
 
         config = {
             "hooks": {
@@ -101,7 +101,7 @@ class TestHookRunner:
 
     def test_hook_on_task_complete_runs_update_state(self, mcp_paircoder_dir, sample_task_file, sample_plan_file):
         """on_task_complete event runs configured hooks."""
-        from bpsai_pair.hooks import HookRunner, HookContext
+        from bpsai_pair.core.hooks import HookRunner, HookContext
         from bpsai_pair.planning.parser import TaskParser
 
         config = {
@@ -129,7 +129,7 @@ class TestHookContext:
 
     def test_hook_context_creation(self):
         """HookContext can be created with required fields."""
-        from bpsai_pair.hooks import HookContext
+        from bpsai_pair.core.hooks import HookContext
 
         mock_task = MagicMock()
         ctx = HookContext(
@@ -145,7 +145,7 @@ class TestHookContext:
 
     def test_hook_context_with_extra(self):
         """HookContext can include extra data."""
-        from bpsai_pair.hooks import HookContext
+        from bpsai_pair.core.hooks import HookContext
 
         mock_task = MagicMock()
         ctx = HookContext(
@@ -168,7 +168,7 @@ class TestHookResult:
 
     def test_hook_result_to_dict(self):
         """HookResult.to_dict() returns correct format."""
-        from bpsai_pair.hooks import HookResult
+        from bpsai_pair.core.hooks import HookResult
 
         result = HookResult(
             hook="update_state",
@@ -185,7 +185,7 @@ class TestHookResult:
 
     def test_hook_result_error_to_dict(self):
         """HookResult.to_dict() includes error when failed."""
-        from bpsai_pair.hooks import HookResult
+        from bpsai_pair.core.hooks import HookResult
 
         result = HookResult(
             hook="bad_hook",

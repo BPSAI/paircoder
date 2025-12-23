@@ -15,17 +15,17 @@
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
 | T24.1  | Create core/ module structure | done | P0 | 15 |
-| T24.2  | Move config.py to core/config.py | pending | P1 | 30 |
-| T24.3  | Move constants.py to core/constants.py | pending | P1 | 20 |
-| T24.4  | Move hooks.py to core/hooks.py | pending | P1 | 25 |
-| T24.5  | Move ops.py to core/ops.py | pending | P1 | 25 |
-| T24.6  | Move presets.py to core/presets.py | pending | P1 | 25 |
-| T24.7  | Merge utils.py + pyutils.py + jsonio.py to core/utils.py | pending | P1 | 35 |
-| T24.8  | Delete empty adapters.py | pending | P2 | 5 |
-| T24.9  | Update all imports across codebase | pending | P0 | 40 |
-| T24.10 | Update __init__.py exports and verify package structure | pending | P0 | 30 |
+| T24.2  | Move config.py to core/config.py | done | P1 | 30 |
+| T24.3  | Move constants.py to core/constants.py | done | P1 | 20 |
+| T24.4  | Move hooks.py to core/hooks.py | done | P1 | 25 |
+| T24.5  | Move ops.py to core/ops.py | done | P1 | 25 |
+| T24.6  | Move presets.py to core/presets.py | done | P1 | 25 |
+| T24.7  | Merge utils.py + pyutils.py + jsonio.py to core/utils.py | done | P1 | 35 |
+| T24.8  | Delete empty adapters.py | done | P2 | 5 |
+| T24.9  | Update all imports across codebase | done | P0 | 40 |
+| T24.10 | Update __init__.py exports and verify package structure | done | P0 | 30 |
 
-**Progress:** 1/10 tasks (15/250 complexity points)
+**Progress:** 10/10 tasks (250/250 complexity points) - COMPLETE!
 
 ## Previous Sprint Summary (Sprint 23)
 
@@ -63,13 +63,15 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 
 **Sprint 24: CLI Architecture Refactor (Phase 3)** is planned and ready to start.
 
-**Recommended Task Order:**
-1. ~~**T24.1** - Create core/ module structure (foundation)~~ ✓ DONE
-2. **T24.2, T24.3, T24.4, T24.5, T24.6** - Move config, constants, hooks, ops, presets (parallel, depend on T24.1) ← NEXT
-3. **T24.7** - Merge utils + pyutils + jsonio (depends on T24.1)
-4. **T24.8** - Delete empty adapters.py (quick, can run anytime)
-5. **T24.9** - Update all imports (depends on T24.2-T24.7)
-6. **T24.10** - Final verification and __init__.py updates (depends on T24.9)
+**All tasks complete!** Sprint 24 finished.
+
+**Completed:**
+1. ✓ T24.1 - Created core/ module structure
+2. ✓ T24.2-T24.6 - Moved config, constants, hooks, ops, presets to core/
+3. ✓ T24.7 - Merged utils/pyutils/jsonio to core/utils.py
+4. ✓ T24.8 - Deleted unused adapters.py
+5. ✓ T24.9 - Verified all imports updated
+6. ✓ T24.10 - Updated FEATURE_MATRIX.md, verified package structure
 
 **Sprint Goal:**
 - Create `core/` module for shared infrastructure
@@ -89,6 +91,79 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-22 - Sprint 24 Complete!
+
+**Phase 3: Consolidate Root Files - ALL 10 TASKS DONE**
+
+- **T24.7: Merge utils.py + pyutils.py + jsonio.py** ✓
+  - Created core/utils.py with all functions
+  - Deleted original files
+  - Updated test imports
+  - Added exports to core/__init__.py
+
+- **T24.8: Delete empty adapters.py** ✓
+  - Verified Shell class was unused
+  - Deleted file
+
+- **T24.9: Update all imports across codebase** ✓
+  - Verified all imports use bpsai_pair.core.*
+  - No old root-level imports remain
+  - Backward compatibility verified
+
+- **T24.10: Update __init__.py exports and verify package structure** ✓
+  - Updated FEATURE_MATRIX.md with new CLI structure
+  - Verified core/ module has all required files
+  - All 1713 tests pass
+
+**Sprint 24 Summary:**
+- Created `core/` module for shared infrastructure
+- Moved 6 files from root to core/: config.py, constants.py, hooks.py, ops.py, presets.py
+- Merged 3 utils files into core/utils.py
+- Deleted unused adapters.py
+- Root level now much cleaner (some functional modules remain for future phases)
+
+### 2025-12-22 - T24.3-T24.6 Complete
+
+- **T24.3: Move constants.py to core/constants.py** ✓
+  - Used `git mv` to move file
+  - Updated 5 imports (tasks/lifecycle.py, trello/webhook.py, trello/sync.py, github/pr.py, tests/test_constants.py)
+  - Added re-exports to core/__init__.py
+  - All 1713 tests passing
+
+- **T24.4: Move hooks.py to core/hooks.py** ✓
+  - Moved file with git mv
+  - Updated external imports (mcp/tools/tasks.py, planning/commands.py, tests/test_hooks.py, tests/test_mcp_hooks.py)
+  - Fixed internal imports (15+ occurrences: `.` → `..` for sibling modules)
+  - Fixed test patches (`bpsai_pair.hooks` → `bpsai_pair.core.hooks`)
+  - All 1713 tests passing
+
+- **T24.5: Move ops.py to core/ops.py** ✓
+  - Moved file with git mv
+  - Updated 10 command files (all in commands/ directory)
+  - Updated 5 test files
+  - All 1713 tests passing
+
+- **T24.6: Move presets.py to core/presets.py** ✓
+  - Moved file with git mv
+  - Updated core/config.py imports (`..presets` → `.presets`)
+  - Updated commands/preset.py, commands/core.py, __init__.py, test_presets.py
+  - Added preset re-exports to core/__init__.py
+  - All 1713 tests passing
+
+### 2025-12-22 - T24.2 Complete
+
+- **T24.2: Move config.py to core/config.py** ✓
+  - Used `git mv` to preserve history
+  - Updated 8 import locations:
+    - `commands/config.py` (3 locations)
+    - `commands/core.py` (2 locations)
+    - `trello/commands.py` (1 location)
+    - `tests/test_config.py` and `tests/test_config_v2.py`
+  - Updated `core/__init__.py` with Config class re-exports
+  - Updated `__init__.py` to import from `core.config`
+  - Fixed internal imports in config.py (presets → ..presets)
+  - All 1713 tests passing, no circular imports
 
 ### 2025-12-22 - T24.1 Complete (Sprint 24 Started)
 

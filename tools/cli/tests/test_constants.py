@@ -2,7 +2,7 @@
 
 import pytest
 
-from bpsai_pair.constants import (
+from bpsai_pair.core.constants import (
     TASK_ID_PATTERN,
     TASK_ID_REGEX,
     TASK_FILE_GLOBS,

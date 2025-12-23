@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import yaml
 
-from ..constants import TASK_ID_PATTERN, TASK_FILE_GLOBS
+from ..core.constants import TASK_ID_PATTERN, TASK_FILE_GLOBS
 
 
 class TaskState(Enum):

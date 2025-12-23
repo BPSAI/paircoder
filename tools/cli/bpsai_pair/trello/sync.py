@@ -11,7 +11,7 @@ import re
 from .client import TrelloService, EffortMapping
 from .templates import CardDescriptionTemplate, CardDescriptionData, should_preserve_description
 from .fields import FieldValidator, map_value_to_option, get_default_mappings_for_field
-from ..constants import extract_task_id_from_card_name
+from ..core.constants import extract_task_id_from_card_name
 
 logger = logging.getLogger(__name__)
 

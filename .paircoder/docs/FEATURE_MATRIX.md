@@ -215,11 +215,21 @@ my-project/
 
 ## CLI Module Structure (tools/cli/bpsai_pair/)
 
-> Refactored in Sprints 22-23 (EPIC-003 Phases 1-2)
+> Refactored in Sprints 22-24 (EPIC-003 Phases 1-3)
 
 ```
 bpsai_pair/
-├── cli.py                  # Entry point, sub-app registration (194 lines)
+├── __init__.py             # Package exports
+├── __main__.py             # Entry point (4 lines)
+├── cli.py                  # Sub-app registration (194 lines)
+├── core/                   # Sprint 24: Shared infrastructure
+│   ├── __init__.py        # Module exports and re-exports
+│   ├── config.py          # Configuration loading and management
+│   ├── constants.py       # Application constants
+│   ├── hooks.py           # Hook system for task lifecycle events
+│   ├── ops.py             # Git and file operations
+│   ├── presets.py         # Preset system for project templates
+│   └── utils.py           # Merged utilities (repo_root, project_files, etc.)
 ├── commands/               # Sprint 22: Extracted from cli.py
 │   ├── core.py            # init, feature, pack, status, validate, ci
 │   ├── preset.py          # preset list/show/preview
@@ -331,4 +341,4 @@ hooks:
 | - Review | 35 | ✅ Pass |
 | - Sandbox | 35 | ✅ Pass |
 | - Checkpoint | 20 | ✅ Pass |
-| **Total** | **1705** | ✅ Pass |
+| **Total** | **1713** | ✅ Pass |

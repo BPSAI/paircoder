@@ -43,9 +43,9 @@ def config_validate(
     """
     # Import here to avoid circular imports
     try:
-        from ..config import validate_config, CURRENT_CONFIG_VERSION
+        from ..core.config import validate_config, CURRENT_CONFIG_VERSION
     except ImportError:
-        from bpsai_pair.config import validate_config, CURRENT_CONFIG_VERSION
+        from bpsai_pair.core.config import validate_config, CURRENT_CONFIG_VERSION
 
     root = Path.cwd()
     result = validate_config(root, preset)
@@ -118,9 +118,9 @@ def config_update(
     """
     # Import here to avoid circular imports
     try:
-        from ..config import update_config, save_raw_config
+        from ..core.config import update_config, save_raw_config
     except ImportError:
-        from bpsai_pair.config import update_config, save_raw_config
+        from bpsai_pair.core.config import update_config, save_raw_config
 
     root = Path.cwd()
 
@@ -170,9 +170,9 @@ def config_show(
 
     # Import here to avoid circular imports
     try:
-        from ..config import load_raw_config
+        from ..core.config import load_raw_config
     except ImportError:
-        from bpsai_pair.config import load_raw_config
+        from bpsai_pair.core.config import load_raw_config
 
     root = Path.cwd()
     raw_config, config_file = load_raw_config(root)

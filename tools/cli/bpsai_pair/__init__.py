@@ -7,8 +7,8 @@ except PackageNotFoundError:
 
 # Core modules
 from . import cli
-from . import config
-from . import utils
+from .core import config  # Moved to core/ in T24.2
+from .core import utils  # Merged utils/pyutils/jsonio to core/ in T24.7
 
 # Feature modules (public API)
 from . import planning
@@ -20,7 +20,7 @@ from . import metrics
 from . import orchestration
 from . import mcp
 from . import context
-from . import presets
+from .core import presets  # Moved to core/ in T24.6
 
 __all__ = [
     "__version__",

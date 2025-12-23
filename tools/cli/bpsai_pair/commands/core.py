@@ -30,13 +30,13 @@ from rich.table import Table
 
 # Try relative imports first, fall back to absolute
 try:
-    from .. import ops
-    from ..config import Config
-    from ..presets import get_preset, get_preset_names, list_presets
+    from ..core import ops
+    from ..core.config import Config
+    from ..core.presets import get_preset, get_preset_names, list_presets
 except ImportError:
-    from bpsai_pair import ops
-    from bpsai_pair.config import Config
-    from bpsai_pair.presets import get_preset, get_preset_names, list_presets
+    from bpsai_pair.core import ops
+    from bpsai_pair.core.config import Config
+    from bpsai_pair.core.presets import get_preset, get_preset_names, list_presets
 
 
 def print_json(data: dict) -> None:

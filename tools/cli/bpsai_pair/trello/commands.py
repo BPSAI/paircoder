@@ -32,7 +32,7 @@ def get_client() -> TrelloService:
 def _load_config() -> dict:
     """Load project config with error handling."""
     try:
-        from ..config import Config
+        from ..core.config import Config
         from pathlib import Path
         import yaml
 

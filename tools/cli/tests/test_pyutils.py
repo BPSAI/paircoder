@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 
-from bpsai_pair.pyutils import project_files
+from bpsai_pair.core.utils import project_files
 
 
 class TestProjectFiles:

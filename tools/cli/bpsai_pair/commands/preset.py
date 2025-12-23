@@ -14,9 +14,9 @@ from rich.table import Table
 
 # Try relative imports first, fall back to absolute
 try:
-    from ..presets import get_preset, list_presets, get_preset_names
+    from ..core.presets import get_preset, list_presets, get_preset_names
 except ImportError:
-    from bpsai_pair.presets import get_preset, list_presets, get_preset_names
+    from bpsai_pair.core.presets import get_preset, list_presets, get_preset_names
 
 
 def print_json(data: dict) -> None:

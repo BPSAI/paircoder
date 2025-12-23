@@ -17,11 +17,77 @@ from . import ops
 from . import presets
 from . import utils
 
+# Re-export commonly used classes for convenience
+from .config import (
+    Config,
+    ConfigValidationResult,
+    ContextTemplate,
+    CURRENT_CONFIG_VERSION,
+    load_raw_config,
+    validate_config,
+    update_config,
+    save_raw_config,
+)
+
+from .constants import (
+    TASK_ID_PATTERN,
+    TASK_ID_REGEX,
+    TASK_FILE_GLOBS,
+    is_valid_task_id,
+    extract_task_id,
+    extract_task_id_from_card_name,
+)
+
+from .presets import (
+    Preset,
+    PRESETS,
+    get_preset,
+    list_presets,
+    get_preset_names,
+    PresetManager,
+)
+
+from .utils import (
+    repo_root,
+    ensure_executable,
+    project_files,
+    dump,
+)
+
 __all__ = [
+    # Modules
     "config",
     "constants",
     "hooks",
     "ops",
     "presets",
     "utils",
+    # Config classes and functions
+    "Config",
+    "ConfigValidationResult",
+    "ContextTemplate",
+    "CURRENT_CONFIG_VERSION",
+    "load_raw_config",
+    "validate_config",
+    "update_config",
+    "save_raw_config",
+    # Constants
+    "TASK_ID_PATTERN",
+    "TASK_ID_REGEX",
+    "TASK_FILE_GLOBS",
+    "is_valid_task_id",
+    "extract_task_id",
+    "extract_task_id_from_card_name",
+    # Presets
+    "Preset",
+    "PRESETS",
+    "get_preset",
+    "list_presets",
+    "get_preset_names",
+    "PresetManager",
+    # Utils
+    "repo_root",
+    "ensure_executable",
+    "project_files",
+    "dump",
 ]

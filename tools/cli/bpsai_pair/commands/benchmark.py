@@ -27,10 +27,10 @@ def print_json(data: dict) -> None:
 
 # Try relative imports first, fall back to absolute
 try:
-    from .. import ops
+    from ..core import ops
     from ..benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
 except ImportError:
-    from bpsai_pair import ops
+    from bpsai_pair.core import ops
     from bpsai_pair.benchmarks import BenchmarkRunner, BenchmarkConfig, BenchmarkReporter
 
 

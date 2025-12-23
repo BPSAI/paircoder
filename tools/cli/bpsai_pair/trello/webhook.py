@@ -11,7 +11,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Callable, Optional
 from pathlib import Path
 
-from ..constants import extract_task_id_from_card_name
+from ..core.constants import extract_task_id_from_card_name
 
 logger = logging.getLogger(__name__)
 
