@@ -456,10 +456,46 @@
     ],
     "total_seconds": 197.423604
   },
-  "_active": {
-    "task_id": "T23.5",
-    "timer_id": "local-20251222173352",
-    "description": "T23.5: Extract template commands to release/template.py",
-    "start": "2025-12-22T17:33:52.786946"
+  "T23.7": {
+    "entries": [
+      {
+        "id": "local-20251222182422",
+        "task_id": "T23.7",
+        "description": "T23.7: Verify intent commands are in separate file",
+        "start": "2025-12-22T18:24:22.603849",
+        "end": "2025-12-22T18:28:15.299465",
+        "duration_seconds": 232.695616,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 232.695616
+  },
+  "T23.8": {
+    "entries": [
+      {
+        "id": "local-20251222182900",
+        "task_id": "T23.8",
+        "description": "T23.8: Rename cli_commands.py to commands.py",
+        "start": "2025-12-22T18:29:00.448441",
+        "end": "2025-12-22T18:31:09.848595",
+        "duration_seconds": 129.400154,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 129.400154
+  },
+  "T23.9": {
+    "entries": [
+      {
+        "id": "local-20251222183121",
+        "task_id": "T23.9",
+        "description": "T23.9: Update imports and final cleanup",
+        "start": "2025-12-22T18:31:21.167928",
+        "end": "2025-12-22T18:33:30.068170",
+        "duration_seconds": 128.900242,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 128.900242
   }
 }

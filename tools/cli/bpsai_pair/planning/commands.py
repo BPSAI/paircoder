@@ -6,7 +6,7 @@ Implements the following commands:
 - bpsai-pair task list|show|update|next
 
 To integrate into main CLI:
-    from .planning.cli_commands import plan_app, task_app
+    from .planning.commands import plan_app, task_app
     app.add_typer(plan_app, name="plan")
     app.add_typer(task_app, name="task")
 """

@@ -32,7 +32,7 @@ from rich.console import Console
 # Try relative imports first, fall back to absolute
 try:
     from . import __version__
-    from .planning.cli_commands import (
+    from .planning.commands import (
         plan_app, task_app, intent_app, standup_app
     )
     from .sprint import sprint_app
@@ -54,7 +54,7 @@ except ImportError:
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from bpsai_pair import __version__
-    from bpsai_pair.planning.cli_commands import (
+    from bpsai_pair.planning.commands import (
         plan_app, task_app, intent_app, standup_app
     )
     from bpsai_pair.sprint import sprint_app

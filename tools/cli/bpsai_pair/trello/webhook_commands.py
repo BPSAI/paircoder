@@ -6,7 +6,7 @@ import typer
 from pathlib import Path
 from rich.console import Console
 
-from ..planning.cli_commands import find_paircoder_dir
+from ..planning.commands import find_paircoder_dir
 from .auth import load_token
 from .webhook import (
     TrelloWebhookServer,

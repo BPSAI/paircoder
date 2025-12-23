@@ -170,8 +170,7 @@
 | tdd-implement | Test-driven implementation | "fix", "bug", "test" |
 | code-review | Code review workflow | "review", "check", "PR" |
 | finish-branch | Branch completion workflow | "finish", "merge", "complete" |
-| paircoder-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-" |
-| trello-aware-planning | Create plans synced to Trello | "plan feature", "create tasks" |
+| paircoder-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-", "plan feature" |
 
 ## Hooks (6 built-in)
 
@@ -205,14 +204,55 @@ my-project/
 │   │   ├── tdd-implement/SKILL.md
 │   │   ├── code-review/SKILL.md
 │   │   ├── finish-branch/SKILL.md
-│   │   ├── paircoder-task-lifecycle/SKILL.md
-│   │   └── trello-aware-planning/SKILL.md
+│   │   └── paircoder-task-lifecycle/SKILL.md
 │   └── agents/                   # Custom subagents
 │       ├── planner.md
 │       └── reviewer.md
 ├── AGENTS.md                      # Universal AI entry point
 ├── CLAUDE.md                      # Claude Code pointer
 └── docs/                          # Documentation
+```
+
+## CLI Module Structure (tools/cli/bpsai_pair/)
+
+> Refactored in Sprints 22-23 (EPIC-003 Phases 1-2)
+
+```
+bpsai_pair/
+├── cli.py                  # Entry point, sub-app registration (194 lines)
+├── commands/               # Sprint 22: Extracted from cli.py
+│   ├── core.py            # init, feature, pack, status, validate, ci
+│   ├── preset.py          # preset list/show/preview
+│   ├── config.py          # config validate/update/show
+│   ├── orchestrate.py     # orchestrate task/analyze/handoff/etc
+│   ├── metrics.py         # metrics summary/task/breakdown/etc
+│   ├── timer.py           # timer start/stop/status/show/summary
+│   ├── benchmark.py       # benchmark run/results/compare/list
+│   ├── cache.py           # cache stats/clear/invalidate
+│   ├── mcp.py             # mcp serve/tools/test
+│   ├── flow.py            # flow list/show/run/validate
+│   ├── security.py        # security scan-secrets/pre-commit/etc
+│   └── session.py         # session check/status, compaction commands
+├── planning/               # Planning system
+│   ├── commands.py        # plan/task/intent/standup CLI commands
+│   ├── models.py          # Plan, Task, Sprint models
+│   ├── parser.py          # YAML/MD file parsers
+│   ├── state.py           # StateManager
+│   ├── standup.py         # Standup generation logic
+│   └── intent_detection.py # Intent classification logic
+├── sprint/                 # Sprint 23: Extracted from planning/
+│   └── commands.py        # sprint list/complete
+├── release/                # Sprint 23: Extracted from planning/
+│   ├── commands.py        # release plan/checklist/prep
+│   └── template.py        # template check/list
+├── skills/                 # Skill validation
+│   ├── validator.py       # SkillValidator class
+│   └── cli_commands.py    # skill validate/list
+├── trello/                 # Trello integration
+│   ├── commands.py        # trello connect/status/etc
+│   └── task_commands.py   # ttask list/show/done/etc
+└── github/                 # GitHub integration
+    └── commands.py        # github status/create/merge/etc
 ```
 
 ## Configuration (config.yaml)
@@ -291,4 +331,4 @@ hooks:
 | - Review | 35 | ✅ Pass |
 | - Sandbox | 35 | ✅ Pass |
 | - Checkpoint | 20 | ✅ Pass |
-| **Total** | **541+** | ✅ Pass |
+| **Total** | **1705** | ✅ Pass |
