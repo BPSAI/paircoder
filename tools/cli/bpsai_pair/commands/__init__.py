@@ -32,6 +32,7 @@ from .security import scan_secrets, scan_deps  # For shortcut commands
 from .core import register_core_commands
 from .session import session_app, compaction_app
 from .upgrade import upgrade_app
+from .budget import app as budget_app
 
 __all__ = [
     "preset_app",
@@ -50,4 +51,5 @@ __all__ = [
     "session_app",
     "compaction_app",
     "upgrade_app",
+    "budget_app",
 ]

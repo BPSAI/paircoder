@@ -134,12 +134,17 @@ token_estimates:
     refactor: 1.5
     chore: 0.9
   per_file_touched: 2000
+token_budget:
+  warning_threshold: 75  # Warn when task estimated above this %
+  critical_threshold: 90  # Critical when above this %
+
 hooks:
   enabled: true
   on_task_ready:
   - sync_trello
   - update_state
   on_task_start:
+  - check_token_budget
   - start_timer
   - sync_trello
   - update_state

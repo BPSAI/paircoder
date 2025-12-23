@@ -510,3 +510,155 @@ class TestTimerHooksIntegration:
         # Total should be at least 60ms (3 x 20ms)
         total_seconds = cache_data.get("TASK-001", {}).get("total_seconds", 0)
         assert total_seconds >= 0.06
+
+
+class TestCheckTokenBudgetHook:
+    """Tests for check_token_budget hook."""
+
+    @pytest.fixture
+    def runner_with_budget_hooks(self, tmp_path):
+        """Create HookRunner with token budget hook enabled."""
+        config = {
+            "hooks": {
+                "enabled": True,
+                "on_task_start": ["check_token_budget"],
+            },
+            "token_budget": {
+                "warning_threshold": 75,
+            },
+        }
+        # Create tasks dir
+        tasks_dir = tmp_path / "tasks"
+        tasks_dir.mkdir()
+        return HookRunner(config, tmp_path)
+
+    def test_check_token_budget_no_task_file(self, runner_with_budget_hooks, tmp_path):
+        """Test budget check when task file doesn't exist."""
+        ctx = HookContext(
+            task_id="NONEXISTENT",
+            task=Mock(),
+            event="on_task_start",
+        )
+        result = runner_with_budget_hooks._check_token_budget(ctx)
+        assert result["budget_checked"] is False
+        assert "not found" in result["reason"].lower()
+
+    def test_check_token_budget_passes_under_threshold(self, runner_with_budget_hooks, tmp_path):
+        """Test budget check passes for small tasks."""
+        # Create a small task file
+        tasks_dir = tmp_path / "tasks"
+        task_file = tasks_dir / "T1.task.md"
+        task_file.write_text("""---
+id: T1
+title: Small Task
+type: chore
+complexity: 5
+---
+
+# T1: Small Task
+""")
+
+        ctx = HookContext(
+            task_id="T1",
+            task=Mock(),
+            event="on_task_start",
+        )
+        result = runner_with_budget_hooks._check_token_budget(ctx)
+        assert result["budget_checked"] is True
+        assert result["over_threshold"] is False
+        assert result["action"] == "passed"
+
+    def test_check_token_budget_warns_over_threshold(self, runner_with_budget_hooks, tmp_path):
+        """Test budget check warns for tasks over threshold (non-interactive)."""
+        # Create a task that might be large
+        tasks_dir = tmp_path / "tasks"
+        task_file = tasks_dir / "T1.task.md"
+        task_file.write_text("""---
+id: T1
+title: Large Task
+type: feature
+complexity: 100
+---
+
+# T1: Large Task
+
+Very large task with high complexity.
+""")
+
+        # Force threshold to very low value to trigger warning
+        runner_with_budget_hooks.config["token_budget"]["warning_threshold"] = 1
+
+        ctx = HookContext(
+            task_id="T1",
+            task=Mock(),
+            event="on_task_start",
+        )
+
+        # Mock isatty to return False (non-interactive)
+        with patch("sys.stdout.isatty", return_value=False):
+            with patch("sys.stdin.isatty", return_value=False):
+                result = runner_with_budget_hooks._check_token_budget(ctx)
+
+        assert result["budget_checked"] is True
+        assert result["over_threshold"] is True
+        assert result["action"] == "warned"
+
+    def test_check_token_budget_force_bypasses_warning(self, runner_with_budget_hooks, tmp_path):
+        """Test that force flag bypasses budget warning."""
+        tasks_dir = tmp_path / "tasks"
+        task_file = tasks_dir / "T1.task.md"
+        task_file.write_text("""---
+id: T1
+title: Task
+type: feature
+complexity: 50
+---
+
+# T1: Task
+""")
+
+        # Force threshold to very low value to trigger warning
+        runner_with_budget_hooks.config["token_budget"]["warning_threshold"] = 1
+
+        ctx = HookContext(
+            task_id="T1",
+            task=Mock(),
+            event="on_task_start",
+            extra={"force": True},  # Force flag set
+        )
+
+        result = runner_with_budget_hooks._check_token_budget(ctx)
+        assert result["budget_checked"] is True
+        assert result["over_threshold"] is True
+        assert result["action"] == "continued_with_force"
+
+    def test_check_token_budget_returns_estimate_details(self, runner_with_budget_hooks, tmp_path):
+        """Test that budget check returns estimate details."""
+        tasks_dir = tmp_path / "tasks"
+        task_file = tasks_dir / "T1.task.md"
+        task_file.write_text("""---
+id: T1
+title: Task
+type: feature
+complexity: 20
+---
+
+# T1: Task
+""")
+
+        ctx = HookContext(
+            task_id="T1",
+            task=Mock(),
+            event="on_task_start",
+        )
+
+        result = runner_with_budget_hooks._check_token_budget(ctx)
+        assert result["budget_checked"] is True
+        assert "estimated_tokens" in result
+        assert "budget_percent" in result
+        assert "threshold" in result
+        assert "status" in result
+
+    def test_check_token_budget_registered(self, runner_with_budget_hooks):
+        """Test that check_token_budget is a registered handler."""
+        assert "check_token_budget" in runner_with_budget_hooks._handlers

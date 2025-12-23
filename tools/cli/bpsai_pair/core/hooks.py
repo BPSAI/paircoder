@@ -71,6 +71,7 @@ class HookRunner:
             "record_task_completion": self._record_task_completion,
             "record_velocity": self._record_velocity,
             "record_token_usage": self._record_token_usage,
+            "check_token_budget": self._check_token_budget,
         }
 
     @property
@@ -603,6 +604,116 @@ class HookRunner:
         except Exception as e:
             logger.warning(f"Token usage recording failed: {e}")
             return {"token_usage_recorded": False, "error": str(e)}
+
+    def _check_token_budget(self, ctx: HookContext) -> dict:
+        """Check token budget before starting a task.
+
+        Warns if estimated tokens exceed the warning threshold.
+        Non-blocking in CI environments (no TTY).
+        """
+        import sys
+
+        try:
+            from ..tokens import (
+                estimate_from_task_file,
+                get_budget_status,
+                THRESHOLDS,
+            )
+
+            # Find task file
+            task_file = None
+            tasks_dir = self.paircoder_dir / "tasks"
+            for pattern in [f"{ctx.task_id}.task.md", f"TASK-{ctx.task_id}.task.md"]:
+                path = tasks_dir / pattern
+                if path.exists():
+                    task_file = path
+                    break
+
+            if not task_file:
+                return {
+                    "budget_checked": False,
+                    "reason": f"Task file not found for {ctx.task_id}",
+                }
+
+            estimate = estimate_from_task_file(task_file)
+            if not estimate:
+                return {
+                    "budget_checked": False,
+                    "reason": "Could not estimate tokens",
+                }
+
+            # Get threshold from config or use default
+            budget_config = self.config.get("token_budget", {})
+            warning_threshold = budget_config.get("warning_threshold", THRESHOLDS["warning"])
+
+            status = get_budget_status(estimate.total)
+            over_threshold = estimate.budget_percent >= warning_threshold
+
+            result = {
+                "budget_checked": True,
+                "task_id": ctx.task_id,
+                "estimated_tokens": estimate.total,
+                "budget_percent": estimate.budget_percent,
+                "threshold": warning_threshold,
+                "over_threshold": over_threshold,
+                "status": status.status,
+            }
+
+            if over_threshold:
+                # Check if running interactively
+                is_interactive = sys.stdout.isatty() and sys.stdin.isatty()
+
+                # Check if force flag is set in context
+                force = ctx.extra.get("force", False)
+
+                if force:
+                    result["action"] = "continued_with_force"
+                    logger.warning(
+                        f"Token budget warning bypassed with --force for {ctx.task_id}"
+                    )
+                elif is_interactive:
+                    # Print warning and prompt
+                    print("\n\u26a0\ufe0f  TOKEN BUDGET WARNING")
+                    print(f"Task {ctx.task_id} estimated at {estimate.total:,} tokens ({estimate.budget_percent}% of budget)")
+                    print(f"Threshold: {warning_threshold}%")
+                    print("\nBreakdown:")
+                    print(f"  Base context:  {estimate.base_context:,}")
+                    print(f"  Task file:     {estimate.task_file:,}")
+                    print(f"  Source files:  {estimate.source_files:,}")
+                    print(f"  Est. output:   {estimate.estimated_output:,}")
+                    print(f"  Total:         {estimate.total:,}")
+                    print("\nConsider breaking into smaller subtasks.")
+
+                    try:
+                        response = input("\nContinue anyway? [y/N]: ").strip().lower()
+                        if response == 'y':
+                            result["action"] = "user_continued"
+                            logger.info(f"User chose to continue despite budget warning for {ctx.task_id}")
+                        else:
+                            result["action"] = "user_aborted"
+                            result["aborted"] = True
+                            logger.info(f"User aborted task {ctx.task_id} due to budget warning")
+                    except (EOFError, KeyboardInterrupt):
+                        result["action"] = "user_aborted"
+                        result["aborted"] = True
+                else:
+                    # Non-interactive - just warn
+                    result["action"] = "warned"
+                    logger.warning(
+                        f"Token budget warning for {ctx.task_id}: "
+                        f"{estimate.total:,} tokens ({estimate.budget_percent}%)"
+                    )
+            else:
+                result["action"] = "passed"
+
+            return result
+
+        except ImportError as e:
+            logger.warning(f"Token budget check failed: {e}")
+            return {"budget_checked": False, "error": f"Import error: {e}"}
+        except Exception as e:
+            logger.warning(f"Token budget check failed: {e}")
+            return {"budget_checked": False, "error": str(e)}
 
 
 def load_config(paircoder_dir: Path) -> dict:

@@ -499,9 +499,9 @@
     "total_seconds": 128.900242
   },
   "_active": {
-    "task_id": "T25.7",
-    "timer_id": "local-20251223095636",
-    "description": "T25.7: Add tiktoken dependency",
-    "start": "2025-12-23T09:56:36.674325"
+    "task_id": "T25.1",
+    "timer_id": "local-20251223101738",
+    "description": "T25.1: Update FEATURE_MATRIX.md with new structure",
+    "start": "2025-12-23T10:17:38.635580"
   }
 }

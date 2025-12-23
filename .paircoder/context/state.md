@@ -41,13 +41,13 @@
 
 | ID      | Title | Status | Priority | Complexity |
 |---------|-------|--------|----------|------------|
-| T25.7   | Add tiktoken dependency | pending | P1 | 5 |
-| T25.8   | Create tokens.py estimation module | pending | P1 | 50 |
-| T25.9   | Add budget CLI commands | pending | P1 | 35 |
-| T25.10  | Integrate budget into session status | pending | P2 | 20 |
-| T25.11  | Add pre-task budget hook | pending | P2 | 20 |
+| T25.7   | Add tiktoken dependency | ✓ done | P1 | 5 |
+| T25.8   | Create tokens.py estimation module | ✓ done | P1 | 50 |
+| T25.9   | Add budget CLI commands | ✓ done | P1 | 35 |
+| T25.10  | Integrate budget into session status | ✓ done | P2 | 20 |
+| T25.11  | Add pre-task budget hook | ✓ done | P2 | 20 |
 
-**Progress:** 4/14 tasks (90/320 complexity points)
+**Progress:** 9/14 tasks (220/320 complexity points)
 
 ## Previous Sprint Summary (Sprint 24)
 
@@ -105,6 +105,67 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.11 Complete (Pre-Task Budget Hook)
+
+- **T25.11: Add pre-task budget hook** ✓
+  - Added `check_token_budget` hook handler to core/hooks.py
+  - Warns when task exceeds warning threshold (default 75%)
+  - Interactive prompt in TTY, non-blocking warning in CI
+  - Supports `force` flag via context.extra to bypass warning
+  - Updated config.yaml with `token_budget` section and hook
+  - Updated cookiecutter template with same changes
+  - Added 6 tests covering hook behavior
+  - All 1774 tests passing
+  - **Token Budget System complete!** (T25.7-T25.11)
+
+### 2025-12-23 - T25.10 Complete (Session Budget Integration)
+
+- **T25.10: Integrate budget into session status** ✓
+  - Updated `session status` command to show token budget section
+  - Progress bar with color coding: green (<50%), blue (50-75%), yellow (75-90%), red (>90%)
+  - Shows percentage, total/limit, and status indicator (OK/Warning/Critical)
+  - Detects current in_progress task and estimates tokens
+  - `--no-budget` flag to hide budget section
+  - Added 4 tests for budget integration
+  - All 1768 tests passing
+
+### 2025-12-23 - T25.9 Complete (Budget CLI Commands)
+
+- **T25.9: Add budget CLI commands** ✓
+  - Created `commands/budget.py` with:
+    - `bpsai-pair budget estimate <task>` - shows token breakdown
+    - `bpsai-pair budget estimate -f <files>` - estimates specific files
+    - `bpsai-pair budget status` - shows model limits and thresholds
+    - `bpsai-pair budget check <task>` - pre-flight check (exits 1 if over)
+  - All commands support `--json` output
+  - Rich table formatting for terminal display
+  - Exit codes: 0=ok, 1=over threshold, 2=error
+  - Created 15 tests covering all commands
+  - All 1764 tests passing
+
+### 2025-12-23 - T25.8 Complete (Token Estimation Module)
+
+- **T25.8: Create tokens.py estimation module** ✓
+  - Created `bpsai_pair/tokens.py` with:
+    - `count_tokens()` - tiktoken-based token counting
+    - `count_file_tokens()` - file token counting with encoding handling
+    - `estimate_task_tokens()` - task-level estimation with breakdown
+    - `get_budget_status()` - budget status with thresholds
+    - `estimate_from_task_file()` - parse task files for estimation
+  - Model limits for all Claude models (200k context)
+  - Configurable thresholds: info (50%), warning (75%), critical (90%)
+  - Task type multipliers: feature 1.5x, bugfix 1.2x, refactor 1.3x, etc.
+  - Created 28 tests covering all functions and edge cases
+  - All 1749 tests passing
+
+### 2025-12-23 - T25.7 Complete (tiktoken Dependency)
+
+- **T25.7: Add tiktoken dependency** ✓
+  - Added `tiktoken>=0.5.0` to pyproject.toml dependencies
+  - Verified installation (v0.12.0 installed)
+  - Import works: `import tiktoken`
+  - Foundation ready for T25.8 token estimation module
 
 ### 2025-12-23 - T24.13 Complete (Flow References)
 

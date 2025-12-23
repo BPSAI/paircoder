@@ -277,3 +277,118 @@ class TestSessionCheckCommand:
         assert result.exit_code == 0
         # Should show context even for continuing session
         assert len(result.stdout.strip()) > 0
+
+
+class TestSessionStatusBudget:
+    """Tests for session status with token budget display."""
+
+    def test_session_status_shows_budget_with_active_task(self, paircoder_session_repo):
+        """Session status shows token budget when task is in progress."""
+        cache_dir = paircoder_session_repo / ".paircoder" / "cache"
+        session_file = cache_dir / "session.json"
+        tasks_dir = paircoder_session_repo / ".paircoder" / "tasks"
+
+        # Create session
+        recent_time = datetime.now() - timedelta(minutes=5)
+        session_data = {
+            "last_activity": recent_time.isoformat(),
+            "session_id": "test-session"
+        }
+        session_file.write_text(json.dumps(session_data))
+
+        # Create in-progress task with type and complexity
+        task_file = tasks_dir / "T1.task.md"
+        task_file.write_text("""---
+id: T1
+title: Test Task
+type: feature
+complexity: 10
+status: in_progress
+---
+
+# T1: Test Task
+""")
+
+        result = runner.invoke(app, ["session", "status"])
+        assert result.exit_code == 0
+        assert "Token Budget" in result.output
+        assert "%" in result.output  # Should show percentage
+
+    def test_session_status_no_active_task(self, paircoder_session_repo):
+        """Session status shows budget limit when no task in progress."""
+        cache_dir = paircoder_session_repo / ".paircoder" / "cache"
+        session_file = cache_dir / "session.json"
+
+        # Create session
+        recent_time = datetime.now() - timedelta(minutes=5)
+        session_data = {
+            "last_activity": recent_time.isoformat(),
+            "session_id": "test-session"
+        }
+        session_file.write_text(json.dumps(session_data))
+
+        # Mark the existing T19.2 task as done so no task is in_progress
+        tasks_dir = paircoder_session_repo / ".paircoder" / "tasks"
+        task_file = tasks_dir / "T19.2.task.md"
+        task_file.write_text("""---
+id: T19.2
+title: Task Two
+status: done
+---
+# Test
+""")
+
+        result = runner.invoke(app, ["session", "status"])
+        assert result.exit_code == 0
+        assert "Token Budget" in result.output
+        assert "No active task" in result.output
+
+    def test_session_status_no_budget_flag(self, paircoder_session_repo):
+        """Session status --no-budget hides budget section."""
+        cache_dir = paircoder_session_repo / ".paircoder" / "cache"
+        session_file = cache_dir / "session.json"
+
+        # Create session
+        recent_time = datetime.now() - timedelta(minutes=5)
+        session_data = {
+            "last_activity": recent_time.isoformat(),
+            "session_id": "test-session"
+        }
+        session_file.write_text(json.dumps(session_data))
+
+        result = runner.invoke(app, ["session", "status", "--no-budget"])
+        assert result.exit_code == 0
+        assert "Token Budget" not in result.output
+
+    def test_session_status_budget_shows_status(self, paircoder_session_repo):
+        """Session status shows OK/Warning/Critical status."""
+        cache_dir = paircoder_session_repo / ".paircoder" / "cache"
+        session_file = cache_dir / "session.json"
+        tasks_dir = paircoder_session_repo / ".paircoder" / "tasks"
+
+        # Create session
+        recent_time = datetime.now() - timedelta(minutes=5)
+        session_data = {
+            "last_activity": recent_time.isoformat(),
+            "session_id": "test-session"
+        }
+        session_file.write_text(json.dumps(session_data))
+
+        # Create small task - should show OK status
+        task_file = tasks_dir / "T2.task.md"
+        task_file.write_text("""---
+id: T2
+title: Small Task
+type: chore
+complexity: 5
+status: in_progress
+---
+
+# T2: Small Task
+""")
+
+        result = runner.invoke(app, ["session", "status"])
+        assert result.exit_code == 0
+        assert "Status:" in result.output
+        # Should have a status indicator
+        assert any(s in result.output for s in ["OK", "WARNING", "CRITICAL", "INFO"])
