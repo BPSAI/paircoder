@@ -4,31 +4,32 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-25.5-cross-platform-skills
-**Sprint:** 25.5 - Cross-Platform Skills
-**Status:** Planning Complete
-**Goal:** Make skills portable, improve skill creation and installation
-**Version Target:** v2.9
+**Plan:** plan-2025-12-sprint-25.6-emergent-skills
+**Sprint:** 25.6 - Emergent Skill Discovery
+**Status:** In Progress
+**Goal:** AI-driven skill creation and gap detection
+**Version Target:** v2.9.2
 
-## Current Sprint Tasks (Sprint 25.5)
+## Current Sprint Tasks (Sprint 25.6)
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T25.12 | Skill Naming Convention Update | done | P2 | 15 |
-| T25.13 | Third-Person Voice in Skill Descriptions | done | P2 | 10 |
-| T25.14 | Create skill-creation Skill | done | P1 | 35 |
-| T25.15 | Skill Installer Command | done | P1 | 40 |
-| T25.16 | Cross-Platform Skill Structure | done | P2 | 50 |
+| T25.17 | /update-skills Slash Command | done | P1 | 35 |
+| T25.18 | Skill Gap Detection | done | P1 | 50 |
+| T25.19 | Auto-Skill Creation | pending | P1 | 55 |
+| T25.20 | Skill Quality Scoring | pending | P2 | 45 |
+| T25.21 | Skill Marketplace Foundation | pending | P2 | 45 |
 
-**Progress:** 5/5 tasks (150/150 complexity points) - SPRINT COMPLETE!
+**Progress:** 2/5 tasks (85/230 complexity points)
 
-## Recommended Execution Order
+## Previous Sprint Summary (Sprint 25.5)
 
-1. **T25.12** (P2) - Rename skills to gerund form
-2. **T25.13** (P2) - Update descriptions to third-person voice
-3. **T25.14** (P1) - Create skill-creation skill (depends on 12, 13)
-4. **T25.15** (P1) - Add skill install command
-5. **T25.16** (P2) - Add cross-platform export (depends on 14, 15)
+**Sprint 25.5 COMPLETE:** Cross-Platform Skills
+- T25.12: Skill naming conventions (gerund form)
+- T25.13: Third-person voice descriptions
+- T25.14: Creating-skills meta-skill
+- T25.15: Skill install command
+- T25.16: Skill export command (Cursor, Continue, Windsurf)
 
 ## Previous Sprint Summary (Sprint 25)
 
@@ -58,17 +59,18 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 23 | CLI Refactor Phase 2 | v2.7.0 | Complete |
 | 24 | CLI Refactor Phase 3 | v2.7.0 | Complete |
 | 25 | EPIC-003 Complete + Token Budget | v2.8.0 | Complete |
-| 25.5 | Cross-Platform Skills | v2.9 | Planned |
-| 25.6 | Emergent Skill Discovery | v2.9.2 | Planned |
+| 25.5 | Cross-Platform Skills | v2.9 | Complete |
+| 25.6 | Emergent Skill Discovery | v2.9.2 | In Progress |
 | 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
 
 ## What's Next
 
-**Sprint 25.5: Cross-Platform Skills** (5 tasks, 150 pts)
-Start with T25.12 (Skill Naming Convention Update) and T25.13 (Third-Person Voice) to establish conventions, then proceed to T25.14-T25.16 for feature implementation.
-
-**Sprint 25.6: Emergent Skill Discovery** (5 tasks, 230 pts)
-AI-driven skill creation following 25.5. Tasks: T25.17-T25.21 - /update-skills command, skill gap detection, auto-skill creation, quality scoring, marketplace foundation.
+**Sprint 25.6: Emergent Skill Discovery** (5 tasks, 230 pts) - IN PROGRESS
+- T25.17: /update-skills command ✓
+- T25.18: Skill gap detection ✓
+- T25.19: Auto-skill creation (next)
+- T25.20: Skill quality scoring
+- T25.21: Skill marketplace foundation
 
 **Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
 Make PairCoder usable by non-technical "vibe-coders". Tasks: T26.1-T26.10 - Interactive welcome wizard, Trello setup wizard with pre-checks, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session.
