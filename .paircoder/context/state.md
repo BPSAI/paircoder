@@ -4,35 +4,41 @@
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-23-cli-refactor-phase2
+**Plan:** plan-2025-12-sprint-24-cli-refactor-phase3
 **Epic:** EPIC-003: CLI Architecture Refactor
-**Phase:** Phase 2 of 5 - Extract Commands from planning/cli_commands.py
-**Status:** In Progress
-**Goal:** Reduce planning/cli_commands.py from ~2,602 → ~600 lines
+**Phase:** Phase 3 of 5 - Consolidate Root Files
+**Status:** Ready to Start
+**Goal:** Move orphaned root files into `core/` module
 
-## Current Sprint Tasks (Sprint 23)
+## Current Sprint Tasks (Sprint 24)
 
-| ID    | Title | Status | Priority | Complexity |
-|-------|-------|--------|----------|------------|
-| T23.1 | Create sprint/ module structure | done | P0 | 15 |
-| T23.2 | Extract sprint commands to sprint/commands.py | done | P1 | 30 |
-| T23.3 | Create release/ module structure | done | P0 | 15 |
-| T23.4 | Extract release commands to release/commands.py | done | P1 | 45 |
-| T23.5 | Extract template commands to release/template.py | done | P1 | 35 |
-| T23.6 | Verify standup commands are in separate file | done | P2 | 10 |
-| T23.7 | Verify intent commands are in separate file | done | P2 | 10 |
-| T23.8 | Rename cli_commands.py to commands.py | done | P1 | 25 |
-| T23.9 | Update imports and final cleanup | done | P0 | 35 |
+| ID     | Title | Status | Priority | Complexity |
+|--------|-------|--------|----------|------------|
+| T24.1  | Create core/ module structure | pending | P0 | 15 |
+| T24.2  | Move config.py to core/config.py | pending | P1 | 30 |
+| T24.3  | Move constants.py to core/constants.py | pending | P1 | 20 |
+| T24.4  | Move hooks.py to core/hooks.py | pending | P1 | 25 |
+| T24.5  | Move ops.py to core/ops.py | pending | P1 | 25 |
+| T24.6  | Move presets.py to core/presets.py | pending | P1 | 25 |
+| T24.7  | Merge utils.py + pyutils.py + jsonio.py to core/utils.py | pending | P1 | 35 |
+| T24.8  | Delete empty adapters.py | pending | P2 | 5 |
+| T24.9  | Update all imports across codebase | pending | P0 | 40 |
+| T24.10 | Update __init__.py exports and verify package structure | pending | P0 | 30 |
 
-**Progress:** 9/9 tasks (220/220 complexity points) ✓ COMPLETE
+**Progress:** 0/10 tasks (0/250 complexity points)
 
-## Critical Fixes (Post-Sprint 23)
+## Previous Sprint Summary (Sprint 23)
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| T23.10 | Enforce ttask done for Trello projects | done | 35 |
-| T23.11 | Windows shell compatibility | done | 20 |
-| T23.12 | Upgrade command | done | 50 |
+**Phase 2 Complete:** Extract Commands from planning/cli_commands.py
+- Created `sprint/` module with sprint commands
+- Created `release/` module with release and template commands
+- Renamed `planning/cli_commands.py` → `planning/commands.py`
+- Reduced `planning/commands.py` from ~2,602 to 1,942 lines (660 lines extracted)
+
+**Critical Fixes:**
+- T23.10: Enforce ttask done for Trello projects
+- T23.11: Windows shell compatibility
+- T23.12: Upgrade command
 
 ## Sprint History
 
@@ -51,24 +57,25 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 18 | Release Engineering | v2.6.1 | Complete |
 | 19 | Methodology & Session Management | v2.7.0 | Complete |
 | 22 | CLI Refactor Phase 1 | v2.7.0 | Complete |
+| 23 | CLI Refactor Phase 2 | v2.7.0 | Complete |
 
 ## What's Next
 
-**Sprint 23: CLI Architecture Refactor (Phase 2)** is planned and ready to start.
+**Sprint 24: CLI Architecture Refactor (Phase 3)** is planned and ready to start.
 
 **Recommended Task Order:**
-1. **T23.1 + T23.3** - Create sprint/ and release/ module structures (parallel)
-2. **T23.2** - Extract sprint commands (depends on T23.1)
-3. **T23.4 + T23.5** - Extract release and template commands (parallel, depend on T23.3)
-4. **T23.6 + T23.7** - Verify standup and intent separation (parallel, quick)
-5. **T23.8** - Rename cli_commands.py to commands.py (depends on T23.2, T23.4, T23.5)
-6. **T23.9** - Final imports update and cleanup (depends on all above)
+1. **T24.1** - Create core/ module structure (foundation)
+2. **T24.2, T24.3, T24.4, T24.5, T24.6** - Move config, constants, hooks, ops, presets (parallel, depend on T24.1)
+3. **T24.7** - Merge utils + pyutils + jsonio (depends on T24.1)
+4. **T24.8** - Delete empty adapters.py (quick, can run anytime)
+5. **T24.9** - Update all imports (depends on T24.2-T24.7)
+6. **T24.10** - Final verification and __init__.py updates (depends on T24.9)
 
 **Sprint Goal:**
-- Reduce `planning/cli_commands.py` from ~2,602 lines to ~600 lines
-- Create `sprint/` module with sprint commands
-- Create `release/` module with release and template commands
-- Rename to `planning/commands.py` following convention
+- Create `core/` module for shared infrastructure
+- Move root-level config, constants, hooks, ops, presets to core/
+- Consolidate utils.py + pyutils.py + jsonio.py into core/utils.py
+- Root level has only: `__init__.py`, `__main__.py`, `cli.py`
 - No behavior changes - pure refactor
 
 ## Backlog (Deprioritized)
