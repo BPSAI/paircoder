@@ -499,9 +499,9 @@
     "total_seconds": 128.900242
   },
   "_active": {
-    "task_id": "T25.6",
-    "timer_id": "local-20251223092955",
-    "description": "T25.6: Fix project root detection in all commands",
-    "start": "2025-12-23T09:29:55.942401"
+    "task_id": "T24.11",
+    "timer_id": "local-20251223093918",
+    "description": "T24.11: Merge flows/parser.py + flows/parser_v2.py",
+    "start": "2025-12-23T09:39:18.959590"
   }
 }

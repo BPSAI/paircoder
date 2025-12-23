@@ -98,7 +98,8 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 ## Backlog (Deprioritized)
 
 See `.paircoder/tasks/backlog/`:
-- TASK-065: VS Code extension
+- HF-001: Context sync hotfix
+- RFE-001: Remote API Orchestration
 
 
 ## Session Log
