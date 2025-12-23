@@ -1,8 +1,8 @@
-# Sprint 21: Emergent Skill Discovery
+# Sprint 25.6: Emergent Skill Discovery
 
-> **Target Version:** v2.10.0
+> **Target Version:** v2.8.2
 > **Type:** feature
-> **Slug:** sprint-21-emergent-skills
+> **Slug:** sprint-25.6-emergent-skills
 > **Focus:** AI-driven skill creation, gap detection, and quality scoring
 
 ---
@@ -20,7 +20,7 @@ Enable PairCoder to learn from usage patterns and suggest or create new skills a
 
 ## Backlog Items
 
-### T21.1: /update-skills Slash Command
+### T25.17: /update-skills Slash Command
 
 **Priority:** P1
 **Effort:** M (4 hrs)
@@ -80,7 +80,7 @@ Create skill draft? [1/2/skip]:
 
 ---
 
-### T21.2: Skill Gap Detection
+### T25.18: Skill Gap Detection
 
 **Priority:** P1
 **Effort:** L (6 hrs)
@@ -139,7 +139,7 @@ Would you like to create a "debugging-from-logs" skill? [y/n]
 
 ---
 
-### T21.3: Auto-Skill Creation
+### T25.19: Auto-Skill Creation
 
 **Priority:** P2
 **Effort:** L (6 hrs)
@@ -205,7 +205,7 @@ grep -rn "error_string" src/
 
 ---
 
-### T21.4: Skill Quality Scoring
+### T25.20: Skill Quality Scoring
 
 **Priority:** P2
 **Effort:** M (4 hrs)
@@ -254,7 +254,7 @@ Recommendations:
 
 ---
 
-### T21.5: Skill Marketplace Foundation
+### T25.21: Skill Marketplace Foundation
 
 **Priority:** P3
 **Effort:** L (8 hrs)
@@ -341,15 +341,6 @@ bpsai-pair skill list --source all
 
 ---
 
-## Post-Sprint: EPIC-001
-
-After Sprint 21, the next major initiative is **EPIC-001: Multi-Project Workspace Support** (estimated Sprints 22-23).
-
-EPIC-001 depends on:
-- T19.1 (hooks system) for workspace hooks
-- T20.3 (skill-creation) for workspace-aware skill
-
----
 
 ## Definition of Done
 
@@ -357,5 +348,5 @@ EPIC-001 depends on:
 - [ ] Skill gap detection working
 - [ ] Auto-skill creation functional
 - [ ] Marketplace foundation operational
-- [ ] Version bumped to 2.10.0
-- [ ] Ready for EPIC-001
+- [ ] Version bumped to 2.8.2
+

@@ -18,8 +18,8 @@
 | ID      | Title | Status | Priority | Complexity |
 |---------|-------|--------|----------|------------|
 | T24.11  | Merge flows/parser.py + parser_v2.py | ✓ done | P0 | 35 |
-| T24.12  | Deprecate v1 flow format | pending | P1 | 15 |
-| T24.13  | Update all flow references to unified parser | pending | P1 | 20 |
+| T24.12  | Deprecate v1 flow format | ✓ done | P1 | 15 |
+| T24.13  | Update all flow references to unified parser | ✓ done | P1 | 20 |
 
 ### Part B: EPIC-003 Phase 5 - Documentation & Cleanup
 
@@ -47,7 +47,7 @@
 | T25.10  | Integrate budget into session status | pending | P2 | 20 |
 | T25.11  | Add pre-task budget hook | pending | P2 | 20 |
 
-**Progress:** 2/14 tasks (55/320 complexity points)
+**Progress:** 4/14 tasks (90/320 complexity points)
 
 ## Previous Sprint Summary (Sprint 24)
 
@@ -105,6 +105,24 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T24.13 Complete (Flow References)
+
+- **T24.13: Update all flow references to unified parser** ✓
+  - Verified all flow imports use unified `parser.py` (no `parser_v2` imports)
+  - Work was completed in T24.11 - imports already updated
+  - Only documentation reference to `parser_v2` remains (merge history comment)
+  - All 33 flow tests passing, 10 deprecation warnings expected
+  - EPIC-003 Phase 4 (Parser Consolidation) complete!
+
+### 2025-12-23 - T24.12 Complete (Deprecation Warning)
+
+- **T24.12: Deprecate v1 flow format** ✓
+  - Added `_emit_v1_deprecation_warning()` function to parser.py
+  - Warning includes detailed migration instructions to v2 .flow.md format
+  - V1 reader code preserved - deprecation is soft, not removal
+  - Added 2 tests for deprecation warning behavior
+  - All 1721 tests passing (10 expected deprecation warnings in v1 tests)
 
 ### 2025-12-23 - T24.11 Complete (Parser Consolidation)
 

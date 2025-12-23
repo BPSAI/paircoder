@@ -35,6 +35,7 @@ Instructions here...
 from __future__ import annotations
 
 import re
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -42,6 +43,42 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from .models import Flow as FlowV1, Step, FlowValidationError
+
+
+# ============================================================================
+# Deprecation Warning for V1 Format
+# ============================================================================
+
+V1_DEPRECATION_MESSAGE = """
+The v1 YAML flow format (with 'steps' containing 'action' fields) is deprecated.
+
+Please migrate to the v2 .flow.md format:
+
+  1. Rename your file from *.yaml to *.flow.md
+  2. Convert to YAML frontmatter format:
+     ---
+     name: your-flow-name
+     description: Your flow description
+     triggers: [your_trigger]
+     roles:
+       driver: { primary: true }
+     ---
+
+     # Your Flow Title
+
+     Flow instructions in markdown...
+
+See: https://github.com/BPSAI/paircoder/docs/flows.md for migration guide.
+"""
+
+
+def _emit_v1_deprecation_warning(source: str = "flow") -> None:
+    """Emit deprecation warning for v1 flow format."""
+    warnings.warn(
+        f"V1 flow format detected in {source}. {V1_DEPRECATION_MESSAGE}",
+        DeprecationWarning,
+        stacklevel=4  # Point to the caller's caller
+    )
 
 
 # ============================================================================
@@ -506,7 +543,13 @@ class FlowParser:
     def _parse_v1_flow_data(
         self, data: Dict[str, Any], source_file: Optional[str] = None
     ) -> FlowV1:
-        """Parse flow data dictionary into v1 Flow object."""
+        """Parse flow data dictionary into v1 Flow object.
+
+        DEPRECATED: V1 format is deprecated. Use v2 .flow.md format instead.
+        """
+        # Emit deprecation warning
+        _emit_v1_deprecation_warning(source_file or "<unknown>")
+
         # Required fields
         name = data.get("name")
         if not name:

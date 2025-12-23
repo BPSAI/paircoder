@@ -321,6 +321,56 @@ steps:
         invalid = next(f for f in flows if f["name"] == "invalid")
         assert invalid.get("error")
 
+    def test_parse_v1_emits_deprecation_warning(self):
+        """Test that parsing v1 format emits deprecation warning."""
+        import warnings
+
+        yaml_content = """
+name: deprecated-flow
+description: A deprecated v1 flow
+steps:
+  - id: s1
+    action: a1
+"""
+        parser = FlowParser()
+
+        # Capture deprecation warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", DeprecationWarning)
+            flow = parser.parse_string(yaml_content)
+
+            # Should have emitted a deprecation warning
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "V1 flow format" in str(w[0].message)
+            assert "deprecated" in str(w[0].message).lower()
+
+        # Flow should still parse correctly
+        assert flow.name == "deprecated-flow"
+        assert len(flow.steps) == 1
+
+    def test_parse_v1_file_emits_deprecation_warning(self, tmp_path):
+        """Test that parsing v1 file emits deprecation warning with filename."""
+        import warnings
+
+        flow_file = tmp_path / "old-format.yaml"
+        flow_file.write_text("""
+name: old-format
+description: Old format flow
+steps:
+  - id: s1
+    action: a1
+""")
+        parser = FlowParser()
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", DeprecationWarning)
+            flow = parser.parse_file(flow_file)
+
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "old-format.yaml" in str(w[0].message)
+
 
 # ============================================================================
 # JSON Structure Stability Tests (Critical for API)

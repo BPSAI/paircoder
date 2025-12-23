@@ -1,4 +1,4 @@
-# Sprint 20: Cross-Platform Skills
+# Sprint 25.5: Cross-Platform Skills
 
 > **Target Version:** v2.8.1
 > **Type:** feature
@@ -143,7 +143,7 @@ bpsai-pair skill validate <n>  # Check specific skill
 
 ---
 
-### T20.4: Skill Installer Command
+### T25.15: Skill Installer Command
 
 **Priority:** P1
 **Effort:** M (4 hrs)
@@ -205,7 +205,7 @@ Choice: 1
 
 ---
 
-### T20.5: Cross-Platform Skill Structure
+### T25.16: Cross-Platform Skill Structure
 
 **Priority:** P2
 **Effort:** L (6 hrs)
@@ -262,7 +262,7 @@ bpsai-pair skill export my-skill --format continue
 
 ---
 
-## Dependencies
+## Dependencies (need to confirm)
 
 | Task | Depends On |
 |------|------------|
@@ -278,4 +278,4 @@ bpsai-pair skill export my-skill --format continue
 - [ ] All skills pass validator
 - [ ] Skill installer working
 - [ ] Cross-platform export functional
-- [ ] Version bumped to 2.9.0
+- [ ] Version bumped to 2.8.1
