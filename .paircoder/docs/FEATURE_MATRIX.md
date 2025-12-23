@@ -1,6 +1,6 @@
-# PairCoder v2.5 Feature Matrix
+# PairCoder v2.8 Feature Matrix
 
-> Generated from Sprint 1-15 audit on 2025-12-17
+> Updated after Sprint 25 (EPIC-003 Complete + Token Budget System) on 2025-12-23
 
 ## CLI Commands Summary
 
@@ -8,21 +8,28 @@
 |-------|----------|-------|
 | Core | init, feature, pack, context-sync, status, validate, ci | 7 |
 | Presets | preset list/show/preview, init --preset | 4 |
-| Planning | plan new/list/show/tasks/status/sync-trello/add-task | 7 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
 | Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
 | Flows | flow list/show/run/validate | 4 |
 | Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
 | Intent | intent detect/should-plan/suggest-flow | 3 |
 | GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
 | Standup | standup generate/post | 2 |
-| Metrics | metrics summary/task/breakdown/budget/export | 5 |
+| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens | 9 |
 | Timer | timer start/stop/status/show/summary | 5 |
 | Benchmark | benchmark run/results/compare/list | 4 |
 | Cache | cache stats/clear/invalidate | 3 |
+| Budget | budget estimate/status/check | 3 |
+| Session | session check/status | 2 |
+| Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
+| Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
+| Skills | skill validate/list | 2 |
+| Upgrade | upgrade | 1 |
+| Migrate | migrate, migrate status | 2 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
-| **Total** | | **88** |
+| **Total** | | **112** |
 
 ## Features by Sprint
 
@@ -133,7 +140,7 @@
 | Activity log comments | `ttask comment` | ✅ Works | Progress tracking |
 | Check/uncheck items | `trello check/uncheck` | ✅ Works | Partial text matching |
 
-### Sprint 15: Security & Sandboxing (v2.5.2) — In Progress
+### Sprint 15: Security & Sandboxing (v2.5.2)
 | Feature | CLI Command | Status | Notes |
 |---------|-------------|--------|-------|
 | Security agent | `.claude/agents/security.md` | ✅ Done | SOC2-focused gatekeeper |
@@ -141,8 +148,31 @@
 | Pre-execution review | `security/review.py` | ✅ Done | Command + code review hooks |
 | Docker sandbox | `security/sandbox.py` | ✅ Done | Isolated container execution |
 | Git checkpoint/rollback | `security/checkpoint.py` | ✅ Done | Auto-checkpoint + rollback |
-| Secret detection | - | ⏳ Pending | Pre-commit scanning (TASK-094) |
-| Dependency vuln scan | - | ⏳ Pending | CVE scanning (TASK-095) |
+| Secret detection | `security scan-secrets` | ✅ Done | Pre-commit scanning |
+| Dependency vuln scan | `security scan-deps` | ✅ Done | CVE scanning |
+
+### Sprint 22-24: CLI Architecture Refactor (EPIC-003) (v2.6-2.7)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Command extraction | `commands/` module | ✅ Done | 12 command modules |
+| Sprint commands | `sprint list/complete` | ✅ Done | Sprint management |
+| Release commands | `release plan/checklist/prep` | ✅ Done | Release engineering |
+| Template commands | `template check/list` | ✅ Done | Template validation |
+| Core module | `core/` directory | ✅ Done | ops, utils, config, hooks |
+| Session management | `session check/status` | ✅ Done | Session detection + context |
+| Compaction recovery | `compaction snapshot/check/recover` | ✅ Done | Context compaction handling |
+| Upgrade command | `upgrade` | ✅ Done | Version migrations |
+| Parser consolidation | `flows/parser.py` | ✅ Done | Unified v1+v2 flow parser |
+| V1 deprecation | - | ✅ Done | Deprecation warnings |
+
+### Sprint 25: Token Budget System (v2.8)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| tiktoken integration | - | ✅ Done | Token counting dependency |
+| Token estimation | `tokens.py` | ✅ Done | count_tokens, estimate_task_tokens |
+| Budget commands | `budget estimate/status/check` | ✅ Done | CLI for token estimation |
+| Session budget | `session status` | ✅ Done | Progress bar in status |
+| Pre-task hook | `check_token_budget` | ✅ Done | Warns before large tasks |
 
 ## MCP Tools (13 total)
 
@@ -172,13 +202,18 @@
 | finish-branch | Branch completion workflow | "finish", "merge", "complete" |
 | paircoder-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-", "plan feature" |
 
-## Hooks (6 built-in)
+## Hooks (11 built-in)
 
 | Hook | Event | Description |
 |------|-------|-------------|
+| check_token_budget | on_task_start | Warn if task exceeds budget threshold |
 | start_timer | on_task_start | Start time tracking |
 | stop_timer | on_task_complete | Stop time tracking |
 | record_metrics | on_task_complete | Record token usage |
+| record_task_completion | on_task_complete | Record estimated vs actual hours |
+| record_velocity | on_task_complete | Record complexity points for velocity |
+| record_token_usage | on_task_complete | Record token estimate accuracy |
+| log_trello_activity | on_task_start/complete/block | Log activity to Trello card |
 | sync_trello | on_task_start/complete/block | Update Trello card |
 | update_state | on_task_start/complete/block | Refresh state.md |
 | check_unblocked | on_task_complete | Find unblocked tasks |
@@ -213,24 +248,94 @@ my-project/
 └── docs/                          # Documentation
 ```
 
+## CLI Architecture Diagram
+
+> Added in Sprint 25 - Visual overview of the post-EPIC-003 architecture
+
+```
+                          ┌─────────────────────────────────────────────────────┐
+                          │                  USER INTERFACE                     │
+                          │    $ bpsai-pair <command>  |  MCP Server (stdio)    │
+                          └───────────────────────────┬─────────────────────────┘
+                                                      │
+                          ┌───────────────────────────▼─────────────────────────┐
+                          │                    cli.py                           │
+                          │   Typer app • Sub-app registration • Help system    │
+                          └───────────────────────────┬─────────────────────────┘
+                                                      │
+        ┌────────────────────────────────────────────────────────────────────────┐
+        │                         COMMAND MODULES                                │
+        └────────────────────────────────────────────────────────────────────────┘
+        ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │commands/ │ │planning/ │ │ sprint/  │ │ release/ │ │  trello/ │
+        │  core    │ │  plan    │ │  sprint  │ │ release  │ │  trello  │
+        │  preset  │ │  task    │ │ complete │ │ template │ │  ttask   │
+        │ session  │ │  intent  │ │          │ │   prep   │ │          │
+        │  budget  │ │ standup  │ │          │ │          │ │          │
+        │   ...    │ │          │ │          │ │          │ │          │
+        └─────┬────┘ └─────┬────┘ └────┬─────┘ └────┬─────┘ └─────┬────┘
+              │            │           │            │             │
+        ┌────────────────────────────────────────────────────────────────────────┐
+        │                         CORE INFRASTRUCTURE                            │
+        │  ┌──────────────────────────────────────────────────────────────────┐  │
+        │  │                          core/                                   │  │
+        │  │  config.py    hooks.py    ops.py    presets.py    utils.py       │  │
+        │  │  (settings)   (11 hooks)  (git/fs)  (templates)   (utilities)    │  │
+        │  └──────────────────────────────────────────────────────────────────┘  │
+        │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
+        │  │ tokens.py   │ │ session.py  │ │ metrics.py  │ │compaction.py│       │
+        │  │ (tiktoken)  │ │ (detection) │ │ (tracking)  │ │ (recovery)  │       │
+        │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
+        └────────────────────────────────────────────────────────────────────────┘
+                                          │
+        ┌────────────────────────────────────────────────────────────────────────┐
+        │                        DOMAIN MODULES                                  │
+        │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │
+        │  │  flows/   │ │orchestrate│ │  skills/  │ │  github/  │ │ security/│ │
+        │  │  parser   │ │  routing  │ │ validator │ │    PR     │ │ sandbox  │ │
+        │  │  models   │ │  handoff  │ │   list    │ │  issues   │ │ allowlist│ │
+        │  └───────────┘ └───────────┘ └───────────┘ └───────────┘ └──────────┘ │
+        └────────────────────────────────────────────────────────────────────────┘
+                                          │
+        ┌────────────────────────────────────────────────────────────────────────┐
+        │                      EXTERNAL INTEGRATIONS                             │
+        │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐               │
+        │  │  Trello API   │  │  GitHub API   │  │  Toggl API    │               │
+        │  │ (cards/boards)│  │  (PRs/issues) │  │(time tracking)│               │
+        │  └───────────────┘  └───────────────┘  └───────────────┘               │
+        └────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Architectural Principles:**
+- **cli.py** registers sub-apps but contains no command logic
+- **commands/** contains general CLI commands, domain-specific logic lives in dedicated modules
+- **core/** provides shared infrastructure used by all modules
+- **Hooks** fire automatically on task state transitions (11 built-in hooks)
+- **Token Budget System** (Sprint 25) tracks context usage via tiktoken
+
 ## CLI Module Structure (tools/cli/bpsai_pair/)
 
-> Refactored in Sprints 22-24 (EPIC-003 Phases 1-3)
+> Refactored in Sprints 22-25 (EPIC-003 Complete)
 
 ```
 bpsai_pair/
 ├── __init__.py             # Package exports
 ├── __main__.py             # Entry point (4 lines)
-├── cli.py                  # Sub-app registration (194 lines)
+├── cli.py                  # Sub-app registration (~200 lines)
+├── tokens.py               # Sprint 25: Token estimation (tiktoken)
+├── session.py              # Session detection and management
+├── compaction.py           # Context compaction recovery
+├── metrics.py              # MetricsCollector, VelocityTracker, TokenFeedbackTracker
 ├── core/                   # Sprint 24: Shared infrastructure
 │   ├── __init__.py        # Module exports and re-exports
 │   ├── config.py          # Configuration loading and management
 │   ├── constants.py       # Application constants
-│   ├── hooks.py           # Hook system for task lifecycle events
-│   ├── ops.py             # Git and file operations
+│   ├── hooks.py           # Hook system (11 hooks including check_token_budget)
+│   ├── ops.py             # Git and file operations (find_project_root)
 │   ├── presets.py         # Preset system for project templates
 │   └── utils.py           # Merged utilities (repo_root, project_files, etc.)
 ├── commands/               # Sprint 22: Extracted from cli.py
+│   ├── __init__.py        # Command exports
 │   ├── core.py            # init, feature, pack, status, validate, ci
 │   ├── preset.py          # preset list/show/preview
 │   ├── config.py          # config validate/update/show
@@ -242,7 +347,13 @@ bpsai_pair/
 │   ├── mcp.py             # mcp serve/tools/test
 │   ├── flow.py            # flow list/show/run/validate
 │   ├── security.py        # security scan-secrets/pre-commit/etc
-│   └── session.py         # session check/status, compaction commands
+│   ├── session.py         # session check/status, compaction commands
+│   ├── budget.py          # Sprint 25: budget estimate/status/check
+│   └── upgrade.py         # upgrade command
+├── flows/                  # Flow definitions and parsing
+│   ├── __init__.py        # V1/V2 exports
+│   ├── models.py          # V1 Flow, Step models (backward compat)
+│   └── parser.py          # Sprint 24: Unified v1+v2 parser with deprecation
 ├── planning/               # Planning system
 │   ├── commands.py        # plan/task/intent/standup CLI commands
 │   ├── models.py          # Plan, Task, Sprint models
@@ -260,15 +371,24 @@ bpsai_pair/
 │   └── cli_commands.py    # skill validate/list
 ├── trello/                 # Trello integration
 │   ├── commands.py        # trello connect/status/etc
-│   └── task_commands.py   # ttask list/show/done/etc
-└── github/                 # GitHub integration
-    └── commands.py        # github status/create/merge/etc
+│   ├── task_commands.py   # ttask list/show/done/etc
+│   └── activity.py        # TrelloActivityLogger
+├── github/                 # GitHub integration
+│   └── commands.py        # github status/create/merge/etc
+├── migrate.py              # Migration commands
+├── integrations/           # External integrations
+│   └── time_tracking.py   # Toggl integration
+└── security/               # Security module
+    ├── allowlist.py       # Command allowlist
+    ├── review.py          # Pre-execution review
+    ├── sandbox.py         # Docker sandbox
+    └── checkpoint.py      # Git checkpoint/rollback
 ```
 
 ## Configuration (config.yaml)
 
 ```yaml
-version: "2.5"
+version: "2.8"
 
 project:
   name: "project-name"
@@ -301,15 +421,22 @@ metrics:
   enabled: true
   store_path: .paircoder/history/metrics.jsonl
 
+token_budget:
+  warning_threshold: 75   # Warn when task estimated above this %
+  critical_threshold: 90  # Critical when above this %
+
 hooks:
   enabled: true
   on_task_start:
+    - check_token_budget  # Warns if task exceeds budget threshold
     - start_timer
     - sync_trello
     - update_state
   on_task_complete:
     - stop_timer
     - record_metrics
+    - record_task_completion
+    - record_velocity
     - sync_trello
     - update_state
     - check_unblocked
@@ -341,4 +468,9 @@ hooks:
 | - Review | 35 | ✅ Pass |
 | - Sandbox | 35 | ✅ Pass |
 | - Checkpoint | 20 | ✅ Pass |
-| **Total** | **1713** | ✅ Pass |
+| **Flows (Sprint 24)** | **33** | ✅ Pass |
+| **Tokens (Sprint 25)** | **28** | ✅ Pass |
+| **Budget Commands** | **15** | ✅ Pass |
+| **Session/Budget** | **4** | ✅ Pass |
+| **Hooks (check_token_budget)** | **6** | ✅ Pass |
+| **Total** | **1774** | ✅ Pass |

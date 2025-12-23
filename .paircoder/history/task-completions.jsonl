@@ -32,3 +32,5 @@
 {"task_id": "T23.7", "estimated_hours": 1.0, "actual_hours": 0.06, "variance_hours": -0.94, "variance_percent": -93.5, "completed_at": "2025-12-22T18:28:15.300249"}
 {"task_id": "T23.8", "estimated_hours": 2.0, "actual_hours": 0.04, "variance_hours": -1.96, "variance_percent": -98.2, "completed_at": "2025-12-22T18:31:09.849512"}
 {"task_id": "T23.9", "estimated_hours": 4.0, "actual_hours": 0.04, "variance_hours": -3.96, "variance_percent": -99.1, "completed_at": "2025-12-22T18:33:30.068929"}
+{"task_id": "T25.2", "estimated_hours": 2.0, "actual_hours": 0.07, "variance_hours": -1.93, "variance_percent": -96.5, "completed_at": "2025-12-23T10:26:48.755419"}
+{"task_id": "T25.3", "estimated_hours": 1.0, "actual_hours": 0.02, "variance_hours": -0.98, "variance_percent": -97.5, "completed_at": "2025-12-23T10:28:36.140840"}

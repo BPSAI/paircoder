@@ -5,11 +5,11 @@
 ## Active Plan
 
 **Plan:** plan-2025-12-sprint-25-epic003-token-budget
-**Epic:** EPIC-003: CLI Architecture Refactor
-**Phase:** Phase 4-5 of 5 - Parser Consolidation + Documentation
-**Status:** In Progress
-**Goal:** Complete EPIC-003 + Token Budget System
-**Version Target:** v2.8.0
+**Epic:** EPIC-003: CLI Architecture Refactor ✅ COMPLETE
+**Phase:** Phase 5 of 5 - Documentation & Cleanup ✅
+**Status:** COMPLETE
+**Goal:** Complete EPIC-003 + Token Budget System ✅
+**Version Target:** v2.8.0 (Ready for Release)
 
 ## Current Sprint Tasks (Sprint 25)
 
@@ -25,11 +25,11 @@
 
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
-| T25.1  | Update FEATURE_MATRIX.md with new structure | pending | P2 | 15 |
-| T25.2  | Update developer documentation | pending | P2 | 25 |
-| T25.3  | Add architecture diagram | pending | P2 | 15 |
-| T25.4  | Remove deprecated code paths | pending | P1 | 20 |
-| T25.5  | Final review and cleanup | pending | P2 | 25 |
+| T25.1  | Update FEATURE_MATRIX.md with new structure | ✓ done | P2 | 15 |
+| T25.2  | Update developer documentation | ✓ done | P2 | 25 |
+| T25.3  | Add architecture diagram | ✓ done | P2 | 15 |
+| T25.4  | Remove deprecated code paths | ✓ done | P1 | 20 |
+| T25.5  | Final review and cleanup | ✓ done | P2 | 25 |
 
 ### Part C: Bug Fix
 
@@ -47,7 +47,7 @@
 | T25.10  | Integrate budget into session status | ✓ done | P2 | 20 |
 | T25.11  | Add pre-task budget hook | ✓ done | P2 | 20 |
 
-**Progress:** 9/14 tasks (220/320 complexity points)
+**Progress:** 14/14 tasks (320/320 complexity points) ✅ COMPLETE
 
 ## Previous Sprint Summary (Sprint 24)
 
@@ -77,23 +77,23 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 22 | CLI Refactor Phase 1 | v2.7.0 | Complete |
 | 23 | CLI Refactor Phase 2 | v2.7.0 | Complete |
 | 24 | CLI Refactor Phase 3 | v2.7.0 | Complete |
-| 25 | EPIC-003 Complete + Token Budget | v2.8.0 | In Progress |
+| 25 | EPIC-003 Complete + Token Budget | v2.8.0 | Complete |
 
 ## What's Next
 
-**Sprint 25: Complete EPIC-003 + Token Budget System**
+**Sprint 25 COMPLETE!** v2.8.0 is ready for release.
 
-**Suggested Order:**
-1. T25.6 (bug fix - quick win, prevents future issues)
-2. T24.11-T24.13 (parsers - complete Phase 4)
-3. T25.7-T25.11 (token budget - can parallel with docs)
-4. T25.1-T25.5 (docs - finalize after code stable)
+**Release Preparation:**
+1. Bump version in pyproject.toml to 2.8.0
+2. Run `bpsai-pair release prep` for final checks
+3. Create git tag v2.8.0
+4. Publish to PyPI
 
-**Sprint Goals:**
-- Complete EPIC-003 (Phase 4: Parser Consolidation + Phase 5: Documentation)
-- Fix project root detection bug
-- Implement token budget system to prevent context compaction
-- Version bump to v2.8.0
+**Sprint 25 Achievements:**
+- ✅ EPIC-003 complete (CLI Architecture Refactor)
+- ✅ Token Budget System implemented
+- ✅ 112 CLI commands, 1774 tests
+- ✅ All documentation updated to v2.8.0
 
 ## Backlog (Deprioritized)
 
@@ -105,6 +105,68 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - Sprint 25 COMPLETE! (EPIC-003 + Token Budget System)
+
+- **T25.5: Final review and cleanup** ✓
+  - Verified no circular imports
+  - Command file sizes: core.py (812 lines) slightly over 500 target, acceptable
+  - All 1774 tests pass
+  - Added v2.8.0 entry to CHANGELOG.md
+  - Marked EPIC-003 as COMPLETE in state.md
+  - **Sprint 25 Complete: 14/14 tasks, 320/320 complexity points**
+
+- **EPIC-003: CLI Architecture Refactor COMPLETE**
+  - Phase 1: Command Extraction (Sprint 22)
+  - Phase 2: Domain Modules (Sprint 23)
+  - Phase 3: Root File Consolidation (Sprint 24)
+  - Phase 4: Parser Consolidation (Sprint 25)
+  - Phase 5: Documentation & Cleanup (Sprint 25)
+
+- **Token Budget System COMPLETE** (T25.7-T25.11)
+  - tiktoken integration, estimation, CLI commands, session status, pre-task hook
+
+### 2025-12-23 - T25.3 Complete (Architecture Diagram)
+
+- **T25.3: Add architecture diagram** ✓
+  - Added ASCII architecture diagram to FEATURE_MATRIX.md
+  - Shows 5-layer architecture: User Interface → CLI → Commands → Core → Domain → External
+  - Documents key architectural principles
+  - Diagram is compatible with all terminals (no Mermaid)
+  - Easy to maintain and update
+
+### 2025-12-23 - T25.2 Complete (Developer Documentation Update)
+
+- **T25.2: Update developer documentation** ✓
+  - Updated README.md: version 2.5.4 → 2.8.0
+  - Updated USER_GUIDE.md: version 2.5.0 → 2.8.0, config version 2.5 → 2.8
+  - Updated cookiecutter config.yaml: version 2.6 → 2.8
+  - Updated CLAUDE.md: focus v2.6.1 → v2.8.0 In Progress
+  - Updated cookiecutter CLAUDE.md: focus v2.6.1 → v2.8.0
+  - No old import patterns found in docs (imports are current)
+  - All documentation now references v2.8.0
+
+### 2025-12-23 - T25.4 Complete (Code Cleanup Verification)
+
+- **T25.4: Remove deprecated code paths** ✓
+  - Verified no backup files (.bak, *_old.py)
+  - Confirmed parser_v2.py was properly deleted
+  - Confirmed adapters.py was removed
+  - TODOs in code are template placeholders (intentional)
+  - Backward compat in flows/parser.py is intentional (v1 deprecation)
+  - No dead code paths found
+  - All 1774 tests pass
+
+### 2025-12-23 - T25.1 Complete (FEATURE_MATRIX.md Update)
+
+- **T25.1: Update FEATURE_MATRIX.md with new structure** ✓
+  - Updated version to v2.8
+  - Added Sprint 22-25 feature tables
+  - Updated CLI commands summary (112 total commands)
+  - Updated hooks section (11 built-in hooks)
+  - Updated CLI module structure with new files
+  - Added token_budget config section
+  - Updated test count to 1774
 
 ### 2025-12-23 - T25.11 Complete (Pre-Task Budget Hook)
 

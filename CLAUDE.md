@@ -144,11 +144,11 @@ When you see these patterns, suggest the corresponding flow:
 
 This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
 
-Current focus: **v2.6.1 Released**
-- Planning system complete (plan, task commands)
-- Skills and flows implemented
-- Multi-agent architecture (skills, agents, hooks)
-- Ready for ongoing development
+Current focus: **v2.8.0 In Progress**
+- EPIC-003: CLI Architecture Refactor complete
+- Token Budget System with tiktoken integration
+- 112+ CLI commands, 1774 tests
+- Planning system, skills, flows, multi-agent architecture
 
 ## Slash Commands
 

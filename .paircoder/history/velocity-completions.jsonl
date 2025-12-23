@@ -33,3 +33,5 @@
 {"task_id": "T23.7", "complexity": 10, "sprint": "", "completed_at": "2025-12-22T18:28:15.300396"}
 {"task_id": "T23.8", "complexity": 25, "sprint": "", "completed_at": "2025-12-22T18:31:09.849701"}
 {"task_id": "T23.9", "complexity": 35, "sprint": "", "completed_at": "2025-12-22T18:33:30.069077"}
+{"task_id": "T25.2", "complexity": 25, "sprint": "", "completed_at": "2025-12-23T10:26:48.755574"}
+{"task_id": "T25.3", "complexity": 15, "sprint": "", "completed_at": "2025-12-23T10:28:36.141027"}

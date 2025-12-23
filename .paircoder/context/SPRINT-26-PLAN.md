@@ -11,13 +11,13 @@
 
 Make PairCoder usable by non-technical users ("vibe-coders"). A user should go from `pip install` to productive in under 10 minutes without reading documentation.
 
-**Success Metric:** Kevin can set up a new project without getting stuck.
+**Success Metric:** K-Masty can set up a new project without getting stuck.
 
 ---
 
 ## Background
 
-Kevin's first-time user testing exposed critical UX gaps:
+K-Masty's first-time user testing exposed critical UX gaps:
 
 | Problem | Impact |
 |---------|--------|
@@ -253,12 +253,12 @@ When using `--preset bps`:
 
 ### Part D: Documentation & Polish (4 tasks)
 
-| ID | Title | Type | Effort | Complexity |
-|----|-------|------|--------|------------|
-| T26.7 | Contextual doc links in output | feature | S | 15 |
+| ID | Title                           | Type | Effort | Complexity |
+|----|---------------------------------|------|--------|------------|
+| T26.7 | Contextual doc links in output  | feature | S | 15 |
 | T26.8 | Update USER_GUIDE.md for new UX | docs | M | 30 |
-| T26.9 | Update README.md quick start | docs | S | 15 |
-| T26.10 | Kevin retest session | chore | - | - |
+| T26.9 | Update README.md quick start    | docs | S | 15 |
+| T26.10 | K-Masty retest session          | chore | - | - |
 
 **T26.7 Details:**
 
@@ -275,7 +275,7 @@ console.print("📖 Creating plans: docs/USER_GUIDE.md#creating-plans")
 
 **T26.10 Details:**
 
-Schedule session with Kevin to:
+Schedule session with K-Masty to:
 1. Fresh install from pip
 2. Run through setup wizard
 3. Connect to Trello
@@ -286,7 +286,7 @@ Schedule session with Kevin to:
 - [ ] Error messages include relevant doc links
 - [ ] USER_GUIDE.md updated with wizard screenshots
 - [ ] README.md quick start reflects new UX
-- [ ] Kevin can set up in < 10 minutes
+- [ ] K-Masty can set up in < 10 minutes
 
 ---
 
@@ -315,7 +315,7 @@ T26.1 (welcome wizard)
 
 T26.7 (doc links) ── T26.8 (USER_GUIDE) ── T26.9 (README)
                                                  │
-                                           T26.10 (Kevin retest)
+                                           T26.10 (K-Masty retest)
 ```
 
 ---
@@ -345,7 +345,7 @@ T26.7 (doc links) ── T26.8 (USER_GUIDE) ── T26.9 (README)
 - [ ] Claude prompt generated after setup
 - [ ] `/get-started` slash command exists
 - [ ] Documentation updated
-- [ ] Kevin can set up in < 10 minutes
+- [ ] K-Masty can set up in < 10 minutes
 - [ ] Version bumped to v2.9.0
 - [ ] CHANGELOG.md updated
 

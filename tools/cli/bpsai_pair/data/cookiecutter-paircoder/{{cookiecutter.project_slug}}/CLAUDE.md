@@ -144,11 +144,11 @@ When you see these patterns, suggest the corresponding flow:
 
 This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
 
-Current focus: **v2.6.1 Released**
+Current focus: **v2.8.0**
 - Planning system complete (plan, task commands)
 - Skills and flows implemented
 - Multi-agent architecture (skills, agents, hooks)
-- Ready for ongoing development
+- Token Budget System for context management
 
 ## Slash Commands
 

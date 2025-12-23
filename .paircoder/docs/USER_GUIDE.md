@@ -70,7 +70,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.5.0
+bpsai-pair --version  # Should show 2.8.0
 ```
 
 ### With MCP Support
@@ -1117,7 +1117,7 @@ See [README.md](../README.md) for complete command details.
 ### Full config.yaml Schema
 
 ```yaml
-version: "2.5"
+version: "2.8"
 
 project:
   name: "my-project"

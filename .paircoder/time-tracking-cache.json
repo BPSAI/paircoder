@@ -498,10 +498,38 @@
     ],
     "total_seconds": 128.900242
   },
+  "T25.2": {
+    "entries": [
+      {
+        "id": "local-20251223102239",
+        "task_id": "T25.2",
+        "description": "T25.2: Update developer documentation",
+        "start": "2025-12-23T10:22:39.093115",
+        "end": "2025-12-23T10:26:48.754481",
+        "duration_seconds": 249.661366,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 249.661366
+  },
+  "T25.3": {
+    "entries": [
+      {
+        "id": "local-20251223102706",
+        "task_id": "T25.3",
+        "description": "T25.3: Add architecture diagram",
+        "start": "2025-12-23T10:27:06.440852",
+        "end": "2025-12-23T10:28:36.139974",
+        "duration_seconds": 89.699122,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 89.699122
+  },
   "_active": {
-    "task_id": "T25.1",
-    "timer_id": "local-20251223101738",
-    "description": "T25.1: Update FEATURE_MATRIX.md with new structure",
-    "start": "2025-12-23T10:17:38.635580"
+    "task_id": "T25.5",
+    "timer_id": "local-20251223102858",
+    "description": "T25.5: Final review and cleanup",
+    "start": "2025-12-23T10:28:58.082041"
   }
 }

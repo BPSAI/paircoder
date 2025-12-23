@@ -20,14 +20,36 @@ paircoder/
 │   ├── context/             # Project memory
 │   ├── flows/               # Workflow definitions
 │   ├── plans/               # Active plans
-│   └── tasks/               # Task files by plan
+│   ├── tasks/               # Task files by plan
+│   └── docs/                # Internal docs (FEATURE_MATRIX, etc.)
+├── .claude/                 # Claude Code integration
+│   ├── skills/              # 5 skills for AI agents
+│   └── agents/              # Custom subagent definitions
 ├── tools/cli/               # The CLI package
-│   ├── bpsai_pair/          # Python package source
-│   └── pyproject.toml       # Package metadata
-├── docs/                    # Documentation
+│   └── bpsai_pair/          # Python package source (see CLI Architecture)
+├── docs/                    # Public documentation
 │   └── adr/                 # Architecture Decision Records
-├── context/                 # DEPRECATED: v1 context (migrating)
 └── [governance files]       # LICENSE, CONTRIBUTING, etc.
+```
+
+## CLI Architecture (tools/cli/bpsai_pair/)
+
+```
+bpsai_pair/
+├── cli.py                   # Sub-app registration (~200 lines)
+├── tokens.py                # Token estimation (tiktoken)
+├── session.py               # Session detection
+├── core/                    # Shared infrastructure
+│   ├── config.py           # Configuration loading
+│   ├── hooks.py            # Hook system (11 hooks)
+│   ├── ops.py              # Git and file operations
+│   ├── presets.py          # Project templates
+│   └── utils.py            # Utilities
+├── commands/                # General CLI commands (15 modules)
+├── planning/                # plan, task, intent, standup
+├── trello/                  # Trello integration
+├── flows/                   # Flow parser (v1/v2 unified)
+└── [other modules]          # github, security, mcp, etc.
 ```
 
 ## Key Constraints
@@ -40,16 +62,23 @@ paircoder/
 | **CLI Stability** | v1 commands must continue working |
 | **File Format** | YAML for config/plans, Markdown for docs/flows |
 
-## Current State (v2 Upgrade)
+## Current State (v2.8.0)
 
-We are upgrading from v1 to v2. Key changes:
+PairCoder v2.8.0 is the latest release with:
 
-- **Consolidation**: All system files move under `.paircoder/`
-- **Planning**: New Goals → Tasks → Sprints system
-- **Flows**: Enhanced with YAML frontmatter + Markdown body
-- **LLM Integration**: `capabilities.yaml` tells LLMs what they can do
+- **112 CLI commands** across 15 command groups
+- **1774 tests** with comprehensive coverage
+- **11 built-in hooks** for workflow automation
+- **Token Budget System** for context management
+- **Trello/GitHub integration** for project management
 
-See `.paircoder/context/state.md` for current progress.
+Key v2.8 features:
+- **EPIC-003 Complete**: CLI architecture fully refactored
+- **Token Estimation**: `budget estimate/status/check` commands
+- **Session Management**: `session check/status` with compaction recovery
+- **Unified Flow Parser**: v1/v2 format support with deprecation warnings
+
+See `.paircoder/context/state.md` for current sprint progress.
 
 ## Architecture Principles
 
@@ -73,16 +102,20 @@ See `.paircoder/context/state.md` for current progress.
 | `.paircoder/config.yaml` | Project configuration |
 | `.paircoder/capabilities.yaml` | What LLMs can do here |
 | `.paircoder/context/state.md` | Current status and active work |
-| `docs/adr/0002-paircoder-v2.md` | v2 architecture decisions |
-| `tools/cli/bpsai_pair/cli.py` | CLI entry point |
-| `tools/cli/bpsai_pair/ops.py` | Core operations |
+| `.paircoder/docs/FEATURE_MATRIX.md` | Complete feature inventory |
+| `tools/cli/bpsai_pair/cli.py` | CLI sub-app registration |
+| `tools/cli/bpsai_pair/core/` | Shared infrastructure (config, hooks, ops) |
+| `tools/cli/bpsai_pair/commands/` | CLI command implementations |
+| `CHANGELOG.md` | Version history and release notes |
 
 ## Testing
 
 ```bash
 cd tools/cli
 pip install -e ".[dev]"
-pytest
+pytest                    # Run all 1774 tests
+pytest -x                 # Stop on first failure
+pytest -k "test_budget"   # Run specific tests
 ```
 
 ## Building

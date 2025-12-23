@@ -5,6 +5,65 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.8.0] - 2025-12-23 (EPIC-003 Complete + Token Budget System)
+
+### Added
+
+#### Sprint 25: Token Budget System
+- **tiktoken Integration** (T25.7) — Token counting with OpenAI's tokenizer
+  - `count_tokens()` function for accurate token counting
+  - Caches encoder for performance
+  - Falls back to estimate on error
+
+- **Token Estimation Module** (T25.8) — Predictive token usage
+  - `estimate_task_tokens()` considers complexity, file count, task type
+  - `estimate_session_tokens()` for session-level planning
+  - Configurable factors via `estimation:` in config.yaml
+
+- **Budget CLI Commands** (T25.9) — Token budget management
+  - `bpsai-pair budget estimate <task-id>` — Show token estimate breakdown
+  - `bpsai-pair budget status` — Show current session token usage
+  - `bpsai-pair budget check <task-id>` — Pre-flight check against limits
+
+- **Session Budget Integration** (T25.10) — Visual budget tracking
+  - `session status` now shows token budget progress bar
+  - Color-coded: green (<50%), blue (50-75%), yellow (75-90%), red (>90%)
+  - Shows percentage, total/limit, and status indicator
+
+- **Pre-Task Budget Hook** (T25.11) — Automatic warnings
+  - `check_token_budget` hook runs before task start
+  - Warns when task may exceed 75% of session budget
+  - Interactive prompt to continue, non-blocking in CI
+
+#### Sprint 22-24: CLI Architecture Refactor (EPIC-003)
+- **Module Extraction** — Cleaner architecture
+  - `commands/` directory with 15 command modules
+  - `core/` directory for shared infrastructure (config, hooks, ops, presets, utils)
+  - `planning/`, `sprint/`, `release/` for domain-specific commands
+  - `flows/parser.py` — Unified v1/v2 parser with deprecation warnings
+
+- **Architecture Documentation** — New CLI architecture diagram
+  - ASCII diagram in FEATURE_MATRIX.md showing 5-layer architecture
+  - Key architectural principles documented
+
+### Changed
+- **CLI module count** — Grew from 80+ to 112 commands
+- **Test count** — Increased to 1774 tests (from 1705)
+- **Hooks count** — Now 11 built-in hooks (added `check_token_budget`)
+- **File organization** — cli.py reduced to ~200 lines (registration only)
+
+### Deprecated
+- **v1 flow format** — YAML-only flows now emit deprecation warnings
+  - Use `.flow.md` format with YAML frontmatter instead
+  - See migration guide in docs/flows.md
+
+### Fixed
+- **Project root detection** (T25.6) — All commands now use centralized `find_project_root()`
+  - Removed duplicate implementations
+  - Consistent behavior across all CLI commands
+
+---
+
 ## [v2.7.0] - 2025-12-22 (Sprint 19: Methodology & Session Management)
 
 ### Added
