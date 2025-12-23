@@ -16,11 +16,11 @@
 |--------|-------|--------|----------|------------|
 | T25.12 | Skill Naming Convention Update | done | P2 | 15 |
 | T25.13 | Third-Person Voice in Skill Descriptions | done | P2 | 10 |
-| T25.14 | Create skill-creation Skill | pending | P1 | 35 |
-| T25.15 | Skill Installer Command | pending | P1 | 40 |
+| T25.14 | Create skill-creation Skill | done | P1 | 35 |
+| T25.15 | Skill Installer Command | done | P1 | 40 |
 | T25.16 | Cross-Platform Skill Structure | pending | P2 | 50 |
 
-**Progress:** 2/5 tasks (25/150 complexity points)
+**Progress:** 4/5 tasks (100/150 complexity points)
 
 ## Recommended Execution Order
 
@@ -83,6 +83,43 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.15 Complete (Skill Installer Command)
+
+- **T25.15: Skill Installer Command** ✓
+  - Created `bpsai_pair/skills/installer.py` module with:
+    - `parse_source()` - detect URL vs local path
+    - `parse_github_url()` - extract owner/repo/branch/path from GitHub URLs
+    - `install_from_path()` - install from local directory
+    - `install_from_url()` - download and install from GitHub
+    - `check_conflicts()` - detect naming conflicts
+    - `get_target_dir()` - get project or personal target
+  - Added `bpsai-pair skill install` CLI command:
+    - `skill install <path>` - install from local path
+    - `skill install <url>` - install from GitHub URL
+    - `--name` flag to rename skill during install
+    - `--force` flag to overwrite existing skill
+    - `--project` / `--personal` flags for target selection
+  - Validates skills before installation using existing validator
+  - GitHub URL parsing handles tree/blob formats and branches with slashes
+  - 25 new tests covering all installation scenarios
+  - All 41 skill-related tests pass
+
+### 2025-12-23 - T25.14 Complete (Create skill-creation Skill)
+
+- **T25.14: Create skill-creation Skill** ✓
+  - Created `.claude/skills/creating-skills/SKILL.md` (153 lines)
+  - Meta-skill that guides users through creating new Claude Code skills
+  - Documents Anthropic skill specifications:
+    - Frontmatter rules (only name + description allowed)
+    - Naming conventions (lowercase, hyphens, gerund form)
+    - Description guidelines (<1024 chars, 3rd-person voice)
+    - File size limits (<500 lines)
+  - Includes complete SKILL.md template
+  - References CLI commands: `bpsai-pair skill validate`, `bpsai-pair skill list`
+  - Self-validates: passes `bpsai-pair skill validate creating-skills`
+  - Added to cookiecutter template
+  - All 7 skills now validate: 7 pass, 0 warnings, 0 errors
 
 ### 2025-12-23 - T25.13 Complete (Third-Person Voice in Skill Descriptions)
 

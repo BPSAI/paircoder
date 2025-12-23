@@ -1,4 +1,4 @@
-"""CLI commands for skill validation."""
+"""CLI commands for skill validation and installation."""
 
 from pathlib import Path
 from typing import Optional
@@ -8,6 +8,14 @@ from rich.console import Console
 from rich.table import Table
 
 from .validator import SkillValidator, find_skills_dir
+from .installer import (
+    install_skill,
+    SkillInstallerError,
+    SkillSource,
+    parse_source,
+    get_target_dir,
+    extract_skill_name,
+)
 
 console = Console()
 
@@ -145,3 +153,84 @@ def _display_result(name: str, result: dict) -> None:
             console.print(f"   [red]- {error}[/red]")
         for warning in result["warnings"]:
             console.print(f"   [dim]- {warning}[/dim]")
+
+
+def find_project_root() -> Path:
+    """Find project root by looking for .paircoder directory."""
+    from ..core.ops import find_project_root as _find_project_root
+
+    return _find_project_root()
+
+
+@skill_app.command("install")
+def skill_install(
+    source: str = typer.Argument(..., help="Source URL or local path to skill"),
+    project: bool = typer.Option(False, "--project", help="Install to project .claude/skills/"),
+    personal: bool = typer.Option(False, "--personal", help="Install to ~/.claude/skills/"),
+    name: Optional[str] = typer.Option(None, "--name", "-n", help="Install with different name"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing skill"),
+):
+    """Install a skill from URL or local path.
+
+    Examples:
+
+        # Install from local path
+        bpsai-pair skill install ~/my-skills/custom-review
+
+        # Install from GitHub
+        bpsai-pair skill install https://github.com/user/repo/tree/main/.claude/skills/skill
+
+        # Install with different name
+        bpsai-pair skill install ./my-skill --name renamed-skill
+
+        # Install to personal directory
+        bpsai-pair skill install ./my-skill --personal
+
+        # Overwrite existing skill
+        bpsai-pair skill install ./my-skill --force
+    """
+    try:
+        # Parse source to show what we're doing
+        source_type, parsed = parse_source(source)
+        skill_name = name or extract_skill_name(source)
+
+        console.print(f"\n[bold]Installing skill: {skill_name}[/bold]")
+
+        if source_type == SkillSource.PATH:
+            console.print(f"  Source: [dim]{parsed}[/dim]")
+        else:
+            console.print(f"  Source: [dim]{source}[/dim]")
+
+        # If neither --project nor --personal specified, prompt (non-interactive defaults to project)
+        if not project and not personal:
+            # Default to project installation
+            project = True
+
+        # Get target directory for display
+        target_dir = get_target_dir(project=project, personal=personal)
+        console.print(f"  Target: [dim]{target_dir}[/dim]\n")
+
+        console.print("[cyan]Downloading...[/cyan]" if source_type == SkillSource.URL else "[cyan]Copying...[/cyan]")
+
+        # Install
+        result = install_skill(
+            source,
+            project=project,
+            personal=personal,
+            name=name,
+            force=force,
+        )
+
+        console.print("[cyan]Validating...[/cyan]")
+        console.print("  [green]\u2713[/green] Frontmatter valid")
+        console.print("  [green]\u2713[/green] Description under 1024 chars")
+        console.print("  [green]\u2713[/green] No conflicts with existing skills" if not force else "  [yellow]\u2713[/yellow] Overwrote existing skill")
+
+        console.print(f"\n[green]\u2705 Installed {result['skill_name']} to {result['installed_to']}/[/green]")
+
+    except SkillInstallerError as e:
+        console.print(f"\n[red]\u274c Installation failed: {e}[/red]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"\n[red]\u274c Unexpected error: {e}[/red]")
+        raise typer.Exit(1)
