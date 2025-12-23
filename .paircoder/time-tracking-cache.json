@@ -527,9 +527,9 @@
     "total_seconds": 89.699122
   },
   "_active": {
-    "task_id": "T25.12",
-    "timer_id": "local-20251223114008",
-    "description": "T25.12: Skill Naming Convention Update",
-    "start": "2025-12-23T11:40:08.851177"
+    "task_id": "T25.13",
+    "timer_id": "local-20251223115057",
+    "description": "T25.13: Third-Person Voice in Skill Descriptions",
+    "start": "2025-12-23T11:50:57.255538"
   }
 }

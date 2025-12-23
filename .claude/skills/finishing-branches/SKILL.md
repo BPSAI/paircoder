@@ -1,6 +1,6 @@
 ---
 name: finishing-branches
-description: Complete and finalize work on a branch for merge. Use when user wants to finish, ship, merge, complete, or wrap up current work. Triggers on words like finish, merge, complete, ship, wrap up, done, ready.
+description: Completes and finalizes feature branch work for merge readiness. Runs verification checks, updates documentation, and prepares pull requests. Activated when work is complete and ready for integration.
 ---
 
 # Finish Branch

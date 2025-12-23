@@ -1,6 +1,6 @@
 ---
 name: planning-with-trello
-description: Create and manage development plans with Trello sync. Use when planning features, creating sprints, breaking down work, or syncing plans to Trello. Triggers on words like plan feature, create plan, sprint planning, sync to trello, break down.
+description: Creates and manages development plans with Trello board synchronization. Handles sprint planning, task breakdown, and card creation. Activated for feature planning, sprint organization, or Trello sync operations.
 ---
 
 # Trello-Aware Planning Skill

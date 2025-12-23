@@ -1,6 +1,6 @@
 ---
 name: designing-and-implementing
-description: Turn feature requests into validated designs and implementation plans. Use when user describes a feature to build, asks "how should we approach", mentions planning a capability, or requests a multi-step implementation. Triggers on words like design, plan, approach, feature, architecture, strategy.
+description: Transforms feature requests into validated designs and structured implementation plans. Guides developers through requirement clarification, design alternatives, and task breakdown. Activated by feature descriptions, architectural discussions, or multi-step implementation needs.
 ---
 
 # Design → Plan → Implement

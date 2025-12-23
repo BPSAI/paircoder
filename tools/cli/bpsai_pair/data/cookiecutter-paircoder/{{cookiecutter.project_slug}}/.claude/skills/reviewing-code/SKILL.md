@@ -1,6 +1,6 @@
 ---
 name: reviewing-code
-description: Review code changes for quality, correctness, and best practices. Use when user asks to review code, check a PR, look at changes, or evaluate implementation quality. Triggers on words like review, check, PR, pull request, evaluate, feedback.
+description: Provides systematic code review workflow for identifying issues, verifying quality, and ensuring best practices. Analyzes changes for correctness, security, and maintainability. Activated by review requests, PR checks, or code evaluation needs.
 ---
 
 # Code Review Workflow

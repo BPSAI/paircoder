@@ -15,12 +15,12 @@
 | ID     | Title | Status | Priority | Complexity |
 |--------|-------|--------|----------|------------|
 | T25.12 | Skill Naming Convention Update | done | P2 | 15 |
-| T25.13 | Third-Person Voice in Skill Descriptions | pending | P2 | 10 |
+| T25.13 | Third-Person Voice in Skill Descriptions | done | P2 | 10 |
 | T25.14 | Create skill-creation Skill | pending | P1 | 35 |
 | T25.15 | Skill Installer Command | pending | P1 | 40 |
 | T25.16 | Cross-Platform Skill Structure | pending | P2 | 50 |
 
-**Progress:** 1/5 tasks (15/150 complexity points)
+**Progress:** 2/5 tasks (25/150 complexity points)
 
 ## Recommended Execution Order
 
@@ -83,6 +83,20 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T25.13 Complete (Third-Person Voice in Skill Descriptions)
+
+- **T25.13: Third-Person Voice in Skill Descriptions** ✓
+  - Updated all 6 skill descriptions to use third-person voice:
+    - `reviewing-code`: "Provides systematic code review workflow..."
+    - `designing-and-implementing`: "Transforms feature requests into validated designs..."
+    - `finishing-branches`: "Completes and finalizes feature branch work..."
+    - `implementing-with-tdd`: "Implements features and fixes using TDD..."
+    - `managing-task-lifecycle`: "Manages PairCoder task status transitions..."
+    - `planning-with-trello`: "Creates and manages development plans..."
+  - Updated cookiecutter template skill descriptions
+  - All skills pass validation: `bpsai-pair skill validate` → 6 pass, 0 warnings
+  - All 36 relevant tests pass
 
 ### 2025-12-23 - T25.12 Complete (Skill Naming Convention Update)
 

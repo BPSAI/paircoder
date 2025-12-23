@@ -1,6 +1,6 @@
 ---
 name: implementing-with-tdd
-description: Implement features using test-driven development. Use when fixing bugs, implementing well-defined tasks, or when user mentions TDD, testing, or asks to fix/implement something specific. Triggers on words like fix, bug, implement, test, TDD, failing test.
+description: Implements features and fixes using test-driven development methodology. Follows the red-green-refactor cycle to ensure code correctness and maintainability. Activated for bug fixes, feature implementation, or test-first development requests.
 ---
 
 # TDD Implementation
