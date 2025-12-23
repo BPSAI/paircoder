@@ -125,6 +125,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
         ("AGENTS.md", "AGENTS.md"),
         (".paircoder/capabilities.yaml", ".paircoder/capabilities.yaml"),
         (".paircoder/context/workflow.md", ".paircoder/context/workflow.md"),
+        (".claude/settings.json", ".claude/settings.json"),
     ]
 
     for template_rel, project_rel in safe_docs:
