@@ -8,8 +8,10 @@ import pytest
 from pathlib import Path
 from typer.testing import CliRunner
 
-from bpsai_pair.flows import Flow, Step, FlowParser, FlowValidationError
-from bpsai_pair.flows.models import StepStatus
+# Import v1 models for backward compatibility tests
+from bpsai_pair.flows.models import Flow, Step, FlowValidationError, StepStatus
+# Import unified parser
+from bpsai_pair.flows import FlowParser
 from bpsai_pair.cli import app
 
 runner = CliRunner()

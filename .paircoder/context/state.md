@@ -17,7 +17,7 @@
 
 | ID      | Title | Status | Priority | Complexity |
 |---------|-------|--------|----------|------------|
-| T24.11  | Merge flows/parser.py + parser_v2.py | pending | P0 | 35 |
+| T24.11  | Merge flows/parser.py + parser_v2.py | ✓ done | P0 | 35 |
 | T24.12  | Deprecate v1 flow format | pending | P1 | 15 |
 | T24.13  | Update all flow references to unified parser | pending | P1 | 20 |
 
@@ -47,7 +47,7 @@
 | T25.10  | Integrate budget into session status | pending | P2 | 20 |
 | T25.11  | Add pre-task budget hook | pending | P2 | 20 |
 
-**Progress:** 1/14 tasks (20/320 complexity points)
+**Progress:** 2/14 tasks (55/320 complexity points)
 
 ## Previous Sprint Summary (Sprint 24)
 
@@ -105,6 +105,19 @@ See `.paircoder/tasks/backlog/`:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-23 - T24.11 Complete (Parser Consolidation)
+
+- **T24.11: Merge flows/parser.py + flows/parser_v2.py** ✓
+  - Created unified `parser.py` supporting both formats:
+    - V1 (Legacy): YAML with steps array (.yaml, .yml)
+    - V2 (Current): YAML frontmatter + Markdown (.flow.md)
+  - V2 parser is canonical (used by CLI commands)
+  - V1 models kept in `models.py` for backward compatibility
+  - Deleted `parser_v2.py`
+  - Updated `__init__.py` to export both v1 and v2 classes
+  - Updated `commands/flow.py` to use unified parser
+  - All 1719 tests passing
 
 ### 2025-12-23 - T25.6 Complete (Bug Fix)
 

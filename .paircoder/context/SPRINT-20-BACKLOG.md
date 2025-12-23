@@ -1,8 +1,8 @@
 # Sprint 20: Cross-Platform Skills
 
-> **Target Version:** v2.9.0
+> **Target Version:** v2.8.1
 > **Type:** feature
-> **Slug:** sprint-20-cross-platform-skills
+> **Slug:** sprint-25.5-cross-platform-skills
 > **Focus:** Make skills portable, improve skill creation and installation
 
 ---
@@ -11,16 +11,11 @@
 
 Establish PairCoder as a skill platform. Skills should be easy to create, share, and install across projects and platforms.
 
-**Note:** Sprint 17.5 already completed:
-- Config validate/update command (TASK-161)
-- Trello custom fields CLI (TASK-162)
-- Document Trello board conventions (TASK-154)
-
 ---
 
 ## Backlog Items
 
-### T20.1: Skill Naming Convention Update
+### T25.12: Skill Naming Convention Update
 
 **Priority:** P2
 **Effort:** S (2 hrs)
@@ -58,7 +53,7 @@ Rename existing skills to follow Anthropic's recommended gerund form naming conv
 
 ---
 
-### T20.2: Third-Person Voice in Skill Descriptions
+### T25.13: Third-Person Voice in Skill Descriptions
 
 **Priority:** P2
 **Effort:** S (1 hr)
@@ -83,7 +78,7 @@ Update all skill descriptions to use third-person voice instead of second-person
 
 ---
 
-### T20.3: Create skill-creation Skill
+### T25.14: Create skill-creation Skill
 
 **Priority:** P1
 **Effort:** M (4 hrs)
@@ -110,6 +105,7 @@ Create a skill when:
 - A workflow is repeated across multiple sessions
 - Complex multi-step processes need documentation
 - Team needs standardized approach to a task
+- An error occurs during task completion that could have been solved with a skill
 
 ## Skill Structure
 

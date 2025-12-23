@@ -32,10 +32,10 @@ def print_json(data: dict) -> None:
 # Try relative imports first, fall back to absolute
 try:
     from ..core import ops
-    from ..flows.parser_v2 import FlowParser as FlowParserV2
+    from ..flows.parser import FlowParser
 except ImportError:
     from bpsai_pair.core import ops
-    from bpsai_pair.flows.parser_v2 import FlowParser as FlowParserV2
+    from bpsai_pair.flows.parser import FlowParser
 
 
 def repo_root() -> Path:
@@ -66,7 +66,7 @@ def _find_flow_v2(root: Path, name: str):
     for flows_dir in search_paths:
         if not flows_dir.exists():
             continue
-        parser = FlowParserV2(flows_dir)
+        parser = FlowParser(flows_dir)
         flow = parser.get_flow_by_name(name)
         if flow:
             return flow
@@ -101,7 +101,7 @@ def flow_list(
         raise typer.Exit(0)
 
     # Use v2 parser which supports both .flow.yml and .flow.md
-    parser = FlowParserV2(flows_dir)
+    parser = FlowParser(flows_dir)
     flows = parser.parse_all()
 
     if json_out:
@@ -142,7 +142,7 @@ def flow_show(
     flows_dir = _flows_root(root)
 
     # Use v2 parser which supports both .flow.yml and .flow.md
-    parser = FlowParserV2(flows_dir)
+    parser = FlowParser(flows_dir)
     flow = parser.get_flow_by_name(name)
 
     if not flow:
