@@ -6,7 +6,11 @@ from typer.testing import CliRunner
 
 @pytest.fixture
 def mock_board_client():
-    """Mock the get_board_client function and related dependencies."""
+    """Mock the get_board_client function and related dependencies.
+
+    Also mocks _log_bypass to prevent file system side effects (creating
+    .paircoder/history/ in the wrong location).
+    """
     mock_client = MagicMock()
     mock_config = {
         "trello": {
@@ -17,7 +21,8 @@ def mock_board_client():
         }
     }
 
-    with patch('bpsai_pair.trello.task_commands.get_board_client') as mock_get:
+    with patch('bpsai_pair.trello.task_commands.get_board_client') as mock_get, \
+         patch('bpsai_pair.trello.task_commands._log_bypass'):
         mock_get.return_value = (mock_client, mock_config)
         yield mock_client, mock_config
 

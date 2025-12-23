@@ -16,8 +16,11 @@ from ...planning.models import TaskStatus
 
 def find_paircoder_dir() -> Path:
     """Find the .paircoder directory."""
-    from ...core.ops import find_paircoder_dir as _find_paircoder_dir
-    paircoder_dir = _find_paircoder_dir()
+    from ...core.ops import find_paircoder_dir as _find_paircoder_dir, ProjectRootNotFoundError
+    try:
+        paircoder_dir = _find_paircoder_dir()
+    except ProjectRootNotFoundError:
+        raise FileNotFoundError("No .paircoder directory found")
     if not paircoder_dir.exists():
         raise FileNotFoundError("No .paircoder directory found")
     return paircoder_dir

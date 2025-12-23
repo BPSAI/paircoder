@@ -57,6 +57,7 @@ from .utils import (
 from .ops import (
     find_project_root,
     find_paircoder_dir,
+    ProjectRootNotFoundError,
 )
 
 __all__ = [
@@ -98,4 +99,5 @@ __all__ = [
     # Ops helpers
     "find_project_root",
     "find_paircoder_dir",
+    "ProjectRootNotFoundError",
 ]

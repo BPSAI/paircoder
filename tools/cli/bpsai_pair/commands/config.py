@@ -53,7 +53,11 @@ def config_validate(
     except ImportError:
         from bpsai_pair.core.config import validate_config, CURRENT_CONFIG_VERSION
 
-    root = ops.find_project_root()
+    try:
+        root = ops.find_project_root()
+    except ops.ProjectRootNotFoundError:
+        console.print("[red]No config file found. Run 'bpsai-pair init' first.[/red]")
+        raise typer.Exit(1)
     result = validate_config(root, preset)
 
     if json_output:
@@ -128,7 +132,11 @@ def config_update(
     except ImportError:
         from bpsai_pair.core.config import update_config, save_raw_config
 
-    root = ops.find_project_root()
+    try:
+        root = ops.find_project_root()
+    except ops.ProjectRootNotFoundError:
+        console.print("[red]No config file found. Run 'bpsai-pair init' first.[/red]")
+        raise typer.Exit(1)
 
     try:
         updated_config, changes = update_config(root, preset)
@@ -180,7 +188,11 @@ def config_show(
     except ImportError:
         from bpsai_pair.core.config import load_raw_config
 
-    root = ops.find_project_root()
+    try:
+        root = ops.find_project_root()
+    except ops.ProjectRootNotFoundError:
+        console.print("[red]No config file found. Run 'bpsai-pair init' first.[/red]")
+        raise typer.Exit(1)
     raw_config, config_file = load_raw_config(root)
 
     if raw_config is None:

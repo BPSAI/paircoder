@@ -127,13 +127,16 @@ class TestFindProjectRoot:
         root = ops.find_project_root(tmp_path)
         assert root == tmp_path  # Both exist, finds at same level
 
-    def test_returns_cwd_when_not_found(self, tmp_path):
-        """find_project_root returns start_path when not found."""
+    def test_raises_error_when_not_found(self, tmp_path):
+        """find_project_root raises ProjectRootNotFoundError when not found."""
         subdir = tmp_path / "random" / "dir"
         subdir.mkdir(parents=True)
 
-        root = ops.find_project_root(subdir)
-        assert root == subdir  # No .paircoder or .git, returns start
+        with pytest.raises(ops.ProjectRootNotFoundError) as exc_info:
+            ops.find_project_root(subdir)
+
+        assert "No .paircoder or .git directory found" in str(exc_info.value)
+        assert str(subdir) in str(exc_info.value)
 
 
 class TestFindPaircoderDir:

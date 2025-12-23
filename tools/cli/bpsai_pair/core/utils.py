@@ -22,12 +22,12 @@ def repo_root() -> Path:
     Raises:
         SystemExit: If not run from within a git repository
     """
-    from .ops import find_project_root
+    from .ops import find_project_root, ProjectRootNotFoundError
 
-    p = find_project_root()
-    if not (p / ".git").exists() and not (p / ".paircoder").exists():
+    try:
+        return find_project_root()
+    except ProjectRootNotFoundError:
         raise SystemExit("Run from repo root (where .git or .paircoder exists).")
-    return p
 
 
 def ensure_executable(path: Path) -> None:

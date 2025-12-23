@@ -15,6 +15,12 @@ import shutil
 import json
 
 
+class ProjectRootNotFoundError(Exception):
+    """Raised when no project root (.paircoder or .git) is found."""
+
+    pass
+
+
 def find_project_root(start_path: Path = None) -> Path:
     """Find project root by walking up to find .paircoder/ or .git/
 
@@ -22,7 +28,10 @@ def find_project_root(start_path: Path = None) -> Path:
         start_path: Starting path (defaults to cwd)
 
     Returns:
-        Path to project root, or cwd if not found
+        Path to project root
+
+    Raises:
+        ProjectRootNotFoundError: If no .paircoder or .git directory is found
     """
     cwd = start_path or Path.cwd()
 
@@ -32,7 +41,10 @@ def find_project_root(start_path: Path = None) -> Path:
         if (parent / ".git").exists():
             return parent
 
-    return cwd
+    raise ProjectRootNotFoundError(
+        f"No .paircoder or .git directory found starting from {cwd}. "
+        "Run 'bpsai-pair init' to initialize a project, or run from a git repository."
+    )
 
 
 def find_paircoder_dir(start_path: Path = None) -> Path:
@@ -43,6 +55,9 @@ def find_paircoder_dir(start_path: Path = None) -> Path:
 
     Returns:
         Path to .paircoder directory (may not exist yet)
+
+    Raises:
+        ProjectRootNotFoundError: If no project root is found
     """
     root = find_project_root(start_path)
     return root / ".paircoder"
