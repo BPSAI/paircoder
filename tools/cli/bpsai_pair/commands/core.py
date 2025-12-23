@@ -795,6 +795,50 @@ def ci_command(
             console.print("[dim]No Python or Node.js project detected[/dim]")
 
 
+def history_log_command(
+    file_path: Optional[str] = typer.Argument(None, help="File path to log (or use CLAUDE_TOOL_INPUT_FILE_PATH env var)"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress output, exit 0 on errors"),
+):
+    """Log a file change to the history log (cross-platform).
+
+    This command is designed for use in Claude Code hooks as a cross-platform
+    alternative to shell commands. It creates the history directory if needed
+    and appends the timestamp and file path to changes.log.
+
+    The file path can be provided as an argument or read from the
+    CLAUDE_TOOL_INPUT_FILE_PATH environment variable (set by Claude Code).
+
+    Use --quiet for hooks (suppresses errors, always exits 0).
+    """
+    try:
+        # Get file path from argument or environment variable
+        path_to_log = file_path or os.environ.get("CLAUDE_TOOL_INPUT_FILE_PATH")
+        if not path_to_log:
+            if quiet:
+                return
+            console.print("[red]No file path provided and CLAUDE_TOOL_INPUT_FILE_PATH not set[/red]")
+            raise typer.Exit(1)
+
+        root = repo_root()
+        history_dir = root / ".paircoder" / "history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+
+        log_file = history_dir / "changes.log"
+        timestamp = datetime.now().isoformat(timespec="seconds")
+        entry = f"{timestamp} {path_to_log}\n"
+
+        with open(log_file, "a") as f:
+            f.write(entry)
+
+        if not quiet:
+            console.print(f"[green]![/green] Logged: {path_to_log}")
+    except Exception as e:
+        if quiet:
+            return  # Silent exit for hooks
+        console.print(f"[red]Error logging file change: {e}[/red]")
+        raise typer.Exit(1)
+
+
 def register_core_commands(app: typer.Typer) -> None:
     """Register all core commands on the main app.
 
@@ -810,3 +854,4 @@ def register_core_commands(app: typer.Typer) -> None:
     app.command("status")(status_command)
     app.command("validate")(validate_command)
     app.command("ci")(ci_command)
+    app.command("history-log", hidden=True)(history_log_command)
