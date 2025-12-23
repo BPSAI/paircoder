@@ -23,6 +23,14 @@ from .exporter import (
     ExportFormat,
     SkillExporterError,
 )
+from .suggestion import (
+    suggest_skills,
+    PatternDetector,
+    SkillSuggester,
+    SkillDraftCreator,
+    HistoryParser,
+    SkillSuggestionError,
+)
 
 console = Console()
 
@@ -347,3 +355,126 @@ def skill_export(
     except Exception as e:
         console.print(f"\n[red]\u274c Unexpected error: {e}[/red]")
         raise typer.Exit(1)
+
+
+@skill_app.command("suggest")
+def skill_suggest(
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    create: Optional[int] = typer.Option(None, "--create", "-c", help="Create draft for suggestion N"),
+    min_occurrences: int = typer.Option(3, "--min", "-m", help="Minimum pattern occurrences"),
+):
+    """Analyze session history and suggest new skills.
+
+    Scans recent workflow patterns and suggests skills that could automate
+    frequently repeated command sequences.
+
+    Examples:
+
+        # Show suggestions
+        bpsai-pair skill suggest
+
+        # Output as JSON
+        bpsai-pair skill suggest --json
+
+        # Create draft for first suggestion
+        bpsai-pair skill suggest --create 1
+
+        # Require at least 5 occurrences
+        bpsai-pair skill suggest --min 5
+    """
+    import json
+
+    try:
+        project_dir = find_project_root()
+    except Exception:
+        console.print("[red]Could not find project root[/red]")
+        raise typer.Exit(1)
+
+    history_dir = project_dir / ".paircoder" / "history"
+    try:
+        skills_dir = find_skills_dir()
+    except FileNotFoundError:
+        skills_dir = project_dir / ".claude" / "skills"
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+    console.print("[cyan]Analyzing session patterns...[/cyan]\n")
+
+    # Get suggestions
+    suggestions = suggest_skills(
+        history_dir=history_dir,
+        skills_dir=skills_dir,
+        min_occurrences=min_occurrences,
+    )
+
+    if json_out:
+        output = {
+            "suggestions": suggestions,
+            "total": len(suggestions),
+        }
+        console.print(json.dumps(output, indent=2))
+        return
+
+    if not suggestions:
+        console.print("[dim]No patterns found that would benefit from a skill.[/dim]")
+        console.print("\n[dim]Tips:[/dim]")
+        console.print("  - Patterns need at least 3 occurrences by default")
+        console.print("  - Try using --min to lower the threshold")
+        console.print("  - More session history helps detect patterns")
+        return
+
+    console.print(f"[bold]Suggested Skills ({len(suggestions)}):[/bold]\n")
+
+    for i, suggestion in enumerate(suggestions, 1):
+        name = suggestion.get("name", "unknown")
+        confidence = suggestion.get("confidence", 0)
+        description = suggestion.get("description", "")
+        occurrences = suggestion.get("occurrences", 0)
+        estimated_savings = suggestion.get("estimated_savings", "")
+        overlaps = suggestion.get("overlaps_with", [])
+
+        # Confidence indicator
+        if confidence >= 80:
+            conf_style = "green"
+        elif confidence >= 60:
+            conf_style = "yellow"
+        else:
+            conf_style = "dim"
+
+        console.print(f"[bold]{i}. {name}[/bold] [{conf_style}](confidence: {confidence}%)[/{conf_style}]")
+        console.print(f"   [dim]{description}[/dim]")
+        console.print(f"   Pattern occurrences: {occurrences}")
+        if estimated_savings:
+            console.print(f"   Estimated savings: {estimated_savings}")
+        if overlaps:
+            console.print(f"   [yellow]⚠ May overlap with: {', '.join(overlaps)}[/yellow]")
+        console.print()
+
+    # Handle --create option
+    if create is not None:
+        if create < 1 or create > len(suggestions):
+            console.print(f"[red]Invalid suggestion number. Choose 1-{len(suggestions)}[/red]")
+            raise typer.Exit(1)
+
+        suggestion = suggestions[create - 1]
+        console.print(f"[cyan]Creating draft for: {suggestion['name']}[/cyan]")
+
+        try:
+            creator = SkillDraftCreator(skills_dir=skills_dir)
+            result = creator.create_draft(suggestion)
+
+            if result["success"]:
+                console.print(f"[green]\u2705 Created draft: {result['path']}[/green]")
+
+                validation = result.get("validation", {})
+                if validation.get("valid"):
+                    console.print("   [green]\u2713[/green] Passes validation")
+                else:
+                    console.print("   [yellow]\u26a0[/yellow] Review validation warnings")
+                    for error in validation.get("errors", []):
+                        console.print(f"      [red]{error}[/red]")
+
+        except SkillSuggestionError as e:
+            console.print(f"[red]\u274c Failed to create draft: {e}[/red]")
+            raise typer.Exit(1)
+    else:
+        console.print("[dim]Use --create N to create a draft for suggestion N[/dim]")

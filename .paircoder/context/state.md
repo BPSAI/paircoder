@@ -84,6 +84,27 @@ See `.paircoder/tasks/backlog/`:
 
 _Add entries here as work is completed._
 
+### 2025-12-23 - T25.17 Complete (/update-skills Slash Command)
+
+- **T25.17: /update-skills Slash Command** ✓
+  - Created `.claude/commands/update-skills.md` slash command
+  - Created `bpsai_pair/skills/suggestion.py` module with:
+    - `HistoryParser` - parses session history files
+    - `PatternDetector` - detects repeated command sequences
+    - `SkillSuggester` - generates skill suggestions with confidence scores
+    - `SkillDraftCreator` - creates skill drafts from suggestions
+    - `suggest_skills()` - high-level function for pattern analysis
+  - Added `bpsai-pair skill suggest` CLI command:
+    - Shows suggestions with confidence scores (0-100%)
+    - Detects overlap with existing skills
+    - `--create N` flag to create draft for suggestion N
+    - `--json` flag for JSON output
+    - `--min` flag to set minimum pattern occurrences
+  - Integrates with existing skill validator for draft validation
+  - Added slash command to cookiecutter template
+  - 19 new tests, all passing
+  - All 82 skill-related tests pass
+
 ### 2025-12-23 - T25.16 Complete (Cross-Platform Skill Structure) - SPRINT 25.5 COMPLETE!
 
 - **T25.16: Cross-Platform Skill Structure** ✓

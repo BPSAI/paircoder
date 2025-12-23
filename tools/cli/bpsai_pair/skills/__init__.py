@@ -20,6 +20,14 @@ from .exporter import (
     export_all_skills,
     check_portability,
 )
+from .suggestion import (
+    SkillSuggestionError,
+    HistoryParser,
+    PatternDetector,
+    SkillSuggester,
+    SkillDraftCreator,
+    suggest_skills,
+)
 
 __all__ = [
     "SkillValidator",
@@ -39,4 +47,10 @@ __all__ = [
     "export_skill",
     "export_all_skills",
     "check_portability",
+    "SkillSuggestionError",
+    "HistoryParser",
+    "PatternDetector",
+    "SkillSuggester",
+    "SkillDraftCreator",
+    "suggest_skills",
 ]
