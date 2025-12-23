@@ -30,19 +30,8 @@ app = typer.Typer(
 
 def find_paircoder_dir() -> Path:
     """Find .paircoder directory in current or parent directories."""
-    current = Path.cwd()
-
-    # Check current and parent directories
-    for _ in range(10):  # Limit search depth
-        paircoder_dir = current / ".paircoder"
-        if paircoder_dir.exists():
-            return paircoder_dir
-        if current.parent == current:
-            break
-        current = current.parent
-
-    # Default to current directory
-    return Path.cwd() / ".paircoder"
+    from ..core.ops import find_paircoder_dir as _find_paircoder_dir
+    return _find_paircoder_dir()
 
 
 def get_state_manager() -> StateManager:

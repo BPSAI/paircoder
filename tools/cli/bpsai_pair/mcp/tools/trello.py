@@ -12,13 +12,11 @@ from typing import Any, Optional
 
 def find_paircoder_dir() -> Path:
     """Find the .paircoder directory."""
-    current = Path.cwd()
-    while current != current.parent:
-        paircoder_dir = current / ".paircoder"
-        if paircoder_dir.exists():
-            return paircoder_dir
-        current = current.parent
-    raise FileNotFoundError("No .paircoder directory found")
+    from ...core.ops import find_paircoder_dir as _find_paircoder_dir
+    paircoder_dir = _find_paircoder_dir()
+    if not paircoder_dir.exists():
+        raise FileNotFoundError("No .paircoder directory found")
+    return paircoder_dir
 
 
 def get_trello_service():

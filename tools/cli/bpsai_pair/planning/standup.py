@@ -337,7 +337,8 @@ def generate_standup(
         Formatted standup summary string
     """
     if paircoder_dir is None:
-        paircoder_dir = Path.cwd() / ".paircoder"
+        from ..core.ops import find_paircoder_dir
+        paircoder_dir = find_paircoder_dir()
 
     generator = StandupGenerator(paircoder_dir)
     summary = generator.generate(since_hours=since_hours, plan_id=plan_id)

@@ -27,12 +27,8 @@ app = typer.Typer(
 
 def _find_paircoder_dir() -> Path:
     """Find .paircoder directory."""
-    cwd = Path.cwd()
-    while cwd != cwd.parent:
-        if (cwd / ".paircoder").is_dir():
-            return cwd / ".paircoder"
-        cwd = cwd.parent
-    return Path.cwd() / ".paircoder"
+    from ..core.ops import find_paircoder_dir
+    return find_paircoder_dir()
 
 
 def _get_github_service() -> GitHubService:

@@ -283,7 +283,7 @@ def run():
 
 ---
 
-### Phase 4: Consolidate Parsers (Sprint 24 or 25)
+### Phase 4: Consolidate Parsers (Sprint 24)
 
 **Goal:** Single canonical parser per domain
 

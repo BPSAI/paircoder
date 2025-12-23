@@ -448,7 +448,8 @@ def invoke_planner(
     )
 
     if task_id:
-        task_dir = (working_dir or Path.cwd()) / ".paircoder"
+        from ..core.ops import find_paircoder_dir
+        task_dir = (working_dir / ".paircoder") if working_dir else find_paircoder_dir()
         context_dir = task_dir / "context"
         return planner.plan(
             task_id=task_id,
