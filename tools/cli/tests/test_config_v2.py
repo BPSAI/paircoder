@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from bpsai_pair.config import Config, ContextTemplate
+from bpsai_pair.core.config import Config, ContextTemplate
 
 
 def test_save_v2_creates_paircoder_config_yaml(tmp_path: Path):

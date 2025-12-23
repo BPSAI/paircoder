@@ -7,7 +7,7 @@ import pytest
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bpsai_pair.config import Config, ContextTemplate
+from bpsai_pair.core.config import Config, ContextTemplate
 
 
 def test_default_config():
