@@ -1,6 +1,7 @@
 ---
 description: Enter Navigator role to create a comprehensive plan with budget validation and Trello sync
-allowed-tools: Bash(bpsai-pair *), Read, Write
+allowed-tools: Bash(bpsai-pair:*), Bash(cat:*)
+argument-hint: [description] or [backlog-file.md]
 ---
 
 # Navigator Role - Planning Workflow

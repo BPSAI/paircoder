@@ -1,6 +1,7 @@
 ---
 description: Enter Driver role to work on a task with pre-flight checks, verification gates, and proper completion
-allowed-tools: Bash(bpsai-pair *, git *, pytest *, python *), Read, Write
+allowed-tools: Bash(bpsai-pair:*), Bash(git:*), Bash(pytest:*), Bash(python:*)
+argument-hint: <task-id>
 ---
 
 # Driver Role - Task Execution Workflow

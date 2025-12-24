@@ -1,6 +1,7 @@
 ---
 description: Enter Release Engineer role to prepare a release with documentation verification and security checks
-allowed-tools: Bash(bpsai-pair *, git *, pytest *, pip *), Read, Write
+allowed-tools: Bash(bpsai-pair:*), Bash(git:*), Bash(pytest:*), Bash(pip:*), Bash(grep:*), Bash(diff:*), Bash(rm:*), Bash(cd:*), Bash(ls:*)
+argument-hint: <version>
 ---
 
 # Release Engineer Role - Release Preparation Workflow
