@@ -91,7 +91,7 @@ class WorkflowConfig:
     auto_create_pr: bool = True
     auto_update_trello: bool = True
     run_tests_before_pr: bool = True
-    require_review: bool = False
+    require_review: bool = True
     max_tasks_per_session: int = 5
     task_timeout_minutes: int = 30
 

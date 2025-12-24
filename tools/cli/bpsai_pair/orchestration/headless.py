@@ -81,26 +81,24 @@ class HeadlessSession:
     _total_cost: float = field(default=0.0, repr=False)
     _total_tokens: int = field(default=0, repr=False)
 
-    def invoke(self, prompt: str, **kwargs) -> HeadlessResponse:
+    def invoke(self, prompt: str) -> HeadlessResponse:
         """
         Send a prompt to Claude Code in headless mode.
 
         Args:
             prompt: The prompt to send
-            **kwargs: Additional arguments passed to Claude Code
 
         Returns:
             HeadlessResponse with result and metadata
         """
-        return self._execute(prompt, resume=False, **kwargs)
+        return self._execute(prompt, resume=False)
 
-    def resume(self, prompt: str, **kwargs) -> HeadlessResponse:
+    def resume(self, prompt: str) -> HeadlessResponse:
         """
         Continue an existing session with a follow-up prompt.
 
         Args:
             prompt: The follow-up prompt
-            **kwargs: Additional arguments
 
         Returns:
             HeadlessResponse with result and metadata
@@ -110,7 +108,7 @@ class HeadlessSession:
         """
         if not self.session_id:
             raise ValueError("No session to resume. Call invoke() first.")
-        return self._execute(prompt, resume=True, **kwargs)
+        return self._execute(prompt, resume=True)
 
     def terminate(self) -> None:
         """Clean up the session."""
@@ -120,11 +118,58 @@ class HeadlessSession:
             f"Total tokens: {self._total_tokens}"
         )
 
-    def _execute(self, prompt: str, resume: bool = False, **kwargs) -> HeadlessResponse:
+    @staticmethod
+    def _check_budget(prompt: str, start_time: float) -> Optional[HeadlessResponse]:
+        """
+        Check budget before expensive AI operation.
+
+        Returns:
+            HeadlessResponse with error if over budget, None if OK to proceed.
+        """
+        try:
+            from ..metrics.budget import BudgetEnforcer
+            from ..metrics.collector import MetricsCollector
+            from ..tokens import estimate_prompt_tokens
+            from ..core.ops import find_paircoder_dir
+        except ImportError:
+            # Budget modules not available, skip check
+            BudgetEnforcer = None  # noqa: F841
+            MetricsCollector = None  # noqa: F841
+            estimate_prompt_tokens = None  # noqa: F841
+            find_paircoder_dir = None  # noqa: F841
+            logger.debug("Budget enforcement not available, proceeding")
+            return None
+
+        try:
+            history_dir = find_paircoder_dir() / "history"
+            collector = MetricsCollector(history_dir)
+            enforcer = BudgetEnforcer(collector)
+            estimated_tokens = estimate_prompt_tokens(prompt)
+            can_proceed, reason = enforcer.can_proceed(estimated_tokens)
+
+            if not can_proceed:
+                logger.warning(f"Budget exceeded: {reason}")
+                return HeadlessResponse(
+                    is_error=True,
+                    error_message=f"Budget exceeded: {reason}",
+                    duration_seconds=time.time() - start_time,
+                )
+        except Exception as e:
+            # Log but don't block on budget check errors
+            logger.warning(f"Budget check failed: {e}, proceeding anyway")
+
+        return None  # OK to proceed
+
+    def _execute(self, prompt: str, resume: bool = False) -> HeadlessResponse:
         """Execute a Claude Code command."""
         start_time = time.time()
 
-        cmd = self._build_command(prompt, resume, **kwargs)
+        # Budget enforcement gate
+        budget_error = HeadlessSession._check_budget(prompt, start_time)
+        if budget_error:
+            return budget_error
+
+        cmd = self._build_command(prompt, resume)
         logger.debug(f"Executing: {' '.join(cmd)}")
 
         try:
@@ -167,7 +212,7 @@ class HeadlessSession:
                 duration_seconds=time.time() - start_time,
             )
 
-    def _build_command(self, prompt: str, resume: bool, **kwargs) -> list[str]:
+    def _build_command(self, prompt: str, resume: bool) -> list[str]:
         """Build the Claude Code command."""
         cmd = ["claude", "-p", prompt, "--output-format", "json"]
 
@@ -184,8 +229,9 @@ class HeadlessSession:
 
         return cmd
 
+    @staticmethod
     def _parse_response(
-        self, stdout: str, stderr: str, returncode: int
+        stdout: str, stderr: str, returncode: int
     ) -> HeadlessResponse:
         """Parse Claude Code JSON output into HeadlessResponse."""
         if returncode != 0:

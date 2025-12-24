@@ -172,7 +172,7 @@ def _update_local_task_status(card_name: str, status: str) -> bool:
         return False
 
 
-def _check_all_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
+def _auto_check_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
     """Check off all items in the Acceptance Criteria checklist.
 
     Args:
@@ -416,8 +416,8 @@ def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: Deployed/Done)"),
-    check_all: bool = typer.Option(True, "--check-all/--no-check-all", help="Auto-check all AC items (default: yes)"),
-    strict: bool = typer.Option(False, "--strict", help="Block if any AC items are unchecked"),
+    auto_check: bool = typer.Option(False, "--auto-check", help="Auto-check all acceptance criteria (use with caution)"),
+    strict: bool = typer.Option(True, "--strict/--no-strict", help="Block if acceptance criteria unchecked (default: strict)"),
     skip_checklist: bool = typer.Option(False, "--skip-checklist", hidden=True, help="[DEPRECATED] Use --no-check-all"),
     force: bool = typer.Option(False, "--force", "-f", help="Force completion, bypass all verification"),
 ):
@@ -456,7 +456,7 @@ def task_done(
     # Handle deprecated flag
     if skip_checklist:
         console.print("[yellow]⚠ --skip-checklist is deprecated. Use --no-check-all[/yellow]")
-        check_all = False
+        auto_check = False
 
     # Handle AC verification based on flags
     ac_status_msg = ""
@@ -481,9 +481,9 @@ def task_done(
             raise typer.Exit(1)
         console.print("[green]✓ All acceptance criteria verified[/green]")
         ac_status_msg = "All AC items manually verified"
-    elif check_all:
+    elif auto_check:
         # Default: auto-check all AC items
-        checked_count = _check_all_acceptance_criteria(card, client)
+        checked_count = _auto_check_acceptance_criteria(card, client)
         if checked_count > 0:
             console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
             ac_status_msg = f"Auto-checked {checked_count} AC items"
@@ -544,16 +544,16 @@ def check_item(
     checklist_name: Optional[str] = typer.Option(None, "--checklist", "-c", help="Checklist name (default: search all)"),
 ):
     """Check off a checklist item as complete.
-    
+
     Use this to mark acceptance criteria as done while working on a task.
     Partial text matching is supported - just provide enough to uniquely identify the item.
-    
+
     Examples:
         bpsai-pair ttask check TASK-089 "No hardcoded credentials"
         bpsai-pair ttask check TASK-089 "SQL injection" --checklist "Acceptance Criteria"
     """
     import requests
-    
+
     client, _ = get_board_client()
     card, _ = client.find_card(task_id)
 
@@ -580,7 +580,7 @@ def check_item(
         # Filter by checklist name if specified
         if checklist_name and checklist.name.lower() != checklist_name.lower():
             continue
-            
+
         for item in checklist.items:
             item_name = item.get("name", "")
             if item_text_lower in item_name.lower():
@@ -613,7 +613,7 @@ def check_item(
         # py-trello uses set_checklist_item method
         found_checklist.set_checklist_item(found_item.get("name"), checked=True)
         console.print(f"[green]✓ Checked: {found_item.get('name', '')}[/green]")
-        
+
         # Log activity
         log_activity(card, "checked", found_item.get("name", "")[:50])
     except AttributeError:
@@ -621,10 +621,10 @@ def check_item(
         try:
             from .auth import load_token
             creds = load_token()
-            
+
             check_item_id = found_item.get("id")
             url = f"https://api.trello.com/1/cards/{card.id}/checkItem/{check_item_id}"
-            
+
             response = requests.put(
                 url,
                 params={
@@ -633,7 +633,7 @@ def check_item(
                     "state": "complete"
                 }
             )
-            
+
             if response.status_code == 200:
                 console.print(f"[green]✓ Checked: {found_item.get('name', '')}[/green]")
                 log_activity(card, "checked", found_item.get("name", "")[:50])
@@ -652,14 +652,14 @@ def uncheck_item(
     checklist_name: Optional[str] = typer.Option(None, "--checklist", "-c", help="Checklist name (default: search all)"),
 ):
     """Uncheck a checklist item (mark as incomplete).
-    
+
     Use this if you need to undo a checked item.
-    
+
     Examples:
         bpsai-pair ttask uncheck TASK-089 "No hardcoded credentials"
     """
     import requests
-    
+
     client, _ = get_board_client()
     card, _ = client.find_card(task_id)
 
@@ -684,7 +684,7 @@ def uncheck_item(
     for checklist in card.checklists:
         if checklist_name and checklist.name.lower() != checklist_name.lower():
             continue
-            
+
         for item in checklist.items:
             item_name = item.get("name", "")
             if item_text_lower in item_name.lower():
@@ -709,10 +709,10 @@ def uncheck_item(
         try:
             from .auth import load_token
             creds = load_token()
-            
+
             check_item_id = found_item.get("id")
             url = f"https://api.trello.com/1/cards/{card.id}/checkItem/{check_item_id}"
-            
+
             response = requests.put(
                 url,
                 params={
@@ -721,7 +721,7 @@ def uncheck_item(
                     "state": "incomplete"
                 }
             )
-            
+
             if response.status_code == 200:
                 console.print(f"[yellow]○ Unchecked: {found_item.get('name', '')}[/yellow]")
             else:
