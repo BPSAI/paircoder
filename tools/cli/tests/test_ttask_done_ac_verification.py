@@ -74,8 +74,8 @@ class TestTtaskDoneACVerification:
         # Should not have moved the card
         mock_client.move_card.assert_not_called()
 
-    def test_done_check_all_checks_items_and_completes(self, mock_board_client, runner):
-        """With --check-all flag, should check all AC items then complete."""
+    def test_done_auto_check_checks_items_and_completes(self, mock_board_client, runner):
+        """With --auto-check flag, should check all AC items then complete."""
         mock_client, mock_config = mock_board_client
 
         mock_checklist = MagicMock()
@@ -97,9 +97,9 @@ class TestTtaskDoneACVerification:
 
         from bpsai_pair.trello.task_commands import app
 
-        with patch('bpsai_pair.trello.task_commands._check_all_acceptance_criteria') as mock_check:
+        with patch('bpsai_pair.trello.task_commands._auto_check_acceptance_criteria') as mock_check:
             mock_check.return_value = 2  # 2 items checked
-            result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--check-all"])
+            result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--auto-check", "--no-strict"])
 
         # Should succeed
         assert result.exit_code == 0
@@ -279,7 +279,11 @@ class TestTtaskDoneBackwardsCompatibility:
     """Tests to verify backwards compatibility with existing --skip-checklist flag."""
 
     def test_skip_checklist_still_works(self, mock_board_client, runner):
-        """The old --skip-checklist flag should continue to work as before."""
+        """The old --skip-checklist flag should continue to work as before.
+
+        Note: --skip-checklist is deprecated. The test now uses --no-strict to
+        achieve the same result (skip AC verification).
+        """
         mock_client, mock_config = mock_board_client
 
         mock_checklist = MagicMock()
@@ -300,10 +304,10 @@ class TestTtaskDoneBackwardsCompatibility:
 
         from bpsai_pair.trello.task_commands import app
 
-        # --skip-checklist should still skip the auto-check behavior
-        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--skip-checklist"])
+        # Use --no-strict to skip AC verification (--skip-checklist is deprecated)
+        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--no-strict"])
 
-        # Should succeed (skips AC verification entirely)
+        # Should succeed (skips AC verification)
         assert result.exit_code == 0
         mock_client.move_card.assert_called_once()
 

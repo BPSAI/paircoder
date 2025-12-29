@@ -5,6 +5,28 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.8.3] - 2025-12-29 (Sprint 25.6: Skills & Workflows)
+
+### Added
+
+#### Skills System Enhancements
+- **Gap Quality Gates** — Pre/post-generation quality checks for skills
+- **Skill Scorer** — Evaluate skill quality before generation
+- **Unified Gap Classifier** — Consolidated gap detection for flows-to-skills migration
+
+#### Workflow Commands
+- **Release workflow** — Strict validation gates for release preparation
+- **Task workflow** — Structured task lifecycle with pre-flight checks
+
+### Changed
+- Refined allowed tools and argument hints for command workflows
+- Simplified SKILL.md descriptions for clarity
+
+### Fixed
+- Test fixes for ttask done AC verification (aligned with --strict/--no-strict flags)
+
+---
+
 ## [v2.8.0] - 2025-12-23 (EPIC-003 Complete + Token Budget System)
 
 ### Added
