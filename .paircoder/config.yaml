@@ -1,4 +1,4 @@
-version: '2.6.1'
+version: '2.8.3'
 project:
   name: paircoder
   description: AI-augmented pair programming framework
@@ -8,7 +8,7 @@ workflow:
   default_branch_type: feature
   main_branch: main
   context_dir: .paircoder/context
-  flows_dir: .paircoder/flows
+  flows_dir: .paircoder/flows # deprecated
   plans_dir: .paircoder/plans
   tasks_dir: .paircoder/tasks
 pack:
@@ -208,7 +208,7 @@ trello:
         - CodexAgent-Trello
         - DanHil AP Invoices
         - DanHil RFQ
-        - Prompt Acadamy
+        - Prompt Academy
         - Weber SSRS Analysis
         - PairCoder
         - Support App

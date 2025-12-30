@@ -24,18 +24,20 @@ These are the **only valid values** for custom fields. Do not invent new values.
 | `Support App`         | BPS Support App SDK project |
 
 
+
 ### Stack Field (Dropdown)
 
-| Value | Use For |
-|-------|---------|
-| `--` | Not specified |
-| `React` | Frontend React work |
-| `Flask` | Flask/Python API work |
-| `Worker/Function` | Background jobs, CLI tools, utilities |
-| `Infra` | Infrastructure, CI/CD, deployment |
-| `Collection` | Documentation, meta-tasks |
+| Value           | Use For                           |
+|-----------------|-----------------------------------|
+| `--`            | Not specified                     |
+| `React`         | Frontend React work               |
+| `Flask`         | Flask/Python API work             |
+| `Worker`        | Background jobs, utilities        |
+| `Infra`         | Infrastructure, CI/CD, deployment |
+| `Collection`    | Documentation, meta-tasks         |
+| `Container App` | Containers                        |
+| `Package`       | CLI tools, Packages               |
 
-**For PairCoder CLI tasks, use `Worker/Function`** (CLI is not a separate option).
 
 ### Status Field (Dropdown)
 
@@ -61,25 +63,6 @@ These are the **only valid values** for custom fields. Do not invent new values.
 
 **Note:** Only S, M, L are available. No XS or XL options exist.
 
-### Repo URL Field (Dropdown)
-
-| Value | Use For |
-|-------|---------|
-| `--` | Not specified |
-| `https://github.com/BPSAI/paircoder` | PairCoder tasks |
-
----
-
-## PairCoder Task Defaults
-
-When creating cards for PairCoder, **always use these values**:
-
-```yaml
-Project: PairCoder
-Stack: Worker/Function
-Repo URL: https://github.com/BPSAI/paircoder
-Status: Planning  # or Enqueued for ready tasks
-Effort: [S/M/L based on task complexity]
 ```
 
 ---
@@ -129,12 +112,12 @@ The CLI only accepts these plan types:
 | List | Purpose |
 |------|---------|
 | **Info** | Dashboard cards (PROTECTED) |
-| **Intake / Backlog** | New unplanned work |
-| **Planned / Ready** | Ready for upcoming work |
+| **Intake/Backlog** | New unplanned work |
+| **Planned/Ready** | Ready for upcoming work |
 | **In Progress** | Active development |
-| **Review / Testing** | Under review |
-| **Deployed / Done** | Completed |
-| **Issues / Tech Debt** | Bugs, improvements |
+| **Review/Testing** | Under review |
+| **Deployed/Done** | Completed |
+| **Issues/Tech Debt** | Bugs, improvements |
 
 ---
 
@@ -152,12 +135,12 @@ bpsai-pair plan sync-trello <plan-id> --board <board-id> --target-list "Planned/
 
 ## Common Mistakes to AVOID
 
-| Mistake | Correct |
-|---------|---------|
-| `Project: "Sprint 18 - Release Engineering"` | `Project: PairCoder` |
-| `Stack: CLI` | `Stack: Worker/Function` |
-| `Stack: Bug/Issue` | Use **labels** for Bug/Issue, not Stack |
-| `Stack: Documentation` | `Stack: Collection` |
+| Mistake | Correct                                  |
+|---------|------------------------------------------|
+| `Project: "Sprint 18 - Release Engineering"` | `Project: PairCoder`                     |
+| `Stack: CLI` | `Stack: Package`                         |
+| `Stack: Bug/Issue` | Use **labels** for Bug/Issue, not Stack  |
+| `Stack: Documentation` | `Stack: Collection`                      |
 | `Status: To do` | `Status: Planning` or `Status: Enqueued` |
-| `Type: maintenance` | `Type: chore` |
-| Inventing new dropdown values | Use ONLY values listed above |
+| `Type: maintenance` | `Type: chore`                            |
+| Inventing new dropdown values | Use ONLY values listed above             |

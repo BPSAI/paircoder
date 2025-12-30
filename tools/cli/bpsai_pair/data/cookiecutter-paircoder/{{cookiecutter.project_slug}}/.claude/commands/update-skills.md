@@ -1,6 +1,6 @@
 ---
 description: Analyze recent conversations and suggest skill improvements
-allowed-tools: Bash(bpsai-pair skill:*)
+allowed-tools: Bash(bpsai-pair:*)
 ---
 
 Analyze the current conversation for:
