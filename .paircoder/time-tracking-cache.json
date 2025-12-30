@@ -527,9 +527,9 @@
     "total_seconds": 89.699122
   },
   "_active": {
-    "task_id": "T25.19",
-    "timer_id": "local-20251223131554",
-    "description": "T25.19: Auto-Skill Creation",
-    "start": "2025-12-23T13:15:54.204361"
+    "task_id": "T27.2",
+    "timer_id": "local-20251230174431",
+    "description": "T27.2: Fix smoke test failure",
+    "start": "2025-12-30T17:44:31.889750"
   }
 }

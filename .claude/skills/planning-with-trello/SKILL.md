@@ -75,7 +75,3 @@ bpsai-pair plan status <plan-id>        # Plan status
 bpsai-pair plan sync-trello <plan-id>   # Sync to Trello
 bpsai-pair task list --plan <plan-id>   # Tasks in plan
 ```
-
-## Project Conventions
-
-See `reference.md` in this directory for board-specific conventions.

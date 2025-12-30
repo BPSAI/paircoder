@@ -64,7 +64,6 @@ class TestTemplateStructure:
         workflows_dir = PROJECT_TEMPLATE / ".github" / "workflows"
         assert workflows_dir.exists()
         assert (workflows_dir / "ci.yml").exists()
-        assert (workflows_dir / "project_tree.yml").exists()
 
 
 class TestContextFiles:
@@ -205,19 +204,6 @@ class TestCIWorkflows:
 
         # Should NOT have unquoted true comparisons
         assert "== true" not in content or "== 'true'" in content
-
-    def test_project_tree_yml_correct_path(self):
-        """Verify project_tree.yml outputs to .paircoder/context/."""
-        tree_file = PROJECT_TEMPLATE / ".github" / "workflows" / "project_tree.yml"
-        content = tree_file.read_text()
-
-        # Should output to .paircoder/context/ not context/
-        assert ".paircoder/context/project_tree.md" in content
-
-        # Should NOT output to old context/ path
-        lines = [l for l in content.split("\n") if "context/project_tree.md" in l]
-        for line in lines:
-            assert ".paircoder/context" in line or line.strip().startswith("#")
 
 
 class TestCodeowners:

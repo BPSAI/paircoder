@@ -26,7 +26,6 @@ context_files:
 
 # Where to find other resources
 directories:
-  flows: .paircoder/flows/          # Workflow definitions
   plans: .paircoder/plans/          # Plan files
   tasks: .paircoder/tasks/          # Task files organized by plan
 
@@ -95,41 +94,6 @@ capabilities:
            - Mark task done in task list
            - Add session entry under "What Was Just Done"
 
-  # --------------------------------------------------------------------------
-  # FLOW CAPABILITIES
-  # --------------------------------------------------------------------------
-
-  - id: run_flow
-    name: "Run a workflow"
-    description: |
-      Executes a defined workflow (flow) for structured work.
-    when_to_use:
-      - Starting a new feature (run design-plan-implement)
-      - Implementing a task (run tdd-implement)
-      - Reviewing code (run review)
-      - Finishing a branch (run finish-branch)
-    how_to_invoke:
-      cli: "bpsai-pair flow run <flow-name> [--plan <plan>] [--task <task>]"
-      programmatic: |
-        1. Load flow from .paircoder/flows/<name>.flow.md
-        2. Parse YAML frontmatter for metadata
-        3. Execute steps in Markdown body
-        4. Track progress in state.md
-
-  - id: list_flows
-    name: "List available flows"
-    description: |
-      Shows all available workflows with descriptions.
-    when_to_use:
-      - User asks what workflows are available
-      - Before deciding which flow to run
-    how_to_invoke:
-      cli: "bpsai-pair flow list"
-      programmatic: "Read .paircoder/flows/*.flow.md"
-
-  # --------------------------------------------------------------------------
-  # CONTEXT CAPABILITIES
-  # --------------------------------------------------------------------------
 
   - id: sync_context
     name: "Update context/state"
@@ -201,11 +165,11 @@ capabilities:
       cli: "bpsai-pair status"
 
 # ============================================================================
-# FLOW TRIGGERS
+# Skill TRIGGERS
 # ============================================================================
 # When certain conditions are met, these flows should be suggested or run
 
-flow_triggers:
+Skill_triggers:
 
   - trigger: "user_describes_feature"
     patterns:
@@ -214,7 +178,7 @@ flow_triggers:
       - "add a"
       - "implement"
       - "new feature"
-    suggested_flow: designing-and-implementing
+    suggested_skill: designing-and-implementing
 
   - trigger: "user_reports_bug"
     patterns:
@@ -223,7 +187,7 @@ flow_triggers:
       - "not working"
       - "error"
       - "fix"
-    suggested_flow: implementing-with-tdd
+    suggested_skill: implementing-with-tdd
 
   - trigger: "user_wants_review"
     patterns:
@@ -231,7 +195,7 @@ flow_triggers:
       - "check my"
       - "look at"
       - "is this right"
-    suggested_flow: reviewing-code
+    suggested_skill: reviewing-code
 
   - trigger: "user_finishing_work"
     patterns:
@@ -239,7 +203,7 @@ flow_triggers:
       - "finished"
       - "ready to merge"
       - "complete"
-    suggested_flow: finishing-branches
+    suggested_skill: finishing-branches
 
 # ============================================================================
 # ROLE DEFINITIONS

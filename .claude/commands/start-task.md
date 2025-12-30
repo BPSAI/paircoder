@@ -117,7 +117,7 @@ bpsai-pair ttask done <TRELLO-ID> --strict --summary "<brief summary of work don
 
 **If `--strict` fails**: You have unchecked acceptance criteria. Go back and complete them.
 
-**DO NOT use `--force`** unless explicitly instructed by the user. Forced completions are logged.
+**NEVER use `--force`** unless explicitly instructed by the user. Forced completions are logged.
 
 After Trello completion succeeds:
 ```bash
