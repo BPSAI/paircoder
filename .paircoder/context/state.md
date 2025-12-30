@@ -1,16 +1,34 @@
 # Current State
 
-> Last updated: 2025-12-23
+> Last updated: 2025-12-30
 
 ## Active Plan
 
-**Plan:** plan-2025-12-sprint-25.6-emergent-skills
-**Sprint:** 25.6 - Emergent Skill Discovery + Flows Deprecation
-**Status:** In Progress
-**Goal:** AI-driven skill creation, gap detection, subagent discovery, and flows→skills migration planning
-**Version Target:** v2.9.2
+**Plan:** plan-2025-12-sprint-27-stabilization
+**Sprint:** 27 - Stabilization
+**Status:** Planned
+**Goal:** CI green, upgrade command works, no blocking bugs
+**Version Target:** v2.8.4
 
-## Current Sprint Tasks (Sprint 25.6)
+## Current Sprint Tasks (Sprint 27)
+
+| ID | Title | Status | Priority | Complexity | Effort |
+|----|-------|--------|----------|------------|--------|
+| T27.1 | Fix template check crash | ✓ done | P0 | 30 | S |
+| T27.2 | Fix smoke test failure | pending | P0 | 30 | S |
+| T27.3 | Fix Unicode errors in Trello | pending | P0 | 30 | S |
+| T27.4 | Fix upgrade source file resolution | pending | P0 | 55 | M |
+| T27.5 | Fix upgrade to actually copy files | pending | P0 | 45 | M |
+| T27.6 | Fix Windows hook compatibility | pending | P0 | 30 | S |
+| T27.7 | Remove /status slash command conflict | pending | P0 | 15 | S |
+| T27.8 | Sync cookiecutter: config files | pending | P0 | 30 | S |
+| T27.9 | Sync cookiecutter: skills | pending | P0 | 30 | S |
+| T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
+| T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
+
+**Progress:** 1/11 tasks (30/325 complexity points)
+
+## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
 | ID     | Title | Status | Priority | Complexity | Effort |
 |--------|-------|--------|----------|------------|--------|
@@ -25,7 +43,7 @@
 | T25.25 | Flow Commands Deprecation Warnings | done | P2 | 25 | S |
 | T25.26 | Codex/ChatGPT Skill Export Formats | done | P2 | 30 | M |
 
-**Progress:** 9/9 tasks (360/360 complexity points) ✓ Sprint Complete!
+**Result:** 9/9 tasks (360/360 complexity points) ✓ Sprint Complete!
 
 ## Task Dependencies & Implementation Sequence
 
@@ -106,32 +124,32 @@ Sprints 1-17.5 archived. See `.paircoder/history/sprint_archive.md`.
 | 24 | CLI Refactor Phase 3 | v2.7.0 | Complete |
 | 25 | EPIC-003 Complete + Token Budget | v2.8.0 | Complete |
 | 25.5 | Cross-Platform Skills | v2.9 | Complete |
-| 25.6 | Emergent Skill Discovery + Flows Deprecation | v2.9.2 | In Progress |
+| 25.6 | Emergent Skill Discovery + Flows Deprecation | v2.9.2 | Complete |
+| 27 | Stabilization | v2.8.4 | In Progress |
 | 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
 
 ## What's Next
 
-**Sprint 25.6: Emergent Skill Discovery** (10 tasks, 405 pts) - P1 COMPLETE
+**Sprint 27: Stabilization** (11 tasks, 325 pts) - IN PROGRESS
 
-Phase 1 - Core (Complete):
-- ✓ T25.17: /update-skills command
-- ✓ T25.18: Skill gap detection
-- ✓ T25.19: Auto-skill creation
+Phase 1 - Bug Fixes (Isolated, Low Risk):
+- T27.1: Fix template check crash
+- T27.2: Fix smoke test failure
+- T27.3: Fix Unicode errors in Trello
 
-Phase 2 - Migration Planning (Complete):
-- ✓ T25.22: Flows → Skills Migration RFC
-- ✓ T25.23: Subagent gap detection
-- ✓ T25.24: Unified gap classifier (skill vs subagent)
+Phase 2 - Upgrade Command:
+- T27.4: Fix upgrade source file resolution
+- T27.5: Fix upgrade to actually copy files
 
-Phase 3 - Quality (Complete):
-- ✓ T25.20: Skill quality scoring with pre-generation gates
+Phase 3 - Compatibility:
+- T27.6: Fix Windows hook compatibility
+- T27.7: Remove /status slash command conflict
 
-Phase 4 - Implementation (P2 - Next):
-- T25.25: Flow commands deprecation warnings
-- T25.26: Codex/ChatGPT skill export formats
-
-Phase 5 - Distribution (P2): DROPPED
-- ~~T25.21: Skill marketplace foundation~~ (focusing on personalized skill generation)
+Phase 4 - Template Sync:
+- T27.8: Sync cookiecutter: config files
+- T27.9: Sync cookiecutter: skills
+- T27.10: Sync cookiecutter: commands
+- T27.11: Sync cookiecutter: agents
 
 **Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
 Make PairCoder usable by non-technical "vibe-coders". Tasks: T26.1-T26.10 - Interactive welcome wizard, Trello setup wizard with pre-checks, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session.
@@ -153,6 +171,27 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.1 Complete (Fix template check crash)
+
+- **T27.1: Fix template check crash** ✓
+  - Root cause: `find_paircoder_dir()` raises `ProjectRootNotFoundError` when not in a project, but `template_check` and `template_list` didn't catch it
+  - Fix: Added try/except for `ProjectRootNotFoundError` in both functions
+  - Shows helpful error: "❌ Not in a PairCoder project" with init instructions
+  - Exit code 1 on error (graceful failure instead of traceback)
+  - Added 3 new tests in `TestTemplateCheckNotInProject` class
+  - All 16 template tests pass
+
+### 2025-12-30 - Sprint 27 Plan Created
+
+- **Sprint 27: Stabilization** plan created
+  - Plan ID: `plan-2025-12-sprint-27-stabilization`
+  - Type: chore
+  - Goal: CI green, upgrade command works, no blocking bugs
+  - Version target: v2.8.4
+  - 11 tasks, 325 complexity points
+  - All tasks P0 priority (stabilization focus)
+  - Synced to Trello: 11 cards created in "Planned/Ready" list
 
 ### 2025-12-23 - T25.26 Complete (Codex/ChatGPT Skill Export Formats)
 

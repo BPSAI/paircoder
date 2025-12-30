@@ -172,6 +172,44 @@ class TestTemplateCheckOutput:
         assert len(result.stdout) > 10  # Has some content
 
 
+class TestTemplateCheckNotInProject:
+    """Tests for template check when not in a PairCoder project."""
+
+    def test_shows_helpful_error_outside_project(self, tmp_path, monkeypatch):
+        """Check command shows helpful error when not in a project."""
+        # Create a directory without .paircoder or .git
+        empty_dir = tmp_path / "empty_dir"
+        empty_dir.mkdir()
+        monkeypatch.chdir(empty_dir)
+
+        result = runner.invoke(app, ["template", "check"])
+        assert result.exit_code == 1
+        # Message may be in stdout or stderr, so check output (both combined)
+        combined_output = (result.stdout + (result.output if hasattr(result, 'output') else '')).lower()
+        assert "not in a paircoder project" in combined_output or "bpsai-pair init" in combined_output
+
+    def test_graceful_exit_code_outside_project(self, tmp_path, monkeypatch):
+        """Check command exits with code 1 when not in a project."""
+        empty_dir = tmp_path / "empty_dir"
+        empty_dir.mkdir()
+        monkeypatch.chdir(empty_dir)
+
+        result = runner.invoke(app, ["template", "check"])
+        assert result.exit_code == 1
+
+    def test_list_command_shows_helpful_error_outside_project(self, tmp_path, monkeypatch):
+        """List command also shows helpful error when not in a project."""
+        empty_dir = tmp_path / "empty_dir"
+        empty_dir.mkdir()
+        monkeypatch.chdir(empty_dir)
+
+        result = runner.invoke(app, ["template", "list"])
+        assert result.exit_code == 1
+        # Message may be in stdout or stderr, so check output (both combined)
+        combined_output = (result.stdout + (result.output if hasattr(result, 'output') else '')).lower()
+        assert "not in a paircoder project" in combined_output or "bpsai-pair init" in combined_output
+
+
 class TestTemplateCheckFilesCompared:
     """Tests for specific files being compared."""
 

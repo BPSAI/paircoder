@@ -16,6 +16,7 @@ from rich.table import Table
 
 # Import shared helper from release commands
 from .commands import get_template_path, find_paircoder_dir
+from ..core.ops import ProjectRootNotFoundError
 
 console = Console()
 
@@ -65,7 +66,13 @@ def template_check(
         # Auto-fix by syncing template from source
         bpsai-pair template check --fix
     """
-    paircoder_dir = find_paircoder_dir()
+    try:
+        paircoder_dir = find_paircoder_dir()
+    except ProjectRootNotFoundError:
+        console.print("[red]❌ Not in a PairCoder project[/red]")
+        console.print("   Run 'bpsai-pair init' to initialize a project, or run from a git repository.")
+        raise typer.Exit(1)
+
     project_root = paircoder_dir.parent
 
     template_path = get_template_path(paircoder_dir)
@@ -177,7 +184,12 @@ def template_check(
 @app.command("list")
 def template_list():
     """List files tracked for template sync."""
-    paircoder_dir = find_paircoder_dir()
+    try:
+        paircoder_dir = find_paircoder_dir()
+    except ProjectRootNotFoundError:
+        console.print("[red]❌ Not in a PairCoder project[/red]")
+        console.print("   Run 'bpsai-pair init' to initialize a project, or run from a git repository.")
+        raise typer.Exit(1)
 
     template_path = get_template_path(paircoder_dir)
 
