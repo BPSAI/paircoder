@@ -345,7 +345,7 @@ def _update_task_with_card_id(task_id: str, card_id: str, task_parser) -> bool:
         if not task_file:
             return False
 
-        content = task_file.read_text()
+        content = task_file.read_text(encoding="utf-8")
 
         # Insert trello_card_id into frontmatter
         if "trello_card_id:" not in content:
@@ -364,7 +364,7 @@ def _update_task_with_card_id(task_id: str, card_id: str, task_parser) -> bool:
                     in_frontmatter = not in_frontmatter
                 new_lines.append(line)
 
-            task_file.write_text("\n".join(new_lines))
+            task_file.write_text("\n".join(new_lines), encoding="utf-8")
             return True
 
         return False

@@ -40,7 +40,7 @@ def _load_config() -> dict:
         root = find_project_root()
         config_file = root / ".paircoder" / "config.yaml"
         if config_file.exists():
-            with open(config_file) as f:
+            with open(config_file, encoding="utf-8") as f:
                 return yaml.safe_load(f) or {}
         return {}
     except Exception:
@@ -59,8 +59,8 @@ def _save_config(config: dict) -> None:
         config_dir.mkdir(exist_ok=True)
         config_file = config_dir / "config.yaml"
 
-        with open(config_file, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        with open(config_file, 'w', encoding="utf-8") as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     except Exception as e:
         console.print(f"[yellow]Warning: Could not save config: {e}[/yellow]")
 

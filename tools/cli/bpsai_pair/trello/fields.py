@@ -179,7 +179,7 @@ def get_cached_board_fields(
     # Check cache
     if not force_refresh and cache_file.exists():
         try:
-            cache_data = json.loads(cache_file.read_text())
+            cache_data = json.loads(cache_file.read_text(encoding="utf-8"))
             cache_age = time.time() - cache_data.get("timestamp", 0)
             if cache_age < 3600:  # 1 hour TTL
                 logger.debug(f"Using cached custom fields for board {board_id} (age: {cache_age:.0f}s)")
@@ -197,7 +197,7 @@ def get_cached_board_fields(
             "timestamp": time.time(),
             "board_id": board_id,
             "fields": fields
-        }, indent=2))
+        }, indent=2, ensure_ascii=False), encoding="utf-8")
     except Exception as e:
         logger.warning(f"Failed to write cache: {e}")
 

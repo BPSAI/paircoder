@@ -94,3 +94,45 @@ class TestTrelloAuth:
         """Test connection check when not connected."""
         with patch('bpsai_pair.trello.auth.TOKEN_FILE', tmp_path / "nonexistent.json"):
             assert is_connected() == False
+
+
+class TestTrelloAuthUnicode:
+    """Tests for Unicode handling in Trello auth module."""
+
+    def test_store_and_load_unicode_token(self, tmp_path):
+        """Test storing and loading credentials with Unicode values."""
+        tokens_dir = tmp_path / ".trello_codex_tokens"
+        token_file = tokens_dir / "trello_token.json"
+
+        with patch('bpsai_pair.trello.auth.TOKENS_FOLDER', tokens_dir):
+            with patch('bpsai_pair.trello.auth.TOKEN_FILE', token_file):
+                # Store token with Unicode chars (emojis, Japanese, accented)
+                store_token(token="🚀-token-日本語", api_key="api-key-émoji")
+
+                # Verify file created
+                assert token_file.exists()
+
+                # Verify raw file content contains actual Unicode (not escaped)
+                raw_content = token_file.read_text(encoding="utf-8")
+                assert "🚀" in raw_content
+                assert "日本語" in raw_content
+                assert "émoji" in raw_content
+
+                # Load and verify
+                data = load_token()
+                assert data["token"] == "🚀-token-日本語"
+                assert data["api_key"] == "api-key-émoji"
+                assert data["version"] == TOKEN_STORE_VERSION
+
+    def test_load_unicode_token_file(self, tmp_path):
+        """Test loading token file with Unicode content."""
+        token_file = tmp_path / "trello_token.json"
+        token_file.write_text(
+            '{"token": "🚀日本語", "api_key": "clé-émoji", "version": 2}',
+            encoding="utf-8"
+        )
+
+        with patch('bpsai_pair.trello.auth.TOKEN_FILE', token_file):
+            data = load_token()
+            assert data["token"] == "🚀日本語"
+            assert data["api_key"] == "clé-émoji"

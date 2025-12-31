@@ -16,7 +16,7 @@
 |----|-------|--------|----------|------------|--------|
 | T27.1 | Fix template check crash | ✓ done | P0 | 30 | S |
 | T27.2 | Fix smoke test failure | ✓ done | P0 | 30 | S |
-| T27.3 | Fix Unicode errors in Trello | pending | P0 | 30 | S |
+| T27.3 | Fix Unicode errors in Trello | ✓ done | P0 | 30 | S |
 | T27.4 | Fix upgrade source file resolution | pending | P0 | 55 | M |
 | T27.5 | Fix upgrade to actually copy files | pending | P0 | 45 | M |
 | T27.6 | Fix Windows hook compatibility | pending | P0 | 30 | S |
@@ -26,7 +26,7 @@
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 2/11 tasks (60/325 complexity points)
+**Progress:** 3/11 tasks (90/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,23 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.3 Complete (Fix Unicode errors in Trello)
+
+- **T27.3: Fix Unicode errors in Trello** ✓
+  - Added `encoding="utf-8"` to all file operations in Trello module:
+    - `auth.py`: token file read/write
+    - `task_commands.py`: config read, bypass log write
+    - `commands.py`: config read/write
+    - `fields.py`: cache file read/write
+    - `webhook_commands.py`: config read
+    - `mcp/tools/trello.py`: task file read/write
+  - Added `ensure_ascii=False` to JSON dumps for proper Unicode output
+  - Added `allow_unicode=True` to YAML dumps
+  - Added 2 new Unicode tests in `TestTrelloAuthUnicode`:
+    - `test_store_and_load_unicode_token`: Tests emojis, Japanese, accented chars
+    - `test_load_unicode_token_file`: Tests reading pre-existing Unicode files
+  - All 312 Trello tests pass, full suite (2014 tests) passes
 
 ### 2025-12-30 - T27.2 Complete (Fix smoke test failure)
 

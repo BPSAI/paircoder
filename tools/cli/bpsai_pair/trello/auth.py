@@ -28,8 +28,8 @@ def store_token(token: str, api_key: str) -> None:
         "api_key": api_key,
         "version": TOKEN_STORE_VERSION,
     }
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(payload, f)
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False)
 
 
 def load_token() -> Optional[Dict[str, Any]]:
@@ -39,7 +39,7 @@ def load_token() -> Optional[Dict[str, Any]]:
         Dict with token, api_key, version if found, None otherwise
     """
     try:
-        with open(TOKEN_FILE) as f:
+        with open(TOKEN_FILE, encoding="utf-8") as f:
             data = json.load(f)
         if data.get("token") and data.get("api_key"):
             return data
