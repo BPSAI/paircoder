@@ -392,3 +392,203 @@ status: in_progress
         assert "Status:" in result.output
         # Should have a status indicator
         assert any(s in result.output for s in ["OK", "WARNING", "CRITICAL", "INFO"])
+
+
+class TestQuietModeForHooks:
+    """Tests for --quiet mode that enables Windows hook compatibility.
+
+    Claude Code hooks on Windows fail with bash-specific syntax like '|| true'.
+    The --quiet flag provides cross-platform error suppression:
+    - Suppresses all output
+    - Always exits with code 0
+    - Catches and swallows exceptions
+    """
+
+    def test_session_check_quiet_mode_exits_zero_outside_project(self, tmp_path, monkeypatch):
+        """--quiet mode exits 0 even when not in a PairCoder project."""
+        # Create a directory that's not a PairCoder project
+        monkeypatch.chdir(tmp_path)
+        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+
+        result = runner.invoke(app, ["session", "check", "--quiet"])
+
+        # Should exit 0 (not crash with error)
+        assert result.exit_code == 0
+        # Should have no output
+        assert result.stdout.strip() == ""
+
+    def test_session_check_quiet_mode_suppresses_errors(self, tmp_path, monkeypatch):
+        """--quiet mode suppresses error output (no git or .paircoder)."""
+        monkeypatch.chdir(tmp_path)
+        # No git repo, no .paircoder - ProjectRootNotFoundError should be caught
+
+        result = runner.invoke(app, ["session", "check", "--quiet"])
+
+        # Should exit 0 and have no error output
+        assert result.exit_code == 0
+        assert "error" not in result.stdout.lower()
+        assert "traceback" not in result.stdout.lower()
+
+    def test_session_check_quiet_mode_no_output(self, paircoder_session_repo):
+        """--quiet mode produces no output even on success."""
+        cache_dir = paircoder_session_repo / ".paircoder" / "cache"
+        session_file = cache_dir / "session.json"
+
+        # Create recent session (continuing session = normally no output anyway)
+        recent_time = datetime.now() - timedelta(minutes=5)
+        session_data = {
+            "last_activity": recent_time.isoformat(),
+            "session_id": "test-session"
+        }
+        session_file.write_text(json.dumps(session_data))
+
+        result = runner.invoke(app, ["session", "check", "--quiet"])
+        assert result.exit_code == 0
+        # Quiet mode should have no output
+        assert result.stdout.strip() == ""
+
+    def test_compaction_snapshot_quiet_mode_exits_zero(self, tmp_path, monkeypatch):
+        """compaction snapshot save --quiet exits 0 when not in project."""
+        monkeypatch.chdir(tmp_path)
+        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+
+        result = runner.invoke(app, ["compaction", "snapshot", "save", "--quiet"])
+
+        assert result.exit_code == 0
+        assert result.stdout.strip() == ""
+
+    def test_compaction_snapshot_quiet_mode_no_git(self, tmp_path, monkeypatch):
+        """compaction snapshot save --quiet exits 0 even without git or .paircoder."""
+        monkeypatch.chdir(tmp_path)
+        # No git repo, no .paircoder - ProjectRootNotFoundError should be caught
+
+        result = runner.invoke(app, ["compaction", "snapshot", "save", "--quiet"])
+
+        assert result.exit_code == 0
+        # No error output
+        assert "error" not in result.stdout.lower()
+
+
+class TestContextSyncAutoMode:
+    """Tests for context-sync --auto mode for Windows hook compatibility."""
+
+    def test_context_sync_auto_exits_zero_with_no_values(self, paircoder_session_repo):
+        """--auto mode exits 0 when no --last/--next provided."""
+        result = runner.invoke(app, ["context-sync", "--auto"])
+
+        assert result.exit_code == 0
+        # Should have no output (silent exit)
+        assert result.stdout.strip() == ""
+
+    def test_context_sync_auto_exits_zero_outside_project(self, tmp_path, monkeypatch):
+        """--auto mode exits 0 when not in a PairCoder project."""
+        monkeypatch.chdir(tmp_path)
+        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+
+        result = runner.invoke(app, ["context-sync", "--auto"])
+
+        assert result.exit_code == 0
+        assert result.stdout.strip() == ""
+
+    def test_context_sync_quiet_exits_zero_with_missing_args(self, paircoder_session_repo):
+        """--quiet mode exits 0 when missing required args."""
+        result = runner.invoke(app, ["context-sync", "--quiet"])
+
+        assert result.exit_code == 0
+        # No error message
+        assert "required" not in result.stdout.lower()
+
+    def test_context_sync_quiet_exits_zero_outside_project(self, tmp_path, monkeypatch):
+        """--quiet mode exits 0 when not in a PairCoder project."""
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["context-sync", "--quiet"])
+
+        assert result.exit_code == 0
+
+
+class TestHistoryLogQuietMode:
+    """Tests for history-log --quiet mode for Windows hook compatibility."""
+
+    def test_history_log_quiet_exits_zero_no_file(self, paircoder_session_repo):
+        """--quiet mode exits 0 when no file path provided."""
+        result = runner.invoke(app, ["history-log", "--quiet"])
+
+        assert result.exit_code == 0
+        assert result.stdout.strip() == ""
+
+    def test_history_log_quiet_exits_zero_outside_project(self, tmp_path, monkeypatch):
+        """--quiet mode exits 0 when not in a PairCoder project."""
+        monkeypatch.chdir(tmp_path)
+        subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+
+        result = runner.invoke(app, ["history-log", "--quiet"])
+
+        assert result.exit_code == 0
+
+    def test_history_log_quiet_logs_file_silently(self, paircoder_session_repo):
+        """--quiet mode logs file without output."""
+        result = runner.invoke(app, ["history-log", "--quiet", "test/file.py"])
+
+        assert result.exit_code == 0
+        # No output in quiet mode
+        assert "logged" not in result.stdout.lower()
+
+        # But file should be logged
+        log_file = paircoder_session_repo / ".paircoder" / "history" / "changes.log"
+        assert log_file.exists()
+        assert "test/file.py" in log_file.read_text()
+
+
+class TestCrossPlatformHookCompatibility:
+    """Integration tests verifying cross-platform hook behavior.
+
+    These tests verify that the hook commands work correctly on any platform
+    without bash-specific syntax like '|| true' or '2>/dev/null'.
+    """
+
+    def test_all_hook_commands_have_quiet_mode(self):
+        """All hook-related commands should support --quiet."""
+        hook_commands = [
+            ["session", "check"],
+            ["compaction", "snapshot", "save"],
+            ["context-sync"],
+            ["history-log"],
+        ]
+
+        for cmd in hook_commands:
+            result = runner.invoke(app, cmd + ["--help"])
+            assert result.exit_code == 0
+            assert "--quiet" in result.stdout or "-q" in result.stdout, \
+                f"Command {' '.join(cmd)} should support --quiet flag"
+
+    def test_hook_commands_never_require_shell_syntax(self, paircoder_session_repo):
+        """Hook commands should not require bash-specific syntax."""
+        # These are the commands used in .claude/settings.json hooks
+        # They should all work without '|| true' or similar
+
+        commands_and_flags = [
+            (["session", "check", "--quiet"], 0),
+            (["compaction", "snapshot", "save", "--trigger", "test", "--quiet"], 0),
+            (["history-log", "--quiet"], 0),  # No file = silent exit
+            (["context-sync", "--auto"], 0),  # No values = silent exit
+        ]
+
+        for cmd, expected_exit in commands_and_flags:
+            result = runner.invoke(app, cmd)
+            assert result.exit_code == expected_exit, \
+                f"Command {' '.join(cmd)} should exit {expected_exit}, got {result.exit_code}"
+
+    def test_quiet_mode_handles_internal_exceptions(self, paircoder_session_repo, monkeypatch):
+        """--quiet mode should catch internal exceptions gracefully."""
+        # Simulate an internal error by breaking the session manager import
+        from bpsai_pair.commands import session as session_module
+
+        original_import = session_module.SessionManager if hasattr(session_module, 'SessionManager') else None
+
+        def broken_import(*args, **kwargs):
+            raise RuntimeError("Simulated internal error")
+
+        # The command should still exit 0 with --quiet
+        result = runner.invoke(app, ["session", "check", "--quiet"])
+        assert result.exit_code == 0

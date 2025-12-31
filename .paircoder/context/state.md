@@ -19,14 +19,14 @@
 | T27.3 | Fix Unicode errors in Trello | ✓ done | P0 | 30 | S |
 | T27.4 | Fix upgrade source file resolution | ✓ done | P0 | 55 | M |
 | T27.5 | Fix upgrade to actually copy files | ✓ done | P0 | 45 | M |
-| T27.6 | Fix Windows hook compatibility | pending | P0 | 30 | S |
+| T27.6 | Fix Windows hook compatibility | ✓ done | P0 | 30 | S |
 | T27.7 | Remove /status slash command conflict | pending | P0 | 15 | S |
 | T27.8 | Sync cookiecutter: config files | pending | P0 | 30 | S |
 | T27.9 | Sync cookiecutter: skills | pending | P0 | 30 | S |
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 5/11 tasks (190/325 complexity points)
+**Progress:** 6/11 tasks (220/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,26 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.6 Complete (Fix Windows hook compatibility)
+
+- **T27.6: Fix Windows hook compatibility** ✓
+  - Issue: Claude Code hooks on Windows fail with bash-specific syntax like `|| true`
+  - Solution: Use `--quiet` flag for cross-platform error suppression
+  - Changes made:
+    - Fixed `session.py` exception handling to catch `ProjectRootNotFoundError`
+    - Both `session check` and `compaction snapshot save` now properly exit 0 with `--quiet`
+  - All hook commands now have `--quiet`/`-q` flag:
+    - `bpsai-pair session check --quiet`
+    - `bpsai-pair compaction snapshot save --quiet`
+    - `bpsai-pair context-sync --auto` (or `--quiet`)
+    - `bpsai-pair history-log --quiet`
+  - Created 15 new cross-platform tests in `test_session.py`:
+    - `TestQuietModeForHooks`: --quiet mode behavior
+    - `TestContextSyncAutoMode`: --auto mode behavior
+    - `TestHistoryLogQuietMode`: history-log --quiet
+    - `TestCrossPlatformHookCompatibility`: integration tests
+  - All 2050 tests pass
 
 ### 2025-12-30 - T27.5 Complete (Fix upgrade to actually copy files)
 

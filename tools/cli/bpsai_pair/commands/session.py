@@ -90,7 +90,7 @@ def session_check(
 
     try:
         root = repo_root()
-    except (SystemExit, typer.Exit):
+    except (SystemExit, typer.Exit, ops.ProjectRootNotFoundError):
         if quiet:
             return  # Silent exit for hooks
         raise
@@ -281,7 +281,7 @@ def compaction_snapshot_save(
 
     try:
         root = repo_root()
-    except (SystemExit, typer.Exit):
+    except (SystemExit, typer.Exit, ops.ProjectRootNotFoundError):
         if quiet:
             return  # Silent exit for hooks
         raise
