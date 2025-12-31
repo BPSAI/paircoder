@@ -5,6 +5,37 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.8.4] - 2025-12-30 (Sprint 27: Stabilization)
+
+### Fixed
+
+#### Bug Fixes
+- **Template check crash** (T27.1) — Fixed `ProjectRootNotFoundError` when running `template check` outside a project
+- **Smoke test failure** (T27.2) — Removed legacy `project_tree.yml` workflow check from template tests
+- **Unicode errors in Trello** (T27.3) — Added `encoding="utf-8"` to all Trello file operations
+- **Upgrade source file resolution** (T27.4) — Fixed `importlib.resources` path handling for bundled templates
+- **Upgrade file copying** (T27.5) — Added command copying to upgrade workflow alongside skills/agents/docs
+
+#### Compatibility Fixes
+- **Windows hook compatibility** (T27.6) — Added `--quiet` flag for cross-platform error suppression in hooks
+- **Slash command conflict** (T27.7) — Removed `/status` command that conflicted with Claude Code built-in
+
+### Changed
+
+#### Cookiecutter Template Sync
+- **Config files** (T27.8) — Updated template to v2.8 format with skills (deprecated flows)
+  - `capabilities.yaml`: Changed `flow_triggers` to `Skill_triggers`
+  - `config.yaml`: Changed `flows:` section to `skills:`, added `skills_dir`
+- **Skills** (T27.9) — Synced all 7 skills to template, removed obsolete `reference.md` section
+- **Commands** (T27.10) — Added `prep-release.md` command, updated `start-task.md`
+- **Agents** (T27.11) — Verified all 4 agents match (planner, reviewer, security-auditor, security)
+
+#### Template Tests
+- Removed deprecated `TestFlowFiles` class (flows deprecated in v2.8+)
+- Updated version check to allow v2.8.x patch versions
+
+---
+
 ## [v2.8.3] - 2025-12-29 (Sprint 25.6: Skills & Workflows)
 
 ### Added
