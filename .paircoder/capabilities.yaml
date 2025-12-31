@@ -4,7 +4,7 @@
 version: "2.8.3"
 name: paircoder
 description: |
-  AI pair programming framework with planning, flows, and context management.
+  AI pair programming framework with planning, skills, and context management.
   LLMs should read this file to understand available capabilities.
 
 # ============================================================================
@@ -13,7 +13,7 @@ description: |
 #
 # 1. Read .paircoder/context/project.md to understand this project
 # 2. Read .paircoder/context/state.md to see current plan/task status
-# 3. Check if any flows apply to the user's request
+# 3. Check if any skills apply to the user's request
 # 4. Execute the appropriate capability
 #
 # ============================================================================
@@ -55,7 +55,7 @@ capabilities:
         1. Create .paircoder/plans/plan-YYYY-MM-<slug>.plan.yaml
         2. Define goals, tasks with priorities and complexity
         3. Update .paircoder/context/state.md to reference new plan
-    flow_to_run: designing-and-implementing
+    skill_to_run: designing-and-implementing
     outputs:
       - ".paircoder/plans/<plan-id>.plan.yaml"
       - ".paircoder/tasks/<plan-slug>/TASK-*.task.md"
@@ -94,6 +94,9 @@ capabilities:
            - Mark task done in task list
            - Add session entry under "What Was Just Done"
 
+  # --------------------------------------------------------------------------
+  # CONTEXT CAPABILITIES
+  # --------------------------------------------------------------------------
 
   - id: sync_context
     name: "Update context/state"
@@ -167,7 +170,7 @@ capabilities:
 # ============================================================================
 # Skill TRIGGERS
 # ============================================================================
-# When certain conditions are met, these flows should be suggested or run
+# When certain conditions are met, these skills should be suggested or run
 
 Skill_triggers:
 
@@ -216,7 +219,7 @@ roles:
       Strategic thinking, planning, design decisions.
       Asks clarifying questions, proposes approaches, creates plans.
     when_active:
-      - During design-plan-implement flow (phases 1-2)
+      - During designing-and-implementing skill (phases 1-2)
       - When creating or modifying plans
       - When user needs guidance on approach
 
@@ -225,7 +228,7 @@ roles:
       Implementation, writing code, running tests.
       Follows plans, implements tasks, runs verification.
     when_active:
-      - During tdd-implement flow
+      - During implementing-with-tdd skill
       - When implementing specific tasks
       - When user says "let's code" or "implement this"
 
@@ -234,7 +237,7 @@ roles:
       Code review, quality checks, final verification.
       Checks correctness, suggests improvements, ensures gates pass.
     when_active:
-      - During review flow
+      - During reviewing-code skill
       - When user asks for review
       - Before merging
 
@@ -249,7 +252,7 @@ notes:
 
   # Standard workflow
   - Always read state.md first to understand current context
-  - If a flow applies to the user's request, suggest or run it
+  - If a skill applies to the user's request, suggest or run it
   - Tasks should be small (2-20 minutes of work each)
   - Use verification gates to ensure quality
   - When unsure, ask clarifying questions (Navigator role)

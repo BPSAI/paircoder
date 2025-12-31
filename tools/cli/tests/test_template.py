@@ -142,14 +142,14 @@ class TestCapabilitiesYaml:
         caps_file = PROJECT_TEMPLATE / ".paircoder" / "capabilities.yaml"
         content = caps_file.read_text()
 
-        # Check version
-        assert 'version: "2.2"' in content
+        # Check version (v2.8+)
+        assert 'version: "2.8"' in content
 
         # Required top-level sections (as text patterns)
         assert "context_files:" in content
         assert "directories:" in content
         assert "capabilities:" in content
-        assert "flow_triggers:" in content
+        assert "Skill_triggers:" in content  # v2.8 uses skills instead of flows
         assert "roles:" in content
         assert "notes:" in content
 
@@ -183,7 +183,7 @@ class TestConfigYaml:
         assert "project:" in content
         assert "workflow:" in content
         assert "pack:" in content
-        assert "flows:" in content
+        assert "skills:" in content  # v2.8 uses skills instead of flows
         assert "routing:" in content
         assert "trello:" in content
         assert "estimation:" in content

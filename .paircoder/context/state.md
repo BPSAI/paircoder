@@ -21,12 +21,12 @@
 | T27.5 | Fix upgrade to actually copy files | ✓ done | P0 | 45 | M |
 | T27.6 | Fix Windows hook compatibility | ✓ done | P0 | 30 | S |
 | T27.7 | Remove /status slash command conflict | ✓ done | P0 | 15 | S |
-| T27.8 | Sync cookiecutter: config files | pending | P0 | 30 | S |
-| T27.9 | Sync cookiecutter: skills | pending | P0 | 30 | S |
+| T27.8 | Sync cookiecutter: config files | ✓ done | P0 | 30 | S |
+| T27.9 | Sync cookiecutter: skills | ✓ done | P0 | 30 | S |
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 7/11 tasks (235/325 complexity points)
+**Progress:** 9/11 tasks (295/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,40 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.9 Complete (Sync cookiecutter: skills)
+
+- **T27.9: Sync cookiecutter: skills** ✓
+  - Compared all 7 shared skills between main project and template
+  - Skills already matched: creating-skills, designing-and-implementing, finishing-branches, implementing-with-tdd, managing-task-lifecycle, reviewing-code
+  - Updated `planning-with-trello/SKILL.md`:
+    - Removed obsolete "Project Conventions" section that referenced non-existent `reference.md`
+    - Template now matches main project version
+  - Verified `testing-fixes` skill correctly NOT in template:
+    - This is an auto-generated, project-specific skill
+    - Template should only include generic, reusable skills
+  - All 7 template skills now match v2.8 versions exactly
+  - All 2050 tests pass
+
+### 2025-12-30 - T27.8 Complete (Sync cookiecutter: config files)
+
+- **T27.8: Sync cookiecutter: config files** ✓
+  - Updated `capabilities.yaml` template from v2.2 to v2.8:
+    - Removed `flows` directory reference (deprecated)
+    - Changed `flow_triggers` to `Skill_triggers`
+    - Changed `suggested_flow` to `suggested_skill`
+    - Updated skill names to use gerund format
+  - Updated `config.yaml` template to v2.8:
+    - Changed `flows:` section to `skills:` section
+    - Removed `flows_dir` and added `skills_dir: .claude/skills`
+    - Added full model providers config (anthropic, openai, google)
+    - Added complete Trello custom fields configuration
+    - Added `on_task_ready` and `on_task_review` hooks
+    - Added `record_task_completion` hook
+  - Updated tests to match new v2.8 format:
+    - `test_capabilities_has_required_sections` - checks for `Skill_triggers`
+    - `test_config_has_all_sections` - checks for `skills:` instead of `flows:`
+  - All 2050 tests pass
 
 ### 2025-12-30 - T27.7 Complete (Remove /status slash command conflict)
 

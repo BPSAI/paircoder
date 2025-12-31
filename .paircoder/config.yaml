@@ -2,7 +2,7 @@ version: '2.8.3'
 project:
   name: paircoder
   description: AI-augmented pair programming framework
-  primary_goal: 'Ship Paircoder v2.6.2: Release Engineering Foundation'
+  primary_goal: 'Ship Paircoder v2.8.4: Release Engineering Foundation'
   coverage_target: 80
 workflow:
   default_branch_type: feature
@@ -237,6 +237,7 @@ trello:
         docs: Collection
         documentation: Collection
         meta: Collection
+        multiple: Collection
       default: Worker/Function
 
     status:
