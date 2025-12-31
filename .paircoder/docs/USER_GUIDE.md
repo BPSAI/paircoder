@@ -1,4 +1,4 @@
-# PairCoder v2.5 User Guide
+# PairCoder v2.8.4 User Guide
 
 > Complete documentation for the AI-augmented pair programming framework
 
@@ -11,24 +11,25 @@
 5. [Project Structure](#project-structure)
 6. [Presets](#presets)
 7. [Planning System](#planning-system)
-8. [Flows & Skills](#flows--skills)
-9. [Slash Commands](#slash-commands)
-10. [Orchestration](#orchestration)
-11. [Autonomous Workflow](#autonomous-workflow)
-12. [Intent Detection](#intent-detection)
-13. [GitHub Integration](#github-integration)
-14. [Metrics & Analytics](#metrics--analytics)
-15. [Time Tracking](#time-tracking)
-16. [Benchmarking](#benchmarking)
-17. [Caching](#caching)
-18. [Trello Integration](#trello-integration)
-19. [Standup Summaries](#standup-summaries)
-20. [MCP Server](#mcp-server)
-21. [Auto-Hooks](#auto-hooks)
-22. [CLI Reference](#cli-reference)
-23. [Configuration Reference](#configuration-reference)
-24. [Claude Code Integration](#claude-code-integration)
-25. [Troubleshooting](#troubleshooting)
+8. [Skills](#skills)
+9. [Skill Export & Cross-Platform](#skill-export--cross-platform)
+10. [Slash Commands](#slash-commands)
+11. [Orchestration](#orchestration)
+12. [Autonomous Workflow](#autonomous-workflow)
+13. [Intent Detection](#intent-detection)
+14. [GitHub Integration](#github-integration)
+15. [Metrics & Analytics](#metrics--analytics)
+16. [Time Tracking](#time-tracking)
+17. [Benchmarking](#benchmarking)
+18. [Caching](#caching)
+19. [Trello Integration](#trello-integration)
+20. [Standup Summaries](#standup-summaries)
+21. [MCP Server](#mcp-server)
+22. [Auto-Hooks](#auto-hooks)
+23. [CLI Reference](#cli-reference)
+24. [Configuration Reference](#configuration-reference)
+25. [Claude Code Integration](#claude-code-integration)
+26. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -40,7 +41,7 @@ PairCoder is a repo-native toolkit for pairing with AI coding agents (Claude, GP
 
 - **Structured context** — Project memory in `.paircoder/` that AI agents can read and update
 - **Planning workflows** — Plans, sprints, and tasks with YAML+Markdown format
-- **Skills & flows** — Reusable workflow templates for common patterns
+- **Skills** — Reusable workflow templates in `.claude/skills/` with cross-platform export
 - **Multi-agent orchestration** — Route tasks to the right AI based on complexity
 - **Analytics** — Token tracking, cost estimation, time tracking
 - **Integrations** — Trello for visual task boards, MCP for Claude Desktop
@@ -70,7 +71,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.8.0
+bpsai-pair --version  # Should show 2.8.4
 ```
 
 ### With MCP Support
@@ -85,7 +86,7 @@ pip install 'bpsai-pair[mcp]'
 git clone https://github.com/yourusername/paircoder.git
 cd paircoder/tools/cli
 pip install -e .
-pytest -v  # 541+ tests
+pytest -v  # 2050+ tests
 ```
 
 ### Verify Installation
@@ -202,33 +203,17 @@ Implement the core business logic for the feature.
 - [ ] Code reviewed
 ```
 
-### Flows
-
-Flows are workflow templates in `.paircoder/flows/`:
-```markdown
-# .paircoder/flows/tdd-implement.flow.md
----
-name: tdd-implement
-description: Test-driven implementation
-triggers: ["fix", "bug", "test"]
----
-
-## Steps
-1. Write failing test
-2. Implement minimum code
-3. Refactor
-4. Verify all tests pass
-```
-
 ### Skills
 
 Skills are Claude Code native workflows in `.claude/skills/`:
 ```markdown
 # .claude/skills/tdd-implement/SKILL.md
 ---
-name: TDD Implementation
-triggers: ["fix", "bug", "test"]
+name: implementing-with-tdd
+description: Guides test-driven development workflow for bug fixes and feature implementation.
 ---
+
+# TDD Implementation
 
 ## When to Use
 Use this skill when fixing bugs or implementing features with tests.
@@ -238,11 +223,6 @@ Use this skill when fixing bugs or implementing features with tests.
 2. Write failing test
 3. Implement solution
 4. Verify tests pass
-
-## Recording Your Work
-After completing work:
-- CLI: `bpsai-pair task update TASK-XXX --status done`
-- MCP: Call `paircoder_task_complete` tool
 ```
 
 ---
@@ -259,7 +239,6 @@ After completing work:
 │   ├── project.md       # Project overview, goals, constraints
 │   ├── workflow.md      # How work is done here
 │   └── state.md         # Current state, active tasks
-├── flows/               # Workflow definitions (.flow.md)
 ├── plans/               # Plan files (.plan.yaml)
 ├── tasks/               # Task files (.task.md)
 │   └── <plan-slug>/     # Tasks grouped by plan
@@ -278,7 +257,8 @@ After completing work:
 │   ├── tdd-implement/SKILL.md
 │   ├── code-review/SKILL.md
 │   ├── finish-branch/SKILL.md
-│   └── trello-aware-planning/SKILL.md
+│   ├── managing-task-lifecycle/SKILL.md
+│   └── planning-with-trello/SKILL.md
 ├── agents/              # Custom subagents
 │   ├── planner.md      # Planning specialist
 │   └── reviewer.md     # Code review specialist
@@ -448,34 +428,85 @@ bpsai-pair task cleanup --retention 90
 
 ---
 
-## Flows & Skills
+## Skills
 
-### Using Flows
-
-```bash
-# List available flows
-bpsai-pair flow list
-
-# Show flow details
-bpsai-pair flow show tdd-implement
-
-# Run a flow (renders steps)
-bpsai-pair flow run tdd-implement
-
-# Validate flow syntax
-bpsai-pair flow validate tdd-implement
-```
+Skills are the primary way to define reusable workflows in PairCoder. They follow the cross-platform Agent Skills specification.
 
 ### Available Skills
 
 | Skill | Triggers | Purpose |
 |-------|----------|---------|
-| `design-plan-implement` | "design", "plan", "feature" | Feature development |
-| `tdd-implement` | "fix", "bug", "test" | Test-driven implementation |
-| `code-review` | "review", "check", "PR" | Code review workflow |
-| `finish-branch` | "finish", "merge", "complete" | Branch completion |
-| `paircoder-task-lifecycle` | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
-| `trello-aware-planning` | "plan feature", "create tasks" | Planning with Trello |
+| `designing-and-implementing` | "design", "plan", "feature" | Feature development |
+| `implementing-with-tdd` | "fix", "bug", "test" | Test-driven implementation |
+| `reviewing-code` | "review", "check", "PR" | Code review workflow |
+| `finishing-branches` | "finish", "merge", "complete" | Branch completion |
+| `managing-task-lifecycle` | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
+| `planning-with-trello` | "plan feature", "create tasks" | Planning with Trello |
+
+### Skill Commands
+
+```bash
+# List all skills
+bpsai-pair skill list
+
+# Validate skill format
+bpsai-pair skill validate
+
+# Validate specific skill
+bpsai-pair skill validate designing-and-implementing
+
+# Get AI-powered skill suggestions
+bpsai-pair skill suggest
+
+# Detect gaps in skill coverage
+bpsai-pair skill gaps
+
+# Generate skill from detected gap
+bpsai-pair skill generate gap-name
+
+# Install skill from URL or path
+bpsai-pair skill install https://example.com/skill.tar.gz
+bpsai-pair skill install ./my-skill/
+```
+
+---
+
+## Skill Export & Cross-Platform
+
+PairCoder skills can be exported to other AI coding tools for cross-platform compatibility.
+
+### Supported Platforms
+
+| Platform | Export Format | Location |
+|----------|---------------|----------|
+| Cursor | Markdown rules | `.cursor/rules/*.md` |
+| Continue.dev | Context file | `.continue/context/*.md` |
+| Windsurf | Rules file | `.windsurfrules` |
+
+### Export Commands
+
+```bash
+# Export single skill to Cursor
+bpsai-pair skill export my-skill --format cursor
+
+# Export all skills to Continue.dev
+bpsai-pair skill export --all --format continue
+
+# Export to Windsurf
+bpsai-pair skill export my-skill --format windsurf
+
+# Dry run (preview without writing)
+bpsai-pair skill export my-skill --format cursor --dry-run
+```
+
+### Portability Tips
+
+For maximum portability:
+- Avoid platform-specific commands in skill content
+- Use generic instructions (what to do, not tool-specific how)
+- Keep skills focused on workflow, not tool invocations
+
+See [Cross-Platform Skills Guide](../CROSS_PLATFORM_SKILLS.md) for detailed documentation.
 
 ---
 
@@ -487,18 +518,18 @@ Slash commands provide quick access to common operations in Claude Code.
 
 | Command | Purpose |
 |---------|---------|
+| `/status` | Show project status, current sprint, active tasks |
 | `/pc-plan` | Show current plan details and progress |
-| `/start-task` | Start working on a task |
-| `/update-skills` | Analyze and update skills |
-
-**Note**: For project status, use `bpsai-pair status` CLI command.
+| `/task [ID]` | Show current or specific task details |
+| `/start-task <ID>` | Start working on a task with pre-flight checks |
+| `/prep-release <version>` | Prepare a release with documentation verification |
 
 ### Usage
 
 Type the command in Claude Code chat:
 
 ```
-/pc-plan
+/status
 ```
 
 Claude Code will execute the command and display the results.
@@ -508,25 +539,27 @@ Claude Code will execute the command and display the results.
 Place markdown files in `.claude/commands/` to create custom slash commands:
 
 ```markdown
-# .claude/commands/review.md
-Review the current branch:
-1. Run `git diff main...HEAD`
-2. Check for code style issues
-3. Verify tests pass with `pytest`
-4. Summarize findings
+# .claude/commands/my-command.md
+Description of what this command does.
+
+Steps:
+1. First step
+2. Second step
 ```
 
-Then use `/review` in Claude Code.
+Then use `/my-command` in Claude Code.
 
 ### Command File Structure
 
 ```
 .claude/
 └── commands/
-    ├── pc-plan.md        # /pc-plan command
-    ├── start-task.md     # /start-task command
-    ├── update-skills.md  # /update-skills command
-    └── custom.md         # /custom command (your own)
+    ├── status.md      # /status command
+    ├── pc-plan.md     # /pc-plan command
+    ├── task.md        # /task command
+    ├── start-task.md  # /start-task command
+    ├── prep-release.md # /prep-release command
+    └── custom.md      # /custom command (your own)
 ```
 
 ### Best Practices
@@ -638,12 +671,12 @@ bpsai-pair intent suggest-flow "review the PR for security issues"
 
 ### Intent Types
 
-| Intent | Triggers | Suggested Flow |
-|--------|----------|----------------|
-| `feature` | "add", "create", "implement" | design-plan-implement |
-| `bugfix` | "fix", "bug", "broken", "error" | tdd-implement |
-| `refactor` | "refactor", "clean up", "improve" | design-plan-implement |
-| `review` | "review", "check", "look at" | code-review |
+| Intent | Triggers | Suggested Skill |
+|--------|----------|-----------------|
+| `feature` | "add", "create", "implement" | designing-and-implementing |
+| `bugfix` | "fix", "bug", "broken", "error" | implementing-with-tdd |
+| `refactor` | "refactor", "clean up", "improve" | designing-and-implementing |
+| `review` | "review", "check", "look at" | reviewing-code |
 | `documentation` | "document", "docs", "README" | - |
 
 ---
@@ -721,6 +754,12 @@ bpsai-pair metrics breakdown --by task
 ```bash
 # Check budget status
 bpsai-pair metrics budget
+
+# Estimate task cost
+bpsai-pair budget estimate TASK-001
+
+# Check if task fits current budget
+bpsai-pair budget check --task TASK-001
 
 # Export metrics
 bpsai-pair metrics export --format csv --output metrics.csv
@@ -1053,24 +1092,26 @@ Configure hooks in `.paircoder/config.yaml`:
 hooks:
   enabled: true
   on_task_start:
-    - start_timer      # Start time tracking
-    - sync_trello      # Update Trello card
-    - update_state     # Refresh state.md
+    - check_token_budget  # Warn if task exceeds budget
+    - start_timer         # Start time tracking
+    - sync_trello         # Update Trello card
+    - update_state        # Refresh state.md
   on_task_complete:
-    - stop_timer       # Stop time tracking
-    - record_metrics   # Record token usage
-    - sync_trello      # Update Trello card
-    - update_state     # Refresh state.md
-    - check_unblocked  # Find newly unblocked tasks
+    - stop_timer          # Stop time tracking
+    - record_metrics      # Record token usage
+    - sync_trello         # Update Trello card
+    - update_state        # Refresh state.md
+    - check_unblocked     # Find newly unblocked tasks
   on_task_block:
-    - sync_trello      # Update Trello card
-    - update_state     # Refresh state.md
+    - sync_trello         # Update Trello card
+    - update_state        # Refresh state.md
 ```
 
 ### Available Hooks
 
 | Hook | Description |
 |------|-------------|
+| `check_token_budget` | Warn if task exceeds budget threshold |
 | `start_timer` | Start time tracking for task |
 | `stop_timer` | Stop time tracking, calculate duration |
 | `record_metrics` | Record token usage from context.extra |
@@ -1089,23 +1130,30 @@ hooks:
 
 ## CLI Reference
 
-### All Commands (80+ total)
+### All Commands (120+ total)
 
 | Group | Commands | Count |
 |-------|----------|-------|
 | Core | init, feature, pack, context-sync, status, validate, ci | 7 |
 | Presets | preset list/show/preview, init --preset | 4 |
-| Planning | plan new/list/show/tasks/status/sync-trello/add-task | 7 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
 | Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
-| Flows | flow list/show/run/validate | 4 |
+| Skills | skill list/validate/export/install/suggest/gaps/generate | 7 |
+| Flows | flow list/show/run/validate (deprecated) | 4 |
 | Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
 | Intent | intent detect/should-plan/suggest-flow | 3 |
 | GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
 | Standup | standup generate/post | 2 |
-| Metrics | metrics summary/task/breakdown/budget/export | 5 |
+| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens | 9 |
+| Budget | budget estimate/status/check | 3 |
 | Timer | timer start/stop/status/show/summary | 5 |
 | Benchmark | benchmark run/results/compare/list | 4 |
 | Cache | cache stats/clear/invalidate | 3 |
+| Session | session check/status | 2 |
+| Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
+| Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
+| Migrate | migrate, migrate status | 2 |
+| Upgrade | upgrade | 1 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
@@ -1131,7 +1179,6 @@ workflow:
   default_branch_type: "feature"
   main_branch: "main"
   context_dir: ".paircoder/context"
-  flows_dir: ".paircoder/flows"
   plans_dir: ".paircoder/plans"
   tasks_dir: ".paircoder/tasks"
 
@@ -1164,24 +1211,17 @@ routing:
     security: claude-opus-4-5
     architecture: claude-opus-4-5
 
-flows:
-  enabled:
-    - design-plan-implement
-    - tdd-implement
-    - review
-    - finish-branch
-  triggers:
-    feature_request: [design-plan-implement]
-    bugfix: [tdd-implement]
-    pre_merge: [review, finish-branch]
-
 metrics:
   enabled: true
   store_path: .paircoder/history/metrics.jsonl
 
+token_budget:
+  warning_threshold: 75
+  critical_threshold: 90
+
 hooks:
   enabled: true
-  on_task_start: [start_timer, sync_trello, update_state]
+  on_task_start: [check_token_budget, start_timer, sync_trello, update_state]
   on_task_complete: [stop_timer, record_metrics, sync_trello, update_state, check_unblocked]
   on_task_block: [sync_trello, update_state]
 
@@ -1205,7 +1245,7 @@ PairCoder is designed to complement Claude Code's built-in features. For detaile
 - **Built-in commands**: Use `/compact`, `/context`, `/plan` alongside PairCoder
 - **Skills**: PairCoder skills in `.claude/skills/` are auto-loaded by Claude Code
 - **Context management**: Claude Code handles conversation; PairCoder handles project state
-- **Compaction recovery**: Use `bpsai-pair compaction reload` after `/compact`
+- **Compaction recovery**: Use `bpsai-pair compaction recover` after `/compact`
 
 ### Quick Reference
 
@@ -1214,7 +1254,7 @@ PairCoder is designed to complement Claude Code's built-in features. For detaile
 | Session planning | Claude Code `/plan` |
 | Sprint planning | `bpsai-pair plan` |
 | Check token usage | `/context` |
-| Check project state | `bpsai-pair status` |
+| Check project state | `/status` or `bpsai-pair status` |
 | Start a task | `/start-task T19.1` |
 
 ---
@@ -1277,10 +1317,10 @@ bpsai-pair cache stats
 
 ### Getting Help
 
-- GitHub Issues: https://github.com/anthropics/paircoder/issues
+- GitHub Issues: https://github.com/BPSAI/paircoder/issues
 - Documentation: This guide and README.md
 - MCP Setup: docs/MCP_SETUP.md
 
 ---
 
-*PairCoder v2.5.0 - MIT License*
+*PairCoder v2.8.4 - MIT License*

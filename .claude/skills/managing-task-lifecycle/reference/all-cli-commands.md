@@ -1,244 +1,557 @@
 # PairCoder CLI Complete Reference
 
-> Updated: 2025-12-17 | Version: 2.5.2 | 88+ commands
+> Updated: 2025-12-31 | Version: 2.8.4 | 120+ commands
 
 ## Contents
 
-- [Task Commands (Local)](#task-commands-local)
-- [Trello Task Commands (ttask)](#trello-task-commands-ttask)
-- [When to Use task vs ttask](#when-to-use-task-vs-ttask)
-- [Plan Commands](#plan-commands)
-- [Trello Commands](#trello-commands)
-- [Other Commands](#other-commands)
-- [Orchestration Commands](#orchestration-commands)
-- [GitHub Commands](#github-commands)
-- [Metrics Commands](#metrics-commands)
-- [Timer Commands](#timer-commands)
-- [MCP Commands](#mcp-commands)
-- [Cache Commands](#cache-commands)
-- [Benchmark Commands](#benchmark-commands)
-- [Intent Commands](#intent-commands)
+- [Command Groups Overview](#command-groups-overview)
+- [Core Commands](#core-commands)
 - [Preset Commands](#preset-commands)
-- [Flow Commands](#flow-commands)
+- [Planning Commands](#planning-commands)
+- [Task Commands](#task-commands)
+- [Skills Commands](#skills-commands)
+- [Flow Commands (Deprecated)](#flow-commands-deprecated)
+- [Orchestration Commands](#orchestration-commands)
+- [Intent Commands](#intent-commands)
+- [GitHub Commands](#github-commands)
+- [Standup Commands](#standup-commands)
+- [Metrics Commands](#metrics-commands)
+- [Budget Commands](#budget-commands)
+- [Timer Commands](#timer-commands)
+- [Benchmark Commands](#benchmark-commands)
+- [Cache Commands](#cache-commands)
+- [Session Commands](#session-commands)
+- [Compaction Commands](#compaction-commands)
+- [Security Commands](#security-commands)
+- [Migrate Commands](#migrate-commands)
+- [Trello Commands](#trello-commands)
+- [Trello Task Commands (ttask)](#trello-task-commands-ttask)
+- [MCP Commands](#mcp-commands)
 - [Configuration](#configuration)
 - [Environment Variables](#environment-variables)
 - [Common Workflows](#common-workflows)
 
 ---
 
-## Overview
-
-PairCoder CLI (`bpsai-pair`) manages tasks, plans, Trello integration, and development workflow.
-
-## Command Groups
+## Command Groups Overview
 
 | Group | Purpose | Count |
 |-------|---------|-------|
-| `task` | Manage local task files | 11 |
-| `ttask` | Manage Trello cards directly | 7 |
-| `plan` | Manage plans and sprints | 7 |
-| `trello` | Trello board configuration | 12 |
-| `orchestrate` | Multi-agent orchestration | 6 |
-| `github` | GitHub PR integration | 7 |
-| `metrics` | Token/cost tracking | 5 |
-| `timer` | Time tracking | 5 |
-| `benchmark` | Agent benchmarking | 4 |
-| `cache` | Context caching | 3 |
-| `mcp` | MCP server for Claude Desktop | 3 |
-| `intent` | Natural language intent detection | 3 |
-| `preset` | Project presets | 3 |
-| `standup` | Generate standup summaries | 2 |
 | Core | init, feature, pack, status, validate, ci, context-sync | 7 |
+| Preset | Project presets | 4 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
+| Task | Local task file management | 11 |
+| Skills | Skill management and export | 7 |
+| Flow | Workflow definitions (deprecated) | 4 |
+| Orchestration | Multi-agent orchestration | 6 |
+| Intent | Natural language intent detection | 3 |
+| GitHub | GitHub PR integration | 7 |
+| Standup | Generate standup summaries | 2 |
+| Metrics | Token/cost tracking | 9 |
+| Budget | Token budget management | 3 |
+| Timer | Time tracking | 5 |
+| Benchmark | Agent benchmarking | 4 |
+| Cache | Context caching | 3 |
+| Session | Session management | 2 |
+| Compaction | Context compaction recovery | 5 |
+| Security | Security scanning | 4 |
+| Migrate | Migration commands | 2 |
+| Trello | Trello board configuration | 10 |
+| ttask | Trello card operations | 7 |
+| MCP | MCP server for Claude Desktop | 3 |
+| Upgrade | Version upgrades | 1 |
+| **Total** | | **120+** |
 
 ---
 
-## Task Commands (Local)
+## Core Commands
 
-These commands operate on local `.task.md` files and trigger hooks (Trello sync, timers, state updates).
+| Command | Description |
+|---------|-------------|
+| `init [path] [--preset]` | Initialize repo with PairCoder structure |
+| `feature <name>` | Create feature branch with context |
+| `pack [--lite]` | Package context for AI agents |
+| `context-sync` | Update the context loop |
+| `status` | Show current context and recent changes |
+| `validate` | Check repo structure and consistency |
+| `ci` | Run local CI checks (tests + linting) |
 
-### bpsai-pair task list
-
-List all tasks with status, priority, and complexity.
+### Examples
 
 ```bash
-bpsai-pair task list
-bpsai-pair task list --plan PLAN-ID    # Filter by plan
-bpsai-pair task list --status pending  # Filter by status
+# Initialize new project
+bpsai-pair init my-project --preset bps
+
+# Create feature branch
+bpsai-pair feature add-auth --type feature --primary "Add authentication"
+
+# Package context (lite for Codex 32KB limit)
+bpsai-pair pack --lite --out context.tgz
+
+# Check status
+bpsai-pair status
 ```
 
-### bpsai-pair task show TASK-ID
+---
 
-Show detailed information about a specific task.
+## Preset Commands
+
+| Command | Description |
+|---------|-------------|
+| `preset list` | List available presets |
+| `preset show <name>` | Show preset details |
+| `preset preview <name>` | Preview generated config |
+| `init --preset <name>` | Initialize with preset |
+
+**Available Presets:** python-cli, python-api, react, fullstack, library, minimal, autonomous, bps
+
+### Examples
 
 ```bash
-bpsai-pair task show TASK-082
+bpsai-pair preset list
+bpsai-pair preset show bps
+bpsai-pair preset preview autonomous
+bpsai-pair init my-project --preset bps
 ```
 
-### bpsai-pair task update TASK-ID --status STATUS
+---
 
-**CRITICAL:** This is the primary command for task lifecycle management.
+## Planning Commands
+
+| Command | Description |
+|---------|-------------|
+| `plan new <slug>` | Create a new plan |
+| `plan list` | List all plans |
+| `plan show <id>` | Show plan details |
+| `plan tasks <id>` | List tasks for a plan |
+| `plan status [id]` | Show progress with task breakdown |
+| `plan sync-trello <id>` | Sync tasks to Trello board |
+| `plan add-task <id>` | Add a task to a plan |
+| `plan estimate <id>` | Estimate plan token cost |
+
+### Examples
 
 ```bash
-# Start working on a task
-bpsai-pair task update TASK-082 --status in_progress
+# Create feature plan
+bpsai-pair plan new my-feature --type feature --title "My Feature"
 
-# Mark task as blocked
-bpsai-pair task update TASK-082 --status blocked
+# Show plan with progress
+bpsai-pair plan status plan-2025-12-my-feature
 
-# Complete a task
-bpsai-pair task update TASK-082 --status done
+# Sync to Trello
+bpsai-pair plan sync-trello plan-2025-12-my-feature --dry-run
+bpsai-pair plan sync-trello plan-2025-12-my-feature --target-list "Planned/Ready"
 ```
 
-**Side Effects:**
-- Updates task file YAML frontmatter
-- Fires hooks (Trello card move, timer, etc.)
-- Updates state.md if configured
+---
 
-### bpsai-pair task next
+## Task Commands
 
-Show the next recommended task to work on (by priority and dependencies).
+| Command | Description |
+|---------|-------------|
+| `task list` | List all tasks |
+| `task show <id>` | Show task details |
+| `task update <id> --status` | Update task status (fires hooks) |
+| `task next` | Get next recommended task |
+| `task next --start` | Auto-start next task |
+| `task auto-next` | Full auto-assignment with Trello |
+| `task archive` | Archive completed tasks |
+| `task restore <id>` | Restore from archive |
+| `task list-archived` | List archived tasks |
+| `task cleanup` | Clean old archives |
+| `task changelog-preview` | Preview changelog entry |
 
-```bash
-bpsai-pair task next
-bpsai-pair task next --plan PLAN-ID
-bpsai-pair task next --start          # Pick and start immediately
-```
-
-### bpsai-pair task auto-next
-
-Automatically assign and start the next pending task.
-
-```bash
-bpsai-pair task auto-next
-```
-
-### bpsai-pair task archive TASK-ID
-
-Archive a completed task.
+### Examples
 
 ```bash
-bpsai-pair task archive TASK-082
-```
+# Get and start next task
+bpsai-pair task next --start
 
-### bpsai-pair task restore TASK-ID
+# Update task status (fires hooks)
+bpsai-pair task update TASK-001 --status in_progress
+bpsai-pair task update TASK-001 --status done
 
-Restore an archived task.
-
-```bash
-bpsai-pair task restore TASK-082
-```
-
-### bpsai-pair task list-archived
-
-List all archived tasks.
-
-```bash
-bpsai-pair task list-archived
-```
-
-### bpsai-pair task cleanup
-
-Clean up old archived tasks.
-
-```bash
-bpsai-pair task cleanup
-bpsai-pair task cleanup --older-than 30  # Days
-```
-
-### bpsai-pair task changelog-preview
-
-Preview changelog entry for completed tasks.
-
-```bash
-bpsai-pair task changelog-preview
+# Archive completed tasks
+bpsai-pair task archive --completed
 bpsai-pair task changelog-preview --since 2025-12-01
+```
+
+---
+
+## Skills Commands
+
+| Command | Description |
+|---------|-------------|
+| `skill list` | List all skills |
+| `skill validate [name]` | Validate skill format against spec |
+| `skill export <name>` | Export to Cursor/Continue/Windsurf |
+| `skill install <source>` | Install skill from URL/path |
+| `skill suggest` | AI-powered skill suggestions |
+| `skill gaps` | Detect missing skills from patterns |
+| `skill generate <name>` | Generate skill from detected gap |
+
+### Examples
+
+```bash
+# List and validate
+bpsai-pair skill list
+bpsai-pair skill validate
+bpsai-pair skill validate designing-and-implementing
+
+# Export to other platforms
+bpsai-pair skill export my-skill --format cursor
+bpsai-pair skill export --all --format windsurf
+bpsai-pair skill export my-skill --format continue --dry-run
+
+# Install from URL or path
+bpsai-pair skill install https://example.com/skill.tar.gz
+bpsai-pair skill install ./my-skill/
+
+# AI-powered suggestions
+bpsai-pair skill suggest
+bpsai-pair skill gaps
+bpsai-pair skill generate gap-name
+```
+
+---
+
+## Flow Commands (Deprecated)
+
+> ⚠️ **DEPRECATED:** Flows are deprecated in favor of skills. Use `bpsai-pair skill` commands instead.
+> See [Migration Guide](../../../docs/MIGRATION.md) for conversion instructions.
+
+| Command | Description |
+|---------|-------------|
+| `flow list` | List available flows |
+| `flow show <name>` | Show flow details |
+| `flow run <name>` | Run a flow |
+| `flow validate <name>` | Validate flow definition |
+
+---
+
+## Orchestration Commands
+
+| Command | Description |
+|---------|-------------|
+| `orchestrate task <id>` | Route task to best agent |
+| `orchestrate analyze <id>` | Analyze task complexity |
+| `orchestrate handoff <id>` | Create handoff package |
+| `orchestrate auto-run` | Run single task workflow |
+| `orchestrate auto-session` | Run autonomous session |
+| `orchestrate workflow-status` | Show current workflow state |
+
+### Examples
+
+```bash
+# Analyze task complexity
+bpsai-pair orchestrate analyze TASK-001
+
+# Create handoff for another agent
+bpsai-pair orchestrate handoff TASK-001 \
+  --from claude-code --to codex \
+  --progress "Completed step 1 and 2"
+
+# Run autonomous session
+bpsai-pair orchestrate auto-session --max-tasks 3
+```
+
+---
+
+## Intent Commands
+
+| Command | Description |
+|---------|-------------|
+| `intent detect <text>` | Detect work intent from text |
+| `intent should-plan <text>` | Check if planning needed |
+| `intent suggest-flow <text>` | Suggest appropriate workflow |
+
+### Examples
+
+```bash
+bpsai-pair intent detect "fix the login bug"
+# Output: bugfix
+
+bpsai-pair intent should-plan "refactor the database layer"
+# Output: true
+
+bpsai-pair intent suggest-flow "review the PR"
+# Output: reviewing-code
+```
+
+---
+
+## GitHub Commands
+
+| Command | Description |
+|---------|-------------|
+| `github status` | Check GitHub connection |
+| `github create` | Create a pull request |
+| `github list` | List pull requests |
+| `github merge <pr>` | Merge PR and update task |
+| `github link <task>` | Link task to PR |
+| `github auto-pr` | Auto-create PR from branch |
+| `github archive-merged` | Archive tasks for merged PRs |
+
+### Examples
+
+```bash
+# Auto-create PR from branch (detects TASK-xxx)
+bpsai-pair github auto-pr
+bpsai-pair github auto-pr --no-draft
+
+# Archive all tasks for merged PRs
+bpsai-pair github archive-merged --all
+```
+
+---
+
+## Standup Commands
+
+| Command | Description |
+|---------|-------------|
+| `standup generate` | Generate daily summary |
+| `standup post` | Post summary to Trello |
+
+### Examples
+
+```bash
+bpsai-pair standup generate --format slack
+bpsai-pair standup generate --since 48  # Last 48 hours
+bpsai-pair standup post
+```
+
+---
+
+## Metrics Commands
+
+| Command | Description |
+|---------|-------------|
+| `metrics summary` | Show metrics for time period |
+| `metrics task <id>` | Show metrics for a task |
+| `metrics breakdown` | Cost breakdown by dimension |
+| `metrics budget` | Show budget status |
+| `metrics export` | Export metrics to file |
+| `metrics velocity` | Show velocity metrics |
+| `metrics burndown` | Show burndown chart data |
+| `metrics accuracy` | Show estimation accuracy |
+| `metrics tokens` | Show token usage |
+
+### Examples
+
+```bash
+bpsai-pair metrics summary
+bpsai-pair metrics breakdown --by model
+bpsai-pair metrics export --format csv --output metrics.csv
+```
+
+---
+
+## Budget Commands
+
+| Command | Description |
+|---------|-------------|
+| `budget estimate` | Estimate task token cost |
+| `budget status` | Show current budget usage |
+| `budget check` | Check if task fits budget |
+
+### Examples
+
+```bash
+bpsai-pair budget status
+bpsai-pair budget estimate TASK-001
+bpsai-pair budget check --task TASK-001
+```
+
+---
+
+## Timer Commands
+
+| Command | Description |
+|---------|-------------|
+| `timer start <task>` | Start timer for a task |
+| `timer stop` | Stop current timer |
+| `timer status` | Show current timer |
+| `timer show <task>` | Show time entries |
+| `timer summary` | Show time summary |
+
+### Examples
+
+```bash
+bpsai-pair timer start TASK-001
+bpsai-pair timer status
+bpsai-pair timer stop
+bpsai-pair timer summary --plan plan-2025-12-feature
+```
+
+---
+
+## Benchmark Commands
+
+| Command | Description |
+|---------|-------------|
+| `benchmark run` | Run benchmark suite |
+| `benchmark results` | View results |
+| `benchmark compare` | Compare agents |
+| `benchmark list` | List benchmarks |
+
+### Examples
+
+```bash
+bpsai-pair benchmark run --suite default
+bpsai-pair benchmark results --latest
+bpsai-pair benchmark compare claude-code codex
+```
+
+---
+
+## Cache Commands
+
+| Command | Description |
+|---------|-------------|
+| `cache stats` | Show cache statistics |
+| `cache clear` | Clear context cache |
+| `cache invalidate <file>` | Invalidate specific file |
+
+### Examples
+
+```bash
+bpsai-pair cache stats
+bpsai-pair cache clear
+bpsai-pair cache invalidate .paircoder/context/state.md
+```
+
+---
+
+## Session Commands
+
+| Command | Description |
+|---------|-------------|
+| `session check` | Check session status (quiet mode for hooks) |
+| `session status` | Show detailed session info with budget |
+
+### Examples
+
+```bash
+bpsai-pair session check --quiet
+bpsai-pair session status
+```
+
+---
+
+## Compaction Commands
+
+| Command | Description |
+|---------|-------------|
+| `compaction snapshot save` | Save context snapshot |
+| `compaction snapshot list` | List snapshots |
+| `compaction check` | Check for compaction events |
+| `compaction recover` | Recover from compaction |
+| `compaction cleanup` | Clean old snapshots |
+
+### Examples
+
+```bash
+bpsai-pair compaction snapshot save --trigger "manual"
+bpsai-pair compaction snapshot list
+bpsai-pair compaction check
+bpsai-pair compaction recover
+bpsai-pair compaction cleanup --older-than 7
+```
+
+---
+
+## Security Commands
+
+| Command | Description |
+|---------|-------------|
+| `security scan-secrets` | Scan for leaked secrets |
+| `security pre-commit` | Run pre-commit checks |
+| `security install-hook` | Install git hooks |
+| `security scan-deps` | Scan dependency vulnerabilities |
+
+### Examples
+
+```bash
+bpsai-pair security scan-secrets --staged
+bpsai-pair security scan-deps
+bpsai-pair security install-hook
+```
+
+---
+
+## Migrate Commands
+
+| Command | Description |
+|---------|-------------|
+| `migrate` | Run pending migrations |
+| `migrate status` | Show migration status |
+
+### Examples
+
+```bash
+bpsai-pair migrate status
+bpsai-pair migrate
+```
+
+---
+
+## Trello Commands
+
+| Command | Description |
+|---------|-------------|
+| `trello connect` | Connect to Trello |
+| `trello status` | Check connection |
+| `trello disconnect` | Remove credentials |
+| `trello boards` | List available boards |
+| `trello use-board <id>` | Set active board |
+| `trello lists` | Show board lists |
+| `trello config` | View/modify config |
+| `trello progress <task>` | Post progress comment |
+| `trello webhook serve` | Start webhook server |
+| `trello webhook status` | Check webhook status |
+
+### Examples
+
+```bash
+bpsai-pair trello connect
+bpsai-pair trello boards
+bpsai-pair trello use-board 694176ebf4b9d27c6e7a0e73
+bpsai-pair trello status
+bpsai-pair trello progress TASK-001 --completed "Feature done"
 ```
 
 ---
 
 ## Trello Task Commands (ttask)
 
-These commands operate directly on Trello cards. Use when working with Trello as the source of truth.
+| Command | Description |
+|---------|-------------|
+| `ttask list` | List tasks from board |
+| `ttask show <id>` | Show task details |
+| `ttask start <id>` | Start working on task |
+| `ttask done <id>` | Complete task |
+| `ttask block <id>` | Mark as blocked |
+| `ttask comment <id>` | Add comment |
+| `ttask move <id>` | Move to different list |
 
-### bpsai-pair ttask list
-
-List Trello cards with filters.
+### Examples
 
 ```bash
+# List and show
 bpsai-pair ttask list
 bpsai-pair ttask list --list "In Progress"
-bpsai-pair ttask list --agent              # Cards marked for AI processing
-bpsai-pair ttask list --status sprint      # Cards in Sprint list
-```
-
-### bpsai-pair ttask show CARD-ID
-
-Show Trello card details including custom fields.
-
-```bash
 bpsai-pair ttask show TRELLO-abc123
-bpsai-pair ttask show TASK-082            # If linked to local task
-```
 
-### bpsai-pair ttask start CARD-ID
-
-Start work on a Trello card.
-
-```bash
+# Lifecycle
 bpsai-pair ttask start TRELLO-abc123
+bpsai-pair ttask done TRELLO-abc123 --summary "Implemented feature" --list "Deployed/Done"
+bpsai-pair ttask block TRELLO-abc123 --reason "Waiting for API"
+
+# Comments
+bpsai-pair ttask comment TRELLO-abc123 "50% complete"
 ```
 
-**What happens:**
-- Card moves from "Sprint" → "In Progress"
-- Comment added: "🚀 Started by {agent}"
-- Local state updated
-
-### bpsai-pair ttask done CARD-ID
-
-Mark a Trello card as done.
-
-```bash
-bpsai-pair ttask done TRELLO-abc123
-bpsai-pair ttask done TRELLO-abc123 --summary "Implemented feature X with tests"
-```
-
-**What happens:**
-- Card moves to "In Review" or "Done"
-- Comment added with completion summary
-
-### bpsai-pair ttask block CARD-ID
-
-Mark a Trello card as blocked.
-
-```bash
-bpsai-pair ttask block TRELLO-abc123 --reason "Waiting for API credentials"
-```
-
-**What happens:**
-- Card moves to "Blocked" list
-- Comment added with block reason
-
-### bpsai-pair ttask comment CARD-ID "MESSAGE"
-
-Add a comment to a Trello card.
-
-```bash
-bpsai-pair ttask comment TRELLO-abc123 "Halfway done with custom fields"
-bpsai-pair ttask comment TASK-082 "Completed API endpoints, starting frontend"
-```
-
-### bpsai-pair ttask move CARD-ID LIST-NAME
-
-Move a Trello card to a specific list.
-
-```bash
-bpsai-pair ttask move TRELLO-abc123 "Review/Testing"
-bpsai-pair ttask move TRELLO-abc123 "Deployed/Done"
-```
-
----
-
-## When to Use `task` vs `ttask`
+### When to Use `task` vs `ttask`
 
 | Scenario | Command |
 |----------|---------|
@@ -256,575 +569,39 @@ bpsai-pair ttask move TRELLO-abc123 "Deployed/Done"
 
 ---
 
-## Plan Commands
-
-### bpsai-pair plan list
-
-List all plans with task counts.
-
-```bash
-bpsai-pair plan list
-```
-
-### bpsai-pair plan show PLAN-ID
-
-Show detailed plan information including sprints and tasks.
-
-```bash
-bpsai-pair plan show plan-2025-12-sprint-14-trello-deep
-```
-
-### bpsai-pair plan status PLAN-ID
-
-Get plan status with task breakdown.
-
-```bash
-bpsai-pair plan status plan-2025-12-sprint-14-trello-deep
-```
-
-### bpsai-pair plan new
-
-Create a new plan.
-
-```bash
-bpsai-pair plan new my-feature --type feature --title "My Feature"
-```
-
-### bpsai-pair plan add-task PLAN-ID
-
-Add a task to an existing plan.
-
-```bash
-bpsai-pair plan add-task plan-2025-12-sprint-14-trello-deep
-```
-
-### bpsai-pair plan sync-trello PLAN-ID
-
-Sync plan tasks to Trello board.
-
-```bash
-bpsai-pair plan sync-trello plan-2025-12-sprint-14-trello-deep
-bpsai-pair plan sync-trello plan-2025-12-sprint-14-trello-deep --dry-run
-```
-
-**What it does:**
-- Creates cards for tasks that don't exist
-- Updates cards for tasks that changed
-- Sets custom fields (Project, Stack, Effort, Status)
-- Applies labels
-- Creates checklists from acceptance criteria
-
----
-
-## Trello Commands
-
-### bpsai-pair trello status
-
-Check Trello connection and board status.
-
-```bash
-bpsai-pair trello status
-```
-
-### bpsai-pair trello connect
-
-Connect to Trello with API credentials.
-
-```bash
-bpsai-pair trello connect
-```
-
-### bpsai-pair trello boards
-
-List available Trello boards.
-
-```bash
-bpsai-pair trello boards
-```
-
-### bpsai-pair trello use-board BOARD-ID
-
-Set the board for this project.
-
-```bash
-bpsai-pair trello use-board 694176ebf4b9d27c6e7a0e73
-```
-
-### bpsai-pair trello lists
-
-List all lists on the current board.
-
-```bash
-bpsai-pair trello lists
-```
-
-### bpsai-pair trello config
-
-Show Trello configuration.
-
-```bash
-bpsai-pair trello config
-```
-
-### bpsai-pair trello progress TASK-ID
-
-Post progress comments to Trello cards.
-
-```bash
-bpsai-pair trello progress TASK-082 "Completed API endpoints"
-bpsai-pair trello progress TASK-082 --started       # Report task started
-bpsai-pair trello progress TASK-082 --blocked "Waiting for API"
-bpsai-pair trello progress TASK-082 --step "Database complete"
-bpsai-pair trello progress TASK-082 --completed "Feature done"
-bpsai-pair trello progress TASK-082 --review        # Request review
-```
-
-### bpsai-pair trello check TASK-ID "TEXT"
-
-Check (complete) checklist items containing text.
-
-```bash
-bpsai-pair trello check TASK-082 "implement"    # Checks items containing "implement"
-bpsai-pair trello check TASK-082 "test"         # Checks items containing "test"
-```
-
-### bpsai-pair trello uncheck TASK-ID "TEXT"
-
-Uncheck checklist items containing text.
-
-```bash
-bpsai-pair trello uncheck TASK-082 "review"     # Unchecks items containing "review"
-```
-
-### bpsai-pair trello webhook serve
-
-Start webhook server to listen for Trello events.
-
-```bash
-bpsai-pair trello webhook serve
-bpsai-pair trello webhook serve --port 8080
-```
-
-### bpsai-pair trello webhook status
-
-Check webhook status.
-
-```bash
-bpsai-pair trello webhook status
-```
-
----
-
-## Other Commands
-
-### bpsai-pair status
-
-Show overall project status.
-
-```bash
-bpsai-pair status
-```
-
-### bpsai-pair feature NAME
-
-Create a feature branch with context.
-
-```bash
-bpsai-pair feature my-feature --type feature --primary "Main goal"
-```
-
-### bpsai-pair pack
-
-Create a context pack for agent sessions.
-
-```bash
-bpsai-pair pack
-bpsai-pair pack --lite                    # Minimal pack for Codex
-bpsai-pair pack --out my_pack.tgz
-```
-
-### bpsai-pair standup
-
-Generate a standup summary.
-
-```bash
-bpsai-pair standup
-bpsai-pair standup generate               # Generate summary
-bpsai-pair standup post                   # Post to Slack/Trello
-bpsai-pair standup --since yesterday
-```
-
-### bpsai-pair init
-
-Initialize PairCoder in a project.
-
-```bash
-bpsai-pair init
-bpsai-pair init --preset bps              # Use BPS preset
-```
-
-### bpsai-pair validate
-
-Validate project configuration.
-
-```bash
-bpsai-pair validate
-```
-
----
-
-## Orchestration Commands
-
-### bpsai-pair orchestrate analyze TASK-ID
-
-Analyze task complexity for model routing.
-
-```bash
-bpsai-pair orchestrate analyze TASK-082
-```
-
-### bpsai-pair orchestrate handoff
-
-Create handoff package between agents.
-
-```bash
-bpsai-pair orchestrate handoff TASK-082 --from planner --to driver
-```
-
-### bpsai-pair orchestrate auto-session
-
-Run autonomous work session.
-
-```bash
-bpsai-pair orchestrate auto-session
-bpsai-pair orchestrate auto-session --max-tasks 3
-```
-
----
-
-## GitHub Commands
-
-### bpsai-pair github status
-
-Check GitHub integration status.
-
-```bash
-bpsai-pair github status
-```
-
-### bpsai-pair github create
-
-Create a pull request.
-
-```bash
-bpsai-pair github create --title "TASK-082: Feature X"
-```
-
-### bpsai-pair github auto-pr
-
-Auto-create PR from current branch (detects TASK-xxx).
-
-```bash
-bpsai-pair github auto-pr
-```
-
-### bpsai-pair github archive-merged
-
-Archive tasks for merged PRs.
-
-```bash
-bpsai-pair github archive-merged
-```
-
----
-
-## Metrics Commands
-
-### bpsai-pair metrics summary
-
-Show metrics summary.
-
-```bash
-bpsai-pair metrics summary
-bpsai-pair metrics summary --scope sprint --scope-id sprint-14
-```
-
-### bpsai-pair metrics task TASK-ID
-
-Show metrics for a specific task.
-
-```bash
-bpsai-pair metrics task TASK-082
-```
-
-### bpsai-pair metrics export
-
-Export metrics to CSV.
-
-```bash
-bpsai-pair metrics export --output metrics.csv
-```
-
----
-
-## Timer Commands
-
-### bpsai-pair timer start TASK-ID
-
-Start timer for a task.
-
-```bash
-bpsai-pair timer start TASK-082
-```
-
-### bpsai-pair timer stop
-
-Stop the current timer.
-
-```bash
-bpsai-pair timer stop
-bpsai-pair timer stop --summary "Completed implementation"
-```
-
-### bpsai-pair timer status
-
-Show current timer status.
-
-```bash
-bpsai-pair timer status
-```
-
-### bpsai-pair timer show TASK-ID
-
-Show time entries for a task.
-
-```bash
-bpsai-pair timer show TASK-082
-```
-
-### bpsai-pair timer summary
-
-Show time summary across tasks.
-
-```bash
-bpsai-pair timer summary
-bpsai-pair timer summary --plan plan-2025-12-sprint-15
-```
-
----
-
 ## MCP Commands
 
-MCP (Model Context Protocol) server for Claude Desktop integration.
+| Command | Description |
+|---------|-------------|
+| `mcp serve` | Start MCP server (stdio transport) |
+| `mcp tools` | List available tools |
+| `mcp test <tool>` | Test tool locally |
 
-### bpsai-pair mcp serve
-
-Start MCP server (stdio transport).
+### Examples
 
 ```bash
 bpsai-pair mcp serve
-```
-
-### bpsai-pair mcp tools
-
-List available MCP tools.
-
-```bash
 bpsai-pair mcp tools
-```
-
-**Available tools (13):**
-- `paircoder_task_list`, `paircoder_task_next`, `paircoder_task_start`, `paircoder_task_complete`
-- `paircoder_context_read`, `paircoder_plan_status`, `paircoder_plan_list`
-- `paircoder_orchestrate_analyze`, `paircoder_orchestrate_handoff`
-- `paircoder_metrics_record`, `paircoder_metrics_summary`
-- `paircoder_trello_sync_plan`, `paircoder_trello_update_card`
-
-### bpsai-pair mcp test TOOL-NAME
-
-Test an MCP tool locally.
-
-```bash
 bpsai-pair mcp test paircoder_task_list
-bpsai-pair mcp test paircoder_task_next
 ```
 
----
-
-## Cache Commands
-
-Context caching for efficiency.
-
-### bpsai-pair cache stats
-
-Show cache statistics.
-
-```bash
-bpsai-pair cache stats
-```
-
-### bpsai-pair cache clear
-
-Clear entire context cache.
-
-```bash
-bpsai-pair cache clear
-```
-
-### bpsai-pair cache invalidate FILE
-
-Invalidate a specific cached file.
-
-```bash
-bpsai-pair cache invalidate .paircoder/context/state.md
-```
-
----
-
-## Benchmark Commands
-
-Agent benchmarking and comparison.
-
-### bpsai-pair benchmark run
-
-Run benchmark suite.
-
-```bash
-bpsai-pair benchmark run
-bpsai-pair benchmark run --suite default
-```
-
-### bpsai-pair benchmark results
-
-View benchmark results.
-
-```bash
-bpsai-pair benchmark results
-bpsai-pair benchmark results --latest
-```
-
-### bpsai-pair benchmark compare
-
-Compare two agents.
-
-```bash
-bpsai-pair benchmark compare claude-code codex
-```
-
-### bpsai-pair benchmark list
-
-List available benchmarks.
-
-```bash
-bpsai-pair benchmark list
-```
-
----
-
-## Intent Commands
-
-Natural language intent detection for workflow suggestions.
-
-### bpsai-pair intent detect TEXT
-
-Detect work intent from text.
-
-```bash
-bpsai-pair intent detect "fix the login bug"       # → bugfix
-bpsai-pair intent detect "add user authentication" # → feature
-bpsai-pair intent detect "refactor the database"   # → refactor
-```
-
-### bpsai-pair intent should-plan TEXT
-
-Check if task needs planning.
-
-```bash
-bpsai-pair intent should-plan "refactor the database layer"  # → true
-bpsai-pair intent should-plan "fix typo in readme"           # → false
-```
-
-### bpsai-pair intent suggest-flow TEXT
-
-Suggest appropriate workflow.
-
-```bash
-bpsai-pair intent suggest-flow "review the PR for security"  # → code-review
-bpsai-pair intent suggest-flow "implement dark mode"         # → design-plan-implement
-```
-
----
-
-## Preset Commands
-
-Project initialization presets.
-
-### bpsai-pair preset list
-
-List available presets.
-
-```bash
-bpsai-pair preset list
-```
-
-**Available presets:** python-cli, python-api, react, fullstack, library, minimal, autonomous, bps
-
-### bpsai-pair preset show NAME
-
-Show preset details.
-
-```bash
-bpsai-pair preset show bps
-bpsai-pair preset show autonomous
-```
-
-### bpsai-pair preset preview NAME
-
-Preview generated config.
-
-```bash
-bpsai-pair preset preview bps
-```
-
----
-
-## Flow Commands
-
-Workflow definitions and execution.
-
-### bpsai-pair flow list
-
-List available flows.
-
-```bash
-bpsai-pair flow list
-```
-
-### bpsai-pair flow show NAME
-
-Show flow details.
-
-```bash
-bpsai-pair flow show tdd-implement
-bpsai-pair flow show design-plan-implement
-```
-
-### bpsai-pair flow run NAME
-
-Run a flow.
-
-```bash
-bpsai-pair flow run tdd-implement
-bpsai-pair flow run code-review
-```
-
-### bpsai-pair flow validate NAME
-
-Validate flow definition.
-
-```bash
-bpsai-pair flow validate tdd-implement
-```
+### Available MCP Tools (13)
+
+| Tool | Description |
+|------|-------------|
+| `paircoder_task_list` | List tasks with filters |
+| `paircoder_task_next` | Get next recommended task |
+| `paircoder_task_start` | Start a task |
+| `paircoder_task_complete` | Complete a task |
+| `paircoder_context_read` | Read project context |
+| `paircoder_plan_status` | Get plan progress |
+| `paircoder_plan_list` | List available plans |
+| `paircoder_orchestrate_analyze` | Analyze task complexity |
+| `paircoder_orchestrate_handoff` | Create handoff package |
+| `paircoder_metrics_record` | Record token usage |
+| `paircoder_metrics_summary` | Get metrics summary |
+| `paircoder_trello_sync_plan` | Sync plan to Trello |
+| `paircoder_trello_update_card` | Update Trello card |
 
 ---
 
@@ -837,22 +614,35 @@ bpsai-pair flow validate tdd-implement
 ### Key Settings
 
 ```yaml
-trello:
-  enabled: true
-  board_id: "your-board-id"
-  api_key: "${TRELLO_API_KEY}"
-  token: "${TRELLO_TOKEN}"
-  
-  list_mapping:
-    pending: "Intake/Backlog"
-    in_progress: "In Progress"
-    review: "Review/Testing"
-    done: "Deployed/Done"
-    blocked: "Issues/Tech Debt"
+version: "2.8"
+
+project:
+  name: "my-project"
+  description: "Project description"
+  primary_goal: "Main objective"
+  coverage_target: 80
+
+models:
+  navigator: claude-opus-4-5
+  driver: claude-sonnet-4-5
+  reviewer: claude-sonnet-4-5
+
+routing:
+  by_complexity:
+    trivial:   { max_score: 20,  model: claude-haiku-4-5 }
+    simple:    { max_score: 40,  model: claude-haiku-4-5 }
+    moderate:  { max_score: 60,  model: claude-sonnet-4-5 }
+    complex:   { max_score: 80,  model: claude-opus-4-5 }
+    epic:      { max_score: 100, model: claude-opus-4-5 }
+
+token_budget:
+  warning_threshold: 75
+  critical_threshold: 90
 
 hooks:
   enabled: true
   on_task_start:
+    - check_token_budget
     - start_timer
     - sync_trello
     - update_state
@@ -866,9 +656,9 @@ hooks:
     - sync_trello
     - update_state
 
-github:
+trello:
   enabled: true
-  auto_pr: true
+  board_id: "your-board-id"
 ```
 
 ---
@@ -880,6 +670,7 @@ github:
 | `TRELLO_API_KEY` | Trello API key |
 | `TRELLO_TOKEN` | Trello OAuth token |
 | `GITHUB_TOKEN` | GitHub personal access token |
+| `TOGGL_API_TOKEN` | Toggl time tracking token |
 | `PAIRCODER_CONFIG` | Override config file path |
 
 ---
@@ -914,7 +705,7 @@ bpsai-pair task next        # See what's next
 ### End of Day
 
 ```bash
-bpsai-pair standup          # Generate summary
+bpsai-pair standup generate # Generate summary
 git push                    # Push changes
 ```
 
@@ -933,5 +724,18 @@ bpsai-pair trello status    # Verify cards created
 bpsai-pair ttask list --agent             # Show AI-assigned cards
 bpsai-pair ttask start TRELLO-abc123      # Start card
 # ... do work ...
-bpsai-pair ttask done TRELLO-abc123 --summary "Feature complete"
+bpsai-pair ttask done TRELLO-abc123 --summary "Feature complete" --list "Deployed/Done"
+```
+
+### Exporting Skills
+
+```bash
+# Export to Cursor
+bpsai-pair skill export --all --format cursor
+
+# Export to Windsurf
+bpsai-pair skill export my-skill --format windsurf
+
+# Preview export
+bpsai-pair skill export my-skill --format continue --dry-run
 ```

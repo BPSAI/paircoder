@@ -26,14 +26,54 @@ context_files:
 
 # Where to find other resources
 directories:
+  skills: .claude/skills/           # Workflow definitions (PREFERRED)
   plans: .paircoder/plans/          # Plan files
   tasks: .paircoder/tasks/          # Task files organized by plan
+  agents: .claude/agents/           # Custom subagents
+  commands: .claude/commands/       # Slash commands
 
 # ============================================================================
 # CAPABILITIES
 # ============================================================================
 
 capabilities:
+
+  # --------------------------------------------------------------------------
+  # SKILL CAPABILITIES (PREFERRED)
+  # --------------------------------------------------------------------------
+
+  - id: use_skills
+    name: "Use skills for workflows"
+    description: |
+      Claude Code skills in .claude/skills/ provide structured workflows.
+      Skills are auto-discovered and preferred over flows.
+    when_to_use:
+      - Starting any structured workflow
+      - Design, implementation, review tasks
+      - Task lifecycle management
+    how_to_invoke:
+      cli: "bpsai-pair skill list"
+      programmatic: |
+        1. List skills in .claude/skills/
+        2. Read relevant SKILL.md file
+        3. Follow the workflow steps
+    available_skills:
+      - designing-and-implementing
+      - implementing-with-tdd
+      - reviewing-code
+      - finishing-branches
+      - managing-task-lifecycle
+      - planning-with-trello
+
+  - id: export_skills
+    name: "Export skills to other platforms"
+    description: |
+      Export PairCoder skills to Cursor, Continue.dev, or Windsurf.
+    when_to_use:
+      - Sharing skills with other AI tools
+      - Cross-platform workflow consistency
+    how_to_invoke:
+      cli: "bpsai-pair skill export <name> --format <cursor|continue|windsurf>"
 
   # --------------------------------------------------------------------------
   # PLANNING CAPABILITIES
@@ -167,12 +207,29 @@ capabilities:
     how_to_invoke:
       cli: "bpsai-pair status"
 
-# ============================================================================
-# Skill TRIGGERS
-# ============================================================================
-# When certain conditions are met, these skills should be suggested or run
+  # --------------------------------------------------------------------------
+  # BUDGET CAPABILITIES
+  # --------------------------------------------------------------------------
 
-Skill_triggers:
+  - id: check_budget
+    name: "Check token budget"
+    description: |
+      Check current token budget usage and estimate task costs.
+    when_to_use:
+      - Before starting large tasks
+      - When planning multiple tasks
+      - To understand context limits
+    how_to_invoke:
+      cli: "bpsai-pair budget status"
+      cli_estimate: "bpsai-pair budget estimate <task-id>"
+      cli_check: "bpsai-pair budget check --task <task-id>"
+
+# ============================================================================
+# SKILL TRIGGERS
+# ============================================================================
+# When certain conditions are met, these skills should be suggested
+
+skill_triggers:
 
   - trigger: "user_describes_feature"
     patterns:
@@ -207,6 +264,14 @@ Skill_triggers:
       - "ready to merge"
       - "complete"
     suggested_skill: finishing-branches
+
+  - trigger: "user_starting_task"
+    patterns:
+      - "start task"
+      - "work on"
+      - "TRELLO-"
+      - "T27."
+    suggested_skill: managing-task-lifecycle
 
 # ============================================================================
 # ROLE DEFINITIONS

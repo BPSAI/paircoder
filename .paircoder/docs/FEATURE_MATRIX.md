@@ -1,6 +1,6 @@
-# PairCoder v2.8 Feature Matrix
+# PairCoder v2.8.4 Feature Matrix
 
-> Updated after Sprint 25 (EPIC-003 Complete + Token Budget System) on 2025-12-23
+> Updated after Sprint 27 on 2025-12-31
 
 ## CLI Commands Summary
 
@@ -10,7 +10,8 @@
 | Presets | preset list/show/preview, init --preset | 4 |
 | Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
 | Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
-| Flows | flow list/show/run/validate | 4 |
+| Skills | skill list/validate/export/install/suggest/gaps/generate | 7 |
+| Flows | flow list/show/run/validate ⚠️ DEPRECATED | 4 |
 | Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
 | Intent | intent detect/should-plan/suggest-flow | 3 |
 | GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
@@ -23,13 +24,15 @@
 | Session | session check/status | 2 |
 | Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
 | Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
-| Skills | skill validate/list | 2 |
 | Upgrade | upgrade | 1 |
 | Migrate | migrate, migrate status | 2 |
+| Template | template check/list | 2 |
+| Release | release plan/checklist/prep | 3 |
+| Sprint | sprint list/complete | 2 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
-| **Total** | | **112** |
+| **Total** | | **120+** |
 
 ## Features by Sprint
 
@@ -40,7 +43,7 @@
 | LLM capability manifest | - | ✅ Exists | .paircoder/capabilities.yaml |
 | Context files | - | ✅ Exists | project.md, workflow.md, state.md |
 | ADR documentation | - | ✅ Exists | docs/architecture/ |
-| Flow parser | `flow list/show/run` | ✅ Works | .flow.md format |
+| Flow parser | `flow list/show/run` | ⚠️ Deprecated | Use skills instead |
 
 ### Sprint 4: Planning System (v2.0)
 | Feature | CLI Command | Status | Notes |
@@ -53,7 +56,7 @@
 ### Sprint 5: Claude Code Alignment (v2.1)
 | Feature | CLI Command | Status | Notes |
 |---------|-------------|--------|-------|
-| Skills (SKILL.md) | - | ✅ Exists | 6 skills in .claude/skills/ |
+| Skills (SKILL.md) | - | ✅ Exists | 6+ skills in .claude/skills/ |
 | Custom subagents | - | ✅ Exists | planner.md, reviewer.md |
 | AGENTS.md | - | ✅ Exists | Universal entry point |
 | CLAUDE.md | - | ✅ Exists | Claude Code pointer |
@@ -94,7 +97,7 @@
 | Trello connection | `trello connect/status/disconnect` | ✅ Works | API key + token |
 | Board management | `trello boards/use-board/lists/config` | ✅ Works | Board selection |
 | Task operations | `ttask list/show/start/done/block/comment/move` | ✅ Works | Card management |
-| Trello skills | - | ✅ Exists | paircoder-task-lifecycle, trello-aware-planning |
+| Trello skills | - | ✅ Exists | managing-task-lifecycle, planning-with-trello |
 
 ### Sprint 11: MCP Server (v2.4)
 | Feature | CLI Command | Status | Notes |
@@ -133,7 +136,7 @@
 | Custom fields sync | `trello config` | ✅ Works | Project, Stack, Status, Effort |
 | BPS label colors | - | ✅ Works | Exact color hex matching |
 | Card description templates | - | ✅ Works | BPS format templates |
-| Effort field mapping | - | ✅ Works | complexity → S/M/L/XL |
+| Effort field mapping | - | ✅ Works | complexity → S/M/L |
 | Two-way sync | `ttask sync` | ✅ Works | Trello → local status |
 | Card checklists | - | ✅ Works | From acceptance criteria |
 | Due date sync | - | ✅ Works | Plan due dates |
@@ -165,7 +168,7 @@
 | Parser consolidation | `flows/parser.py` | ✅ Done | Unified v1+v2 flow parser |
 | V1 deprecation | - | ✅ Done | Deprecation warnings |
 
-### Sprint 25: Token Budget System (v2.8)
+### Sprint 25: Token Budget System (v2.8.0)
 | Feature | CLI Command | Status | Notes |
 |---------|-------------|--------|-------|
 | tiktoken integration | - | ✅ Done | Token counting dependency |
@@ -173,6 +176,31 @@
 | Budget commands | `budget estimate/status/check` | ✅ Done | CLI for token estimation |
 | Session budget | `session status` | ✅ Done | Progress bar in status |
 | Pre-task hook | `check_token_budget` | ✅ Done | Warns before large tasks |
+
+### Sprint 25.5-25.6: Skill System Enhancement (v2.8.1)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Skill export | `skill export` | ✅ Done | Cursor/Continue/Windsurf export |
+| Skill install | `skill install` | ✅ Done | From URL/path |
+| Skill suggestions | `skill suggest` | ✅ Done | AI-powered suggestions |
+| Skill gaps | `skill gaps` | ✅ Done | Pattern detection |
+| Skill generation | `skill generate` | ✅ Done | From gaps |
+| Subagent detection | - | ✅ Done | Finds .claude/agents/*.md |
+| Flow deprecation warnings | `flow *` | ⚠️ Deprecated | Warnings on all flow commands |
+
+### Sprint 26: Dogfooding & Documentation (v2.8.2)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Cross-project dogfooding | - | ✅ Done | KMasty, PCTest repos |
+| Trello workflow refinement | - | ✅ Done | BPS conventions doc |
+| Slash commands | `/pc-plan`, `/start-task`, `/prep-release` | ✅ Done | Claude Code commands |
+
+### Sprint 27: Release Engineering (v2.8.3-2.8.4)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Template check fix | `template check` | ✅ Done | T27.1 - ProjectRootNotFoundError handling |
+| Unicode handling | `ttask *` | ✅ Done | T27.3 - UTF-8 encoding throughout |
+| Version bump | - | ✅ Done | v2.8.4 |
 
 ## MCP Tools (13 total)
 
@@ -192,15 +220,17 @@
 | paircoder_trello_sync_plan | Sync plan to Trello | plan_id, board_id, create_lists, link_cards |
 | paircoder_trello_update_card | Update Trello card | task_id, action, comment |
 
-## Skills (5 total)
+## Skills (6+ in .claude/skills/)
 
 | Skill | Purpose | Triggers |
 |-------|---------|----------|
-| design-plan-implement | Feature development workflow | "design", "plan", "feature" |
-| tdd-implement | Test-driven implementation | "fix", "bug", "test" |
-| code-review | Code review workflow | "review", "check", "PR" |
-| finish-branch | Branch completion workflow | "finish", "merge", "complete" |
-| paircoder-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-", "plan feature" |
+| designing-and-implementing | Feature development workflow | "design", "plan", "feature" |
+| implementing-with-tdd | Test-driven implementation | "fix", "bug", "test" |
+| reviewing-code | Code review workflow | "review", "check", "PR" |
+| finishing-branches | Branch completion workflow | "finish", "merge", "complete" |
+| managing-task-lifecycle | Task lifecycle with Trello sync | "work on task", "start task", "TRELLO-", "plan feature" |
+| planning-with-trello | Planning with Trello integration | "plan", "sprint", "trello" |
+| creating-skills | Skill creation guide | "create skill", "new skill" |
 
 ## Hooks (11 built-in)
 
@@ -229,28 +259,31 @@ my-project/
 │   │   ├── project.md           # Project overview
 │   │   ├── workflow.md          # Workflow guidelines
 │   │   └── state.md             # Current state
-│   ├── flows/                    # Workflow definitions
 │   ├── plans/                    # Plan files (.plan.yaml)
 │   ├── tasks/                    # Task files (.task.md)
 │   └── history/                  # Archives, metrics
 ├── .claude/                       # Claude Code native
 │   ├── skills/                   # Model-invoked skills
-│   │   ├── design-plan-implement/SKILL.md
-│   │   ├── tdd-implement/SKILL.md
-│   │   ├── code-review/SKILL.md
-│   │   ├── finish-branch/SKILL.md
-│   │   └── paircoder-task-lifecycle/SKILL.md
-│   └── agents/                   # Custom subagents
-│       ├── planner.md
-│       └── reviewer.md
+│   │   ├── designing-and-implementing/SKILL.md
+│   │   ├── implementing-with-tdd/SKILL.md
+│   │   ├── reviewing-code/SKILL.md
+│   │   ├── finishing-branches/SKILL.md
+│   │   ├── managing-task-lifecycle/SKILL.md
+│   │   └── planning-with-trello/SKILL.md
+│   ├── agents/                   # Custom subagents
+│   │   ├── planner.md
+│   │   ├── reviewer.md
+│   │   └── security.md
+│   └── commands/                 # Slash commands
+│       ├── pc-plan.md
+│       ├── start-task.md
+│       └── prep-release.md
 ├── AGENTS.md                      # Universal AI entry point
 ├── CLAUDE.md                      # Claude Code pointer
 └── docs/                          # Documentation
 ```
 
 ## CLI Architecture Diagram
-
-> Added in Sprint 25 - Visual overview of the post-EPIC-003 architecture
 
 ```
                           ┌─────────────────────────────────────────────────────┐
@@ -272,7 +305,7 @@ my-project/
         │  preset  │ │  task    │ │ complete │ │ template │ │  ttask   │
         │ session  │ │  intent  │ │          │ │   prep   │ │          │
         │  budget  │ │ standup  │ │          │ │          │ │          │
-        │   ...    │ │          │ │          │ │          │ │          │
+        │  skills  │ │          │ │          │ │          │ │          │
         └─────┬────┘ └─────┬────┘ └────┬─────┘ └────┬─────┘ └─────┬────┘
               │            │           │            │             │
         ┌────────────────────────────────────────────────────────────────────────┐
@@ -291,9 +324,10 @@ my-project/
         ┌────────────────────────────────────────────────────────────────────────┐
         │                        DOMAIN MODULES                                  │
         │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │
-        │  │  flows/   │ │orchestrate│ │  skills/  │ │  github/  │ │ security/│ │
-        │  │  parser   │ │  routing  │ │ validator │ │    PR     │ │ sandbox  │ │
-        │  │  models   │ │  handoff  │ │   list    │ │  issues   │ │ allowlist│ │
+        │  │  skills/  │ │orchestrate│ │  github/  │ │ security/ │ │  flows/  │ │
+        │  │ validator │ │  routing  │ │    PR     │ │ sandbox   │ │  parser  │ │
+        │  │  export   │ │  handoff  │ │  issues   │ │ allowlist │ │(deprec.) │ │
+        │  │  install  │ │           │ │           │ │           │ │          │ │
         │  └───────────┘ └───────────┘ └───────────┘ └───────────┘ └──────────┘ │
         └────────────────────────────────────────────────────────────────────────┘
                                           │
@@ -306,27 +340,18 @@ my-project/
         └────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Architectural Principles:**
-- **cli.py** registers sub-apps but contains no command logic
-- **commands/** contains general CLI commands, domain-specific logic lives in dedicated modules
-- **core/** provides shared infrastructure used by all modules
-- **Hooks** fire automatically on task state transitions (11 built-in hooks)
-- **Token Budget System** (Sprint 25) tracks context usage via tiktoken
-
 ## CLI Module Structure (tools/cli/bpsai_pair/)
-
-> Refactored in Sprints 22-25 (EPIC-003 Complete)
 
 ```
 bpsai_pair/
 ├── __init__.py             # Package exports
 ├── __main__.py             # Entry point (4 lines)
 ├── cli.py                  # Sub-app registration (~200 lines)
-├── tokens.py               # Sprint 25: Token estimation (tiktoken)
+├── tokens.py               # Token estimation (tiktoken)
 ├── session.py              # Session detection and management
 ├── compaction.py           # Context compaction recovery
 ├── metrics.py              # MetricsCollector, VelocityTracker, TokenFeedbackTracker
-├── core/                   # Sprint 24: Shared infrastructure
+├── core/                   # Shared infrastructure
 │   ├── __init__.py        # Module exports and re-exports
 │   ├── config.py          # Configuration loading and management
 │   ├── constants.py       # Application constants
@@ -334,7 +359,7 @@ bpsai_pair/
 │   ├── ops.py             # Git and file operations (find_project_root)
 │   ├── presets.py         # Preset system for project templates
 │   └── utils.py           # Merged utilities (repo_root, project_files, etc.)
-├── commands/               # Sprint 22: Extracted from cli.py
+├── commands/               # Extracted from cli.py
 │   ├── __init__.py        # Command exports
 │   ├── core.py            # init, feature, pack, status, validate, ci
 │   ├── preset.py          # preset list/show/preview
@@ -345,15 +370,23 @@ bpsai_pair/
 │   ├── benchmark.py       # benchmark run/results/compare/list
 │   ├── cache.py           # cache stats/clear/invalidate
 │   ├── mcp.py             # mcp serve/tools/test
-│   ├── flow.py            # flow list/show/run/validate
+│   ├── flow.py            # flow list/show/run/validate (deprecated)
 │   ├── security.py        # security scan-secrets/pre-commit/etc
 │   ├── session.py         # session check/status, compaction commands
-│   ├── budget.py          # Sprint 25: budget estimate/status/check
+│   ├── budget.py          # budget estimate/status/check
 │   └── upgrade.py         # upgrade command
-├── flows/                  # Flow definitions and parsing
+├── skills/                 # Skill management
+│   ├── validator.py       # SkillValidator class
+│   ├── exporter.py        # Cross-platform export
+│   ├── installer.py       # Skill installation
+│   ├── suggestion.py      # AI-powered suggestions
+│   ├── gap_detector.py    # Pattern detection
+│   ├── generator.py       # Skill generation
+│   └── cli_commands.py    # skill validate/list/export/install/suggest/gaps/generate
+├── flows/                  # Flow definitions (deprecated)
 │   ├── __init__.py        # V1/V2 exports
 │   ├── models.py          # V1 Flow, Step models (backward compat)
-│   └── parser.py          # Sprint 24: Unified v1+v2 parser with deprecation
+│   └── parser.py          # Unified v1+v2 parser with deprecation
 ├── planning/               # Planning system
 │   ├── commands.py        # plan/task/intent/standup CLI commands
 │   ├── models.py          # Plan, Task, Sprint models
@@ -361,14 +394,11 @@ bpsai_pair/
 │   ├── state.py           # StateManager
 │   ├── standup.py         # Standup generation logic
 │   └── intent_detection.py # Intent classification logic
-├── sprint/                 # Sprint 23: Extracted from planning/
+├── sprint/                 # Sprint management
 │   └── commands.py        # sprint list/complete
-├── release/                # Sprint 23: Extracted from planning/
+├── release/                # Release engineering
 │   ├── commands.py        # release plan/checklist/prep
 │   └── template.py        # template check/list
-├── skills/                 # Skill validation
-│   ├── validator.py       # SkillValidator class
-│   └── cli_commands.py    # skill validate/list
 ├── trello/                 # Trello integration
 │   ├── commands.py        # trello connect/status/etc
 │   ├── task_commands.py   # ttask list/show/done/etc
@@ -400,7 +430,6 @@ workflow:
   default_branch_type: "feature"
   main_branch: "main"
   context_dir: ".paircoder/context"
-  flows_dir: ".paircoder/flows"
   plans_dir: ".paircoder/plans"
   tasks_dir: ".paircoder/tasks"
 
@@ -428,7 +457,7 @@ token_budget:
 hooks:
   enabled: true
   on_task_start:
-    - check_token_budget  # Warns if task exceeds budget threshold
+    - check_token_budget
     - start_timer
     - sync_trello
     - update_state
@@ -472,5 +501,10 @@ hooks:
 | **Tokens (Sprint 25)** | **28** | ✅ Pass |
 | **Budget Commands** | **15** | ✅ Pass |
 | **Session/Budget** | **4** | ✅ Pass |
-| **Hooks (check_token_budget)** | **6** | ✅ Pass |
-| **Total** | **1774** | ✅ Pass |
+| **Hooks** | **6** | ✅ Pass |
+| **Skills (Sprint 25.5-25.6)** | **45+** | ✅ Pass |
+| - Validator | 15 | ✅ Pass |
+| - Exporter | 12 | ✅ Pass |
+| - Installer | 8 | ✅ Pass |
+| - Suggestion | 10 | ✅ Pass |
+| **Total** | **2050+** | ✅ Pass |

@@ -52,7 +52,7 @@ When completing tasks with Trello cards:
 
 1. **Read** `.paircoder/capabilities.yaml` — understand what you can do
 2. **Read** `.paircoder/context/state.md` — understand current status
-3. **Check** if a flow applies to the user's request
+3. **Check** if a skill applies to the user's request (see `.claude/skills/`)
 4. **If starting a task**: Run `bpsai-pair task update TASK-XXX --status in_progress`
 
 ---
@@ -134,16 +134,30 @@ You can operate in different roles depending on the work:
 - Ensure gates pass
 - Suggest improvements
 
-## Flow Triggers
+## Skills
 
-When you see these patterns, suggest the corresponding flow:
+Skills in `.claude/skills/` are auto-discovered by Claude Code:
 
-| User Says | Suggested Flow |
-|-----------|---------------|
+| Skill | Purpose |
+|-------|---------|
+| `designing-and-implementing` | Feature development workflow |
+| `implementing-with-tdd` | Test-driven development |
+| `reviewing-code` | Code review workflow |
+| `finishing-branches` | Branch completion |
+| `managing-task-lifecycle` | Task workflow with Trello |
+| `planning-with-trello` | Planning with Trello integration |
+
+## Skill Triggers
+
+When you see these patterns, use the corresponding skill:
+
+| User Says | Suggested Skill |
+|-----------|-----------------|
 | "build a...", "create a...", "add a..." | `designing-and-implementing` |
 | "fix", "bug", "broken", "error" | `implementing-with-tdd` |
 | "review", "check", "look at" | `reviewing-code` |
 | "done", "finished", "ready to merge" | `finishing-branches` |
+| "start task", "work on TRELLO-" | `managing-task-lifecycle` |
 
 ## After Completing Work
 
@@ -158,42 +172,20 @@ When you see these patterns, suggest the corresponding flow:
 
 **You are NOT done until state.md is updated.**
 
-## Project-Specific Notes
-
-This IS PairCoder — the tool we're building. We use PairCoder to develop PairCoder.
-
-Current focus: **v2.8.0 In Progress**
-- EPIC-003: CLI Architecture Refactor complete
-- Token Budget System with tiktoken integration
-- 112+ CLI commands, 1774 tests
-- Planning system, skills, flows, multi-agent architecture
-
 ## Slash Commands
 
 Quick commands available via `/command` in Claude Code:
 
 | Command | Purpose |
 |---------|---------|
-| `/pc-plan` | Show current plan details and progress |
-| `/start-task` | Start working on a task |
-| `/update-skills` | Analyze and update skills |
+| `/status` | Show project status, current sprint, active tasks |
+| `/pc-plan` | Enter Navigator role, create plan with budget validation |
+| `/start-task <ID>` | Enter Driver role, work on task with verification gates |
+| `/prep-release <ver>` | Enter Release Engineer role, prepare release |
 
-**Usage**: Type `/pc-plan` in the chat to run the command.
+**Usage**: Type `/pc-plan backlog-sprint-28.md` in the chat to run the planning workflow.
 
 **Note**: For project status, use `bpsai-pair status` CLI command.
-
-### Creating Custom Commands
-
-Place markdown files in `.claude/commands/` to create custom slash commands:
-
-```markdown
-# .claude/commands/my-command.md
-Run these steps:
-1. First step
-2. Second step
-```
-
-Then use `/my-command` in Claude Code.
 
 ## CLI Reference
 
@@ -209,9 +201,14 @@ bpsai-pair plan show <id>
 bpsai-pair task list --plan <id>
 bpsai-pair task update <id> --status done
 
-# Flows
-bpsai-pair flow list
-bpsai-pair flow run <n>
+# Skills
+bpsai-pair skill list
+bpsai-pair skill validate
+bpsai-pair skill export --all --format cursor
+
+# Budget
+bpsai-pair budget status
+bpsai-pair budget check --task <id>
 
 # Context
 bpsai-pair context-sync --last "..." --next "..."

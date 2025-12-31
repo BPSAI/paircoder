@@ -1,16 +1,15 @@
-# PairCoder v2.8 — AI-Augmented Pair Programming Framework
+# PairCoder v2.8.4 — AI-Augmented Pair Programming Framework
 
-PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via flows and skills, and ships a CLI with **112+ commands** to orchestrate the entire development lifecycle.
+PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via skills, and ships a CLI with **120+ commands** to orchestrate the entire development lifecycle.
 
-> **v2.8.0** — CLI Architecture Refactor (EPIC-003) + Token Budget System for context management
+> **v2.8.4** — CLI Architecture Refactor (EPIC-003) + Token Budget System + Skill Enhancement
 
 ## Key Features
 
 | Feature | Description                                             |
 |---------|---------------------------------------------------------|
 | **Planning System** | Plans, sprints, tasks with YAML+MD format               |
-| **Flow Engine** | Workflow definitions (.flow.md)                         |
-| **Skills** | Claude Code native skills (.claude/skills/)             |
+| **Skills** | Claude Code native skills (.claude/skills/) with cross-platform export |
 | **Orchestration** | Multi-agent coordination, model routing by complexity   |
 | **Autonomous Workflow** | Auto-session for hands-off task execution               |
 | **Presets** | 8 built-in presets (python-cli, bps, autonomous, etc.)  |
@@ -18,7 +17,7 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 | **Trello Integration** | Board/card management, progress comments, webhooks      |
 | **Standup Generation** | Daily summaries in markdown/slack/trello formats        |
 | **Metrics** | Token tracking, cost estimation, budget enforcement     |
-| **Time Tracking** | Built-in timer with Toggle integration                  |
+| **Time Tracking** | Built-in timer with Toggl integration                   |
 | **MCP Server** | 13 tools for autonomous agent operation                 |
 | **Auto-Hooks** | Automatic Trello sync and state updates on task changes |
 
@@ -28,7 +27,7 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.8.0
+bpsai-pair --version  # Should show 2.8.4
 ```
 
 ### Initialize a Project
@@ -67,18 +66,17 @@ my-project/
 │   │   ├── project.md           # Project overview
 │   │   ├── workflow.md          # Workflow guidelines
 │   │   └── state.md             # Current state
-│   ├── flows/                    # Workflow definitions
 │   ├── plans/                    # Plan files (.plan.yaml)
 │   ├── tasks/                    # Task files (.task.md)
 │   └── history/                  # Archives, metrics
 ├── .claude/                       # Claude Code native
-│   ├── skills/                   # Model-invoked skills (6)
+│   ├── skills/                   # Model-invoked skills
 │   │   ├── design-plan-implement/
 │   │   ├── tdd-implement/
 │   │   ├── code-review/
 │   │   ├── finish-branch/
-│   │   ├── paircoder-task-lifecycle/
-│   │   └── trello-aware-planning/
+│   │   ├── managing-task-lifecycle/
+│   │   └── planning-with-trello/
 │   └── agents/                   # Custom subagents
 │       ├── planner.md
 │       └── reviewer.md
@@ -87,7 +85,7 @@ my-project/
 └── docs/                          # Documentation
 ```
 
-## CLI Command Reference (80+ commands)
+## CLI Command Reference (120+ commands)
 
 ### Core Commands
 
@@ -112,7 +110,7 @@ my-project/
 
 **Available Presets:** python-cli, python-api, react, fullstack, library, minimal, autonomous, bps
 
-### Planning (7 commands)
+### Planning (8 commands)
 
 | Command | Description |
 |---------|-------------|
@@ -123,6 +121,7 @@ my-project/
 | `plan status [id]` | Show progress with task breakdown |
 | `plan sync-trello <id>` | Sync tasks to Trello board |
 | `plan add-task <id>` | Add a task to a plan |
+| `plan estimate <id>` | Estimate plan token cost |
 
 ### Tasks (11 commands)
 
@@ -140,7 +139,21 @@ my-project/
 | `task cleanup` | Clean old archives |
 | `task changelog-preview` | Preview changelog entry |
 
-### Flows (4 commands)
+### Skills (7 commands)
+
+| Command | Description |
+|---------|-------------|
+| `skill list` | List all skills |
+| `skill validate` | Validate skill format against spec |
+| `skill export` | Export to Cursor/Continue/Windsurf |
+| `skill install` | Install skill from URL/path |
+| `skill suggest` | AI-powered skill suggestions |
+| `skill gaps` | Detect missing skills from patterns |
+| `skill generate` | Generate skill from detected gap |
+
+### Flows (4 commands) — ⚠️ DEPRECATED
+
+> **Note:** Flows are deprecated in favor of skills. See [Migration Guide](docs/MIGRATION.md).
 
 | Command | Description |
 |---------|-------------|
@@ -187,7 +200,7 @@ my-project/
 | `standup generate` | Generate daily summary |
 | `standup post` | Post summary to Trello |
 
-### Metrics (5 commands)
+### Metrics (9 commands)
 
 | Command | Description |
 |---------|-------------|
@@ -196,6 +209,18 @@ my-project/
 | `metrics breakdown` | Cost breakdown by dimension |
 | `metrics budget` | Show budget status |
 | `metrics export` | Export metrics to file |
+| `metrics velocity` | Show velocity metrics |
+| `metrics burndown` | Show burndown chart data |
+| `metrics accuracy` | Show estimation accuracy |
+| `metrics tokens` | Show token usage |
+
+### Budget (3 commands)
+
+| Command | Description |
+|---------|-------------|
+| `budget estimate` | Estimate task token cost |
+| `budget status` | Show current budget usage |
+| `budget check` | Check if task fits budget |
 
 ### Timer (5 commands)
 
@@ -223,6 +248,45 @@ my-project/
 | `cache stats` | Show cache statistics |
 | `cache clear` | Clear context cache |
 | `cache invalidate` | Invalidate specific file |
+
+### Session (2 commands)
+
+| Command | Description |
+|---------|-------------|
+| `session check` | Check session status |
+| `session status` | Show detailed session info |
+
+### Compaction (5 commands)
+
+| Command | Description |
+|---------|-------------|
+| `compaction snapshot save` | Save context snapshot |
+| `compaction snapshot list` | List snapshots |
+| `compaction check` | Check for compaction |
+| `compaction recover` | Recover from compaction |
+| `compaction cleanup` | Clean old snapshots |
+
+### Security (4 commands)
+
+| Command | Description |
+|---------|-------------|
+| `security scan-secrets` | Scan for leaked secrets |
+| `security pre-commit` | Run pre-commit checks |
+| `security install-hook` | Install git hooks |
+| `security scan-deps` | Scan dependency vulnerabilities |
+
+### Migrate (2 commands)
+
+| Command | Description |
+|---------|-------------|
+| `migrate` | Run pending migrations |
+| `migrate status` | Show migration status |
+
+### Upgrade (1 command)
+
+| Command | Description |
+|---------|-------------|
+| `upgrade` | Upgrade PairCoder version |
 
 ### Trello Setup
 
@@ -314,6 +378,7 @@ Configure automatic actions on task state changes in `.paircoder/config.yaml`:
 hooks:
   enabled: true
   on_task_start:
+    - check_token_budget
     - start_timer
     - sync_trello
     - update_state
@@ -347,14 +412,16 @@ bpsai-pair --help
 ```bash
 cd tools/cli
 pip install -e .
-pytest -v  # 541+ tests
+pytest -v  # 2050+ tests
 ```
 
 ## Documentation
 
-- [User Guide](docs/USER_GUIDE.md) — Full documentation
+- [User Guide](.paircoder/docs/USER_GUIDE.md) — Full documentation
 - [MCP Setup](docs/MCP_SETUP.md) — Claude Desktop integration
-- [Feature Matrix](docs/FEATURE_MATRIX.md) — Complete feature inventory
+- [Feature Matrix](.paircoder/docs/FEATURE_MATRIX.md) — Complete feature inventory
+- [Cross-Platform Skills](docs/CROSS_PLATFORM_SKILLS.md) — Skill export to other tools
+- [Migration Guide](docs/MIGRATION.md) — Flows to skills migration
 - [Changelog](CHANGELOG.md) — Version history
 
 ## License
