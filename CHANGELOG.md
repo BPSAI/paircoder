@@ -253,7 +253,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `.paircoder/security/` with allowlist, sandbox, and secret-allowlist configs
 - Added `paircoder-task-lifecycle` skill
 - Updated `config.yaml` with estimation and token settings
-- Added `.claude/commands/` with starter slash commands (`/status`, `/pc-plan`, `/task`)
+- Added `.claude/commands/` with starter slash commands (`/pc-plan`, `/start-task`, `/update-skills`)
 - **Reorganized documentation structure** (TASK-156):
   - Moved `docs/USER_GUIDE.md` → `.paircoder/docs/USER_GUIDE.md`
   - Added `.paircoder/docs/MCP_SETUP.md` (MCP server configuration)

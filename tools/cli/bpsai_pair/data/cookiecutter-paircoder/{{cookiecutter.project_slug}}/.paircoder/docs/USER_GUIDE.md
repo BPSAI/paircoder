@@ -81,11 +81,13 @@ Quick commands available in Claude Code:
 
 | Command | Purpose |
 |---------|---------|
-| `/status` | Show project status, current sprint, active tasks |
 | `/pc-plan` | Show current plan details and progress |
-| `/task [ID]` | Show current or specific task details |
+| `/start-task` | Start working on a task |
+| `/update-skills` | Analyze and update skills |
 
-**Usage**: Type `/status` in Claude Code chat.
+**Usage**: Type `/pc-plan` in Claude Code chat.
+
+**Note**: For project status, use `bpsai-pair status` CLI command.
 
 **Create custom commands**: Add markdown files to `.claude/commands/`:
 

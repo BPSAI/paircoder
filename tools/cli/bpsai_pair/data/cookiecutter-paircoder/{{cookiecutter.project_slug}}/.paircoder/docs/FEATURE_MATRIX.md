@@ -41,9 +41,11 @@ Quick reference for PairCoder capabilities in this project.
 
 | Command | Description |
 |---------|-------------|
-| `/status` | Show project status |
 | `/pc-plan` | Show current plan |
-| `/task [ID]` | Show task details |
+| `/start-task` | Start working on a task |
+| `/update-skills` | Analyze and update skills |
+
+**Note**: For project status, use `bpsai-pair status` CLI command.
 
 ## Skills (Claude Code)
 

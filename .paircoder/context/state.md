@@ -20,13 +20,13 @@
 | T27.4 | Fix upgrade source file resolution | ✓ done | P0 | 55 | M |
 | T27.5 | Fix upgrade to actually copy files | ✓ done | P0 | 45 | M |
 | T27.6 | Fix Windows hook compatibility | ✓ done | P0 | 30 | S |
-| T27.7 | Remove /status slash command conflict | pending | P0 | 15 | S |
+| T27.7 | Remove /status slash command conflict | ✓ done | P0 | 15 | S |
 | T27.8 | Sync cookiecutter: config files | pending | P0 | 30 | S |
 | T27.9 | Sync cookiecutter: skills | pending | P0 | 30 | S |
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 6/11 tasks (220/325 complexity points)
+**Progress:** 7/11 tasks (235/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,22 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.7 Complete (Remove /status slash command conflict)
+
+- **T27.7: Remove /status slash command conflict** ✓
+  - Issue: PairCoder's `/status` command conflicted with Claude Code's built-in `/status`
+  - No `status.md` file existed in `.claude/commands/` (already removed or never created)
+  - Updated 7 documentation files to remove `/status` references:
+    - `CLAUDE.md` - Updated slash commands table
+    - `tools/cli/.../CLAUDE.md` (cookiecutter) - Updated slash commands table
+    - `docs/CLAUDE_CODE_INTEGRATION.md` - Updated command tables
+    - `.paircoder/docs/USER_GUIDE.md` - Updated slash commands section and examples
+    - `tools/cli/.../USER_GUIDE.md` (cookiecutter) - Updated slash commands
+    - `tools/cli/.../FEATURE_MATRIX.md` (cookiecutter) - Updated commands list
+    - `CHANGELOG.md` - Updated v2.6.0 entry
+  - Users should now use `bpsai-pair status` CLI command for project status
+  - All 2050 tests pass
 
 ### 2025-12-30 - T27.6 Complete (Fix Windows hook compatibility)
 

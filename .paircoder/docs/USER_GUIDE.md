@@ -487,16 +487,18 @@ Slash commands provide quick access to common operations in Claude Code.
 
 | Command | Purpose |
 |---------|---------|
-| `/status` | Show project status, current sprint, active tasks |
 | `/pc-plan` | Show current plan details and progress |
-| `/task [ID]` | Show current or specific task details |
+| `/start-task` | Start working on a task |
+| `/update-skills` | Analyze and update skills |
+
+**Note**: For project status, use `bpsai-pair status` CLI command.
 
 ### Usage
 
 Type the command in Claude Code chat:
 
 ```
-/status
+/pc-plan
 ```
 
 Claude Code will execute the command and display the results.
@@ -521,10 +523,10 @@ Then use `/review` in Claude Code.
 ```
 .claude/
 └── commands/
-    ├── status.md      # /status command
-    ├── pc-plan.md     # /pc-plan command
-    ├── task.md        # /task command
-    └── custom.md      # /custom command (your own)
+    ├── pc-plan.md        # /pc-plan command
+    ├── start-task.md     # /start-task command
+    ├── update-skills.md  # /update-skills command
+    └── custom.md         # /custom command (your own)
 ```
 
 ### Best Practices
@@ -1212,7 +1214,7 @@ PairCoder is designed to complement Claude Code's built-in features. For detaile
 | Session planning | Claude Code `/plan` |
 | Sprint planning | `bpsai-pair plan` |
 | Check token usage | `/context` |
-| Check project state | `/status` or `bpsai-pair status` |
+| Check project state | `bpsai-pair status` |
 | Start a task | `/start-task T19.1` |
 
 ---

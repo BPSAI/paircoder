@@ -53,10 +53,11 @@ PairCoder provides its own slash commands via `.claude/commands/`:
 
 | Command | Purpose | Implementation |
 |---------|---------|----------------|
-| `/status` | Show project status | Runs `bpsai-pair status` |
 | `/pc-plan` | Show current plan | Reads state.md and plan files |
-| `/task [ID]` | Show task details | Runs `bpsai-pair task show` |
 | `/start-task` | Start working on task | Updates status, triggers hooks |
+| `/update-skills` | Analyze and update skills | Detects skill gaps, suggests improvements |
+
+**Note**: For project status, use `bpsai-pair status` CLI command. The `/status` slash command conflicts with Claude Code's built-in command.
 
 ### Creating Custom Commands
 
@@ -235,10 +236,9 @@ Claude Code automatically loads these as available skills.
 
 | Command | When to Use |
 |---------|-------------|
-| `/status` | Check project state |
 | `/pc-plan` | Review current plan |
-| `/task` | See task details |
 | `/start-task` | Begin work on task |
+| `/update-skills` | Analyze and update skills |
 
 ### PairCoder CLI
 
