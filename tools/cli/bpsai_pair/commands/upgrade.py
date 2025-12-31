@@ -38,20 +38,37 @@ class UpgradePlan:
 
 
 def get_template_dir() -> Optional[Path]:
-    """Get path to cookiecutter template in installed package."""
-    # For installed package - check importlib.resources
+    """Get path to cookiecutter template in installed package.
+
+    Uses importlib.resources for robust package data access that works
+    in both development mode and when pip-installed from a wheel.
+    """
+    template_subpath = ("cookiecutter-paircoder", "{{cookiecutter.project_slug}}")
+
+    # Primary: Use importlib.resources (works for both dev and installed)
     try:
         import importlib.resources as resources
-        with resources.files("bpsai_pair.data") as data_dir:
-            template_dir = Path(data_dir) / "cookiecutter-paircoder" / "{{cookiecutter.project_slug}}"
-            if template_dir.exists():
-                return template_dir
-    except Exception:
+
+        # Get the package data directory as a Traversable
+        data_dir = resources.files("bpsai_pair.data")
+
+        # Use joinpath to navigate to the template directory
+        # This returns a Path-like object that works with both
+        # filesystem packages and zip-imported packages
+        template_traversable = data_dir.joinpath(*template_subpath)
+
+        # Convert to Path - str() works for all Traversable types
+        template_dir = Path(str(template_traversable))
+        if template_dir.exists():
+            return template_dir
+    except (ModuleNotFoundError, TypeError, AttributeError):
+        # ModuleNotFoundError: bpsai_pair.data doesn't exist as a package
+        # TypeError/AttributeError: importlib.resources API issue
         pass
 
-    # Fallback for development
+    # Fallback: Development mode with direct file path
     cli_dir = Path(__file__).parent.parent
-    template_dir = cli_dir / "data" / "cookiecutter-paircoder" / "{{cookiecutter.project_slug}}"
+    template_dir = cli_dir / "data" / template_subpath[0] / template_subpath[1]
     if template_dir.exists():
         return template_dir
 

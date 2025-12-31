@@ -17,7 +17,7 @@
 | T27.1 | Fix template check crash | ✓ done | P0 | 30 | S |
 | T27.2 | Fix smoke test failure | ✓ done | P0 | 30 | S |
 | T27.3 | Fix Unicode errors in Trello | ✓ done | P0 | 30 | S |
-| T27.4 | Fix upgrade source file resolution | pending | P0 | 55 | M |
+| T27.4 | Fix upgrade source file resolution | ✓ done | P0 | 55 | M |
 | T27.5 | Fix upgrade to actually copy files | pending | P0 | 45 | M |
 | T27.6 | Fix Windows hook compatibility | pending | P0 | 30 | S |
 | T27.7 | Remove /status slash command conflict | pending | P0 | 15 | S |
@@ -26,7 +26,7 @@
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 3/11 tasks (90/325 complexity points)
+**Progress:** 4/11 tasks (145/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,22 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.4 Complete (Fix upgrade source file resolution)
+
+- **T27.4: Fix upgrade source file resolution** ✓
+  - Root cause: `get_template_dir()` incorrectly used `importlib.resources`
+    - Used `with resources.files() as data_dir` (not needed, returns Traversable)
+    - Used `Path(data_dir)` which doesn't work for `MultiplexedPath` objects
+  - Fix: Use `data_dir.joinpath(*path_parts)` which returns a proper Path
+  - Added `bpsai_pair/data/__init__.py` so `importlib.resources.files()` can access the data package
+  - Created 13 new tests in `test_upgrade.py`:
+    - `TestGetTemplateDir`: template resolution in dev/installed modes
+    - `TestGetBundledSkills`: skill discovery from template
+    - `TestGetBundledAgents`: agent discovery from template
+    - `TestPlanUpgrade`: upgrade plan generation
+    - `TestImportlibResourcesIntegration`: package data access
+  - All 2029 tests pass
 
 ### 2025-12-30 - T27.3 Complete (Fix Unicode errors in Trello)
 
