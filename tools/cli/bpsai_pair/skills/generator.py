@@ -418,21 +418,10 @@ def generate_skill_from_gap_id(
     auto_approve: bool = False,
 ) -> Dict[str, Any]:
     """Generate a skill from a gap ID.
-
-    Args:
-        gap_id: 1-based index of the gap
-        history_dir: Path to history directory
-        skills_dir: Path to skills directory
-        force: Overwrite existing skill
-        auto_approve: Save without confirmation
-
-    Returns:
-        Result dict
-
-    Raises:
-        SkillGeneratorError: If gap not found
+    ...
     """
     from .gap_detector import GapPersistence
+    from .gates import evaluate_gap_quality, GateStatus
 
     # Load gaps
     persistence = GapPersistence(history_dir=history_dir)
@@ -445,6 +434,22 @@ def generate_skill_from_gap_id(
         raise SkillGeneratorError(f"Invalid gap ID: {gap_id}. Valid range: 1-{len(gaps)}")
 
     gap = gaps[gap_id - 1]
+
+    # ENFORCEMENT: Run quality gates before generation
+    gate_result = evaluate_gap_quality(gap, skills_dir=skills_dir)
+
+    if not gate_result.can_generate and not force:
+        blocked_gates = [g.gate_name for g in gate_result.gate_results
+                         if g.status == GateStatus.BLOCK]
+        raise SkillGeneratorError(
+            f"Quality gates blocked generation: {', '.join(blocked_gates)}. "
+            f"Reason: {gate_result.recommendation}\n"
+            f"Use --force to override (not recommended)."
+        )
+
+    if gate_result.overall_status == GateStatus.WARN and not force:
+        # Log warning but proceed
+        logger.warning(f"Quality gate warnings for '{gap.suggested_name}': {gate_result.recommendation}")
 
     # Generate skill
     generator = SkillGenerator()

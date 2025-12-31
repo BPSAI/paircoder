@@ -19,6 +19,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Trivial patterns that should never become skills
+TRIVIAL_PATTERNS = [
+    ("pytest", "fix"),
+    ("npm test", "fix"),
+    ("yarn test", "fix"),
+    ("make test", "fix"),
+    ("git add", "git commit"),
+    ("git commit", "git push"),
+    ("pip install", "python"),
+    ("npm install", "npm run"),
+    ("cargo build", "cargo run"),
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,19 +102,22 @@ class SkillGapDetector:
     def __init__(
         self,
         existing_skills: List[str],
-        pattern_threshold: int = 3,
+        pattern_threshold: int = 5,
         max_sequence_length: int = 5,
+        min_sequence_length: int = 3,
     ):
         """Initialize detector.
 
         Args:
             existing_skills: List of existing skill names
-            pattern_threshold: Minimum occurrences to detect as gap
+            pattern_threshold: Minimum occurrences to detect as gap (default: 5)
             max_sequence_length: Maximum length of command sequences to detect
+            min_sequence_length: Minimum length (2-step patterns blocked)
         """
         self.existing_skills = [s.lower() for s in existing_skills]
         self.pattern_threshold = pattern_threshold
         self.max_sequence_length = max_sequence_length
+        self.min_sequence_length = min_sequence_length
 
     def analyze_session(self, session_log: List[Dict[str, Any]]) -> List[SkillGap]:
         """Analyze session log for potential skill gaps.
@@ -173,27 +189,57 @@ class SkillGapDetector:
         return commands
 
     def _detect_patterns(self, commands: List[str]) -> Dict[tuple, int]:
-        """Detect repeated command patterns.
-
-        Args:
-            commands: List of commands
-
-        Returns:
-            Dict mapping pattern tuple to occurrence count
-        """
+        """Detect repeated command patterns."""
         pattern_counts: Dict[tuple, int] = Counter()
 
         # Detect n-grams for various sequence lengths
-        for n in range(2, min(self.max_sequence_length + 1, len(commands) + 1)):
+        # Start from min_sequence_length (not 2) to block trivial patterns
+        for n in range(self.min_sequence_length, min(self.max_sequence_length + 1, len(commands) + 1)):
             for i in range(len(commands) - n + 1):
                 pattern = tuple(commands[i:i + n])
                 pattern_counts[pattern] += 1
 
-        # Filter by threshold
+        # Filter by threshold AND exclude trivial patterns
         return {
             p: c for p, c in pattern_counts.items()
-            if c >= self.pattern_threshold
+            if c >= self.pattern_threshold and not self._is_trivial_pattern(p)
         }
+
+    def _is_trivial_pattern(self, pattern: tuple) -> bool:
+        """Check if pattern is in the trivial blocklist.
+
+        Args:
+            pattern: Tuple of commands
+
+        Returns:
+            True if pattern is trivial and should be blocked
+        """
+        # Normalize pattern for comparison
+        normalized = tuple(cmd.lower().strip() for cmd in pattern)
+
+        # Check exact matches in blocklist
+        for trivial in TRIVIAL_PATTERNS:
+            if len(normalized) == len(trivial):
+                # Check if all elements match (allowing partial matches)
+                matches = all(
+                    t in n or n in t
+                    for t, n in zip(trivial, normalized)
+                )
+                if matches:
+                    return True
+
+        # Block any 2-step pattern that's just "test" + "fix"
+        if len(normalized) == 2:
+            test_words = {"pytest", "test", "npm test", "yarn test", "jest", "mocha"}
+            fix_words = {"fix", "edit", "update", "change", "modify"}
+
+            first_is_test = any(tw in normalized[0] for tw in test_words)
+            second_is_fix = any(fw in normalized[1] for fw in fix_words)
+
+            if first_is_test and second_is_fix:
+                return True
+
+        return False
 
     def _generate_name(self, pattern: List[str]) -> str:
         """Generate a skill name from a command pattern.
@@ -410,7 +456,7 @@ def format_gap_notification(gap: SkillGap) -> str:
 def detect_gaps_from_history(
     history_dir: Path,
     skills_dir: Optional[Path] = None,
-    pattern_threshold: int = 3,
+    pattern_threshold: int = 5,
 ) -> List[SkillGap]:
     """High-level function to detect gaps from history files.
 

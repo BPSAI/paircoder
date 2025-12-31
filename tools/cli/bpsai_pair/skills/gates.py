@@ -13,14 +13,14 @@ A gap must pass all gates to be eligible for auto-generation.
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
 from .gap_detector import SkillGap
 from .subagent_detector import SubagentGap
-from .classifier import ClassifiedGap, GapType
+from .classifier import ClassifiedGap
 
 
 class GateStatus(Enum):
@@ -126,6 +126,17 @@ GENERIC_COMMANDS = {
     "stop",
 }
 
+# Pattern pairs that are always blocked (too simple to be skills)
+TRIVIAL_PATTERN_PAIRS = [
+    # test + fix is just development, not a skill
+    ({"pytest", "test", "jest", "mocha", "npm test", "yarn test"}, {"fix", "edit", "update"}),
+    # basic git workflow
+    ({"git add"}, {"git commit"}),
+    ({"git commit"}, {"git push"}),
+    # install + run
+    ({"pip install", "npm install", "yarn add"}, {"python", "npm run", "yarn run"}),
+]
+
 # Patterns that indicate generic commands
 GENERIC_PATTERNS = [
     r"^(pip|npm|yarn|cargo|go)\s+(install|add|get)",
@@ -140,14 +151,16 @@ class GapQualityGate:
     """Quality gate for evaluating gaps before skill generation."""
 
     # Thresholds for gate decisions
-    REDUNDANCY_THRESHOLD = 0.3  # Below this = blocked
-    NOVELTY_THRESHOLD = 0.3  # Below this = blocked
-    COMPLEXITY_THRESHOLD = 0.3  # Below this = blocked
-    TIME_VALUE_THRESHOLD = 0.3  # Below this = blocked
+    REDUNDANCY_THRESHOLD = 0.4  # Below this = blocked
+    NOVELTY_THRESHOLD = 0.4  # Below this = blocked
+    COMPLEXITY_THRESHOLD = 0.4  # Below this = blocked
+    TIME_VALUE_THRESHOLD = 0.4  # Below this = blocked
 
     # Minimum requirements
     MIN_COMMANDS = 3  # Minimum distinct commands for complexity
+    MIN_PATTERN_LENGTH = 3  # Block 2-step patterns entirely
     MIN_TIME_SAVINGS_MINUTES = 5  # Minimum time savings value
+    MIN_OCCURRENCES = 5  # Require more evidence
 
     def __init__(
         self,
@@ -168,14 +181,7 @@ class GapQualityGate:
         self,
         gap: Union[SkillGap, SubagentGap, ClassifiedGap],
     ) -> QualityGateResult:
-        """Evaluate a gap against all quality gates.
-
-        Args:
-            gap: The gap to evaluate
-
-        Returns:
-            QualityGateResult with all gate results and recommendation
-        """
+        """Evaluate a gap against all quality gates."""
         # Extract common fields
         if isinstance(gap, ClassifiedGap):
             gap_id = gap.id
@@ -192,6 +198,52 @@ class GapQualityGate:
             gap_name = gap.suggested_name
             source_commands = gap.source_commands
             occurrence_count = gap.occurrence_count
+
+        # EARLY REJECTION: Check for trivial patterns before running full gates
+        trivial_result = self._check_trivial_pattern(source_commands)
+        if trivial_result:
+            return QualityGateResult(
+                gap_id=gap_id,
+                gap_name=gap_name,
+                overall_status=GateStatus.BLOCK,
+                gate_results=[trivial_result],
+                recommendation=f"BLOCKED: {trivial_result.reason}. Pattern too simple to be a skill.",
+                can_generate=False,
+            )
+
+        # EARLY REJECTION: Check minimum pattern length
+        if len(source_commands) < self.MIN_PATTERN_LENGTH:
+            return QualityGateResult(
+                gap_id=gap_id,
+                gap_name=gap_name,
+                overall_status=GateStatus.BLOCK,
+                gate_results=[GateResult(
+                    gate_name="pattern_length",
+                    status=GateStatus.BLOCK,
+                    score=0.0,
+                    reason=f"Pattern has only {len(source_commands)} steps (min: {self.MIN_PATTERN_LENGTH})",
+                    details="2-step patterns are too simple to warrant skills",
+                )],
+                recommendation="BLOCKED: Pattern too short. Skills need 3+ distinct steps.",
+                can_generate=False,
+            )
+
+        # EARLY REJECTION: Check minimum occurrences
+        if occurrence_count < self.MIN_OCCURRENCES:
+            return QualityGateResult(
+                gap_id=gap_id,
+                gap_name=gap_name,
+                overall_status=GateStatus.BLOCK,
+                gate_results=[GateResult(
+                    gate_name="occurrence_count",
+                    status=GateStatus.BLOCK,
+                    score=0.0,
+                    reason=f"Only {occurrence_count} occurrences (min: {self.MIN_OCCURRENCES})",
+                    details="Need more evidence before creating a skill",
+                )],
+                recommendation=f"BLOCKED: Pattern only seen {occurrence_count} times. Need {self.MIN_OCCURRENCES}+ occurrences.",
+                can_generate=False,
+            )
 
         # Run all gates
         gate_results = [
@@ -223,6 +275,57 @@ class GapQualityGate:
             recommendation=recommendation,
             can_generate=can_generate,
         )
+
+    def _check_trivial_pattern(self, source_commands: List[str]) -> Optional[GateResult]:
+        """Check if pattern matches a known trivial pattern pair.
+
+        Args:
+            source_commands: Commands in the pattern
+
+        Returns:
+            GateResult if blocked, None if ok
+        """
+        if len(source_commands) < 2:
+            return None
+
+        # Normalize commands
+        normalized = [cmd.lower().strip() for cmd in source_commands]
+
+        # For 2-step patterns, check against trivial pairs
+        if len(normalized) == 2:
+            first, second = normalized[0], normalized[1]
+
+            for first_set, second_set in TRIVIAL_PATTERN_PAIRS:
+                first_matches = any(f in first or first in f for f in first_set)
+                second_matches = any(s in second or second in s for s in second_set)
+
+                if first_matches and second_matches:
+                    return GateResult(
+                        gate_name="trivial_pattern",
+                        status=GateStatus.BLOCK,
+                        score=0.0,
+                        reason=f"Trivial pattern: '{first}' + '{second}'",
+                        details="This is just normal development workflow, not a skill",
+                    )
+
+        # Check for "test + fix" pattern regardless of length
+        test_cmds = {"pytest", "test", "jest", "mocha", "npm test", "yarn test", "cargo test", "go test"}
+        fix_cmds = {"fix", "edit", "update", "change", "modify", "patch"}
+
+        has_test = any(any(t in cmd for t in test_cmds) for cmd in normalized)
+        has_fix = any(any(f in cmd for f in fix_cmds) for cmd in normalized)
+
+        # If pattern is ONLY test + fix with nothing else meaningful, block it
+        if has_test and has_fix and len(normalized) == 2:
+            return GateResult(
+                gate_name="trivial_pattern",
+                status=GateStatus.BLOCK,
+                score=0.0,
+                reason="Pattern is just 'test + fix' - basic development, not a skill",
+                details="Running tests and fixing failures is universal developer knowledge",
+            )
+
+        return None
 
     def _check_redundancy(
         self, gap_name: str, source_commands: List[str]
@@ -482,7 +585,7 @@ class GapQualityGate:
                 content = skill_file.read_text()
                 self._skill_content_cache[skill_name] = content
                 return content
-            except Exception:
+            except (OSError, IOError):
                 pass
 
         return None
