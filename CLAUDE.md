@@ -8,6 +8,24 @@
 
 These requirements MUST be followed. Failure to follow them is a serious workflow violation.
 
+### 0. Follow TDD for ALL Code Changes
+
+**MANDATORY for any task involving code:**
+1. **Write failing tests FIRST** - before writing any implementation code
+2. **Write minimal code to pass** - only enough to make tests green
+3. **Refactor** - clean up while keeping tests green
+4. **Repeat** - for each piece of functionality
+
+**USE THE SKILL:** When implementing code, invoke the `implementing-with-tdd` skill:
+```
+Use Skill tool with skill: "implementing-with-tdd"
+```
+
+**DO NOT:**
+- Write implementation code before tests exist
+- Write all code then add tests after
+- Skip tests for "simple" code
+
 ### 1. Update state.md After EVERY Task Completion
 
 **IMMEDIATELY after completing any task**, you MUST update `.paircoder/context/state.md`:

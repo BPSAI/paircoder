@@ -23,10 +23,10 @@
 | T27.7 | Remove /status slash command conflict | ✓ done | P0 | 15 | S |
 | T27.8 | Sync cookiecutter: config files | ✓ done | P0 | 30 | S |
 | T27.9 | Sync cookiecutter: skills | ✓ done | P0 | 30 | S |
-| T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
-| T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
+| T27.10 | Sync cookiecutter: commands | ✓ done | P0 | 15 | S |
+| T27.11 | Sync cookiecutter: agents | ✓ done | P0 | 15 | S |
 
-**Progress:** 9/11 tasks (295/325 complexity points)
+**Progress:** 11/11 tasks (325/325 complexity points) ✓ SPRINT COMPLETE!
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,49 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.11 Complete (Sync cookiecutter: agents) - SPRINT 27 COMPLETE!
+
+- **T27.11: Sync cookiecutter: agents** ✓
+  - Compared all 4 agents between main project and template:
+    - planner.md ✓
+    - reviewer.md ✓
+    - security-auditor.md ✓
+    - security.md ✓
+  - All files already identical (no changes needed)
+  - Verified agent content is generic:
+    - References to `.paircoder/` paths are framework references (expected)
+    - References to `bpsai-pair` are CLI command patterns (expected)
+    - No PairCoder project-specific content
+  - All 2049 tests pass
+
+**🎉 Sprint 27 Complete!**
+- 11/11 tasks done (325/325 complexity points)
+- All stabilization goals achieved:
+  - CI green ✓
+  - Upgrade command works ✓
+  - No blocking bugs ✓
+  - Cookiecutter template fully synced ✓
+
+### 2025-12-30 - T27.10 Complete (Sync cookiecutter: commands)
+
+- **T27.10: Sync cookiecutter: commands** ✓
+  - Compared all commands between main project and template
+  - Added missing `prep-release.md` command to template (generalized version)
+  - Updated `start-task.md` wording to match main project ("NEVER" vs "DO NOT")
+  - Verified no `/status` command in template (removed in T27.7)
+  - Template now has all 4 commands: pc-plan, prep-release, start-task, update-skills
+  - Scrubbed `prep-release.md` of PairCoder-specific content:
+    - Removed `tools/cli/` paths and `bpsai_pair` references
+    - Removed cookiecutter template sync phase (PairCoder-only)
+    - Made version detection generic (checks common locations)
+    - Removed FEATURE_MATRIX references
+    - Made build/publish commands generic (Python/Node.js examples)
+  - Updated `test_template.py`:
+    - Removed deprecated `TestFlowFiles` class (flows are deprecated in v2.8+)
+    - Removed `flows` directory check from `test_paircoder_structure`
+    - Updated version check to allow v2.8.x patch versions
+  - All 2049 tests pass
 
 ### 2025-12-30 - T27.9 Complete (Sync cookiecutter: skills)
 

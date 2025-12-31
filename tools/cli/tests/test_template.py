@@ -40,12 +40,12 @@ class TestTemplateStructure:
         paircoder_dir = PROJECT_TEMPLATE / ".paircoder"
         assert paircoder_dir.exists()
 
-        # Required directories
+        # Required directories (v2.8+ uses skills instead of flows)
         assert (paircoder_dir / "context").exists()
-        assert (paircoder_dir / "flows").exists()
         assert (paircoder_dir / "plans").exists()
         assert (paircoder_dir / "tasks").exists()
         assert (paircoder_dir / "security").exists()
+        # Note: flows directory is deprecated in v2.8+, skills are in .claude/skills/
 
     def test_claude_structure(self):
         """Verify .claude/ directory structure."""
@@ -142,8 +142,8 @@ class TestCapabilitiesYaml:
         caps_file = PROJECT_TEMPLATE / ".paircoder" / "capabilities.yaml"
         content = caps_file.read_text()
 
-        # Check version (v2.8+)
-        assert 'version: "2.8"' in content
+        # Check version (v2.8+) - must start with 2.8
+        assert 'version: "2.8' in content  # Allows 2.8, 2.8.1, 2.8.3, etc.
 
         # Required top-level sections (as text patterns)
         assert "context_files:" in content
@@ -222,27 +222,6 @@ class TestCodeowners:
 
         # Should have clear comments
         assert "# CODEOWNERS" in content
-
-
-class TestFlowFiles:
-    """Tests for flow template files."""
-
-    def test_required_flows_exist(self):
-        """Verify all required flows exist."""
-        flows_dir = PROJECT_TEMPLATE / ".paircoder" / "flows"
-
-        required_flows = [
-            "designing-and-implementing.flow.md",
-            "implementing-with-tdd.flow.md",
-            "reviewing-code.flow.md",
-            "finishing-branches.flow.md",
-            "planning-with-trello.flow.md",
-            "managing-task-lifecycle.flow.md",
-        ]
-
-        for flow_name in required_flows:
-            flow_file = flows_dir / flow_name
-            assert flow_file.exists(), f"Missing required flow: {flow_name}"
 
 
 class TestSkillFiles:
