@@ -18,7 +18,7 @@
 | T27.2 | Fix smoke test failure | ✓ done | P0 | 30 | S |
 | T27.3 | Fix Unicode errors in Trello | ✓ done | P0 | 30 | S |
 | T27.4 | Fix upgrade source file resolution | ✓ done | P0 | 55 | M |
-| T27.5 | Fix upgrade to actually copy files | pending | P0 | 45 | M |
+| T27.5 | Fix upgrade to actually copy files | ✓ done | P0 | 45 | M |
 | T27.6 | Fix Windows hook compatibility | pending | P0 | 30 | S |
 | T27.7 | Remove /status slash command conflict | pending | P0 | 15 | S |
 | T27.8 | Sync cookiecutter: config files | pending | P0 | 30 | S |
@@ -26,7 +26,7 @@
 | T27.10 | Sync cookiecutter: commands | pending | P0 | 15 | S |
 | T27.11 | Sync cookiecutter: agents | pending | P0 | 15 | S |
 
-**Progress:** 4/11 tasks (145/325 complexity points)
+**Progress:** 5/11 tasks (190/325 complexity points)
 
 ## Previous Sprint (25.6 - Emergent Skill Discovery) ✓ COMPLETE
 
@@ -171,6 +171,23 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2025-12-30 - T27.5 Complete (Fix upgrade to actually copy files)
+
+- **T27.5: Fix upgrade to actually copy files** ✓
+  - Issue: upgrade command didn't handle commands (only skills, agents, docs)
+  - Changes made to `upgrade.py`:
+    - Added `commands_to_add` and `commands_to_update` to `UpgradePlan` dataclass
+    - Added `get_bundled_commands()` function to discover bundled commands
+    - Updated `plan_upgrade()` to check for missing/outdated commands
+    - Updated `execute_upgrade()` to copy commands to project
+    - Added `--commands` flag to CLI for selective upgrades
+    - Updated summary display to show commands added/updated
+  - Created 6 new tests in `test_upgrade.py`:
+    - `TestGetBundledCommands`: command discovery from template
+    - `TestPlanUpgrade`: command detection in upgrade plans
+    - `TestExecuteUpgrade`: command copying verification
+  - All 2035 tests pass
 
 ### 2025-12-30 - T27.4 Complete (Fix upgrade source file resolution)
 

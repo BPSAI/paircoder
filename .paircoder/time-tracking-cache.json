@@ -527,9 +527,9 @@
     "total_seconds": 89.699122
   },
   "_active": {
-    "task_id": "T27.4",
-    "timer_id": "local-20251230180341",
-    "description": "T27.4: Fix upgrade source file resolution",
-    "start": "2025-12-30T18:03:41.245236"
+    "task_id": "T27.5",
+    "timer_id": "local-20251230181021",
+    "description": "T27.5: Fix upgrade to actually copy files",
+    "start": "2025-12-30T18:10:21.011047"
   }
 }

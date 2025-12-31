@@ -8,7 +8,9 @@ from bpsai_pair.commands.upgrade import (
     get_template_dir,
     get_bundled_skills,
     get_bundled_agents,
+    get_bundled_commands,
     plan_upgrade,
+    execute_upgrade,
     UpgradePlan,
 )
 
@@ -121,6 +123,31 @@ class TestGetBundledAgents:
         assert agents == {}
 
 
+class TestGetBundledCommands:
+    """Tests for bundled commands discovery."""
+
+    def test_finds_commands_in_template(self):
+        """Commands are discovered from template directory."""
+        template = get_template_dir()
+        assert template is not None
+
+        commands = get_bundled_commands(template)
+        assert isinstance(commands, dict)
+        assert len(commands) > 0
+
+        # Check for expected commands
+        expected_commands = ["pc-plan", "start-task", "update-skills"]
+
+        for cmd_name in expected_commands:
+            assert cmd_name in commands, f"Missing command: {cmd_name}"
+            assert commands[cmd_name].exists()
+
+    def test_returns_empty_dict_for_missing_dir(self, tmp_path):
+        """Returns empty dict when commands directory doesn't exist."""
+        commands = get_bundled_commands(tmp_path)
+        assert commands == {}
+
+
 class TestPlanUpgrade:
     """Tests for upgrade planning."""
 
@@ -172,6 +199,38 @@ class TestPlanUpgrade:
         bundled_agents = get_bundled_agents(template)
         assert len(plan.agents_to_add) == len(bundled_agents)
 
+    def test_plan_detects_missing_commands(self, tmp_path):
+        """Plan identifies commands that need to be added."""
+        (tmp_path / ".claude" / "commands").mkdir(parents=True)
+        (tmp_path / ".paircoder").mkdir(parents=True)
+        (tmp_path / ".paircoder" / "config.yaml").write_text("version: '2.1'")
+
+        template = get_template_dir()
+        assert template is not None
+
+        plan = plan_upgrade(tmp_path, template)
+
+        bundled_commands = get_bundled_commands(template)
+        assert len(plan.commands_to_add) == len(bundled_commands)
+
+    def test_plan_detects_outdated_commands(self, tmp_path):
+        """Plan identifies commands that need to be updated."""
+        # Create project with outdated command
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "start-task.md").write_text("# Old content\n\nOutdated command.")
+
+        (tmp_path / ".paircoder").mkdir(parents=True)
+        (tmp_path / ".paircoder" / "config.yaml").write_text("version: '2.1'")
+
+        template = get_template_dir()
+        assert template is not None
+
+        plan = plan_upgrade(tmp_path, template)
+
+        # start-task should be in updates (content differs)
+        assert "start-task" in plan.commands_to_update
+
     def test_plan_detects_missing_config_sections(self, tmp_path):
         """Plan identifies config sections that need to be added."""
         (tmp_path / ".claude").mkdir(parents=True)
@@ -188,6 +247,55 @@ class TestPlanUpgrade:
         # Required sections should be detected as missing
         assert "trello" in plan.config_sections_to_add
         assert "hooks" in plan.config_sections_to_add
+
+
+class TestExecuteUpgrade:
+    """Tests for upgrade execution."""
+
+    def test_execute_copies_commands(self, tmp_path):
+        """Execute upgrade copies commands to project."""
+        # Create minimal project structure
+        (tmp_path / ".claude" / "commands").mkdir(parents=True)
+        (tmp_path / ".paircoder").mkdir(parents=True)
+        (tmp_path / ".paircoder" / "config.yaml").write_text("version: '2.1'")
+
+        template = get_template_dir()
+        assert template is not None
+
+        plan = plan_upgrade(tmp_path, template)
+        results = execute_upgrade(tmp_path, template, plan)
+
+        # Commands should have been added
+        assert results["commands_added"] > 0
+
+        # Verify files exist
+        commands_dir = tmp_path / ".claude" / "commands"
+        assert (commands_dir / "start-task.md").exists()
+        assert (commands_dir / "pc-plan.md").exists()
+
+    def test_execute_updates_commands(self, tmp_path):
+        """Execute upgrade updates outdated commands."""
+        # Create project with outdated command
+        commands_dir = tmp_path / ".claude" / "commands"
+        commands_dir.mkdir(parents=True)
+        (commands_dir / "start-task.md").write_text("# Outdated")
+
+        (tmp_path / ".paircoder").mkdir(parents=True)
+        (tmp_path / ".paircoder" / "config.yaml").write_text("version: '2.1'")
+
+        template = get_template_dir()
+        assert template is not None
+
+        plan = plan_upgrade(tmp_path, template)
+        results = execute_upgrade(tmp_path, template, plan)
+
+        # Command should have been updated
+        assert results["commands_updated"] >= 1
+
+        # Verify file was updated (no longer just "# Outdated")
+        content = (commands_dir / "start-task.md").read_text()
+        assert content != "# Outdated"
+        assert len(content) > 20  # Should have real content
 
 
 class TestImportlibResourcesIntegration:

@@ -32,6 +32,8 @@ class UpgradePlan:
     skills_to_add: list = field(default_factory=list)
     agents_to_update: list = field(default_factory=list)
     agents_to_add: list = field(default_factory=list)
+    commands_to_update: list = field(default_factory=list)
+    commands_to_add: list = field(default_factory=list)
     docs_to_update: list = field(default_factory=list)
     config_sections_to_add: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
@@ -102,6 +104,22 @@ def get_bundled_agents(template: Path) -> dict:
     return agents
 
 
+def get_bundled_commands(template: Path) -> dict:
+    """Get all commands bundled with the CLI.
+
+    Note: Commands are .md files in .claude/commands/ that define
+    slash commands for Claude Code.
+    """
+    commands_dir = template / ".claude" / "commands"
+    commands = {}
+
+    if commands_dir.exists():
+        for cmd_file in commands_dir.glob("*.md"):
+            commands[cmd_file.stem] = cmd_file
+
+    return commands
+
+
 def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
     """Create upgrade plan by comparing project to template."""
     plan = UpgradePlan()
@@ -135,6 +153,21 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
                     plan.agents_to_update.append(agent_name)
             except Exception:
                 plan.warnings.append(f"Could not compare agent: {agent_name}")
+
+    # Check commands (slash commands in .claude/commands/)
+    bundled_commands = get_bundled_commands(template)
+    project_commands_dir = project_root / ".claude" / "commands"
+
+    for cmd_name, cmd_path in bundled_commands.items():
+        project_cmd = project_commands_dir / f"{cmd_name}.md"
+        if not project_cmd.exists():
+            plan.commands_to_add.append(cmd_name)
+        else:
+            try:
+                if project_cmd.read_text() != cmd_path.read_text():
+                    plan.commands_to_update.append(cmd_name)
+            except Exception:
+                plan.warnings.append(f"Could not compare command: {cmd_name}")
 
     # Check safe docs (never touch state.md, project.md, or config values)
     safe_docs = [
@@ -182,6 +215,7 @@ def execute_upgrade(
     plan: UpgradePlan,
     skills: bool = True,
     agents: bool = True,
+    commands: bool = True,
     docs: bool = True,
     config: bool = True,
 ) -> dict:
@@ -195,6 +229,8 @@ def execute_upgrade(
         "skills_updated": 0,
         "agents_added": 0,
         "agents_updated": 0,
+        "commands_added": 0,
+        "commands_updated": 0,
         "docs_updated": 0,
         "config_sections_added": 0,
     }
@@ -236,6 +272,25 @@ def execute_upgrade(
                 dst_dir.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst_dir / f"{agent_name}.md")
                 results["agents_updated"] += 1
+
+    # Update commands (slash commands in .claude/commands/)
+    if commands:
+        bundled_commands = get_bundled_commands(template)
+        for cmd_name in plan.commands_to_add:
+            if cmd_name in bundled_commands:
+                src = bundled_commands[cmd_name]
+                dst_dir = project_root / ".claude" / "commands"
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst_dir / f"{cmd_name}.md")
+                results["commands_added"] += 1
+
+        for cmd_name in plan.commands_to_update:
+            if cmd_name in bundled_commands:
+                src = bundled_commands[cmd_name]
+                dst_dir = project_root / ".claude" / "commands"
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst_dir / f"{cmd_name}.md")
+                results["commands_updated"] += 1
 
     # Update docs
     if docs:
@@ -307,11 +362,12 @@ def upgrade_command(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would change without making changes"),
     only_skills: bool = typer.Option(False, "--skills", help="Only update skills"),
     only_agents: bool = typer.Option(False, "--agents", help="Only update agents"),
+    only_commands: bool = typer.Option(False, "--commands", help="Only update slash commands"),
     only_docs: bool = typer.Option(False, "--docs", help="Only update safe doc files"),
     only_config: bool = typer.Option(False, "--config", help="Only add missing config sections"),
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt"),
 ):
-    """Upgrade existing v2.x project with latest skills, agents, and docs.
+    """Upgrade existing v2.x project with latest skills, agents, commands, and docs.
 
     This command updates generic project files without touching project-specific
     content like state.md, project.md, or existing config values.
@@ -322,6 +378,7 @@ def upgrade_command(
     - .paircoder/context/workflow.md
     - .claude/skills/* (all skills)
     - .claude/agents/* (all agents)
+    - .claude/commands/* (all slash commands)
 
     Never touched:
     - .paircoder/context/state.md
@@ -361,6 +418,8 @@ def upgrade_command(
         plan.skills_to_update,
         plan.agents_to_add,
         plan.agents_to_update,
+        plan.commands_to_add,
+        plan.commands_to_update,
         plan.docs_to_update,
         plan.config_sections_to_add,
     ])
@@ -392,6 +451,16 @@ def upgrade_command(
         for a in plan.agents_to_update:
             console.print(f"    ~ {a}")
 
+    if plan.commands_to_add:
+        console.print("  [cyan]Commands to add:[/cyan]")
+        for c in plan.commands_to_add:
+            console.print(f"    + {c}")
+
+    if plan.commands_to_update:
+        console.print("  [cyan]Commands to update:[/cyan]")
+        for c in plan.commands_to_update:
+            console.print(f"    ~ {c}")
+
     if plan.docs_to_update:
         console.print("  [cyan]Docs to update:[/cyan]")
         for d in plan.docs_to_update:
@@ -413,10 +482,11 @@ def upgrade_command(
 
     # Determine what to upgrade
     # If no specific flags, upgrade everything
-    upgrade_all = not any([only_skills, only_agents, only_docs, only_config])
+    upgrade_all = not any([only_skills, only_agents, only_commands, only_docs, only_config])
 
     do_skills = upgrade_all or only_skills
     do_agents = upgrade_all or only_agents
+    do_commands = upgrade_all or only_commands
     do_docs = upgrade_all or only_docs
     do_config = upgrade_all or only_config
 
@@ -436,6 +506,7 @@ def upgrade_command(
         plan,
         skills=do_skills,
         agents=do_agents,
+        commands=do_commands,
         docs=do_docs,
         config=do_config,
     )
@@ -448,6 +519,8 @@ def upgrade_command(
         summary_parts.append(f"{results['skills_added']} skills added, {results['skills_updated']} updated")
     if do_agents and (results["agents_added"] or results["agents_updated"]):
         summary_parts.append(f"{results['agents_added']} agents added, {results['agents_updated']} updated")
+    if do_commands and (results["commands_added"] or results["commands_updated"]):
+        summary_parts.append(f"{results['commands_added']} commands added, {results['commands_updated']} updated")
     if do_docs and results["docs_updated"]:
         summary_parts.append(f"{results['docs_updated']} docs updated")
     if do_config and results["config_sections_added"]:
