@@ -130,32 +130,67 @@ def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
         pass  # Best effort logging
 
 
-def _update_local_task_status(card_name: str, status: str) -> bool:
+def _get_task_id_from_card(card) -> Optional[str]:
+    """Extract local task ID from Trello card.
+
+    Looks for task ID in:
+    1. Card name pattern "[T27.1]" or "[TASK-123]" (bracketed)
+    2. Card name pattern "T27.1: ..." or "TASK-123: ..." (at start)
+    3. Card description containing "Task: T27.1"
+
+    Args:
+        card: Trello card object with name and description attributes
+
+    Returns:
+        Task ID string (e.g., "T27.1") or None if not found
+    """
+    import re
+
+    # Get card name
+    name = card.name if hasattr(card, 'name') else ""
+
+    # Try bracketed pattern first (e.g., "[T27.1] Create module")
+    match = re.search(r'\[(T\d+\.\d+|TASK-\d+)\]', name)
+    if match:
+        return match.group(1)
+
+    # Try start of name pattern (e.g., "T27.1: Create module" or "T27.1 - Create")
+    match = re.match(r'^(T\d+\.\d+|TASK-\d+)[\s:\-]', name)
+    if match:
+        return match.group(1)
+
+    # Try description
+    desc = card.description if hasattr(card, 'description') else ""
+    if desc:
+        match = re.search(r'Task:\s*(T\d+\.\d+|TASK-\d+)', desc)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def _update_local_task_status(card, status: str, summary: str = "") -> tuple[bool, Optional[str]]:
     """Update the corresponding local task file after ttask operation.
 
     Args:
-        card_name: The Trello card name (e.g., "[T23.1] Create module structure")
+        card: Trello card object (with name and description attributes)
         status: The new status to set
+        summary: Optional completion summary
 
     Returns:
-        True if a task was updated, False otherwise
+        Tuple of (success: bool, task_id: Optional[str])
     """
-    from pathlib import Path
-    import re
-
     try:
-        # Extract task ID from card name (e.g., "[T23.1]" or "[TASK-123]")
-        match = re.search(r'\[(T\d+\.\d+|TASK-\d+)\]', card_name)
-        if not match:
-            return False
-
-        task_id = match.group(1)
+        # Extract task ID from card
+        task_id = _get_task_id_from_card(card)
+        if not task_id:
+            return False, None
 
         # Find paircoder dir
         from ..core.ops import find_paircoder_dir
         paircoder_dir = find_paircoder_dir()
         if not paircoder_dir.exists():
-            return False
+            return False, task_id
 
         # Import task parser
         from ..planning.parser import TaskParser
@@ -163,12 +198,51 @@ def _update_local_task_status(card_name: str, status: str) -> bool:
         task_parser = TaskParser(paircoder_dir / "tasks")
         success = task_parser.update_status(task_id, status)
 
-        if success:
-            console.print(f"[dim]Local task {task_id} updated to {status}[/dim]")
-
-        return success
+        return success, task_id
+    except FileNotFoundError:
+        raise  # Re-raise for caller to handle
     except Exception as e:
-        console.print(f"[dim]Note: Could not update local task file: {e}[/dim]")
+        console.print(f"[yellow]⚠ Could not update local task file: {e}[/yellow]")
+        return False, None
+
+
+def _run_completion_hooks(task_id: str) -> bool:
+    """Run completion hooks to update state.md and other side effects.
+
+    Args:
+        task_id: The task ID that was completed
+
+    Returns:
+        True if hooks ran successfully, False otherwise
+    """
+    try:
+        from ..core.ops import find_paircoder_dir
+
+        paircoder_dir = find_paircoder_dir()
+        if not paircoder_dir.exists():
+            return False
+
+        # Record CLI update to cache (for manual edit detection)
+        try:
+            from ..planning.cli_update_cache import get_cli_update_cache
+            cli_cache = get_cli_update_cache(paircoder_dir)
+            cli_cache.record_update(task_id, "done")
+        except Exception:
+            pass  # Best effort
+
+        # Try to run hooks if available
+        try:
+            from ..core.hooks import HookRunner
+            hook_runner = HookRunner(paircoder_dir)
+            hook_runner.run_status_hooks(task_id, "done")
+            return True
+        except ImportError:
+            # Hooks module not available
+            return False
+        except Exception as e:
+            console.print(f"[yellow]⚠ Could not run completion hooks: {e}[/yellow]")
+            return False
+    except Exception:
         return False
 
 
@@ -499,8 +573,23 @@ def task_done(
     console.print(f"  Moved to: {list_name}")
     console.print(f"  Summary: {summary}")
 
-    # Auto-update local task file
-    _update_local_task_status(card.name, "done")
+    # Auto-update local task file and run completion hooks
+    try:
+        success, task_id = _update_local_task_status(card, "done", summary)
+        if success and task_id:
+            console.print(f"[green]✓ Local task {task_id} updated to done[/green]")
+            # Run completion hooks to update state.md
+            _run_completion_hooks(task_id)
+        elif task_id:
+            console.print(f"[yellow]⚠ Could not update local task {task_id}[/yellow]")
+        # If no task_id found, silently continue (card may not have local task)
+    except FileNotFoundError as e:
+        task_id = _get_task_id_from_card(card)
+        if task_id:
+            console.print(f"[yellow]⚠ Local task file not found for {task_id}[/yellow]")
+    except Exception as e:
+        console.print(f"[yellow]⚠ Could not sync local task: {e}[/yellow]")
+        # Don't fail - Trello is source of truth
 
 
 @app.command("block")
