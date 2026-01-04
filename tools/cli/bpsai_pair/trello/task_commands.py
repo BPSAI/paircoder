@@ -246,6 +246,82 @@ def _run_completion_hooks(task_id: str) -> bool:
         return False
 
 
+def _check_task_budget(task_id: str, card_id: str, budget_override: bool = False) -> bool:
+    """Check if task can proceed within token budget.
+
+    Args:
+        task_id: The task ID to estimate tokens for
+        card_id: The Trello card ID (for display)
+        budget_override: If True, log bypass and allow anyway
+
+    Returns:
+        True if task can proceed, False if blocked
+    """
+    try:
+        from ..core.ops import find_paircoder_dir
+        from ..planning.parser import TaskParser
+        from ..metrics.estimation import TokenEstimator
+        from ..metrics.budget import BudgetEnforcer
+        from ..metrics.collector import MetricsCollector
+
+        paircoder_dir = find_paircoder_dir()
+        if not paircoder_dir.exists():
+            return True  # No paircoder dir, skip check
+
+        # Load the task
+        task_parser = TaskParser(paircoder_dir / "tasks")
+        task = task_parser.get_task_by_id(task_id)
+        if not task:
+            return True  # Task not found, skip check
+
+        # Estimate tokens
+        estimator = TokenEstimator()
+        token_estimate = estimator.estimate_for_task(task)
+        estimated_tokens = token_estimate.total_tokens
+
+        # Convert tokens to estimated cost (rough: $0.003 per 1K input tokens for Claude)
+        # Using a conservative estimate that includes both input and output
+        estimated_cost_usd = (estimated_tokens / 1000) * 0.015  # $0.015 per 1K tokens
+
+        # Check budget
+        collector = MetricsCollector(paircoder_dir / "metrics")
+        budget = BudgetEnforcer(collector)
+        can_proceed, reason = budget.can_proceed(estimated_cost_usd)
+
+        if not can_proceed:
+            if budget_override:
+                _log_bypass("budget_override", task_id, f"User override: {reason}")
+                console.print(f"[yellow]⚠ Starting despite budget limit (logged): {reason}[/yellow]")
+                return True
+            else:
+                status = budget.check_budget()
+                console.print("[red]❌ BLOCKED: Task would exceed token budget[/red]")
+                console.print("")
+                console.print(f"[dim]Estimated tokens:[/dim] {estimated_tokens:,}")
+                console.print(f"[dim]Estimated cost:[/dim]   ${estimated_cost_usd:.2f}")
+                console.print(f"[dim]Daily remaining:[/dim]  ${status.daily_remaining:.2f}")
+                console.print(f"[dim]Daily limit:[/dim]      ${status.daily_limit:.2f}")
+                console.print("")
+                console.print("[yellow]Options:[/yellow]")
+                console.print("  1. Wait until tomorrow (limit resets)")
+                console.print(f"  2. Override: [cyan]bpsai-pair ttask start {card_id} --budget-override[/cyan]")
+                console.print("  3. Check budget: [cyan]bpsai-pair budget status[/cyan]")
+                return False
+
+        # Within budget
+        console.print(f"[dim]Budget check passed ({estimated_tokens:,} tokens, ~${estimated_cost_usd:.2f})[/dim]")
+        return True
+
+    except ImportError as e:
+        # Budget/metrics module not available, continue without check
+        console.print(f"[dim]Budget check skipped: {e}[/dim]")
+        return True
+    except Exception as e:
+        # Budget check failed, log but continue
+        console.print(f"[dim]Budget check skipped: {e}[/dim]")
+        return True
+
+
 def _auto_check_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
     """Check off all items in the Acceptance Criteria checklist.
 
@@ -460,14 +536,29 @@ def task_show(card_id: str = typer.Argument(..., help="Card ID (e.g., TRELLO-123
 def task_start(
     card_id: str = typer.Argument(..., help="Card ID to start"),
     summary: str = typer.Option("Beginning work", "--summary", "-s", help="Start summary"),
+    budget_override: bool = typer.Option(
+        False, "--budget-override",
+        help="Start despite budget warning (logged for audit)"
+    ),
 ):
-    """Start working on a task (moves to In Progress)."""
+    """Start working on a task (moves to In Progress).
+
+    Checks token budget before starting. Use --budget-override to bypass
+    budget limits (logged for audit).
+    """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
 
     if not card:
         console.print(f"[red]Card not found: {card_id}[/red]")
         raise typer.Exit(1)
+
+    # Check token budget BEFORE starting
+    task_id = _get_task_id_from_card(card)
+    if task_id:
+        budget_ok = _check_task_budget(task_id, card_id, budget_override)
+        if not budget_ok:
+            raise typer.Exit(1)
 
     if client.is_card_blocked(card):
         console.print(f"[red]Cannot start - card has unchecked dependencies[/red]")
