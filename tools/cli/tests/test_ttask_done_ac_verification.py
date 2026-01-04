@@ -108,8 +108,19 @@ class TestTtaskDoneACVerification:
         # Should have moved the card
         mock_client.move_card.assert_called_once()
 
-    def test_done_force_skips_verification(self, mock_board_client, runner):
-        """With --force flag, should skip AC verification and complete."""
+    def test_force_flag_removed(self, mock_board_client, runner):
+        """--force flag must not exist."""
+        mock_client, mock_config = mock_board_client
+
+        from bpsai_pair.trello.task_commands import app
+        result = runner.invoke(app, ["done", "123", "--force", "--summary", "Completed"])
+
+        # Should fail because --force no longer exists
+        assert result.exit_code != 0
+        assert "no such option" in result.output.lower() or "force" in result.output.lower()
+
+    def test_no_strict_allows_bypass_with_logging(self, mock_board_client, runner):
+        """--no-strict should allow bypass but log it."""
         mock_client, mock_config = mock_board_client
 
         mock_checklist = MagicMock()
@@ -129,14 +140,14 @@ class TestTtaskDoneACVerification:
         mock_client.find_card.return_value = (mock_card, mock_list)
 
         from bpsai_pair.trello.task_commands import app
-        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--force"])
+        result = runner.invoke(app, ["done", "123", "--summary", "Completed", "--no-strict"])
 
         # Should succeed despite unchecked items
         assert result.exit_code == 0
         # Should have moved the card
         mock_client.move_card.assert_called_once()
-        # Should log a warning about skipping verification
-        assert "skip" in result.output.lower() or "force" in result.output.lower()
+        # Should show warning about unchecked items
+        assert "unchecked" in result.output.lower()
 
     def test_done_no_checklists_succeeds(self, mock_board_client, runner):
         """Cards with no checklists should complete normally."""

@@ -418,27 +418,26 @@ def task_done(
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: Deployed/Done)"),
     auto_check: bool = typer.Option(False, "--auto-check", help="Auto-check all acceptance criteria (use with caution)"),
     strict: bool = typer.Option(True, "--strict/--no-strict", help="Block if acceptance criteria unchecked (default: strict)"),
-    skip_checklist: bool = typer.Option(False, "--skip-checklist", hidden=True, help="[DEPRECATED] Use --no-check-all"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force completion, bypass all verification"),
+    # --force REMOVED - use --no-strict for explicit opt-out with audit logging
 ):
     """Complete a task (moves to Done list).
 
-    By default, automatically checks all 'Acceptance Criteria' checklist items.
+    By default, requires all 'Acceptance Criteria' checklist items to be checked.
+    Use --no-strict to allow completion with unchecked items (logged for audit).
+
     Also updates the corresponding local task file to 'done' status.
 
-    Use --strict to require AC items to be manually checked first (blocks if unchecked).
-    Use --no-check-all to skip AC handling entirely.
-    Use --force to bypass all verification (logs warning).
+    NOTE: --force flag has been removed. Use --no-strict for explicit opt-out.
 
     Examples:
-        # Standard completion (auto-checks AC)
+        # Standard completion (requires AC to be checked)
         bpsai-pair ttask done TRELLO-123 --summary "Implemented feature X"
 
-        # Require manual AC verification
-        bpsai-pair ttask done TRELLO-123 --summary "..." --strict
+        # Auto-check AC items (use with caution)
+        bpsai-pair ttask done TRELLO-123 --summary "..." --auto-check
 
-        # Skip AC handling
-        bpsai-pair ttask done TRELLO-123 --summary "..." --no-check-all
+        # Allow completion with unchecked items (logged)
+        bpsai-pair ttask done TRELLO-123 --summary "..." --no-strict
     """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
@@ -453,36 +452,22 @@ def task_done(
     except Exception:
         pass
 
-    # Handle deprecated flag
-    if skip_checklist:
-        console.print("[yellow]⚠ --skip-checklist is deprecated. Use --no-check-all[/yellow]")
-        auto_check = False
-
     # Handle AC verification based on flags
     ac_status_msg = ""
-    if force:
-        # Bypass all verification
-        unchecked = _get_unchecked_ac_items(card)
-        if unchecked:
-            console.print(f"[yellow]⚠ Force completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
-            ac_status_msg = f"Forced with {len(unchecked)} unchecked AC items"
-            _log_bypass("ttask done", card_id, f"forced with {len(unchecked)} unchecked AC items")
-        else:
-            ac_status_msg = "All AC items complete"
-    elif strict:
-        # Strict mode: block if any AC unchecked
+    if strict:
+        # Strict mode (default): block if any AC unchecked
         unchecked = _get_unchecked_ac_items(card)
         if unchecked:
             console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
             console.print("\n[dim]Unchecked items:[/dim]")
             for item in unchecked:
                 console.print(f"  ○ {item.get('name', '')}")
-            console.print("\n[dim]Check items manually on Trello, or use --force to bypass[/dim]")
+            console.print("\n[dim]Check items manually on Trello, or use --no-strict to bypass[/dim]")
             raise typer.Exit(1)
         console.print("[green]✓ All acceptance criteria verified[/green]")
         ac_status_msg = "All AC items manually verified"
     elif auto_check:
-        # Default: auto-check all AC items
+        # Auto-check mode: check all AC items then complete
         checked_count = _auto_check_acceptance_criteria(card, client)
         if checked_count > 0:
             console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
@@ -490,9 +475,14 @@ def task_done(
         else:
             ac_status_msg = "All AC items already complete"
     else:
-        # --no-check-all: skip AC handling entirely
-        console.print("[dim]AC verification skipped (--no-check-all)[/dim]")
-        ac_status_msg = "AC verification skipped"
+        # --no-strict: skip AC verification but log bypass for audit
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
+            _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
+            ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
+        else:
+            ac_status_msg = "AC verification skipped (all items already complete)"
 
     # Determine target list
     if list_name is None:
