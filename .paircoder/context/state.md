@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2025-12-31
+> Last updated: 2026-01-04
 
 ## Active Plan
 
@@ -70,6 +70,27 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-04 - Hotfix: Enforcement Gates (Sprint 28 Prep)
+
+Completed 4 enforcement gate hotfixes on `hotfix/enforcement-gates` branch:
+
+| Task | Title | Commit |
+|------|-------|--------|
+| T28.1b | Remove --force from ttask done | `5f3f2d9` |
+| T28.3 | Require Trello sync before local task update | `0eaf6fc` |
+| T28.4 | Auto-update local task from ttask done | `e527ade` |
+| T28.5 | Wire budget can_proceed() before task start | `ae61e74` |
+
+**Changes:**
+- `ttask done`: Removed `--force` flag, `--no-strict` now logs bypasses
+- `task update`: Added `--local-only` + `--reason` for audited bypass
+- `ttask done`: Auto-syncs local task file status
+- `ttask start`: Budget check before starting (with `--budget-override`)
+
+**Tests:** 47 new tests added across 4 test files, all passing.
+
+**Status:** Branch ready for merge or additional hotfixes.
 
 ### 2025-12-31 - Housekeeping: Archive and Compact
 
