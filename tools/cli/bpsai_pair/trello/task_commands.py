@@ -232,9 +232,19 @@ def _run_completion_hooks(task_id: str) -> bool:
 
         # Try to run hooks if available
         try:
-            from ..core.hooks import HookRunner
-            hook_runner = HookRunner(paircoder_dir)
-            hook_runner.run_status_hooks(task_id, "done")
+            from ..core.hooks import HookRunner, HookContext
+            from ..core.config import load_config
+
+            config = load_config(paircoder_dir)
+            hook_runner = HookRunner(config, paircoder_dir)
+
+            # Create context for completion hooks
+            context = HookContext(
+                task_id=task_id,
+                task=None,  # Task object not available here
+                event="on_task_complete",
+            )
+            hook_runner.run_hooks("on_task_complete", context)
             return True
         except ImportError:
             # Hooks module not available
