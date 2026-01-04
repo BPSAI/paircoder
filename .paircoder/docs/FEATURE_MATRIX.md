@@ -1,6 +1,6 @@
-# PairCoder v2.8.4 Feature Matrix
+# PairCoder v2.9.0 Feature Matrix
 
-> Updated after Sprint 27 on 2025-12-31
+> Updated after Sprint 28 on 2026-01-04
 
 ## CLI Commands Summary
 
@@ -201,6 +201,15 @@
 | Template check fix | `template check` | ✅ Done | T27.1 - ProjectRootNotFoundError handling |
 | Unicode handling | `ttask *` | ✅ Done | T27.3 - UTF-8 encoding throughout |
 | Version bump | - | ✅ Done | v2.8.4 |
+
+### Sprint 28: Enforcement Gates (v2.9.0)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Remove --force from ttask done | `ttask done` | ✅ Done | T28.1b - Use --no-strict for bypass |
+| Block local task done on Trello tasks | `task update` | ✅ Done | T28.3 - Use --local-only --reason |
+| Auto-sync local task from ttask done | `ttask done` | ✅ Done | T28.4 - Extracts task ID from card |
+| Budget check on task start | `ttask start` | ✅ Done | T28.5 - Use --budget-override to bypass |
+| Bypass audit logging | - | ✅ Done | All bypasses logged to bypass_log.jsonl |
 
 ## MCP Tools (13 total)
 
@@ -507,4 +516,9 @@ hooks:
 | - Exporter | 12 | ✅ Pass |
 | - Installer | 8 | ✅ Pass |
 | - Suggestion | 10 | ✅ Pass |
-| **Total** | **2050+** | ✅ Pass |
+| **Enforcement (Sprint 28)** | **47** | ✅ Pass |
+| - ttask start budget | 9 | ✅ Pass |
+| - ttask done sync | 14 | ✅ Pass |
+| - task update enforcement | 10 | ✅ Pass |
+| - ttask done AC verification | 14 | ✅ Pass |
+| **Total** | **2100+** | ✅ Pass |
