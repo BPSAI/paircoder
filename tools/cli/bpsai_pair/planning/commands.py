@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .models import Plan, Task, TaskStatus, PlanStatus, PlanType, Sprint
-from .parser import PlanParser, TaskParser
+from .parser import PlanParser, TaskParser, parse_frontmatter
 from .state import StateManager
 from .token_estimator import PlanTokenEstimator, DEFAULT_THRESHOLD
 
@@ -1074,9 +1074,13 @@ def task_update(
         False, "--resync",
         help="Re-trigger hooks for current status (use after manual file edits)"
     ),
-    force: bool = typer.Option(
-        False, "--force", "-f",
-        help="Force update, bypass Trello enforcement (not recommended)"
+    local_only: bool = typer.Option(
+        False, "--local-only",
+        help="Update local file only, skip Trello sync check (requires --reason)"
+    ),
+    reason: str = typer.Option(
+        "", "--reason",
+        help="Reason for local-only update (required with --local-only)"
     ),
 ):
     """Update a task's status.
@@ -1090,34 +1094,41 @@ def task_update(
     If a task file was manually edited, use --resync to re-trigger hooks
     for the current status without changing it.
 
-    For Trello-connected projects, use 'ttask done' instead of '--status done'.
+    For tasks with linked Trello cards, use 'ttask done' instead of '--status done'.
     This ensures acceptance criteria are verified and the card is properly moved.
+    Use --local-only --reason "..." to bypass Trello sync (logged for audit).
     """
-    # ENFORCEMENT: Block status=done on Trello projects unless forced
-    if status and status.lower() == "done" and not force:
-        if _is_trello_enabled():
+    # ENFORCEMENT: Block status=done if task has linked Trello card (unless --local-only)
+    if status and status.lower() == "done" and not local_only:
+        # Check for linked Trello card first
+        trello_card_id = _get_linked_trello_card(task_id)
+        if trello_card_id:
+            console.print(f"\n[red]❌ BLOCKED: Task has linked Trello card {trello_card_id}[/red]")
+            console.print("")
+            console.print("[yellow]Use one of:[/yellow]")
+            console.print(f"  1. Complete via Trello: [cyan]bpsai-pair ttask done {trello_card_id} --summary \"...\"[/cyan]")
+            console.print(f"  2. Force local-only:    [cyan]bpsai-pair task update {task_id} --status done --local-only --reason \"...\"[/cyan]")
+            console.print("")
+            console.print("[dim]The --local-only flag is logged for audit.[/dim]")
+            raise typer.Exit(1)
+        # Also block if Trello is enabled even without linked card
+        elif _is_trello_enabled():
             console.print("\n[red]❌ BLOCKED: This project uses Trello integration.[/red]")
             console.print("")
-            console.print("[yellow]Use the Trello command to complete tasks:[/yellow]")
+            console.print("[yellow]Use one of:[/yellow]")
+            console.print(f"  1. Complete via Trello: [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
+            console.print(f"  2. Force local-only:    [cyan]bpsai-pair task update {task_id} --status done --local-only --reason \"...\"[/cyan]")
             console.print("")
-            console.print("  1. Find the card ID:")
-            console.print(f"     [cyan]bpsai-pair ttask list | grep {task_id}[/cyan]")
-            console.print("")
-            console.print("  2. Complete with ttask done:")
-            console.print("     [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"What was done\"[/cyan]")
-            console.print("")
-            console.print("[dim]This ensures:[/dim]")
-            console.print("[dim]  • Acceptance criteria are verified/checked[/dim]")
-            console.print("[dim]  • Completion summary is recorded[/dim]")
-            console.print("[dim]  • Card is moved to the correct list[/dim]")
-            console.print("[dim]  • Local task file is updated automatically[/dim]")
-            console.print("")
-            console.print("[dim]To bypass (not recommended): --force[/dim]")
+            console.print("[dim]The --local-only flag is logged for audit.[/dim]")
             raise typer.Exit(1)
-    elif status and status.lower() == "done" and force:
-        if _is_trello_enabled():
-            console.print("[yellow]⚠ Bypassing Trello enforcement with --force[/yellow]")
-            _log_bypass("task update --status done", task_id, "forced bypass of Trello enforcement")
+
+    # If using --local-only, require reason and log bypass
+    if local_only:
+        if not reason:
+            console.print("[red]❌ --local-only requires --reason to explain the bypass[/red]")
+            raise typer.Exit(1)
+        _log_bypass("task update --local-only", task_id, reason)
+        console.print(f"[yellow]⚠ Updating local task only (logged): {reason}[/yellow]")
 
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
@@ -1221,6 +1232,65 @@ def _is_trello_enabled() -> bool:
         return trello_config.get("enabled", False) and trello_config.get("board_id")
     except Exception:
         return False
+
+
+def _get_linked_trello_card(task_id: str) -> Optional[str]:
+    """Get Trello card ID linked to this task.
+
+    Checks the task file's frontmatter for:
+    1. trello_card_id field
+    2. trello_url field (extracts ID from URL)
+
+    Args:
+        task_id: The task ID (e.g., T27.1 or TASK-123)
+
+    Returns:
+        Trello card ID (e.g., "TRELLO-94" or "abc123") or None if not linked
+    """
+    import re
+
+    try:
+        paircoder_dir = find_paircoder_dir()
+        task_parser = TaskParser(paircoder_dir / "tasks")
+
+        # Find the task file
+        task = task_parser.get_task_by_id(task_id)
+        if not task or not task.source_path:
+            return None
+
+        # Read the task file to get frontmatter
+        with open(task.source_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Parse frontmatter
+        frontmatter, _ = parse_frontmatter(content)
+        if not frontmatter:
+            return None
+
+        # Check for trello_card_id
+        if "trello_card_id" in frontmatter:
+            card_id = frontmatter["trello_card_id"]
+            # Format as TRELLO-XXX if it's just a number
+            if isinstance(card_id, (int, str)):
+                card_str = str(card_id)
+                if card_str.isdigit():
+                    return f"TRELLO-{card_str}"
+                elif card_str.startswith("TRELLO-"):
+                    return card_str
+                else:
+                    return card_str  # Return as-is (could be shortLink)
+
+        # Check for trello_url
+        if "trello_url" in frontmatter:
+            url = frontmatter["trello_url"]
+            # Extract ID from URL like https://trello.com/c/ABC123/...
+            match = re.search(r'/c/([^/]+)', url)
+            if match:
+                return match.group(1)
+
+        return None
+    except Exception:
+        return None
 
 
 def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
