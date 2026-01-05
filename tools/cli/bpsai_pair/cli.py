@@ -23,13 +23,14 @@ Architecture refactored in Sprint 22 (EPIC-003 Phase 1).
 """
 
 from __future__ import annotations
-from .commands.audit import app as audit_app
+
 from typing import Optional
 
 import typer
 from rich.console import Console
+from .commands.audit import app as audit_app
+from .commands.state import app as state_app
 
-# Try relative imports first, fall back to absolute
 try:
     from . import __version__
     from .planning.commands import (
@@ -117,6 +118,7 @@ app.add_typer(session_app, name="session")
 app.add_typer(compaction_app, name="compaction")
 app.add_typer(upgrade_app, name="upgrade")
 app.add_typer(budget_app, name="budget")
+app.add_typer(state_app, name="state")
 
 # Integration sub-apps (optional - may not be installed)
 try:
