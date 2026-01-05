@@ -23,7 +23,7 @@ Architecture refactored in Sprint 22 (EPIC-003 Phase 1).
 """
 
 from __future__ import annotations
-
+from .commands.audit import app as audit_app
 from typing import Optional
 
 import typer
@@ -100,6 +100,7 @@ app.add_typer(migrate_app, name="migrate")
 app.add_typer(skill_app, name="skill")
 app.add_typer(subagent_app, name="subagent")
 app.add_typer(gaps_app, name="gaps")
+app.add_typer(audit_app, name="audit")
 
 # Extracted command sub-apps (Sprint 22)
 app.add_typer(flow_app, name="flow")

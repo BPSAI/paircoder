@@ -105,29 +105,11 @@ def _get_unchecked_ac_items(card, checklist_name: str = "Acceptance Criteria") -
     return unchecked
 
 
+from ..core.bypass_log import log_bypass
+
 def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
-    """Log when safety checks are bypassed."""
-    import json
-    from pathlib import Path
-    from datetime import datetime
-    from ..core.ops import find_paircoder_dir
-
-    try:
-        paircoder_dir = find_paircoder_dir()
-        log_path = paircoder_dir / "history" / "bypass_log.jsonl"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "command": command,
-            "task_id": task_id,
-            "reason": reason,
-        }
-
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # Best effort logging
+    """Log bypass to audit file - delegates to core module."""
+    log_bypass(command=command, target=task_id, reason=reason)
 
 
 def _get_task_id_from_card(card) -> Optional[str]:

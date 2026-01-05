@@ -33,6 +33,7 @@ from .core import register_core_commands
 from .session import session_app, compaction_app
 from .upgrade import upgrade_app
 from .budget import app as budget_app
+from .audit import app as audit_app
 
 __all__ = [
     "preset_app",
@@ -52,4 +53,5 @@ __all__ = [
     "compaction_app",
     "upgrade_app",
     "budget_app",
+    "audit_app",
 ]
