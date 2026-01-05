@@ -52,7 +52,8 @@ SPRINT_COMPLETION_CHECKLIST = [
 @app.command("complete")
 def sprint_complete(
     sprint_id: str = typer.Argument(..., help="Sprint ID to complete (e.g., sprint-17)"),
-    force: bool = typer.Option(False, "--force", "-f", help="Skip checklist confirmation"),
+    skip_checklist: bool = typer.Option(False, "--skip-checklist", help="Skip checklist confirmation (logged)"),
+    reason: str = typer.Option("", "--reason", "-r", help="Reason for skipping checklist (required with --skip-checklist)"),
     plan_id: Optional[str] = typer.Option(None, "--plan", "-p", help="Plan ID (uses active plan if not specified)"),
 ):
     """Complete a sprint with checklist verification.
@@ -67,10 +68,25 @@ def sprint_complete(
         # Complete sprint with checklist
         bpsai-pair sprint complete sprint-17
 
-        # Force complete without checklist
-        bpsai-pair sprint complete sprint-17 --force
+        # Skip checklist (requires reason)
+        bpsai-pair sprint complete sprint-17 --skip-checklist --reason "Hotfix deployment"
     """
     paircoder_dir = find_paircoder_dir()
+
+    # Validate skip_checklist requires reason
+    if skip_checklist:
+        if not reason:
+            console.print("[red]❌ --skip-checklist requires --reason[/red]")
+            console.print("[dim]Example: --skip-checklist --reason 'Hotfix deployment'[/dim]")
+            raise typer.Exit(1)
+
+        from ..core.bypass_log import log_bypass
+        log_bypass(
+            command="sprint complete",
+            target=sprint_id,
+            reason=reason,
+            bypass_type="skip_checklist",
+        )
 
     # Get active plan if not specified
     if not plan_id:
@@ -122,7 +138,7 @@ def sprint_complete(
         console.print()
 
     # Show and verify checklist
-    if not force:
+    if not skip_checklist:
         console.print("[bold]Pre-completion Checklist:[/bold]\n")
 
         all_confirmed = True

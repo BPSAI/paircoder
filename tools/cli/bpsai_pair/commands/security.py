@@ -180,7 +180,7 @@ def pre_commit_hook(
 
 @app.command("install-hook")
 def install_hook(
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing hook"),
+    overwrite: bool = typer.Option(False, "--overwrite", "-o", help="Overwrite existing hook"),
 ):
     """Install pre-commit hook for secret scanning.
 

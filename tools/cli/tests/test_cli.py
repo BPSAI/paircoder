@@ -175,7 +175,7 @@ def test_sprint_complete_help():
     result = runner.invoke(app, ["sprint", "complete", "--help"])
     assert result.exit_code == 0
     assert "Complete a sprint with checklist verification" in result.stdout
-    assert "--force" in result.stdout
+    assert "--skip-checklist" in result.stdout
     assert "--plan" in result.stdout
 
 

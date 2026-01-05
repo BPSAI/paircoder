@@ -222,7 +222,7 @@ def skill_install(
     project: bool = typer.Option(False, "--project", help="Install to project .claude/skills/"),
     personal: bool = typer.Option(False, "--personal", help="Install to ~/.claude/skills/"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Install with different name"),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing skill"),
+    overwrite: bool = typer.Option(False, "--overwrite", "-o", help="Overwrite existing skill"),
 ):
     """Install a skill from URL or local path.
 
@@ -241,7 +241,7 @@ def skill_install(
         bpsai-pair skill install ./my-skill --personal
 
         # Overwrite existing skill
-        bpsai-pair skill install ./my-skill --force
+        bpsai-pair skill install ./my-skill --overwrite
     """
     try:
         # Parse source to show what we're doing
@@ -272,13 +272,13 @@ def skill_install(
             project=project,
             personal=personal,
             name=name,
-            force=force,
+            force=overwrite,
         )
 
         console.print("[cyan]Validating...[/cyan]")
         console.print("  [green]\u2713[/green] Frontmatter valid")
         console.print("  [green]\u2713[/green] Description under 1024 chars")
-        console.print("  [green]\u2713[/green] No conflicts with existing skills" if not force else "  [yellow]\u2713[/yellow] Overwrote existing skill")
+        console.print("  [green]\u2713[/green] No conflicts with existing skills" if not overwrite else "  [yellow]\u2713[/yellow] Overwrote existing skill")
 
         console.print(f"\n[green]\u2705 Installed {result['skill_name']} to {result['installed_to']}/[/green]")
 
@@ -647,7 +647,7 @@ def skill_gaps(
 def skill_generate(
     gap_id: Optional[int] = typer.Argument(None, help="Gap ID to generate from (1-based)"),
     auto_approve: bool = typer.Option(False, "--auto-approve", "-y", help="Save without confirmation"),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing skill"),
+    overwrite: bool = typer.Option(False, "--overwrite", "-o", help="Overwrite existing skill"),
     preview: bool = typer.Option(False, "--preview", "-p", help="Preview without saving"),
 ):
     """Generate a skill from a detected gap.
@@ -670,7 +670,7 @@ def skill_generate(
         bpsai-pair skill generate 1 --auto-approve
 
         # Overwrite existing skill
-        bpsai-pair skill generate 1 --force --auto-approve
+        bpsai-pair skill generate 1 --overwrite --auto-approve
     """
     try:
         project_dir = find_project_root()
@@ -748,7 +748,7 @@ def skill_generate(
         result = save_generated_skill(
             generated,
             skills_dir,
-            force=force,
+            force=overwrite,
             auto_approve=True,
         )
 
