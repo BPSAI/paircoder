@@ -135,7 +135,7 @@ description: A test skill.
             assert "conflict" in str(exc_info.value).lower() or "exists" in str(exc_info.value).lower()
 
     def test_force_overwrites_existing(self):
-        """--force should overwrite existing skill."""
+        """--overwrite should overwrite existing skill."""
         from bpsai_pair.skills.installer import install_from_path
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -396,7 +396,7 @@ description: Test skill for CLI.
             assert (skills_dir / "new-name" / "SKILL.md").exists()
 
     def test_install_with_force_flag(self):
-        """skill install --force should overwrite existing."""
+        """skill install --overwrite should overwrite existing."""
         from typer.testing import CliRunner
         from bpsai_pair.cli import app
 
@@ -431,7 +431,7 @@ description: Old version.
             runner = CliRunner()
             with patch('bpsai_pair.skills.installer.find_project_root', return_value=project_dir):
                 with patch('bpsai_pair.skills.cli_commands.find_project_root', return_value=project_dir):
-                    result = runner.invoke(app, ["skill", "install", str(source_dir), "--project", "--force"])
+                    result = runner.invoke(app, ["skill", "install", str(source_dir), "--project", "--overwrite"])
 
             assert result.exit_code == 0
             content = (skills_dir / "my-skill" / "SKILL.md").read_text()
