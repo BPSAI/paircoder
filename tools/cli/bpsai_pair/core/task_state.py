@@ -291,10 +291,16 @@ def is_state_machine_enabled() -> bool:
     
     Defaults to False until explicitly enabled.
     """
-    from .config import load_config
+    from .config import load_raw_config
+    from .ops import find_paircoder_dir
     
     try:
-        config = load_config()
+        paircoder_dir = find_paircoder_dir()
+        if not paircoder_dir:
+            return False
+        config, _ = load_raw_config(paircoder_dir.parent)
+        if not config:
+            return False
         enforcement = config.get("enforcement", {})
         return enforcement.get("state_machine", False)
     except Exception:
