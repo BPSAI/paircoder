@@ -1098,6 +1098,28 @@ def task_update(
     This ensures acceptance criteria are verified and the card is properly moved.
     Use --local-only --reason "..." to bypass Trello sync (logged for audit).
     """
+    # ENFORCEMENT: Block --local-only bypass when strict_ac_verification is enabled
+    if status and status.lower() == "done" and local_only:
+        import yaml
+        config_path = find_paircoder_dir() / "config.yaml"
+        strict_ac = False
+        if config_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f) or {}
+            strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+
+        if strict_ac:
+            console.print("\n[red]❌ BLOCKED: --local-only is disabled when strict_ac_verification is enabled.[/red]")
+            console.print("")
+            console.print("[yellow]Use the proper Trello workflow:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
+            console.print("")
+            console.print("To find the Trello card ID:")
+            console.print(f"  [cyan]bpsai-pair ttask list[/cyan]")
+            console.print("")
+            console.print("[dim]This ensures acceptance criteria are verified before completion.[/dim]")
+            raise typer.Exit(1)
+
     # ENFORCEMENT: Block status=done if task has linked Trello card (unless --local-only)
     if status and status.lower() == "done" and not local_only:
         # Check for linked Trello card first
