@@ -1083,21 +1083,6 @@ def task_update(
         help="Reason for local-only update (required with --local-only)"
     ),
 ):
-    """Update a task's status.
-
-    Automatically runs hooks (Trello sync, timer, metrics) on status changes.
-    Use --no-hooks to skip hook execution.
-
-    When completing a task (--status done), state.md must be updated first.
-    Use --skip-state-check to bypass this check (logs a warning).
-
-    If a task file was manually edited, use --resync to re-trigger hooks
-    for the current status without changing it.
-
-    For tasks with linked Trello cards, use 'ttask done' instead of '--status done'.
-    This ensures acceptance criteria are verified and the card is properly moved.
-    Use --local-only --reason "..." to bypass Trello sync (logged for audit).
-    """
     # ENFORCEMENT: Block --local-only bypass when strict_ac_verification is enabled
     if status and status.lower() == "done" and local_only:
         import yaml
@@ -1120,9 +1105,30 @@ def task_update(
             console.print("[dim]This ensures acceptance criteria are verified before completion.[/dim]")
             raise typer.Exit(1)
 
-    # ENFORCEMENT: Block status=done if task has linked Trello card (unless --local-only)
+    # ENFORCEMENT: Block --no-hooks when completing tasks in strict mode
+    if status and status.lower() == "done" and no_hooks:
+        import yaml
+        config_path = find_paircoder_dir() / "config.yaml"
+        strict_ac = False
+        if config_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f) or {}
+            strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+
+        if strict_ac:
+            console.print("\n[red]❌ BLOCKED: --no-hooks is disabled when completing tasks in strict mode.[/red]")
+            console.print("")
+            console.print("[yellow]Hooks ensure proper workflow:[/yellow]")
+            console.print("  - Trello card sync")
+            console.print("  - Timer tracking")
+            console.print("  - Metrics recording")
+            console.print("")
+            console.print("[dim]Use the proper Trello workflow instead:[/dim]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
+            raise typer.Exit(1)
+
+    # ENFORCEMENT: Block status=done if task has linked Trello card
     if status and status.lower() == "done" and not local_only:
-        # Check for linked Trello card first
         trello_card_id = _get_linked_trello_card(task_id)
         if trello_card_id:
             console.print(f"\n[red]❌ BLOCKED: Task has linked Trello card {trello_card_id}[/red]")
@@ -1133,7 +1139,7 @@ def task_update(
             console.print("")
             console.print("[dim]The --local-only flag is logged for audit.[/dim]")
             raise typer.Exit(1)
-        # Also block if Trello is enabled even without linked card
+
         elif _is_trello_enabled():
             console.print("\n[red]❌ BLOCKED: This project uses Trello integration.[/red]")
             console.print("")
