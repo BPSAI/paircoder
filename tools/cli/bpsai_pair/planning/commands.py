@@ -1195,6 +1195,30 @@ def task_update(
         console.print("[red]--status is required (or use --resync to re-trigger hooks)[/red]")
         raise typer.Exit(1)
 
+    # ENFORCEMENT: Block --skip-state-check when strict_ac_verification is enabled
+    if status == "done" and skip_state_check:
+            import yaml
+            config_path = find_paircoder_dir() / "config.yaml"
+            strict_ac = False
+            if config_path.exists():
+                with open(config_path) as f:
+                    config = yaml.safe_load(f) or {}
+                strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+
+            if strict_ac:
+                console.print(
+                    "\n[red]❌ BLOCKED: --skip-state-check is disabled when strict_ac_verification is enabled.[/red]")
+                console.print("")
+                console.print("[yellow]You must update state.md before completing tasks:[/yellow]")
+                console.print(f"  1. Edit [cyan].paircoder/context/state.md[/cyan]")
+                console.print(f"  2. Mark [yellow]{task_id}[/yellow] as done in task list")
+                console.print(f"  3. Add session entry under \"What Was Just Done\"")
+                console.print(f"  4. Update \"What's Next\" section")
+                console.print("")
+                console.print("[dim]This ensures all work is properly documented.[/dim]")
+                raise typer.Exit(1)
+
+
     # Check state.md update requirement when completing a task
     if status == "done" and not skip_state_check:
         check_result = _check_state_md_updated(paircoder_dir, task_id)

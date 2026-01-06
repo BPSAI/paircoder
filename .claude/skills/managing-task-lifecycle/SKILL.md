@@ -39,7 +39,8 @@ Before starting work, verify everything is ready:
 
 ```bash
 # Check budget for this task
-bpsai-pair budget check --task <task-id>
+bpsai-pair budget check <task-id>
+# Example : bpsai-pair budget check T28.13
 
 # Verify task exists and get details
 bpsai-pair task show <task-id>
@@ -116,7 +117,7 @@ Use for:
 As you complete each criterion:
 
 ```bash
-bpsai-pair trello check TRELLO-XX "<acceptance criterion text>"
+bpsai-pair ttask check TRELLO-XX "<acceptance criterion text>"
 ```
 
 ---
@@ -266,7 +267,7 @@ Hooks fired:
 ### AC Verification Fails (`--strict` blocks)
 1. Check which items unchecked: `bpsai-pair ttask show TRELLO-XX`
 2. Complete the missing work
-3. Check off items: `bpsai-pair trello check TRELLO-XX "<item>"`
+3. Check off items: `bpsai-pair ttask check TRELLO-XX "<item>"`
 4. Retry completion
 
 ### Force Completion (LAST RESORT)
@@ -305,7 +306,7 @@ Bypasses are logged to `.paircoder/history/bypass_log.jsonl` for audit.
 
 ### Starting Work
 ```bash
-bpsai-pair budget check --task T28.1
+bpsai-pair budget check T28.1
 bpsai-pair task update T28.1 --status in_progress
 cat .paircoder/tasks/*/T28.1.task.md
 ```
@@ -314,7 +315,7 @@ cat .paircoder/tasks/*/T28.1.task.md
 ```bash
 pytest tests/ -x
 bpsai-pair ttask comment TRELLO-XX "Progress update"
-bpsai-pair trello check TRELLO-XX "AC item text"
+bpsai-pair ttask check TRELLO-XX "AC item text"
 ```
 
 ### Completing Work
@@ -342,16 +343,16 @@ bpsai-pair context-sync --last "T28.1: Done" --next "T28.2"
 
 ### Trello Card Commands (`ttask`)
 
-| Action | Command |
-|--------|---------|
-| List Trello cards | `bpsai-pair ttask list` |
-| Show card details | `bpsai-pair ttask show TRELLO-XX` |
-| Start card | `bpsai-pair ttask start TRELLO-XX` |
+| Action | Command                                                                           |
+|--------|-----------------------------------------------------------------------------------|
+| List Trello cards | `bpsai-pair ttask list`                                                           |
+| Show card details | `bpsai-pair ttask show TRELLO-XX`                                                 |
+| Start card | `bpsai-pair ttask start TRELLO-XX`                                                |
 | **Complete card** | `bpsai-pair ttask done TRELLO-XX --strict --summary "..." --list "Deployed/Done"` |
-| Check AC item | `bpsai-pair trello check TRELLO-XX "item text"` |
-| Add comment | `bpsai-pair ttask comment TRELLO-XX "message"` |
-| Block card | `bpsai-pair ttask block TRELLO-XX --reason "why"` |
-| Move card | `bpsai-pair ttask move TRELLO-XX "List Name"` |
+| Check AC item | `bpsai-pair ttask check TRELLO-XX "item text"`                                    |
+| Add comment | `bpsai-pair ttask comment TRELLO-XX "message"`                                    |
+| Block card | `bpsai-pair ttask block TRELLO-XX --reason "why"`                                 |
+| Move card | `bpsai-pair ttask move TRELLO-XX "List Name"`                                     |
 
 ---
 

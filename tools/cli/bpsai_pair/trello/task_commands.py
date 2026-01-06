@@ -132,7 +132,7 @@ def _get_task_id_from_card(card) -> Optional[str]:
     name = card.name if hasattr(card, 'name') else ""
 
     # Try bracketed pattern first (e.g., "[T27.1] Create module")
-    match = re.search(r'\[(T\d+\.\d+|TASK-\d+)\]', name)
+    match = re.search(r'\[(T\d+\.\d+|TASK-\d+)]', name)
     if match:
         return match.group(1)
 
@@ -573,29 +573,36 @@ def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: Deployed/Done)"),
-    auto_check: bool = typer.Option(False, "--auto-check", help="Auto-check all acceptance criteria (use with caution)"),
-    strict: bool = typer.Option(True, "--strict/--no-strict", help="Block if acceptance criteria unchecked (default: strict)"),
-    # --force REMOVED - use --no-strict for explicit opt-out with audit logging
+    auto_check: bool = typer.Option(False, "--auto-check",
+                                    help="Auto-check all acceptance criteria (use with caution)"),
+    strict: bool = typer.Option(True, "--strict/--no-strict",
+                                help="Block if acceptance criteria unchecked (default: strict)"),
 ):
-    """Complete a task (moves to Done list).
+    """Complete a task (moves to Done list)."""
 
-    By default, requires all 'Acceptance Criteria' checklist items to be checked.
-    Use --no-strict to allow completion with unchecked items (logged for audit).
-
-    Also updates the corresponding local task file to 'done' status.
-
-    NOTE: --force flag has been removed. Use --no-strict for explicit opt-out.
-
-    Examples:
-        # Standard completion (requires AC to be checked)
-        bpsai-pair ttask done TRELLO-123 --summary "Implemented feature X"
-
-        # Auto-check AC items (use with caution)
-        bpsai-pair ttask done TRELLO-123 --summary "..." --auto-check
-
-        # Allow completion with unchecked items (logged)
-        bpsai-pair ttask done TRELLO-123 --summary "..." --no-strict
-    """
+    # ENFORCEMENT: Block --no-strict when strict_ac_verification is enabled
+    if not strict:
+        import yaml
+        try:
+            from ..core.ops import find_paircoder_dir
+            config_path = find_paircoder_dir() / "config.yaml"
+            if config_path.exists():
+                with open(config_path) as f:
+                    config = yaml.safe_load(f) or {}
+                strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+                if strict_ac:
+                    console.print(
+                        "\n[red]❌ BLOCKED: --no-strict is disabled when strict_ac_verification is enabled.[/red]")
+                    console.print("")
+                    console.print("[yellow]You must verify acceptance criteria before completion:[/yellow]")
+                    console.print(f"  1. Check items manually on Trello card")
+                    console.print(f"  2. Use: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
+                    console.print(f"  3. Then: [cyan]bpsai-pair ttask done {card_id} --summary \"...\"[/cyan]")
+                    console.print("")
+                    console.print("[dim]This ensures all acceptance criteria are verified before completion.[/dim]")
+                    raise typer.Exit(1)
+        except (ImportError, FileNotFoundError):
+            pass
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
 
@@ -609,37 +616,45 @@ def task_done(
     except Exception:
         pass
 
-    # Handle AC verification based on flags
-    ac_status_msg = ""
-    if strict:
-        # Strict mode (default): block if any AC unchecked
-        unchecked = _get_unchecked_ac_items(card)
-        if unchecked:
-            console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
-            console.print("\n[dim]Unchecked items:[/dim]")
-            for item in unchecked:
-                console.print(f"  ○ {item.get('name', '')}")
-            console.print("\n[dim]Check items manually on Trello, or use --no-strict to bypass[/dim]")
-            raise typer.Exit(1)
-        console.print("[green]✓ All acceptance criteria verified[/green]")
-        ac_status_msg = "All AC items manually verified"
-    elif auto_check:
-        # Auto-check mode: check all AC items then complete
-        checked_count = _auto_check_acceptance_criteria(card, client)
-        if checked_count > 0:
-            console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
-            ac_status_msg = f"Auto-checked {checked_count} AC items"
+        # Handle AC verification based on flags
+        ac_status_msg = ""
+
+        # AUTO-CHECK FIRST (if requested) - before strict verification
+        if auto_check:
+            checked_count = _auto_check_acceptance_criteria(card, client)
+            if checked_count > 0:
+                console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
+                # Refresh card to get updated checklist state
+                try:
+                    card.fetch()
+                except Exception:
+                    pass
+
+        # Now verify (strict mode or after auto-check)
+        if strict:
+            unchecked = _get_unchecked_ac_items(card)
+            if unchecked:
+                console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
+                console.print("\n[dim]Unchecked items:[/dim]")
+                for item in unchecked:
+                    console.print(f"  ○ {item.get('name', '')}")
+                console.print("\n[dim]Options:[/dim]")
+                console.print(f"  1. Check items: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
+                console.print(f"  2. Check on Trello directly")
+                if auto_check:
+                    console.print(f"\n[yellow]Note: --auto-check ran but some items could not be checked.[/yellow]")
+                raise typer.Exit(1)
+            console.print("[green]✓ All acceptance criteria verified[/green]")
+            ac_status_msg = "All AC items verified"
         else:
-            ac_status_msg = "All AC items already complete"
-    else:
-        # --no-strict: skip AC verification but log bypass for audit
-        unchecked = _get_unchecked_ac_items(card)
-        if unchecked:
-            console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
-            _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
-            ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
-        else:
-            ac_status_msg = "AC verification skipped (all items already complete)"
+            # --no-strict: skip verification but log bypass
+            unchecked = _get_unchecked_ac_items(card)
+            if unchecked:
+                console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
+                _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
+                ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
+            else:
+                ac_status_msg = "AC verification skipped (all items already complete)"
 
     # Determine target list
     if list_name is None:
