@@ -467,6 +467,7 @@ bpsai-pair skill generate gap-name
 # Install skill from URL or path
 bpsai-pair skill install https://example.com/skill.tar.gz
 bpsai-pair skill install ./my-skill/
+bpsai-pair skill install ./my-skill/ --overwrite  # Overwrite existing skill
 ```
 
 ---
@@ -912,11 +913,13 @@ bpsai-pair ttask list
 # Show task details
 bpsai-pair ttask show <card-id>
 
-# Start working (moves to In Progress)
+# Start working (moves to In Progress, checks budget)
 bpsai-pair ttask start <card-id>
+bpsai-pair ttask start <card-id> --budget-override  # Override budget warning (logged)
 
-# Complete task (moves to Done)
+# Complete task (moves to Done, strict AC check by default)
 bpsai-pair ttask done <card-id> --summary "Implemented feature X"
+bpsai-pair ttask done <card-id> --summary "Done" --no-strict  # Skip AC check (logged)
 
 # Mark blocked
 bpsai-pair ttask block <card-id> --reason "Waiting for API"
@@ -1232,7 +1235,26 @@ trello:
     in_progress: "In Progress"
     review: "In Review"
     done: "Done"
+
+enforcement:
+  state_machine: false          # Enable formal task state transitions
+  strict_ac_verification: true  # Require AC items checked before completion
+  require_budget_check: true    # Check budget before starting tasks
+  block_no_hooks: true          # Block --no-hooks in strict mode
 ```
+
+### Enforcement Settings
+
+The `enforcement` section controls workflow gates that ensure tasks are completed properly.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `state_machine` | `false` | When enabled, tasks must follow formal state transitions (NOT_STARTED → BUDGET_CHECKED → IN_PROGRESS → AC_VERIFIED → COMPLETED). Use `bpsai-pair state` commands to manage. |
+| `strict_ac_verification` | `true` | Requires all acceptance criteria items to be checked on Trello before completing a task with `ttask done`. Use `--no-strict` to bypass (logged for audit). |
+| `require_budget_check` | `true` | Runs budget estimation before starting tasks. If budget exceeds threshold, warns user. Use `--budget-override` to bypass (logged for audit). |
+| `block_no_hooks` | `true` | Prevents using `--no-hooks` flag when strict mode is enabled. Ensures hooks always run for proper tracking. |
+
+**Bypass Logging**: When enforcement gates are bypassed (using `--no-strict`, `--budget-override`, or `--local-only`), the bypass is logged to `.paircoder/history/bypass_log.jsonl` for audit purposes. Use `bpsai-pair audit bypasses` to review.
 
 ---
 

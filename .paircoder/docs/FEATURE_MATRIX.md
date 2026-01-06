@@ -485,7 +485,24 @@ hooks:
   on_task_block:
     - sync_trello
     - update_state
+
+enforcement:
+  state_machine: false          # Enable formal task state transitions
+  strict_ac_verification: true  # Require AC items checked before completion
+  require_budget_check: true    # Check budget before starting tasks
+  block_no_hooks: true          # Block --no-hooks in strict mode
 ```
+
+### Enforcement Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `state_machine` | `false` | Enable formal state transitions for tasks |
+| `strict_ac_verification` | `true` | Require all AC items checked before completion |
+| `require_budget_check` | `true` | Run budget check before starting tasks |
+| `block_no_hooks` | `true` | Block --no-hooks flag in strict mode |
+
+Bypasses are logged to `.paircoder/history/bypass_log.jsonl`. Use `bpsai-pair audit bypasses` to review.
 
 ## Test Coverage
 

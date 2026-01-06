@@ -16,8 +16,8 @@
 | T28.12 | Update Version Strings Across Docs | P1 | 15 | ✓ done |
 | T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ✓ done |
 | T28.14 | Document Audit and State Commands | P1 | 30 | ✓ done |
-| T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ○ pending |
-| T28.16 | Update Config Documentation | P1 | 15 | ○ pending |
+| T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ✓ done |
+| T28.16 | Update Config Documentation | P1 | 15 | ✓ done |
 | T28.17 | Final Verification and Release Prep | P0 | 20 | ○ pending |
 
 **Total:** 6 tasks, 125 complexity points
@@ -60,7 +60,7 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-Ready to start: T28.15 - Update CLI Reference with Flag Changes
+Ready to start: T28.17 - Final Verification and Release Prep
 
 
 ## Backlog (Deprioritized)
@@ -80,6 +80,44 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.16: Update Config Documentation
+
+Added documentation for the new `enforcement:` configuration section:
+
+**Files Updated:**
+- USER_GUIDE.md - Added enforcement section to config.yaml schema + Enforcement Settings subsection
+- FEATURE_MATRIX.md - Added enforcement section to Configuration with settings table
+- all-cli-commands.md - Added enforcement section to Key Settings
+
+**Settings Documented:**
+- `state_machine` (default: false) - Enable formal task state transitions
+- `strict_ac_verification` (default: true) - Require AC items checked before completion
+- `require_budget_check` (default: true) - Run budget check before starting tasks
+- `block_no_hooks` (default: true) - Block --no-hooks in strict mode
+
+All three files now include the enforcement configuration with defaults and descriptions.
+
+### 2026-01-05 - T28.15: Update CLI Reference with Flag Changes
+
+Updated CLI documentation to reflect renamed flags and new enforcement flags:
+
+**all-cli-commands.md changes:**
+- Updated `skill install` to show `[--overwrite --name --personal]` options
+- Added Sprint Commands section with `sprint list` and `sprint complete` commands
+- Documented `--skip-checklist --reason` flags for sprint complete
+- Updated `ttask start` to show `[--budget-override]` option
+- Updated `ttask done` to show `[--no-strict]` option (strict is default)
+- Updated command count from 127+ to 129+
+
+**USER_GUIDE.md changes:**
+- Added `--overwrite` example for skill install
+- Added `--budget-override` example for ttask start
+- Added `--no-strict` example for ttask done
+
+**Verification:**
+- No remaining `--force` flags in documentation files
+- All new flags documented with examples
 
 ### 2026-01-05 - T28.14: Document Audit and State Commands
 
