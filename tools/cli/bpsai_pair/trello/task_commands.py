@@ -10,6 +10,7 @@ from rich.markdown import Markdown
 
 from .auth import load_token
 from .client import TrelloService
+from .list_resolver import ListResolver
 
 app = typer.Typer(name="ttask", help="Trello task commands")
 console = Console()
@@ -381,16 +382,21 @@ def task_list(
     """List tasks from Trello board."""
     client, config = get_board_client()
 
-    # Get list name mappings from config with sensible defaults
-    # These defaults include common variants to handle spacing differences
-    list_mappings = config.get("trello", {}).get("lists", {
-        "backlog": "Intake/Backlog",
-        "sprint": "Planned/Ready",
-        "in_progress": "In Progress",
-        "review": "Review/Testing",
-        "done": "Deployed/Done",
-        "blocked": "Issues/Tech Debt",
-    })
+    # Use ListResolver to find lists by status
+    resolver = ListResolver(client)
+
+    def get_list_name(status_key: str, fallback: str) -> str:
+        target = resolver.find_list_for_status(status_key)
+        return target["name"] if target else fallback
+
+    list_mappings = {
+        "backlog": get_list_name("backlog", "Intake/Backlog"),
+        "sprint": get_list_name("ready", "Planned/Ready"),
+        "in_progress": get_list_name("in_progress", "In Progress"),
+        "review": get_list_name("review", "Review/Testing"),
+        "done": get_list_name("done", "Deployed/Done"),
+        "blocked": get_list_name("blocked", "Issues/Tech Debt"),
+    }
 
     cards = []
 
@@ -557,7 +563,9 @@ def task_start(
         raise typer.Exit(1)
 
     # Move to In Progress
-    in_progress_list = config.get("trello", {}).get("lists", {}).get("in_progress", "In Progress")
+    resolver = ListResolver(client)
+    target = resolver.find_list_for_status("in_progress")
+    in_progress_list = target["name"] if target else "In Progress"
     client.move_card(card, in_progress_list)
 
     # Log activity
@@ -658,7 +666,9 @@ def task_done(
 
     # Determine target list
     if list_name is None:
-        list_name = config.get("trello", {}).get("lists", {}).get("review", "In Review")
+        resolver = ListResolver(client)
+        target = resolver.find_list_for_status("done")
+        list_name = target["name"] if target else "Deployed/Done"
 
     # Move to target list
     client.move_card(card, list_name)
@@ -704,7 +714,9 @@ def task_block(
         raise typer.Exit(1)
 
     # Move to Blocked
-    blocked_list = config.get("trello", {}).get("lists", {}).get("blocked", "Blocked")
+    resolver = ListResolver(client)
+    target = resolver.find_list_for_status("blocked")
+    blocked_list = target["name"] if target else "Issues/Tech Debt"
     client.move_card(card, blocked_list)
 
     # Log activity
