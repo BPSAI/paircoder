@@ -1133,21 +1133,20 @@ def task_update(
         if trello_card_id:
             console.print(f"\n[red]❌ BLOCKED: Task has linked Trello card {trello_card_id}[/red]")
             console.print("")
-            console.print("[yellow]Use one of:[/yellow]")
-            console.print(f"  1. Complete via Trello: [cyan]bpsai-pair ttask done {trello_card_id} --summary \"...\"[/cyan]")
-            console.print(f"  2. Force local-only:    [cyan]bpsai-pair task update {task_id} --status done --local-only --reason \"...\"[/cyan]")
+            console.print("[yellow]Complete via Trello:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done {trello_card_id} --summary \"...\"[/cyan]")
             console.print("")
-            console.print("[dim]The --local-only flag is logged for audit.[/dim]")
+            console.print("[dim]This ensures acceptance criteria are verified.[/dim]")
             raise typer.Exit(1)
+
 
         elif _is_trello_enabled():
             console.print("\n[red]❌ BLOCKED: This project uses Trello integration.[/red]")
             console.print("")
-            console.print("[yellow]Use one of:[/yellow]")
-            console.print(f"  1. Complete via Trello: [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
-            console.print(f"  2. Force local-only:    [cyan]bpsai-pair task update {task_id} --status done --local-only --reason \"...\"[/cyan]")
+            console.print("[yellow]Complete via Trello:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
             console.print("")
-            console.print("[dim]The --local-only flag is logged for audit.[/dim]")
+            console.print("[dim]Find card ID with: bpsai-pair ttask list[/dim]")
             raise typer.Exit(1)
 
     # If using --local-only, require reason and log bypass
