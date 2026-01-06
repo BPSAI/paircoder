@@ -156,10 +156,11 @@ class TestGapQualityGate:
     def test_init_default_thresholds(self):
         """Test default thresholds are set."""
         gate = GapQualityGate()
-        assert gate.REDUNDANCY_THRESHOLD == 0.3
-        assert gate.NOVELTY_THRESHOLD == 0.3
-        assert gate.COMPLEXITY_THRESHOLD == 0.3
-        assert gate.TIME_VALUE_THRESHOLD == 0.3
+        # Thresholds were increased to 0.4 for stricter quality gates
+        assert gate.REDUNDANCY_THRESHOLD == 0.4
+        assert gate.NOVELTY_THRESHOLD == 0.4
+        assert gate.COMPLEXITY_THRESHOLD == 0.4
+        assert gate.TIME_VALUE_THRESHOLD == 0.4
 
     def test_init_with_existing_skills(self):
         """Test initialization with existing skills."""

@@ -5,11 +5,12 @@ from typer.testing import CliRunner
 
 
 @pytest.fixture
-def mock_board_client():
+def mock_board_client(tmp_path):
     """Mock the get_board_client function and related dependencies.
 
     Also mocks _log_bypass to prevent file system side effects (creating
-    .paircoder/history/ in the wrong location).
+    .paircoder/history/ in the wrong location) and find_paircoder_dir to
+    return a temp directory without enforcement settings.
     """
     mock_client = MagicMock()
     mock_config = {
@@ -21,8 +22,15 @@ def mock_board_client():
         }
     }
 
+    # Create empty config to avoid enforcement blocking --no-strict
+    paircoder_dir = tmp_path / ".paircoder"
+    paircoder_dir.mkdir()
+    (paircoder_dir / "config.yaml").write_text("version: '2.9.0'\n")
+
+    # Mock find_paircoder_dir at its source location (core.ops), not the import location
     with patch('bpsai_pair.trello.task_commands.get_board_client') as mock_get, \
-         patch('bpsai_pair.trello.task_commands._log_bypass'):
+         patch('bpsai_pair.trello.task_commands._log_bypass'), \
+         patch('bpsai_pair.core.ops.find_paircoder_dir', return_value=paircoder_dir):
         mock_get.return_value = (mock_client, mock_config)
         yield mock_client, mock_config
 

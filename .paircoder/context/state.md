@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-01-05
+> Last updated: 2026-01-05 (Sprint 28 Complete)
 
 ## Active Plan
 
 **Plan:** plan-2026-01-sprint-28-docs
 **Sprint:** 28 - Documentation & Release
-**Status:** In Progress
+**Status:** Complete
 **Target Release:** v2.9.0
 
 ## Current Sprint (Sprint 28 - v2.9.0 Documentation)
@@ -18,7 +18,7 @@
 | T28.14 | Document Audit and State Commands | P1 | 30 | ✓ done |
 | T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ✓ done |
 | T28.16 | Update Config Documentation | P1 | 15 | ✓ done |
-| T28.17 | Final Verification and Release Prep | P0 | 20 | ○ pending |
+| T28.17 | Final Verification and Release Prep | P0 | 20 | ✓ done |
 
 **Total:** 6 tasks, 125 complexity points
 
@@ -56,11 +56,16 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 | 25.6 | Emergent Skill Discovery | v2.8.3 | Complete |
 | 27 | Stabilization | v2.8.4 | Complete |
 | 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
-| 28 | v2.9.0 Documentation & Release | v2.9.0 | In Progress |
+| 28 | v2.9.0 Documentation & Release | v2.9.0 | Complete |
 
 ## What's Next
 
-Ready to start: T28.17 - Final Verification and Release Prep
+Sprint 28 complete! Ready for v2.9.0 release.
+
+Next steps:
+1. Merge to main
+2. Tag v2.9.0
+3. Begin Sprint 26: EPIC-004 UX Overhaul
 
 
 ## Backlog (Deprioritized)
@@ -80,6 +85,28 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.17: Final Verification and Release Prep
+
+Completed final verification for v2.9.0 release:
+
+**Verifications Passed:**
+1. ✓ No 2.8.x version strings in updated docs (only historical references in FEATURE_MATRIX.md)
+2. ✓ All 2149 tests passing (fixed 6 pre-existing test failures)
+3. ✓ `bpsai-pair --version` shows 2.9.0
+4. ✓ `audit` and `state` commands work correctly
+5. ✓ Bypass log contains sprint activity (2026-01-05, 2026-01-06 entries)
+6. ✓ State machine tracks task transitions
+
+**Test Fixes Applied:**
+- Updated `test_skill_gates.py` threshold assertions (0.3 → 0.4)
+- Updated `test_template.py` for lowercase `skill_triggers:`
+- Updated `test_skill_gap_detection.py` for stricter pattern detection
+- Fixed `test_ttask_done_ac_verification.py` to mock `find_paircoder_dir`
+
+**Sprint 28 Result:** 6/6 tasks completed (125 complexity points) ✓
+
+Ready for merge to main and v2.9.0 tag.
 
 ### 2026-01-05 - T28.16: Update Config Documentation
 

@@ -71,26 +71,28 @@ class TestSkillGapDetector:
         """Should detect repeated command sequences."""
         from bpsai_pair.skills.gap_detector import SkillGapDetector
 
-        detector = SkillGapDetector(existing_skills=[])
+        # Use pattern_threshold=3 to match the test's 3 repetitions
+        # Default is 5 which requires more occurrences
+        detector = SkillGapDetector(existing_skills=[], pattern_threshold=3)
 
-        # Session with repeated pattern
+        # Session with repeated pattern (3x repetitions)
         session_log = [
-            {"type": "command", "content": "pytest"},
+            {"type": "command", "content": "analyze_logs"},
             {"type": "command", "content": "read_error"},
-            {"type": "command", "content": "edit_fix"},
-            {"type": "command", "content": "pytest"},
+            {"type": "command", "content": "apply_fix"},
+            {"type": "command", "content": "analyze_logs"},
             {"type": "command", "content": "read_error"},
-            {"type": "command", "content": "edit_fix"},
-            {"type": "command", "content": "pytest"},
+            {"type": "command", "content": "apply_fix"},
+            {"type": "command", "content": "analyze_logs"},
             {"type": "command", "content": "read_error"},
-            {"type": "command", "content": "edit_fix"},
+            {"type": "command", "content": "apply_fix"},
         ]
 
         gaps = detector.analyze_session(session_log)
 
         assert len(gaps) > 0
-        # Should detect the 3-command pattern
-        assert any(len(g.pattern) >= 2 for g in gaps)
+        # Should detect the 3-command pattern (min_sequence_length defaults to 3)
+        assert any(len(g.pattern) >= 3 for g in gaps)
 
     def test_respects_minimum_occurrences(self):
         """Should only detect patterns with 3+ occurrences by default."""

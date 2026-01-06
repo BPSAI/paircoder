@@ -149,7 +149,7 @@ class TestCapabilitiesYaml:
         assert "context_files:" in content
         assert "directories:" in content
         assert "capabilities:" in content
-        assert "Skill_triggers:" in content  # v2.8 uses skills instead of flows
+        assert "skill_triggers:" in content  # v2.8 uses skills instead of flows
         assert "roles:" in content
         assert "notes:" in content
 
