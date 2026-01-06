@@ -5,6 +5,69 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.9.0] - 2025-01-05 (Sprint 28: Enforcement Gates)
+
+### Added
+
+#### Enforcement System
+- **Task State Machine** (T28.10) — Formal state transitions for task lifecycle
+  - States: NOT_STARTED → BUDGET_CHECKED → IN_PROGRESS → AC_VERIFIED → COMPLETED
+  - `bpsai-pair state show/list/history/reset/advance` commands
+  - Configurable via `enforcement.state_machine` in config.yaml
+
+- **Bypass Audit Logging** (T28.6) — All enforcement bypasses logged
+  - `bpsai-pair audit bypasses` — View bypass history
+  - `bpsai-pair audit summary` — Breakdown by type/command
+  - Logs stored in `.paircoder/history/bypass_log.jsonl`
+
+- **Model Routing Config** (T28.11) — Routing configuration loader
+  - `RoutingConfig` class for complexity-based model selection
+  - `EnforcementConfig` for enforcement settings
+  - Supports task type overrides
+
+- **Preconditions Module** (T28.9) — Reusable precondition checks
+  - `check_paircoder_project()`, `check_trello_connected()`
+  - `check_task_exists()`, `check_task_status()`
+  - `check_git_clean()`, `check_has_active_plan()`
+
+#### New CLI Commands
+- `audit bypasses [--since DAYS]` — View enforcement bypass history
+- `audit summary [--since DAYS]` — Bypass breakdown by type
+- `state show <task>` — Show task state and valid transitions
+- `state list` — List all tracked task states
+- `state history <task>` — View state transition history
+- `state reset <task>` — Reset task to NOT_STARTED
+- `state advance <task> <state> --reason` — Manually advance state
+
+### Changed
+
+#### Flag Renames (Breaking)
+- `skill export --force` → `skill export --overwrite`
+- `skill install --force` → `skill install --overwrite`
+- `security install-hook --force` → `security install-hook --overwrite`
+- `sprint complete --force` → `sprint complete --skip-checklist --reason "..."`
+
+#### Enforcement Defaults
+- `ttask done` now verifies AC by default (use `--no-strict` to bypass)
+- `ttask start` checks budget by default (use `--budget-override` to bypass)
+- `task update --status done` blocked for Trello tasks (use `--local-only --reason`)
+
+#### Configuration
+- New `enforcement:` section in config.yaml
+  - `state_machine: true` — Enable task state machine
+  - `strict_ac_verification: true` — Require AC check on completion
+  - `require_budget_check: true` — Check budget before task start
+
+### Fixed
+- `is_state_machine_enabled()` now correctly loads config from project root
+- UTC deprecation warnings resolved (datetime.utcnow → datetime.now(UTC))
+
+### Tests
+- 76 new tests for enforcement modules
+- Total test count: 2145+ (up from 2100+)
+
+---
+
 ## [v2.8.4] - 2025-12-30 (Sprint 27: Stabilization)
 
 ### Fixed

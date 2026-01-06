@@ -14,7 +14,7 @@
 | ID | Title | Priority | Complexity | Status |
 |----|-------|----------|------------|--------|
 | T28.12 | Update Version Strings Across Docs | P1 | 15 | ✓ done |
-| T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ○ pending |
+| T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ✓ done |
 | T28.14 | Document Audit and State Commands | P1 | 30 | ○ pending |
 | T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ○ pending |
 | T28.16 | Update Config Documentation | P1 | 15 | ○ pending |
@@ -60,7 +60,7 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-Ready to start: T28.13 - Add CHANGELOG v2.9.0 Entry
+Ready to start: T28.14 - Document Audit and State Commands
 
 
 ## Backlog (Deprioritized)
@@ -80,6 +80,17 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.13: Add CHANGELOG v2.9.0 Entry
+
+Added comprehensive changelog entry documenting all Sprint 28 changes:
+- **Enforcement System**: Task state machine, bypass audit logging, model routing, preconditions
+- **New CLI Commands**: `audit bypasses/summary`, `state show/list/history/reset/advance`
+- **Breaking Changes**: `--force` → `--overwrite` flag renames across skill/security commands
+- **Enforcement Defaults**: AC verification, budget checks, Trello task restrictions
+- **Test Updates**: 76 new tests, 2145+ total (up from 2100+)
+
+All acceptance criteria verified.
 
 ### 2026-01-05 - T28.12: Update Version Strings
 
