@@ -1,11 +1,19 @@
 ---
 name: managing-task-lifecycle
-description: Use when starting, pausing, completing, or transitioning task status in the development workflow.
+description: Manages task lifecycle transitions including starting, completing, and blocking tasks with enforcement gates and Trello synchronization.
 ---
 
-# PairCoder Task Lifecycle
+# Task Lifecycle Management
 
-## Decision Tree: Which Command to Use?
+## When to Use
+
+- Starting work on a task
+- Completing a task with verification
+- Blocking a task with reason
+- Transitioning task status
+- Progress updates during work
+
+## Decision Tree: Which Command?
 
 ```
 Is Trello connected? (check: bpsai-pair trello status)
@@ -21,24 +29,206 @@ Is Trello connected? (check: bpsai-pair trello status)
     └── Block:    bpsai-pair task update TASK-XXX --status blocked
 ```
 
-**Rule of thumb:** If you see TRELLO-XX IDs, use `ttask`. If you only have TASK-XXX IDs, use `task update`.
+---
 
-## CRITICAL: Always Use CLI Commands
+## Starting a Task (Driver Role)
 
-Task state changes MUST go through the CLI to trigger hooks (Trello sync, timers, state updates).
+### Pre-Flight Checks
 
-**Never** just edit task files or say "marking as done" - run the command.
+Before starting work, verify everything is ready:
 
-## Automatic Hooks
+```bash
+# Check budget for this task
+bpsai-pair budget check --task <task-id>
 
-When you change task status via CLI, these hooks fire automatically:
+# Verify task exists and get details
+bpsai-pair task show <task-id>
 
-### On `task update --status in_progress`:
+# Check for blockers (dependencies)
+bpsai-pair task list --status blocked
+```
+
+**Budget Warning**: If budget check warns, inform user of token estimate and ask to proceed.
+
+**Task Not Found**: Check if it's a Trello ID (TRELLO-XXX) vs local ID (T28.1).
+
+### Start the Task
+
+```bash
+# Start locally (triggers hooks)
+bpsai-pair task update <task-id> --status in_progress
+
+# If Trello card exists, start there too
+bpsai-pair ttask start TRELLO-XX
+```
+
+### Read Task Requirements
+
+```bash
+cat .paircoder/tasks/*/<task-id>.task.md
+# or
+bpsai-pair task show <task-id>
+```
+
+Identify ALL acceptance criteria - these MUST be completed before marking done.
+
+### Automatic Hooks on Start
+
+When you start via CLI, these fire automatically:
 - `start_timer` - Begins time tracking
 - `sync_trello` - Moves card to "In Progress"
 - `update_state` - Updates state.md current focus
+- `check_token_budget` - Warns if task exceeds budget
 
-### On `task update --status done`:
+---
+
+## During Work
+
+### Follow TDD Approach (when applicable)
+
+1. **Red**: Write failing test for the requirement
+2. **Green**: Write minimal code to pass
+3. **Refactor**: Clean up while keeping tests green
+
+```bash
+# Run tests frequently
+pytest tests/ -x --tb=short
+
+# Or for specific test file
+pytest tests/test_<module>.py -v
+```
+
+### Track Progress
+
+Add progress comments without changing status:
+
+```bash
+bpsai-pair ttask comment TRELLO-XX "Completed API endpoints, starting tests"
+```
+
+Use for:
+- Milestone updates
+- Noting decisions
+- Progress visibility for team
+
+### Check Off Acceptance Criteria
+
+As you complete each criterion:
+
+```bash
+bpsai-pair trello check TRELLO-XX "<acceptance criterion text>"
+```
+
+---
+
+## Pre-Completion Verification (ENFORCEMENT GATE)
+
+**CRITICAL**: Before marking task complete, ALL gates must pass.
+
+### Run Tests
+
+```bash
+# Full test suite must pass
+pytest tests/ --tb=short
+
+# Check coverage if required
+pytest tests/ --cov=bpsai_pair --cov-report=term-missing
+```
+
+### Verify Acceptance Criteria
+
+```bash
+# Check what's still unchecked on Trello
+bpsai-pair ttask show TRELLO-XX
+```
+
+If ANY acceptance criteria are unchecked, complete them before proceeding.
+
+### Self-Review Checklist
+
+Before completing, verify:
+- [ ] All acceptance criteria addressed
+- [ ] Tests pass
+- [ ] No obvious bugs or TODOs left
+- [ ] Code follows project conventions
+
+---
+
+## Completing a Task
+
+### For Trello Projects (Recommended)
+
+Use `ttask done` with `--strict` flag (enforcement gate):
+
+```bash
+bpsai-pair ttask done TRELLO-XX --strict --summary "What was accomplished" --list "Deployed/Done"
+```
+
+This single command will:
+- ✓ Verify ALL acceptance criteria are checked (strict mode)
+- ✓ Move Trello card to "Deployed/Done" list
+- ✓ Add completion summary to card
+- ✓ Update local task file status
+- ✓ Trigger all completion hooks
+
+**If `--strict` fails**: You have unchecked acceptance criteria. Go back and complete them.
+
+**NEVER use `--force`** unless explicitly instructed by user. Forced completions are logged to `.paircoder/history/bypass_log.jsonl`.
+
+### For Non-Trello Projects
+
+```bash
+bpsai-pair task update <task-id> --status done
+```
+
+### Common Mistakes
+
+| Mistake | Why Wrong | Correct |
+|---------|-----------|---------|
+| `task update` only on Trello projects | Doesn't check AC | Use `ttask done` |
+| Both commands on Trello projects | Duplication | Just `ttask done` |
+| `ttask` on non-Trello projects | Won't work | Use `task update` |
+| Skipping `--strict` | No enforcement | Always use `--strict` |
+
+---
+
+## Post-Completion (NON-NEGOTIABLE)
+
+### Update State
+
+**You MUST update state.md after completing any task.**
+
+```bash
+bpsai-pair context-sync \
+    --last "<task-id>: <brief description of what was accomplished>" \
+    --next "<next task ID or 'Ready for next task'>"
+```
+
+Or manually edit `.paircoder/context/state.md`:
+- Add entry under "What Was Just Done"
+- Update "What's Next"
+- Mark task as done in any task lists
+
+### Report Completion
+
+```
+✅ **Task Complete**: <task-id>
+
+**Summary**: <what was accomplished>
+**Time**: <actual time if tracked>
+**Tests**: All passing
+**Acceptance Criteria**: All verified ✓
+
+**Files Changed**:
+- path/to/file1.py
+- path/to/file2.py
+
+**Next Task**: <next task ID> or "Sprint complete!"
+```
+
+### Automatic Hooks on Complete
+
+These fire automatically:
 - `stop_timer` - Stops timer, records duration
 - `record_metrics` - Records token usage and costs
 - `record_velocity` - Tracks sprint velocity
@@ -46,79 +236,99 @@ When you change task status via CLI, these hooks fire automatically:
 - `update_state` - Updates state.md
 - `check_unblocked` - Identifies newly unblocked tasks
 
-### On `task update --status blocked`:
+---
+
+## Blocking a Task
+
+When a task cannot proceed:
+
+```bash
+# With Trello
+bpsai-pair ttask block TRELLO-XX --reason "Waiting for API documentation"
+
+# Without Trello
+bpsai-pair task update <task-id> --status blocked
+```
+
+Hooks fired:
 - `sync_trello` - Moves card to "Issues/Tech Debt"
 - `update_state` - Updates state.md
 
-**You don't need to manually update Trello, start/stop timers, or refresh state.md - hooks handle it.**
+---
 
-## Starting a Task
+## Error Recovery
 
+### Tests Fail During Completion
+1. Fix the failing tests
+2. Re-run verification
+3. Then complete
+
+### AC Verification Fails (`--strict` blocks)
+1. Check which items unchecked: `bpsai-pair ttask show TRELLO-XX`
+2. Complete the missing work
+3. Check off items: `bpsai-pair trello check TRELLO-XX "<item>"`
+4. Retry completion
+
+### Force Completion (LAST RESORT)
 ```bash
-bpsai-pair task update TASK-XXX --status in_progress
+# This logs a bypass - only with explicit user approval
+bpsai-pair ttask done TRELLO-XX --force --summary "<summary>"
 ```
 
-This will:
-- Update task file status
-- Move Trello card to "In Progress" list
-- Start timer (when implemented)
-- Update state.md current focus
+Bypasses are logged to `.paircoder/history/bypass_log.jsonl` for audit.
 
-## During Work (Progress Updates)
+---
 
-```bash
-bpsai-pair ttask comment TASK-XXX "Completed API endpoints, starting tests"
-```
+## Task ID Formats
 
-This adds a comment to the Trello card without changing status. Use for:
-- Milestone updates
-- Noting decisions
-- Progress visibility for team
+| Format | Example | Use For |
+|--------|---------|---------|
+| Sprint task | T28.1 | `bpsai-pair task` commands |
+| Legacy | TASK-150 | `bpsai-pair task` commands |
+| Trello | TRELLO-abc123 | `bpsai-pair ttask` commands |
 
-## Completing a Task
+---
 
-### For Trello Projects (Recommended)
+## Task Status Values
 
-Use `ttask done` - it handles everything in one command:
+| Status | Meaning | Trello List |
+|--------|---------|-------------|
+| `pending` | Not started | Backlog / Planned |
+| `in_progress` | Currently working | In Progress |
+| `blocked` | Waiting on something | Issues / Blocked |
+| `review` | Ready for review | Review |
+| `done` | Completed | Deployed / Done |
 
-```bash
-bpsai-pair ttask done TRELLO-XX --summary "What was accomplished" --list "Deployed/Done"
-```
-
-This single command will:
-- ✓ Move Trello card to "Deployed/Done" list
-- ✓ Auto-check ALL acceptance criteria items
-- ✓ Add completion summary to card
-- ✓ Update local task file status
-- ✓ Trigger all completion hooks (timer, metrics, state.md)
-
-**You do NOT need to also run `task update --status done`** - `ttask done` handles it.
-
-### For Non-Trello Projects
-
-Use `task update`:
-
-```bash
-bpsai-pair task update TASK-XXX --status done
-```
-
-This will:
-- Update task file status
-- Trigger completion hooks (timer, metrics, state.md)
-
-### Common Mistakes
-
-| Mistake | Why It's Wrong | Correct Approach |
-|---------|---------------|------------------|
-| Using only `task update` on Trello projects | Doesn't check AC on Trello card | Use `ttask done` instead |
-| Using both commands on Trello projects | Unnecessary duplication | Just use `ttask done` |
-| Using `ttask` on non-Trello projects | Commands won't work | Use `task update` |
+---
 
 ## Quick Reference
 
-### Local Task Commands (`task`)
+### Starting Work
+```bash
+bpsai-pair budget check --task T28.1
+bpsai-pair task update T28.1 --status in_progress
+cat .paircoder/tasks/*/T28.1.task.md
+```
 
-Use these for status changes - they trigger all hooks.
+### During Work
+```bash
+pytest tests/ -x
+bpsai-pair ttask comment TRELLO-XX "Progress update"
+bpsai-pair trello check TRELLO-XX "AC item text"
+```
+
+### Completing Work
+```bash
+pytest tests/
+bpsai-pair ttask done TRELLO-XX --strict --summary "..." --list "Deployed/Done"
+bpsai-pair context-sync --last "T28.1: Done" --next "T28.2"
+```
+
+---
+
+## CLI Commands Reference
+
+### Local Task Commands (`task`)
 
 | Action | Command |
 |--------|---------|
@@ -132,112 +342,23 @@ Use these for status changes - they trigger all hooks.
 
 ### Trello Card Commands (`ttask`)
 
-Use these for direct Trello operations.
-
 | Action | Command |
 |--------|---------|
 | List Trello cards | `bpsai-pair ttask list` |
 | Show card details | `bpsai-pair ttask show TRELLO-XX` |
 | Start card | `bpsai-pair ttask start TRELLO-XX` |
-| **Complete card** | `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` |
-| Check acceptance item | `bpsai-pair ttask check TRELLO-XX "item text"` |
-| Add progress comment | `bpsai-pair ttask comment TRELLO-XX "message"` |
+| **Complete card** | `bpsai-pair ttask done TRELLO-XX --strict --summary "..." --list "Deployed/Done"` |
+| Check AC item | `bpsai-pair trello check TRELLO-XX "item text"` |
+| Add comment | `bpsai-pair ttask comment TRELLO-XX "message"` |
 | Block card | `bpsai-pair ttask block TRELLO-XX --reason "why"` |
-| Move card to list | `bpsai-pair ttask move TRELLO-XX "List Name"` |
+| Move card | `bpsai-pair ttask move TRELLO-XX "List Name"` |
 
-### When to Use `task` vs `ttask`
+---
 
-**For Trello-connected projects (preferred):**
+## Enforcement Reminders
 
-| Scenario | Command |
-|----------|---------|
-| Starting a task | `ttask start TRELLO-XX` |
-| Progress updates | `ttask comment TRELLO-XX "message"` |
-| Completing a task | `ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` |
-| Blocking a task | `ttask block TRELLO-XX --reason "..."` |
-
-**For non-Trello projects:**
-
-| Scenario | Command |
-|----------|---------|
-| Starting a task | `task update TASK-XXX --status in_progress` |
-| Completing a task | `task update TASK-XXX --status done` |
-| Blocking a task | `task update TASK-XXX --status blocked` |
-
-**Key insight:** `ttask` commands handle both Trello AND local state. You don't need to run `task update` after `ttask done` - it handles everything.
-
-## Task Status Values
-
-| Status | Meaning | Trello List |
-|--------|---------|-------------|
-| `pending` | Not started | Backlog / Planned |
-| `in_progress` | Currently working | In Progress |
-| `blocked` | Waiting on something | Issues / Blocked |
-| `review` | Ready for review | Review |
-| `done` | Completed | Deployed / Done |
-
-## Workflow Checklist
-
-### When Starting a Task
-1. Run: `bpsai-pair task update TASK-XXX --status in_progress`
-2. Verify Trello card moved
-3. Read the task file for implementation plan
-4. Begin work
-
-### During Work
-1. Add progress comments: `bpsai-pair ttask comment TASK-XXX "status update"`
-2. Commit frequently with task ID in message
-
-### When Completing a Task
-
-**For Trello projects:**
-1. Ensure tests pass: `pytest -v`
-2. Find card ID: `bpsai-pair ttask list`
-3. Complete: `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
-4. Update state.md with what was done
-5. Commit changes with task ID in message
-
-**For non-Trello projects:**
-1. Ensure tests pass: `pytest -v`
-2. Complete: `bpsai-pair task update TASK-XXX --status done`
-3. Update state.md with what was done
-4. Commit changes with task ID in message
-
-## Validation Scripts
-
-Use these scripts to validate before completion:
-
-### Validate Task File Format
-
-```bash
-python .claude/skills/managing-task-lifecycle/scripts/validate_task_status.py TASK-XXX
-```
-
-Checks: frontmatter, required fields, valid status, acceptance criteria section.
-
-### Check Completion Readiness
-
-```bash
-python .claude/skills/managing-task-lifecycle/scripts/check_completion.py TASK-XXX
-```
-
-Runs: task file validation, tests, linting, git status.
-
-**Validation loop:** Run → fix issues → re-run until all checks pass.
-
-## Trello Sync Commands
-
-```bash
-# Check Trello connection status
-bpsai-pair trello status
-
-# Sync plan to Trello (creates/updates cards)
-bpsai-pair plan sync-trello PLAN-ID
-
-# Force refresh from Trello
-bpsai-pair trello refresh
-```
-
-## Full CLI Reference
-
-See [reference/all-cli-commands.md](reference/all-cli-commands.md) for complete command documentation.
+- **ALWAYS** use `--strict` for `ttask done` (enforcement gate)
+- **NEVER** mark task complete without updating state.md
+- **NEVER** use `--force` without explicit user approval
+- Forced bypasses are logged for audit
+- Checkpoints created automatically on task start (if hooks enabled)
