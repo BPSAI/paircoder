@@ -1391,7 +1391,6 @@ def _check_state_md_updated(paircoder_dir: Path, task_id: str) -> dict:
 
     if timer_cache_path.exists():
         try:
-            import json
             with open(timer_cache_path) as f:
                 cache_data = json.load(f)
 

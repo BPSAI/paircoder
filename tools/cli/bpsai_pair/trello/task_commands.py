@@ -616,45 +616,45 @@ def task_done(
     except Exception:
         pass
 
-        # Handle AC verification based on flags
-        ac_status_msg = ""
+    # Handle AC verification based on flags
+    ac_status_msg = ""
 
-        # AUTO-CHECK FIRST (if requested) - before strict verification
-        if auto_check:
-            checked_count = _auto_check_acceptance_criteria(card, client)
-            if checked_count > 0:
-                console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
-                # Refresh card to get updated checklist state
-                try:
-                    card.fetch()
-                except Exception:
-                    pass
+    # AUTO-CHECK FIRST (if requested) - before strict verification
+    if auto_check:
+        checked_count = _auto_check_acceptance_criteria(card, client)
+        if checked_count > 0:
+            console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
+            # Refresh card to get updated checklist state
+            try:
+                card.fetch()
+            except Exception:
+                pass
 
-        # Now verify (strict mode or after auto-check)
-        if strict:
-            unchecked = _get_unchecked_ac_items(card)
-            if unchecked:
-                console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
-                console.print("\n[dim]Unchecked items:[/dim]")
-                for item in unchecked:
-                    console.print(f"  ○ {item.get('name', '')}")
-                console.print("\n[dim]Options:[/dim]")
-                console.print(f"  1. Check items: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
-                console.print(f"  2. Check on Trello directly")
-                if auto_check:
-                    console.print(f"\n[yellow]Note: --auto-check ran but some items could not be checked.[/yellow]")
-                raise typer.Exit(1)
-            console.print("[green]✓ All acceptance criteria verified[/green]")
-            ac_status_msg = "All AC items verified"
+    # Now verify (strict mode or after auto-check)
+    if strict:
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
+            console.print("\n[dim]Unchecked items:[/dim]")
+            for item in unchecked:
+                console.print(f"  ○ {item.get('name', '')}")
+            console.print("\n[dim]Options:[/dim]")
+            console.print(f"  1. Check items: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
+            console.print(f"  2. Check on Trello directly")
+            if auto_check:
+                console.print(f"\n[yellow]Note: --auto-check ran but some items could not be checked.[/yellow]")
+            raise typer.Exit(1)
+        console.print("[green]✓ All acceptance criteria verified[/green]")
+        ac_status_msg = "All AC items verified"
+    else:
+        # --no-strict: skip verification but log bypass
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
+            _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
+            ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
         else:
-            # --no-strict: skip verification but log bypass
-            unchecked = _get_unchecked_ac_items(card)
-            if unchecked:
-                console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
-                _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
-                ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
-            else:
-                ac_status_msg = "AC verification skipped (all items already complete)"
+            ac_status_msg = "AC verification skipped (all items already complete)"
 
     # Determine target list
     if list_name is None:
