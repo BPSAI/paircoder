@@ -28,8 +28,9 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from .commands.audit import app as audit_app
+from .commands.state import app as state_app
 
-# Try relative imports first, fall back to absolute
 try:
     from . import __version__
     from .planning.commands import (
@@ -100,6 +101,7 @@ app.add_typer(migrate_app, name="migrate")
 app.add_typer(skill_app, name="skill")
 app.add_typer(subagent_app, name="subagent")
 app.add_typer(gaps_app, name="gaps")
+app.add_typer(audit_app, name="audit")
 
 # Extracted command sub-apps (Sprint 22)
 app.add_typer(flow_app, name="flow")
@@ -116,6 +118,7 @@ app.add_typer(session_app, name="session")
 app.add_typer(compaction_app, name="compaction")
 app.add_typer(upgrade_app, name="upgrade")
 app.add_typer(budget_app, name="budget")
+app.add_typer(state_app, name="state")
 
 # Integration sub-apps (optional - may not be installed)
 try:

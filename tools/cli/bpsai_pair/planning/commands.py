@@ -21,7 +21,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .models import Plan, Task, TaskStatus, PlanStatus, PlanType, Sprint
-from .parser import PlanParser, TaskParser
+from .parser import PlanParser, TaskParser, parse_frontmatter
 from .state import StateManager
 from .token_estimator import PlanTokenEstimator, DEFAULT_THRESHOLD
 
@@ -1074,50 +1074,88 @@ def task_update(
         False, "--resync",
         help="Re-trigger hooks for current status (use after manual file edits)"
     ),
-    force: bool = typer.Option(
-        False, "--force", "-f",
-        help="Force update, bypass Trello enforcement (not recommended)"
+    local_only: bool = typer.Option(
+        False, "--local-only",
+        help="Update local file only, skip Trello sync check (requires --reason)"
+    ),
+    reason: str = typer.Option(
+        "", "--reason",
+        help="Reason for local-only update (required with --local-only)"
     ),
 ):
-    """Update a task's status.
+    # ENFORCEMENT: Block --local-only bypass when strict_ac_verification is enabled
+    if status and status.lower() == "done" and local_only:
+        import yaml
+        config_path = find_paircoder_dir() / "config.yaml"
+        strict_ac = False
+        if config_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f) or {}
+            strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
 
-    Automatically runs hooks (Trello sync, timer, metrics) on status changes.
-    Use --no-hooks to skip hook execution.
+        if strict_ac:
+            console.print("\n[red]❌ BLOCKED: --local-only is disabled when strict_ac_verification is enabled.[/red]")
+            console.print("")
+            console.print("[yellow]Use the proper Trello workflow:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
+            console.print("")
+            console.print("To find the Trello card ID:")
+            console.print(f"  [cyan]bpsai-pair ttask list[/cyan]")
+            console.print("")
+            console.print("[dim]This ensures acceptance criteria are verified before completion.[/dim]")
+            raise typer.Exit(1)
 
-    When completing a task (--status done), state.md must be updated first.
-    Use --skip-state-check to bypass this check (logs a warning).
+    # ENFORCEMENT: Block --no-hooks when completing tasks in strict mode
+    if status and status.lower() == "done" and no_hooks:
+        import yaml
+        config_path = find_paircoder_dir() / "config.yaml"
+        strict_ac = False
+        if config_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f) or {}
+            strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
 
-    If a task file was manually edited, use --resync to re-trigger hooks
-    for the current status without changing it.
+        if strict_ac:
+            console.print("\n[red]❌ BLOCKED: --no-hooks is disabled when completing tasks in strict mode.[/red]")
+            console.print("")
+            console.print("[yellow]Hooks ensure proper workflow:[/yellow]")
+            console.print("  - Trello card sync")
+            console.print("  - Timer tracking")
+            console.print("  - Metrics recording")
+            console.print("")
+            console.print("[dim]Use the proper Trello workflow instead:[/dim]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
+            raise typer.Exit(1)
 
-    For Trello-connected projects, use 'ttask done' instead of '--status done'.
-    This ensures acceptance criteria are verified and the card is properly moved.
-    """
-    # ENFORCEMENT: Block status=done on Trello projects unless forced
-    if status and status.lower() == "done" and not force:
-        if _is_trello_enabled():
+    # ENFORCEMENT: Block status=done if task has linked Trello card
+    if status and status.lower() == "done" and not local_only:
+        trello_card_id = _get_linked_trello_card(task_id)
+        if trello_card_id:
+            console.print(f"\n[red]❌ BLOCKED: Task has linked Trello card {trello_card_id}[/red]")
+            console.print("")
+            console.print("[yellow]Complete via Trello:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done {trello_card_id} --summary \"...\"[/cyan]")
+            console.print("")
+            console.print("[dim]This ensures acceptance criteria are verified.[/dim]")
+            raise typer.Exit(1)
+
+
+        elif _is_trello_enabled():
             console.print("\n[red]❌ BLOCKED: This project uses Trello integration.[/red]")
             console.print("")
-            console.print("[yellow]Use the Trello command to complete tasks:[/yellow]")
+            console.print("[yellow]Complete via Trello:[/yellow]")
+            console.print(f"  [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"...\"[/cyan]")
             console.print("")
-            console.print("  1. Find the card ID:")
-            console.print(f"     [cyan]bpsai-pair ttask list | grep {task_id}[/cyan]")
-            console.print("")
-            console.print("  2. Complete with ttask done:")
-            console.print("     [cyan]bpsai-pair ttask done <TRELLO-ID> --summary \"What was done\"[/cyan]")
-            console.print("")
-            console.print("[dim]This ensures:[/dim]")
-            console.print("[dim]  • Acceptance criteria are verified/checked[/dim]")
-            console.print("[dim]  • Completion summary is recorded[/dim]")
-            console.print("[dim]  • Card is moved to the correct list[/dim]")
-            console.print("[dim]  • Local task file is updated automatically[/dim]")
-            console.print("")
-            console.print("[dim]To bypass (not recommended): --force[/dim]")
+            console.print("[dim]Find card ID with: bpsai-pair ttask list[/dim]")
             raise typer.Exit(1)
-    elif status and status.lower() == "done" and force:
-        if _is_trello_enabled():
-            console.print("[yellow]⚠ Bypassing Trello enforcement with --force[/yellow]")
-            _log_bypass("task update --status done", task_id, "forced bypass of Trello enforcement")
+
+    # If using --local-only, require reason and log bypass
+    if local_only:
+        if not reason:
+            console.print("[red]❌ --local-only requires --reason to explain the bypass[/red]")
+            raise typer.Exit(1)
+        _log_bypass("task update --local-only", task_id, reason)
+        console.print(f"[yellow]⚠ Updating local task only (logged): {reason}[/yellow]")
 
     paircoder_dir = find_paircoder_dir()
     task_parser = TaskParser(paircoder_dir / "tasks")
@@ -1161,6 +1199,30 @@ def task_update(
     if not status:
         console.print("[red]--status is required (or use --resync to re-trigger hooks)[/red]")
         raise typer.Exit(1)
+
+    # ENFORCEMENT: Block --skip-state-check when strict_ac_verification is enabled
+    if status == "done" and skip_state_check:
+            import yaml
+            config_path = find_paircoder_dir() / "config.yaml"
+            strict_ac = False
+            if config_path.exists():
+                with open(config_path) as f:
+                    config = yaml.safe_load(f) or {}
+                strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+
+            if strict_ac:
+                console.print(
+                    "\n[red]❌ BLOCKED: --skip-state-check is disabled when strict_ac_verification is enabled.[/red]")
+                console.print("")
+                console.print("[yellow]You must update state.md before completing tasks:[/yellow]")
+                console.print(f"  1. Edit [cyan].paircoder/context/state.md[/cyan]")
+                console.print(f"  2. Mark [yellow]{task_id}[/yellow] as done in task list")
+                console.print(f"  3. Add session entry under \"What Was Just Done\"")
+                console.print(f"  4. Update \"What's Next\" section")
+                console.print("")
+                console.print("[dim]This ensures all work is properly documented.[/dim]")
+                raise typer.Exit(1)
+
 
     # Check state.md update requirement when completing a task
     if status == "done" and not skip_state_check:
@@ -1223,6 +1285,65 @@ def _is_trello_enabled() -> bool:
         return False
 
 
+def _get_linked_trello_card(task_id: str) -> Optional[str]:
+    """Get Trello card ID linked to this task.
+
+    Checks the task file's frontmatter for:
+    1. trello_card_id field
+    2. trello_url field (extracts ID from URL)
+
+    Args:
+        task_id: The task ID (e.g., T27.1 or TASK-123)
+
+    Returns:
+        Trello card ID (e.g., "TRELLO-94" or "abc123") or None if not linked
+    """
+    import re
+
+    try:
+        paircoder_dir = find_paircoder_dir()
+        task_parser = TaskParser(paircoder_dir / "tasks")
+
+        # Find the task file
+        task = task_parser.get_task_by_id(task_id)
+        if not task or not task.source_path:
+            return None
+
+        # Read the task file to get frontmatter
+        with open(task.source_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Parse frontmatter
+        frontmatter, _ = parse_frontmatter(content)
+        if not frontmatter:
+            return None
+
+        # Check for trello_card_id
+        if "trello_card_id" in frontmatter:
+            card_id = frontmatter["trello_card_id"]
+            # Format as TRELLO-XXX if it's just a number
+            if isinstance(card_id, (int, str)):
+                card_str = str(card_id)
+                if card_str.isdigit():
+                    return f"TRELLO-{card_str}"
+                elif card_str.startswith("TRELLO-"):
+                    return card_str
+                else:
+                    return card_str  # Return as-is (could be shortLink)
+
+        # Check for trello_url
+        if "trello_url" in frontmatter:
+            url = frontmatter["trello_url"]
+            # Extract ID from URL like https://trello.com/c/ABC123/...
+            match = re.search(r'/c/([^/]+)', url)
+            if match:
+                return match.group(1)
+
+        return None
+    except Exception:
+        return None
+
+
 def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
     """Log when safety checks are bypassed."""
     try:
@@ -1275,7 +1396,6 @@ def _check_state_md_updated(paircoder_dir: Path, task_id: str) -> dict:
 
     if timer_cache_path.exists():
         try:
-            import json
             with open(timer_cache_path) as f:
                 cache_data = json.load(f)
 

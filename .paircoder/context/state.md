@@ -1,13 +1,26 @@
 # Current State
 
-> Last updated: 2025-12-31
+> Last updated: 2026-01-05
 
 ## Active Plan
 
-**Plan:** (none - ready for Sprint 28)
-**Sprint:** 27 Complete, 28 Upcoming
-**Status:** Between sprints
-**Last Release:** v2.8.4
+**Plan:** plan-2026-01-sprint-28-docs
+**Sprint:** 28 - Documentation & Release
+**Status:** In Progress
+**Target Release:** v2.9.0
+
+## Current Sprint (Sprint 28 - v2.9.0 Documentation)
+
+| ID | Title | Priority | Complexity | Status |
+|----|-------|----------|------------|--------|
+| T28.12 | Update Version Strings Across Docs | P1 | 15 | ✓ done |
+| T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ✓ done |
+| T28.14 | Document Audit and State Commands | P1 | 30 | ✓ done |
+| T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ✓ done |
+| T28.16 | Update Config Documentation | P1 | 15 | ✓ done |
+| T28.17 | Final Verification and Release Prep | P0 | 20 | ○ pending |
+
+**Total:** 6 tasks, 125 complexity points
 
 ## Completed Sprint (Sprint 27 - Stabilization)
 
@@ -43,15 +56,12 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 | 25.6 | Emergent Skill Discovery | v2.8.3 | Complete |
 | 27 | Stabilization | v2.8.4 | Complete |
 | 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
-| 28 | TBD | TBD | Upcoming |
+| 28 | v2.9.0 Documentation & Release | v2.9.0 | In Progress |
 
 ## What's Next
 
-**Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
-Make PairCoder usable by non-technical "vibe-coders":
-- T26.1-T26.10: Interactive welcome wizard, Trello setup wizard, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session
+Ready to start: T28.17 - Final Verification and Release Prep
 
-**Sprint 28:** TBD - awaiting backlog review
 
 ## Backlog (Deprioritized)
 
@@ -70,6 +80,110 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.16: Update Config Documentation
+
+Added documentation for the new `enforcement:` configuration section:
+
+**Files Updated:**
+- USER_GUIDE.md - Added enforcement section to config.yaml schema + Enforcement Settings subsection
+- FEATURE_MATRIX.md - Added enforcement section to Configuration with settings table
+- all-cli-commands.md - Added enforcement section to Key Settings
+
+**Settings Documented:**
+- `state_machine` (default: false) - Enable formal task state transitions
+- `strict_ac_verification` (default: true) - Require AC items checked before completion
+- `require_budget_check` (default: true) - Run budget check before starting tasks
+- `block_no_hooks` (default: true) - Block --no-hooks in strict mode
+
+All three files now include the enforcement configuration with defaults and descriptions.
+
+### 2026-01-05 - T28.15: Update CLI Reference with Flag Changes
+
+Updated CLI documentation to reflect renamed flags and new enforcement flags:
+
+**all-cli-commands.md changes:**
+- Updated `skill install` to show `[--overwrite --name --personal]` options
+- Added Sprint Commands section with `sprint list` and `sprint complete` commands
+- Documented `--skip-checklist --reason` flags for sprint complete
+- Updated `ttask start` to show `[--budget-override]` option
+- Updated `ttask done` to show `[--no-strict]` option (strict is default)
+- Updated command count from 127+ to 129+
+
+**USER_GUIDE.md changes:**
+- Added `--overwrite` example for skill install
+- Added `--budget-override` example for ttask start
+- Added `--no-strict` example for ttask done
+
+**Verification:**
+- No remaining `--force` flags in documentation files
+- All new flags documented with examples
+
+### 2026-01-05 - T28.14: Document Audit and State Commands
+
+Documented the new `audit` and `state` command groups:
+- Added Audit Commands section to all-cli-commands.md (3 commands: bypasses/summary/clear)
+- Added State Commands section to all-cli-commands.md (5 commands: show/list/history/reset/advance)
+- Updated README.md command count from 120+ to 127+
+- Added Audit and State command tables to README.md
+- Updated FEATURE_MATRIX.md CLI Commands Summary table
+- Added audit and state features to Sprint 28 section
+
+All examples verified by running actual CLI commands.
+
+### 2026-01-05 - T28.13: Add CHANGELOG v2.9.0 Entry
+
+Added comprehensive changelog entry documenting all Sprint 28 changes:
+- **Enforcement System**: Task state machine, bypass audit logging, model routing, preconditions
+- **New CLI Commands**: `audit bypasses/summary`, `state show/list/history/reset/advance`
+- **Breaking Changes**: `--force` → `--overwrite` flag renames across skill/security commands
+- **Enforcement Defaults**: AC verification, budget checks, Trello task restrictions
+- **Test Updates**: 76 new tests, 2145+ total (up from 2100+)
+
+All acceptance criteria verified.
+
+### 2026-01-05 - T28.12: Update Version Strings
+
+Updated all version references from 2.8.x to 2.9.0:
+- `.paircoder/capabilities.yaml`: 2.8.3 -> 2.9.0
+- `README.md`: v2.8.4 -> v2.9.0 (title, install example)
+- `.paircoder/docs/USER_GUIDE.md`: v2.8.4 -> v2.9.0 (title, install, footer)
+- `.claude/skills/.../all-cli-commands.md`: Version 2.8.4 -> 2.9.0
+
+All acceptance criteria verified.
+
+### 2026-01-05 - Sprint 28 Planning
+
+Created plan `plan-2026-01-sprint-28-docs` with 6 tasks (125 complexity points):
+- T28.12: Update Version Strings Across Docs
+- T28.13: Add CHANGELOG v2.9.0 Entry
+- T28.14: Document Audit and State Commands
+- T28.15: Update CLI Reference with Flag Changes
+- T28.16: Update Config Documentation
+- T28.17: Final Verification and Release Prep
+
+Synced to Trello: 6 cards created in "Planned/Ready" list.
+
+### 2026-01-04 - Hotfix: Enforcement Gates (Sprint 28 Prep)
+
+Completed 4 enforcement gate hotfixes on `hotfix/enforcement-gates` branch:
+
+| Task | Title | Commit |
+|------|-------|--------|
+| T28.1b | Remove --force from ttask done | `5f3f2d9` |
+| T28.3 | Require Trello sync before local task update | `0eaf6fc` |
+| T28.4 | Auto-update local task from ttask done | `e527ade` |
+| T28.5 | Wire budget can_proceed() before task start | `ae61e74` |
+
+**Changes:**
+- `ttask done`: Removed `--force` flag, `--no-strict` now logs bypasses
+- `task update`: Added `--local-only` + `--reason` for audited bypass
+- `ttask done`: Auto-syncs local task file status
+- `ttask start`: Budget check before starting (with `--budget-override`)
+
+**Tests:** 47 new tests added across 4 test files, all passing.
+
+**Status:** Branch ready for merge or additional hotfixes.
 
 ### 2025-12-31 - Housekeeping: Archive and Compact
 

@@ -1,6 +1,6 @@
-# PairCoder v2.8.4 Feature Matrix
+# PairCoder v2.9.0 Feature Matrix
 
-> Updated after Sprint 27 on 2025-12-31
+> Updated after Sprint 28 on 2026-01-04
 
 ## CLI Commands Summary
 
@@ -32,7 +32,9 @@
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
-| **Total** | | **120+** |
+| Audit | audit bypasses/summary/clear | 3 |
+| State | state show/list/history/reset/advance | 5 |
+| **Total** | | **127+** |
 
 ## Features by Sprint
 
@@ -201,6 +203,17 @@
 | Template check fix | `template check` | ✅ Done | T27.1 - ProjectRootNotFoundError handling |
 | Unicode handling | `ttask *` | ✅ Done | T27.3 - UTF-8 encoding throughout |
 | Version bump | - | ✅ Done | v2.8.4 |
+
+### Sprint 28: Enforcement Gates (v2.9.0)
+| Feature | CLI Command | Status | Notes |
+|---------|-------------|--------|-------|
+| Remove --force from ttask done | `ttask done` | ✅ Done | T28.1b - Use --no-strict for bypass |
+| Block local task done on Trello tasks | `task update` | ✅ Done | T28.3 - Use --local-only --reason |
+| Auto-sync local task from ttask done | `ttask done` | ✅ Done | T28.4 - Extracts task ID from card |
+| Budget check on task start | `ttask start` | ✅ Done | T28.5 - Use --budget-override to bypass |
+| Bypass audit logging | - | ✅ Done | All bypasses logged to bypass_log.jsonl |
+| Audit commands | `audit bypasses/summary/clear` | ✅ Done | View and manage bypass history |
+| State machine commands | `state show/list/history/reset/advance` | ✅ Done | Task execution state management |
 
 ## MCP Tools (13 total)
 
@@ -472,7 +485,24 @@ hooks:
   on_task_block:
     - sync_trello
     - update_state
+
+enforcement:
+  state_machine: false          # Enable formal task state transitions
+  strict_ac_verification: true  # Require AC items checked before completion
+  require_budget_check: true    # Check budget before starting tasks
+  block_no_hooks: true          # Block --no-hooks in strict mode
 ```
+
+### Enforcement Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `state_machine` | `false` | Enable formal state transitions for tasks |
+| `strict_ac_verification` | `true` | Require all AC items checked before completion |
+| `require_budget_check` | `true` | Run budget check before starting tasks |
+| `block_no_hooks` | `true` | Block --no-hooks flag in strict mode |
+
+Bypasses are logged to `.paircoder/history/bypass_log.jsonl`. Use `bpsai-pair audit bypasses` to review.
 
 ## Test Coverage
 
@@ -507,4 +537,9 @@ hooks:
 | - Exporter | 12 | ✅ Pass |
 | - Installer | 8 | ✅ Pass |
 | - Suggestion | 10 | ✅ Pass |
-| **Total** | **2050+** | ✅ Pass |
+| **Enforcement (Sprint 28)** | **47** | ✅ Pass |
+| - ttask start budget | 9 | ✅ Pass |
+| - ttask done sync | 14 | ✅ Pass |
+| - task update enforcement | 10 | ✅ Pass |
+| - ttask done AC verification | 14 | ✅ Pass |
+| **Total** | **2100+** | ✅ Pass |

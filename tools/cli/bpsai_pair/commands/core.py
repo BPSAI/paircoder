@@ -329,6 +329,15 @@ def feature_command(
         task = progress.add_task(f"Creating {branch_type}/{name}...", total=None)
 
         try:
+            if force:
+                from ..core.bypass_log import log_bypass
+                log_bypass(
+                    command="feature",
+                    target=name,
+                    reason="Bypassing dirty-tree check",
+                    bypass_type="dirty_tree_bypass",
+                )
+
             ops.FeatureOps.create_feature(
                 root=root,
                 name=name,

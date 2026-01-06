@@ -105,57 +105,74 @@ def _get_unchecked_ac_items(card, checklist_name: str = "Acceptance Criteria") -
     return unchecked
 
 
+from ..core.bypass_log import log_bypass
+
 def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
-    """Log when safety checks are bypassed."""
-    import json
-    from pathlib import Path
-    from datetime import datetime
-    from ..core.ops import find_paircoder_dir
-
-    try:
-        paircoder_dir = find_paircoder_dir()
-        log_path = paircoder_dir / "history" / "bypass_log.jsonl"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "command": command,
-            "task_id": task_id,
-            "reason": reason,
-        }
-
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # Best effort logging
+    """Log bypass to audit file - delegates to core module."""
+    log_bypass(command=command, target=task_id, reason=reason)
 
 
-def _update_local_task_status(card_name: str, status: str) -> bool:
+def _get_task_id_from_card(card) -> Optional[str]:
+    """Extract local task ID from Trello card.
+
+    Looks for task ID in:
+    1. Card name pattern "[T27.1]" or "[TASK-123]" (bracketed)
+    2. Card name pattern "T27.1: ..." or "TASK-123: ..." (at start)
+    3. Card description containing "Task: T27.1"
+
+    Args:
+        card: Trello card object with name and description attributes
+
+    Returns:
+        Task ID string (e.g., "T27.1") or None if not found
+    """
+    import re
+
+    # Get card name
+    name = card.name if hasattr(card, 'name') else ""
+
+    # Try bracketed pattern first (e.g., "[T27.1] Create module")
+    match = re.search(r'\[(T\d+\.\d+|TASK-\d+)]', name)
+    if match:
+        return match.group(1)
+
+    # Try start of name pattern (e.g., "T27.1: Create module" or "T27.1 - Create")
+    match = re.match(r'^(T\d+\.\d+|TASK-\d+)[\s:\-]', name)
+    if match:
+        return match.group(1)
+
+    # Try description
+    desc = card.description if hasattr(card, 'description') else ""
+    if desc:
+        match = re.search(r'Task:\s*(T\d+\.\d+|TASK-\d+)', desc)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def _update_local_task_status(card, status: str, summary: str = "") -> tuple[bool, Optional[str]]:
     """Update the corresponding local task file after ttask operation.
 
     Args:
-        card_name: The Trello card name (e.g., "[T23.1] Create module structure")
+        card: Trello card object (with name and description attributes)
         status: The new status to set
+        summary: Optional completion summary
 
     Returns:
-        True if a task was updated, False otherwise
+        Tuple of (success: bool, task_id: Optional[str])
     """
-    from pathlib import Path
-    import re
-
     try:
-        # Extract task ID from card name (e.g., "[T23.1]" or "[TASK-123]")
-        match = re.search(r'\[(T\d+\.\d+|TASK-\d+)\]', card_name)
-        if not match:
-            return False
-
-        task_id = match.group(1)
+        # Extract task ID from card
+        task_id = _get_task_id_from_card(card)
+        if not task_id:
+            return False, None
 
         # Find paircoder dir
         from ..core.ops import find_paircoder_dir
         paircoder_dir = find_paircoder_dir()
         if not paircoder_dir.exists():
-            return False
+            return False, task_id
 
         # Import task parser
         from ..planning.parser import TaskParser
@@ -163,13 +180,138 @@ def _update_local_task_status(card_name: str, status: str) -> bool:
         task_parser = TaskParser(paircoder_dir / "tasks")
         success = task_parser.update_status(task_id, status)
 
-        if success:
-            console.print(f"[dim]Local task {task_id} updated to {status}[/dim]")
-
-        return success
+        return success, task_id
+    except FileNotFoundError:
+        raise  # Re-raise for caller to handle
     except Exception as e:
-        console.print(f"[dim]Note: Could not update local task file: {e}[/dim]")
+        console.print(f"[yellow]⚠ Could not update local task file: {e}[/yellow]")
+        return False, None
+
+
+def _run_completion_hooks(task_id: str) -> bool:
+    """Run completion hooks to update state.md and other side effects.
+
+    Args:
+        task_id: The task ID that was completed
+
+    Returns:
+        True if hooks ran successfully, False otherwise
+    """
+    try:
+        from ..core.ops import find_paircoder_dir
+
+        paircoder_dir = find_paircoder_dir()
+        if not paircoder_dir.exists():
+            return False
+
+        # Record CLI update to cache (for manual edit detection)
+        try:
+            from ..planning.cli_update_cache import get_cli_update_cache
+            cli_cache = get_cli_update_cache(paircoder_dir)
+            cli_cache.record_update(task_id, "done")
+        except Exception:
+            pass  # Best effort
+
+        # Try to run hooks if available
+        try:
+            from ..core.hooks import HookRunner, HookContext
+            from ..core.config import load_config
+
+            config = load_config(paircoder_dir)
+            hook_runner = HookRunner(config, paircoder_dir)
+
+            # Create context for completion hooks
+            context = HookContext(
+                task_id=task_id,
+                task=None,  # Task object not available here
+                event="on_task_complete",
+            )
+            hook_runner.run_hooks("on_task_complete", context)
+            return True
+        except ImportError:
+            # Hooks module not available
+            return False
+        except Exception as e:
+            console.print(f"[yellow]⚠ Could not run completion hooks: {e}[/yellow]")
+            return False
+    except Exception:
         return False
+
+
+def _check_task_budget(task_id: str, card_id: str, budget_override: bool = False) -> bool:
+    """Check if task can proceed within token budget.
+
+    Args:
+        task_id: The task ID to estimate tokens for
+        card_id: The Trello card ID (for display)
+        budget_override: If True, log bypass and allow anyway
+
+    Returns:
+        True if task can proceed, False if blocked
+    """
+    try:
+        from ..core.ops import find_paircoder_dir
+        from ..planning.parser import TaskParser
+        from ..metrics.estimation import TokenEstimator
+        from ..metrics.budget import BudgetEnforcer
+        from ..metrics.collector import MetricsCollector
+
+        paircoder_dir = find_paircoder_dir()
+        if not paircoder_dir.exists():
+            return True  # No paircoder dir, skip check
+
+        # Load the task
+        task_parser = TaskParser(paircoder_dir / "tasks")
+        task = task_parser.get_task_by_id(task_id)
+        if not task:
+            return True  # Task not found, skip check
+
+        # Estimate tokens
+        estimator = TokenEstimator()
+        token_estimate = estimator.estimate_for_task(task)
+        estimated_tokens = token_estimate.total_tokens
+
+        # Convert tokens to estimated cost (rough: $0.003 per 1K input tokens for Claude)
+        # Using a conservative estimate that includes both input and output
+        estimated_cost_usd = (estimated_tokens / 1000) * 0.015  # $0.015 per 1K tokens
+
+        # Check budget
+        collector = MetricsCollector(paircoder_dir / "metrics")
+        budget = BudgetEnforcer(collector)
+        can_proceed, reason = budget.can_proceed(estimated_cost_usd)
+
+        if not can_proceed:
+            if budget_override:
+                _log_bypass("budget_override", task_id, f"User override: {reason}")
+                console.print(f"[yellow]⚠ Starting despite budget limit (logged): {reason}[/yellow]")
+                return True
+            else:
+                status = budget.check_budget()
+                console.print("[red]❌ BLOCKED: Task would exceed token budget[/red]")
+                console.print("")
+                console.print(f"[dim]Estimated tokens:[/dim] {estimated_tokens:,}")
+                console.print(f"[dim]Estimated cost:[/dim]   ${estimated_cost_usd:.2f}")
+                console.print(f"[dim]Daily remaining:[/dim]  ${status.daily_remaining:.2f}")
+                console.print(f"[dim]Daily limit:[/dim]      ${status.daily_limit:.2f}")
+                console.print("")
+                console.print("[yellow]Options:[/yellow]")
+                console.print("  1. Wait until tomorrow (limit resets)")
+                console.print(f"  2. Override: [cyan]bpsai-pair ttask start {card_id} --budget-override[/cyan]")
+                console.print("  3. Check budget: [cyan]bpsai-pair budget status[/cyan]")
+                return False
+
+        # Within budget
+        console.print(f"[dim]Budget check passed ({estimated_tokens:,} tokens, ~${estimated_cost_usd:.2f})[/dim]")
+        return True
+
+    except ImportError as e:
+        # Budget/metrics module not available, continue without check
+        console.print(f"[dim]Budget check skipped: {e}[/dim]")
+        return True
+    except Exception as e:
+        # Budget check failed, log but continue
+        console.print(f"[dim]Budget check skipped: {e}[/dim]")
+        return True
 
 
 def _auto_check_acceptance_criteria(card, client: TrelloService, checklist_name: str = "Acceptance Criteria") -> int:
@@ -386,14 +528,29 @@ def task_show(card_id: str = typer.Argument(..., help="Card ID (e.g., TRELLO-123
 def task_start(
     card_id: str = typer.Argument(..., help="Card ID to start"),
     summary: str = typer.Option("Beginning work", "--summary", "-s", help="Start summary"),
+    budget_override: bool = typer.Option(
+        False, "--budget-override",
+        help="Start despite budget warning (logged for audit)"
+    ),
 ):
-    """Start working on a task (moves to In Progress)."""
+    """Start working on a task (moves to In Progress).
+
+    Checks token budget before starting. Use --budget-override to bypass
+    budget limits (logged for audit).
+    """
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
 
     if not card:
         console.print(f"[red]Card not found: {card_id}[/red]")
         raise typer.Exit(1)
+
+    # Check token budget BEFORE starting
+    task_id = _get_task_id_from_card(card)
+    if task_id:
+        budget_ok = _check_task_budget(task_id, card_id, budget_override)
+        if not budget_ok:
+            raise typer.Exit(1)
 
     if client.is_card_blocked(card):
         console.print(f"[red]Cannot start - card has unchecked dependencies[/red]")
@@ -416,30 +573,36 @@ def task_done(
     card_id: str = typer.Argument(..., help="Card ID to complete"),
     summary: str = typer.Option(..., "--summary", "-s", prompt=True, help="Completion summary"),
     list_name: Optional[str] = typer.Option(None, "--list", "-l", help="Target list (default: Deployed/Done)"),
-    auto_check: bool = typer.Option(False, "--auto-check", help="Auto-check all acceptance criteria (use with caution)"),
-    strict: bool = typer.Option(True, "--strict/--no-strict", help="Block if acceptance criteria unchecked (default: strict)"),
-    skip_checklist: bool = typer.Option(False, "--skip-checklist", hidden=True, help="[DEPRECATED] Use --no-check-all"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force completion, bypass all verification"),
+    auto_check: bool = typer.Option(False, "--auto-check",
+                                    help="Auto-check all acceptance criteria (use with caution)"),
+    strict: bool = typer.Option(True, "--strict/--no-strict",
+                                help="Block if acceptance criteria unchecked (default: strict)"),
 ):
-    """Complete a task (moves to Done list).
+    """Complete a task (moves to Done list)."""
 
-    By default, automatically checks all 'Acceptance Criteria' checklist items.
-    Also updates the corresponding local task file to 'done' status.
-
-    Use --strict to require AC items to be manually checked first (blocks if unchecked).
-    Use --no-check-all to skip AC handling entirely.
-    Use --force to bypass all verification (logs warning).
-
-    Examples:
-        # Standard completion (auto-checks AC)
-        bpsai-pair ttask done TRELLO-123 --summary "Implemented feature X"
-
-        # Require manual AC verification
-        bpsai-pair ttask done TRELLO-123 --summary "..." --strict
-
-        # Skip AC handling
-        bpsai-pair ttask done TRELLO-123 --summary "..." --no-check-all
-    """
+    # ENFORCEMENT: Block --no-strict when strict_ac_verification is enabled
+    if not strict:
+        import yaml
+        try:
+            from ..core.ops import find_paircoder_dir
+            config_path = find_paircoder_dir() / "config.yaml"
+            if config_path.exists():
+                with open(config_path) as f:
+                    config = yaml.safe_load(f) or {}
+                strict_ac = config.get("enforcement", {}).get("strict_ac_verification", False)
+                if strict_ac:
+                    console.print(
+                        "\n[red]❌ BLOCKED: --no-strict is disabled when strict_ac_verification is enabled.[/red]")
+                    console.print("")
+                    console.print("[yellow]You must verify acceptance criteria before completion:[/yellow]")
+                    console.print(f"  1. Check items manually on Trello card")
+                    console.print(f"  2. Use: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
+                    console.print(f"  3. Then: [cyan]bpsai-pair ttask done {card_id} --summary \"...\"[/cyan]")
+                    console.print("")
+                    console.print("[dim]This ensures all acceptance criteria are verified before completion.[/dim]")
+                    raise typer.Exit(1)
+        except (ImportError, FileNotFoundError):
+            pass
     client, config = get_board_client()
     card, lst = client.find_card(card_id)
 
@@ -453,46 +616,45 @@ def task_done(
     except Exception:
         pass
 
-    # Handle deprecated flag
-    if skip_checklist:
-        console.print("[yellow]⚠ --skip-checklist is deprecated. Use --no-check-all[/yellow]")
-        auto_check = False
-
     # Handle AC verification based on flags
     ac_status_msg = ""
-    if force:
-        # Bypass all verification
-        unchecked = _get_unchecked_ac_items(card)
-        if unchecked:
-            console.print(f"[yellow]⚠ Force completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
-            ac_status_msg = f"Forced with {len(unchecked)} unchecked AC items"
-            _log_bypass("ttask done", card_id, f"forced with {len(unchecked)} unchecked AC items")
-        else:
-            ac_status_msg = "All AC items complete"
-    elif strict:
-        # Strict mode: block if any AC unchecked
+
+    # AUTO-CHECK FIRST (if requested) - before strict verification
+    if auto_check:
+        checked_count = _auto_check_acceptance_criteria(card, client)
+        if checked_count > 0:
+            console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
+            # Refresh card to get updated checklist state
+            try:
+                card.fetch()
+            except Exception:
+                pass
+
+    # Now verify (strict mode or after auto-check)
+    if strict:
         unchecked = _get_unchecked_ac_items(card)
         if unchecked:
             console.print(f"[red]❌ Cannot complete: {len(unchecked)} acceptance criteria item(s) unchecked[/red]")
             console.print("\n[dim]Unchecked items:[/dim]")
             for item in unchecked:
                 console.print(f"  ○ {item.get('name', '')}")
-            console.print("\n[dim]Check items manually on Trello, or use --force to bypass[/dim]")
+            console.print("\n[dim]Options:[/dim]")
+            console.print(f"  1. Check items: [cyan]bpsai-pair ttask check {card_id} \"<item text>\"[/cyan]")
+            console.print(f"  2. Check on Trello directly")
+            if auto_check:
+                console.print(f"\n[yellow]Note: --auto-check ran but some items could not be checked.[/yellow]")
             raise typer.Exit(1)
         console.print("[green]✓ All acceptance criteria verified[/green]")
-        ac_status_msg = "All AC items manually verified"
-    elif auto_check:
-        # Default: auto-check all AC items
-        checked_count = _auto_check_acceptance_criteria(card, client)
-        if checked_count > 0:
-            console.print(f"[green]✓ Auto-checked {checked_count} acceptance criteria item(s)[/green]")
-            ac_status_msg = f"Auto-checked {checked_count} AC items"
-        else:
-            ac_status_msg = "All AC items already complete"
+        ac_status_msg = "All AC items verified"
     else:
-        # --no-check-all: skip AC handling entirely
-        console.print("[dim]AC verification skipped (--no-check-all)[/dim]")
-        ac_status_msg = "AC verification skipped"
+        # --no-strict: skip verification but log bypass
+        unchecked = _get_unchecked_ac_items(card)
+        if unchecked:
+            console.print(f"[yellow]⚠ Completing with {len(unchecked)} unchecked AC item(s)[/yellow]")
+            _log_bypass("ttask done", card_id, f"--no-strict with {len(unchecked)} unchecked AC items")
+            ac_status_msg = f"Bypassed with {len(unchecked)} unchecked AC items (logged)"
+        else:
+            ac_status_msg = "AC verification skipped (all items already complete)"
 
     # Determine target list
     if list_name is None:
@@ -509,8 +671,23 @@ def task_done(
     console.print(f"  Moved to: {list_name}")
     console.print(f"  Summary: {summary}")
 
-    # Auto-update local task file
-    _update_local_task_status(card.name, "done")
+    # Auto-update local task file and run completion hooks
+    try:
+        success, task_id = _update_local_task_status(card, "done", summary)
+        if success and task_id:
+            console.print(f"[green]✓ Local task {task_id} updated to done[/green]")
+            # Run completion hooks to update state.md
+            _run_completion_hooks(task_id)
+        elif task_id:
+            console.print(f"[yellow]⚠ Could not update local task {task_id}[/yellow]")
+        # If no task_id found, silently continue (card may not have local task)
+    except FileNotFoundError as e:
+        task_id = _get_task_id_from_card(card)
+        if task_id:
+            console.print(f"[yellow]⚠ Local task file not found for {task_id}[/yellow]")
+    except Exception as e:
+        console.print(f"[yellow]⚠ Could not sync local task: {e}[/yellow]")
+        # Don't fail - Trello is source of truth
 
 
 @app.command("block")

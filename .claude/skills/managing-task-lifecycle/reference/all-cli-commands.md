@@ -1,6 +1,6 @@
 # PairCoder CLI Complete Reference
 
-> Updated: 2025-12-31 | Version: 2.8.4 | 120+ commands
+> Updated: 2026-01-05 | Version: 2.9.0 | 129+ commands
 
 ## Contents
 
@@ -9,6 +9,7 @@
 - [Preset Commands](#preset-commands)
 - [Planning Commands](#planning-commands)
 - [Task Commands](#task-commands)
+- [Sprint Commands](#sprint-commands)
 - [Skills Commands](#skills-commands)
 - [Flow Commands (Deprecated)](#flow-commands-deprecated)
 - [Orchestration Commands](#orchestration-commands)
@@ -27,6 +28,8 @@
 - [Trello Commands](#trello-commands)
 - [Trello Task Commands (ttask)](#trello-task-commands-ttask)
 - [MCP Commands](#mcp-commands)
+- [Audit Commands](#audit-commands)
+- [State Commands](#state-commands)
 - [Configuration](#configuration)
 - [Environment Variables](#environment-variables)
 - [Common Workflows](#common-workflows)
@@ -41,6 +44,7 @@
 | Preset | Project presets | 4 |
 | Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
 | Task | Local task file management | 11 |
+| Sprint | Sprint lifecycle management | 2 |
 | Skills | Skill management and export | 7 |
 | Flow | Workflow definitions (deprecated) | 4 |
 | Orchestration | Multi-agent orchestration | 6 |
@@ -59,8 +63,10 @@
 | Trello | Trello board configuration | 10 |
 | ttask | Trello card operations | 7 |
 | MCP | MCP server for Claude Desktop | 3 |
+| Audit | Workflow bypass auditing | 3 |
+| State | Task execution state machine | 5 |
 | Upgrade | Version upgrades | 1 |
-| **Total** | | **120+** |
+| **Total** | | **129+** |
 
 ---
 
@@ -178,14 +184,39 @@ bpsai-pair task changelog-preview --since 2025-12-01
 
 ---
 
+## Sprint Commands
+
+| Command | Description |
+|---------|-------------|
+| `sprint list [--plan]` | List sprints in a plan |
+| `sprint complete <sprint-id> [--skip-checklist --reason]` | Complete sprint with checklist verification |
+
+### Examples
+
+```bash
+# List sprints in active plan
+bpsai-pair sprint list
+
+# List sprints in specific plan
+bpsai-pair sprint list --plan plan-2025-12-feature
+
+# Complete sprint with checklist verification
+bpsai-pair sprint complete sprint-17
+
+# Skip checklist (requires reason, logged for audit)
+bpsai-pair sprint complete sprint-17 --skip-checklist --reason "Hotfix deployment"
+```
+
+---
+
 ## Skills Commands
 
 | Command | Description |
 |---------|-------------|
 | `skill list` | List all skills |
 | `skill validate [name]` | Validate skill format against spec |
-| `skill export <name>` | Export to Cursor/Continue/Windsurf |
-| `skill install <source>` | Install skill from URL/path |
+| `skill export <name> [--format --all --dry-run]` | Export to Cursor/Continue/Windsurf/Codex/ChatGPT |
+| `skill install <source> [--overwrite --name --personal]` | Install skill from URL/path |
 | `skill suggest` | AI-powered skill suggestions |
 | `skill gaps` | Detect missing skills from patterns |
 | `skill generate <name>` | Generate skill from detected gap |
@@ -528,9 +559,9 @@ bpsai-pair trello progress TASK-001 --completed "Feature done"
 |---------|-------------|
 | `ttask list` | List tasks from board |
 | `ttask show <id>` | Show task details |
-| `ttask start <id>` | Start working on task |
-| `ttask done <id>` | Complete task |
-| `ttask block <id>` | Mark as blocked |
+| `ttask start <id> [--budget-override]` | Start working on task (checks budget) |
+| `ttask done <id> --summary [--no-strict]` | Complete task (strict AC check by default) |
+| `ttask block <id> --reason` | Mark as blocked |
 | `ttask comment <id>` | Add comment |
 | `ttask move <id>` | Move to different list |
 
@@ -544,7 +575,9 @@ bpsai-pair ttask show TRELLO-abc123
 
 # Lifecycle
 bpsai-pair ttask start TRELLO-abc123
+bpsai-pair ttask start TRELLO-abc123 --budget-override  # Override budget warning (logged)
 bpsai-pair ttask done TRELLO-abc123 --summary "Implemented feature" --list "Deployed/Done"
+bpsai-pair ttask done TRELLO-abc123 --summary "Done" --no-strict  # Skip AC check (logged)
 bpsai-pair ttask block TRELLO-abc123 --reason "Waiting for API"
 
 # Comments
@@ -605,6 +638,72 @@ bpsai-pair mcp test paircoder_task_list
 
 ---
 
+## Audit Commands
+
+| Command | Description |
+|---------|-------------|
+| `audit bypasses` | Show recent workflow bypasses |
+| `audit summary` | Show bypass summary by type and command |
+| `audit clear` | Clear bypass log (dev/testing only) |
+
+### Examples
+
+```bash
+# View recent bypasses (default: last 7 days)
+bpsai-pair audit bypasses
+bpsai-pair audit bypasses --days 30
+
+# Filter by bypass type
+bpsai-pair audit bypasses --type budget_override
+bpsai-pair audit bypasses --type no_strict
+bpsai-pair audit bypasses --type local_only
+
+# Export as JSON
+bpsai-pair audit bypasses --json
+
+# View summary breakdown
+bpsai-pair audit summary
+bpsai-pair audit summary --days 14
+```
+
+---
+
+## State Commands
+
+| Command | Description |
+|---------|-------------|
+| `state show <task>` | Show current execution state and valid transitions |
+| `state list` | List all tracked task states |
+| `state history [task]` | View state transition history |
+| `state reset <task>` | Reset task to NOT_STARTED state |
+| `state advance <task> <state>` | Manually advance task to a new state |
+
+### Examples
+
+```bash
+# Show task state and valid transitions
+bpsai-pair state show T28.1
+
+# List all tracked states
+bpsai-pair state list
+bpsai-pair state list --status in_progress
+
+# View transition history
+bpsai-pair state history
+bpsai-pair state history T28.1
+bpsai-pair state history --limit 50
+
+# Reset a task (e.g., to redo it)
+bpsai-pair state reset T28.1
+bpsai-pair state reset T28.1 --yes  # Skip confirmation
+
+# Manually advance state (only valid transitions allowed)
+bpsai-pair state advance T28.1 budget_checked
+bpsai-pair state advance T28.1 in_progress --reason "Starting work"
+```
+
+---
+
 ## Configuration
 
 ### Config File Location
@@ -659,7 +758,24 @@ hooks:
 trello:
   enabled: true
   board_id: "your-board-id"
+
+enforcement:
+  state_machine: false          # Enable formal task state transitions
+  strict_ac_verification: true  # Require AC items checked before completion
+  require_budget_check: true    # Check budget before starting tasks
+  block_no_hooks: true          # Block --no-hooks in strict mode
 ```
+
+### Enforcement Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `state_machine` | `false` | Enable formal state transitions for tasks |
+| `strict_ac_verification` | `true` | Require all AC items checked before `ttask done` |
+| `require_budget_check` | `true` | Run budget check before starting tasks |
+| `block_no_hooks` | `true` | Block --no-hooks flag in strict mode |
+
+Bypasses (`--no-strict`, `--budget-override`, `--local-only`) are logged to `.paircoder/history/bypass_log.jsonl`.
 
 ---
 
