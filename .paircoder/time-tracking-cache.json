@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T28.13",
-    "timer_id": "local-20260105191201",
-    "description": "T28.13: Add CHANGELOG v2.9.0 Entry",
-    "start": "2026-01-05T19:12:01.109635"
+    "task_id": "T28.14",
+    "timer_id": "local-20260105200414",
+    "description": "T28.14: Document Audit and State Commands",
+    "start": "2026-01-05T20:04:14.495358"
   }
 }

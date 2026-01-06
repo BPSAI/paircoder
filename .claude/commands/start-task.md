@@ -11,7 +11,7 @@ Enter **Driver role** to complete task with verification.
 ## Pre-Flight (Enforcement)
 
 ```bash
-bpsai-pair budget check --task $ARGUMENTS
+bpsai-pair budget check $ARGUMENTS
 bpsai-pair task show $ARGUMENTS
 ```
 

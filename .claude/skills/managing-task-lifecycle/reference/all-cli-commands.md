@@ -1,6 +1,6 @@
 # PairCoder CLI Complete Reference
 
-> Updated: 2026-01-05 | Version: 2.9.0 | 120+ commands
+> Updated: 2026-01-05 | Version: 2.9.0 | 127+ commands
 
 ## Contents
 
@@ -27,6 +27,8 @@
 - [Trello Commands](#trello-commands)
 - [Trello Task Commands (ttask)](#trello-task-commands-ttask)
 - [MCP Commands](#mcp-commands)
+- [Audit Commands](#audit-commands)
+- [State Commands](#state-commands)
 - [Configuration](#configuration)
 - [Environment Variables](#environment-variables)
 - [Common Workflows](#common-workflows)
@@ -59,8 +61,10 @@
 | Trello | Trello board configuration | 10 |
 | ttask | Trello card operations | 7 |
 | MCP | MCP server for Claude Desktop | 3 |
+| Audit | Workflow bypass auditing | 3 |
+| State | Task execution state machine | 5 |
 | Upgrade | Version upgrades | 1 |
-| **Total** | | **120+** |
+| **Total** | | **127+** |
 
 ---
 
@@ -602,6 +606,72 @@ bpsai-pair mcp test paircoder_task_list
 | `paircoder_metrics_summary` | Get metrics summary |
 | `paircoder_trello_sync_plan` | Sync plan to Trello |
 | `paircoder_trello_update_card` | Update Trello card |
+
+---
+
+## Audit Commands
+
+| Command | Description |
+|---------|-------------|
+| `audit bypasses` | Show recent workflow bypasses |
+| `audit summary` | Show bypass summary by type and command |
+| `audit clear` | Clear bypass log (dev/testing only) |
+
+### Examples
+
+```bash
+# View recent bypasses (default: last 7 days)
+bpsai-pair audit bypasses
+bpsai-pair audit bypasses --days 30
+
+# Filter by bypass type
+bpsai-pair audit bypasses --type budget_override
+bpsai-pair audit bypasses --type no_strict
+bpsai-pair audit bypasses --type local_only
+
+# Export as JSON
+bpsai-pair audit bypasses --json
+
+# View summary breakdown
+bpsai-pair audit summary
+bpsai-pair audit summary --days 14
+```
+
+---
+
+## State Commands
+
+| Command | Description |
+|---------|-------------|
+| `state show <task>` | Show current execution state and valid transitions |
+| `state list` | List all tracked task states |
+| `state history [task]` | View state transition history |
+| `state reset <task>` | Reset task to NOT_STARTED state |
+| `state advance <task> <state>` | Manually advance task to a new state |
+
+### Examples
+
+```bash
+# Show task state and valid transitions
+bpsai-pair state show T28.1
+
+# List all tracked states
+bpsai-pair state list
+bpsai-pair state list --status in_progress
+
+# View transition history
+bpsai-pair state history
+bpsai-pair state history T28.1
+bpsai-pair state history --limit 50
+
+# Reset a task (e.g., to redo it)
+bpsai-pair state reset T28.1
+bpsai-pair state reset T28.1 --yes  # Skip confirmation
+
+# Manually advance state (only valid transitions allowed)
+bpsai-pair state advance T28.1 budget_checked
+bpsai-pair state advance T28.1 in_progress --reason "Starting work"
+```
 
 ---
 

@@ -1,6 +1,6 @@
 # PairCoder v2.9.0 — AI-Augmented Pair Programming Framework
 
-PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via skills, and ships a CLI with **120+ commands** to orchestrate the entire development lifecycle.
+PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via skills, and ships a CLI with **127+ commands** to orchestrate the entire development lifecycle.
 
 > **v2.9.0** — Enforcement Gates + Task State Machine + Audit Logging
 
@@ -85,7 +85,7 @@ my-project/
 └── docs/                          # Documentation
 ```
 
-## CLI Command Reference (120+ commands)
+## CLI Command Reference (127+ commands)
 
 ### Core Commands
 
@@ -347,6 +347,24 @@ The board ID can be found in your Trello board URL: `https://trello.com/b/<BOARD
 | `mcp serve` | Start MCP server (stdio) |
 | `mcp tools` | List available tools |
 | `mcp test <tool>` | Test tool locally |
+
+### Audit (3 commands)
+
+| Command | Description |
+|---------|-------------|
+| `audit bypasses` | Show recent workflow bypasses |
+| `audit summary` | Show bypass summary by type |
+| `audit clear` | Clear bypass log (dev only) |
+
+### State (5 commands)
+
+| Command | Description |
+|---------|-------------|
+| `state show <task>` | Show task state and transitions |
+| `state list` | List all tracked states |
+| `state history [task]` | View state transition history |
+| `state reset <task>` | Reset task to NOT_STARTED |
+| `state advance <task> <state>` | Manually advance task state |
 
 ## MCP Integration
 

@@ -32,7 +32,9 @@
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
 | Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
 | MCP | mcp serve/tools/test | 3 |
-| **Total** | | **120+** |
+| Audit | audit bypasses/summary/clear | 3 |
+| State | state show/list/history/reset/advance | 5 |
+| **Total** | | **127+** |
 
 ## Features by Sprint
 
@@ -210,6 +212,8 @@
 | Auto-sync local task from ttask done | `ttask done` | ✅ Done | T28.4 - Extracts task ID from card |
 | Budget check on task start | `ttask start` | ✅ Done | T28.5 - Use --budget-override to bypass |
 | Bypass audit logging | - | ✅ Done | All bypasses logged to bypass_log.jsonl |
+| Audit commands | `audit bypasses/summary/clear` | ✅ Done | View and manage bypass history |
+| State machine commands | `state show/list/history/reset/advance` | ✅ Done | Task execution state management |
 
 ## MCP Tools (13 total)
 

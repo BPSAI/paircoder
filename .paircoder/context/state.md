@@ -15,7 +15,7 @@
 |----|-------|----------|------------|--------|
 | T28.12 | Update Version Strings Across Docs | P1 | 15 | ✓ done |
 | T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ✓ done |
-| T28.14 | Document Audit and State Commands | P1 | 30 | ○ pending |
+| T28.14 | Document Audit and State Commands | P1 | 30 | ✓ done |
 | T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ○ pending |
 | T28.16 | Update Config Documentation | P1 | 15 | ○ pending |
 | T28.17 | Final Verification and Release Prep | P0 | 20 | ○ pending |
@@ -60,7 +60,7 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-Ready to start: T28.14 - Document Audit and State Commands
+Ready to start: T28.15 - Update CLI Reference with Flag Changes
 
 
 ## Backlog (Deprioritized)
@@ -80,6 +80,18 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.14: Document Audit and State Commands
+
+Documented the new `audit` and `state` command groups:
+- Added Audit Commands section to all-cli-commands.md (3 commands: bypasses/summary/clear)
+- Added State Commands section to all-cli-commands.md (5 commands: show/list/history/reset/advance)
+- Updated README.md command count from 120+ to 127+
+- Added Audit and State command tables to README.md
+- Updated FEATURE_MATRIX.md CLI Commands Summary table
+- Added audit and state features to Sprint 28 section
+
+All examples verified by running actual CLI commands.
 
 ### 2026-01-05 - T28.13: Add CHANGELOG v2.9.0 Entry
 
