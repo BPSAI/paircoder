@@ -526,10 +526,18 @@
     ],
     "total_seconds": 89.699122
   },
-  "_active": {
-    "task_id": "T27.11",
-    "timer_id": "local-20251230192241",
-    "description": "T27.11: Sync cookiecutter: agents",
-    "start": "2025-12-30T19:22:41.958062"
+  "T28.12": {
+    "entries": [
+      {
+        "id": "local-20260105180450",
+        "task_id": "T28.12",
+        "description": "T28.12: Update Version Strings Across Docs",
+        "start": "2026-01-05T18:04:50.944251",
+        "end": "2026-01-05T18:08:08.811447",
+        "duration_seconds": 197.867196,
+        "provider_id": null
+      }
+    ],
+    "total_seconds": 197.867196
   }
 }

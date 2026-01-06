@@ -69,7 +69,7 @@ If budget check fails, either:
 - Split into multiple plans
 - Warn user and get explicit approval
 
-### Step 4: Create Plan and Tasks
+### Step 4: Create Plan and Task Files
 
 ```bash
 # Create the plan

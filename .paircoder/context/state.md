@@ -1,13 +1,26 @@
 # Current State
 
-> Last updated: 2026-01-04
+> Last updated: 2026-01-05
 
 ## Active Plan
 
-**Plan:** (none - ready for Sprint 28)
-**Sprint:** 27 Complete, 28 Upcoming
-**Status:** Between sprints
-**Last Release:** v2.8.4
+**Plan:** plan-2026-01-sprint-28-docs
+**Sprint:** 28 - Documentation & Release
+**Status:** In Progress
+**Target Release:** v2.9.0
+
+## Current Sprint (Sprint 28 - v2.9.0 Documentation)
+
+| ID | Title | Priority | Complexity | Status |
+|----|-------|----------|------------|--------|
+| T28.12 | Update Version Strings Across Docs | P1 | 15 | ✓ done |
+| T28.13 | Add CHANGELOG v2.9.0 Entry | P1 | 25 | ○ pending |
+| T28.14 | Document Audit and State Commands | P1 | 30 | ○ pending |
+| T28.15 | Update CLI Reference with Flag Changes | P1 | 20 | ○ pending |
+| T28.16 | Update Config Documentation | P1 | 15 | ○ pending |
+| T28.17 | Final Verification and Release Prep | P0 | 20 | ○ pending |
+
+**Total:** 6 tasks, 125 complexity points
 
 ## Completed Sprint (Sprint 27 - Stabilization)
 
@@ -43,15 +56,12 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 | 25.6 | Emergent Skill Discovery | v2.8.3 | Complete |
 | 27 | Stabilization | v2.8.4 | Complete |
 | 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
-| 28 | TBD | TBD | Upcoming |
+| 28 | v2.9.0 Documentation & Release | v2.9.0 | In Progress |
 
 ## What's Next
 
-**Sprint 26: UX Overhaul (EPIC-004)** (10 tasks, 230 pts)
-Make PairCoder usable by non-technical "vibe-coders":
-- T26.1-T26.10: Interactive welcome wizard, Trello setup wizard, post-setup guidance, Claude prompts, /get-started slash command, board creation from template, contextual doc links, documentation updates, user retest session
+Ready to start: T28.13 - Add CHANGELOG v2.9.0 Entry
 
-**Sprint 28:** TBD - awaiting backlog review
 
 ## Backlog (Deprioritized)
 
@@ -70,6 +80,28 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-05 - T28.12: Update Version Strings
+
+Updated all version references from 2.8.x to 2.9.0:
+- `.paircoder/capabilities.yaml`: 2.8.3 -> 2.9.0
+- `README.md`: v2.8.4 -> v2.9.0 (title, install example)
+- `.paircoder/docs/USER_GUIDE.md`: v2.8.4 -> v2.9.0 (title, install, footer)
+- `.claude/skills/.../all-cli-commands.md`: Version 2.8.4 -> 2.9.0
+
+All acceptance criteria verified.
+
+### 2026-01-05 - Sprint 28 Planning
+
+Created plan `plan-2026-01-sprint-28-docs` with 6 tasks (125 complexity points):
+- T28.12: Update Version Strings Across Docs
+- T28.13: Add CHANGELOG v2.9.0 Entry
+- T28.14: Document Audit and State Commands
+- T28.15: Update CLI Reference with Flag Changes
+- T28.16: Update Config Documentation
+- T28.17: Final Verification and Release Prep
+
+Synced to Trello: 6 cards created in "Planned/Ready" list.
 
 ### 2026-01-04 - Hotfix: Enforcement Gates (Sprint 28 Prep)
 

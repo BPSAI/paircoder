@@ -1,6 +1,6 @@
 # PairCoder CLI Complete Reference
 
-> Updated: 2025-12-31 | Version: 2.8.4 | 120+ commands
+> Updated: 2026-01-05 | Version: 2.9.0 | 120+ commands
 
 ## Contents
 

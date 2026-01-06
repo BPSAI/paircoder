@@ -1,8 +1,8 @@
-# PairCoder v2.8.4 — AI-Augmented Pair Programming Framework
+# PairCoder v2.9.0 — AI-Augmented Pair Programming Framework
 
 PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude, GPT, Codex, Gemini). It standardizes project memory in `.paircoder/`, provides structured workflows via skills, and ships a CLI with **120+ commands** to orchestrate the entire development lifecycle.
 
-> **v2.8.4** — CLI Architecture Refactor (EPIC-003) + Token Budget System + Skill Enhancement
+> **v2.9.0** — Enforcement Gates + Task State Machine + Audit Logging
 
 ## Key Features
 
@@ -27,7 +27,7 @@ PairCoder is a **repo-native toolkit** for pairing with AI coding agents (Claude
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.8.4
+bpsai-pair --version  # Should show 2.9.0
 ```
 
 ### Initialize a Project

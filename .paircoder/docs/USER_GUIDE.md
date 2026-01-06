@@ -1,4 +1,4 @@
-# PairCoder v2.8.4 User Guide
+# PairCoder v2.9.0 User Guide
 
 > Complete documentation for the AI-augmented pair programming framework
 
@@ -71,7 +71,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.8.4
+bpsai-pair --version  # Should show 2.9.0
 ```
 
 ### With MCP Support
@@ -1323,4 +1323,4 @@ bpsai-pair cache stats
 
 ---
 
-*PairCoder v2.8.4 - MIT License*
+*PairCoder v2.9.0 - MIT License*
