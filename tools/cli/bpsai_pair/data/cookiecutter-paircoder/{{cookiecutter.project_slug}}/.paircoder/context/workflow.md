@@ -15,6 +15,12 @@
 ### 1. Starting Work
 
 ```bash
+# Check session status (detects new sessions, shows context)
+bpsai-pair session status
+
+# Check token budget before starting
+bpsai-pair budget status
+
 # Create feature branch
 git checkout -b feature/my-feature main
 
@@ -28,30 +34,38 @@ For features or refactors that take more than ~30 minutes:
 
 1. **Create a plan** in `.paircoder/plans/`
 2. **Break into tasks** (2-20 minutes each)
-3. **Follow the flow**: `design-plan-implement`
+3. **Estimate token budget** for the plan
+4. **Follow the Skill**: `designing-and-implementing`
 
 ```bash
-bpsai-pair plan new my-feature --type feature --flow design-plan-implement
+# Estimate tokens for the plan
+bpsai-pair plan estimate <plan-id>
+
+# Check if a task fits in remaining budget
+bpsai-pair budget check <task-id>
 ```
 
 ### 3. Implementation
 
-Follow TDD where practical:
+Always Follow TDD where practical:
 
 1. Write failing test
 2. Write minimal code to pass
 3. Refactor
 4. Repeat
 
-Use the `tdd-implement` flow for guidance.
+Use the `implementing-with-tdd` skill for guidance.
 
 ### 4. Verification
 
 Before marking work complete:
 
 ```bash
-# Run tests
+# Run tests (1774 tests)
 cd tools/cli && pytest
+
+# Quick test run (stop on first failure)
+pytest -x
 
 # Check types (if configured)
 mypy bpsai_pair/
@@ -62,21 +76,16 @@ ruff check bpsai_pair/
 
 ### 5. Review
 
-Self-review or request review:
-
-```bash
-bpsai-pair flow run review
-```
+Run skill `reviewing-code`
 
 ### 6. Completion
 
 ```bash
 # Update state
 bpsai-pair context-sync --last "Completed X" --next "Ready to merge"
-
-# Or run finish flow
-bpsai-pair flow run finish-branch
 ```
+
+# Run `finishing-branches` skill
 
 ## Commit Messages
 
@@ -137,7 +146,13 @@ When using Claude Code, Codex CLI, or similar:
 1. Point them to `.paircoder/capabilities.yaml`
 2. Let them read `context/project.md` and `context/state.md`
 3. They should suggest appropriate flows based on your request
-4. Update state after they complete work
+4. Use `session status` to check context and budget
+5. Update state after they complete work
+
+**Token Budget Awareness:**
+- `check_token_budget` hook warns before large tasks
+- `session status` shows remaining context budget
+- Plan tasks to fit within session limits
 
 ## Definition of Done
 

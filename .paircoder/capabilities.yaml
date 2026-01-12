@@ -39,7 +39,7 @@ directories:
 capabilities:
 
   # --------------------------------------------------------------------------
-  # SKILL CAPABILITIES (PREFERRED)
+  # SKILL CAPABILITIES
   # --------------------------------------------------------------------------
 
   - id: use_skills
@@ -59,11 +59,14 @@ capabilities:
         3. Follow the workflow steps
     available_skills:
       - designing-and-implementing
+      - creating-skills
       - implementing-with-tdd
       - reviewing-code
       - finishing-branches
       - managing-task-lifecycle
       - planning-with-trello
+      - releasing-versions
+      - reviewing-code
 
   - id: export_skills
     name: "Export skills to other platforms"
