@@ -7,7 +7,7 @@ Location: tools/cli/bpsai_pair/core/bypass_log.py
 """
 import json
 import os
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -48,7 +48,7 @@ def log_bypass(
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     entry = {
-        "timestamp": datetime.now(UTC).isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "command": command,
         "target": target,
         "reason": reason,
@@ -88,7 +88,7 @@ def get_bypasses(
 
     cutoff = None
     if since_days:
-        cutoff = datetime.now(UTC) - timedelta(days=since_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
 
     bypasses = []
     with open(log_path, "r", encoding="utf-8") as f:
@@ -101,7 +101,7 @@ def get_bypasses(
 
                 # Filter by time
                 if cutoff:
-                    entry_time = datetime.fromisoformat(entry["timestamp"].rstrip("Z")).replace(tzinfo=UTC)
+                    entry_time = datetime.fromisoformat(entry["timestamp"].rstrip("Z")).replace(tzinfo=timezone.utc)
                     if entry_time < cutoff:
                         continue
 

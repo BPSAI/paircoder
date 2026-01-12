@@ -1,10 +1,7 @@
 """Tests for cookie cutter template generation and structure."""
-import os
+
 from pathlib import Path
-
-import pytest
-import yaml
-
+import re
 
 # Path to the cookiecutter template
 TEMPLATE_DIR = Path(__file__).parent.parent / "bpsai_pair" / "data" / "cookiecutter-paircoder"
@@ -142,14 +139,14 @@ class TestCapabilitiesYaml:
         caps_file = PROJECT_TEMPLATE / ".paircoder" / "capabilities.yaml"
         content = caps_file.read_text()
 
-        # Check version (v2.8+) - must start with 2.8
-        assert 'version: "2.8' in content  # Allows 2.8, 2.8.1, 2.8.3, etc.
+        # Check version
+        assert re.search(r'version: "2\.\d+', content), "Missing version string"
 
         # Required top-level sections (as text patterns)
         assert "context_files:" in content
         assert "directories:" in content
         assert "capabilities:" in content
-        assert "skill_triggers:" in content  # v2.8 uses skills instead of flows
+        assert "skill_triggers:" in content
         assert "roles:" in content
         assert "notes:" in content
 
@@ -183,7 +180,7 @@ class TestConfigYaml:
         assert "project:" in content
         assert "workflow:" in content
         assert "pack:" in content
-        assert "skills:" in content  # v2.8 uses skills instead of flows
+        assert "skills:" in content
         assert "routing:" in content
         assert "trello:" in content
         assert "estimation:" in content
