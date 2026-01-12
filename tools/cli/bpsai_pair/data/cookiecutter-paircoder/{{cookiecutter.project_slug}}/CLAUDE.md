@@ -38,13 +38,21 @@ Use Skill tool with skill: "implementing-with-tdd"
 - Batch multiple task completions before updating
 - Claim a task is complete without documenting it in state.md
 
-### 2. Follow Trello Two-Step Completion
+### 2. Follow Trello Completion Workflow
 
 When completing tasks with Trello cards:
-1. `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"` (checks AC)
-2. `bpsai-pair task update TASK-XXX --status done` (updates local file)
+1. `bpsai-pair ttask done TRELLO-XX --summary "..."`
+   - ✓ Checks acceptance criteria
+   - ✓ Moves card to Done list
+   - ✓ Auto-updates local task file
+   - ✓ Runs completion hooks (updates state.md)
 
-**DO NOT** skip `ttask done` - this checks acceptance criteria on Trello.
+**DO NOT** use `task update --status done` for Trello-linked tasks.
+The `ttask done` command handles everything automatically.
+
+**Bypasses (audited):**
+- `--no-strict`: Skip AC check (logged to bypass_log.jsonl)
+- `task update --local-only --reason "..."`: Update local only (logged)
 
 ---
 
@@ -63,14 +71,20 @@ When completing tasks with Trello cards:
 
 1. **READ** `.paircoder/context/bps-board-conventions.md` - Contains exact custom field values
 2. **USE ONLY** values listed in that document - do NOT invent new values
+3. **FOR PAIRCODER:** Always use these defaults:
+   - Project: `PairCoder`
+   - Stack: `Worker/Function`
+   - Repo URL: `https://github.com/BPSAI/paircoder`
 
 **NEVER:**
 - Create new dropdown values
+- Use `CLI` for Stack (it doesn't exist - use `Worker/Function`)
 - Use `Bug/Issue` or `Documentation` for Stack (those are labels, not Stack options)
 - Use `maintenance` as plan type (use `chore`)
 - Use `To do` for Status (use `Planning` or `Enqueued`)
 
 ---
+
 
 ## Task Naming Convention
 
@@ -158,8 +172,9 @@ When you see these patterns, use the corresponding skill:
 
 **⚠️ This is a NON-NEGOTIABLE requirement. See top of this document.**
 
-1. **Trello** (if card exists): `bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"`
-2. **Local file**: `bpsai-pair task update <id> --status done`
+1. **Trello** (if card exists): `bpsai-pair ttask done TRELLO-XX --summary "..."`
+   - This automatically updates local task file and runs completion hooks
+2. **Non-Trello tasks only**: `bpsai-pair task update <id> --status done`
 3. **IMMEDIATELY update** `.paircoder/context/state.md`:
    - Mark task as done in task list (✓)
    - Add session entry under "What Was Just Done"
@@ -169,19 +184,19 @@ When you see these patterns, use the corresponding skill:
 
 ## Project-Specific Notes
 
-
 ## Slash Commands
 
 Quick commands available via `/command` in Claude Code:
 
 | Command | Purpose |
 |---------|---------|
-| `/status` | Show project status, current sprint, active tasks |
 | `/pc-plan` | Enter Navigator role, create plan with budget validation |
 | `/start-task <ID>` | Enter Driver role, work on task with verification gates |
 | `/prep-release <ver>` | Enter Release Engineer role, prepare release |
 
 **Usage**: Type `/pc-plan backlog-sprint-28.md` in the chat to run the planning workflow.
+
+**Note**: For project status, use `bpsai-pair status` CLI command (no slash command).
 
 ## CLI Reference
 
@@ -195,12 +210,22 @@ bpsai-pair plan show <id>
 
 # Tasks
 bpsai-pair task list --plan <id>
+# For non-Trello tasks:
 bpsai-pair task update <id> --status done
+# For Trello-linked tasks - use ttask done instead (handles local update)
+# Emergency local-only update (audited):
+bpsai-pair task update <id> --status done --local-only --reason "..."
 
 # Skills
 bpsai-pair skill list
 bpsai-pair skill validate
 bpsai-pair skill export --all --format cursor
+
+# Trello Tasks
+bpsai-pair ttask start TRELLO-XX           # Budget check runs automatically
+bpsai-pair ttask start TRELLO-XX --budget-override  # Override budget (audited)
+bpsai-pair ttask done TRELLO-XX --summary "..."     # Complete with AC check
+bpsai-pair ttask done TRELLO-XX --no-strict         # Skip AC check (audited)
 
 # Budget
 bpsai-pair budget status
