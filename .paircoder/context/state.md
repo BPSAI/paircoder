@@ -44,8 +44,8 @@
 
 Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
-| Sprint | Theme | Version | Status |
-|--------|-------|---------|--------|
+| Sprint | Theme | Version | Status   |
+|--------|-------|---------|----------|
 | 1-17.5 | Foundation → Backlog Remediation | v2.0-2.6.0 | Archived |
 | 17.6 | Trello Field Validation Hotfix | v2.6.1 | Complete |
 | 18 | Release Engineering | v2.6.1 | Complete |
@@ -55,8 +55,15 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 | 25.5 | Cross-Platform Skills | v2.8.1 | Complete |
 | 25.6 | Emergent Skill Discovery | v2.8.3 | Complete |
 | 27 | Stabilization | v2.8.4 | Complete |
-| 26 | UX Overhaul (EPIC-004) | v2.10.0 | Planned |
 | 28 | v2.9.0 Documentation & Release | v2.9.0 | Complete |
+| 29 | Contained Autonomy | v2.9.1 | Planned |
+| 29.5 | Feedback Loop Enhancements | v2.9.2 | Planned |
+| 30 | UX + Web Wizard (EPIC-004) | v2.10.0 | Planned |
+| 31 | Multi-Project Workspace (EPIC-001) | v2.11.0 | Planned |
+| 32 | Trello-Native Phase 1 | v2.12.0 | Planned |
+| 33 | Trello-Native Phase 2 | v2.13.0 | Planned |
+| 34 | Release Prep | v2.14.0 | Planned |
+| 35 | Remote Access (v3.0) | v3.0.0 | Planned |
 
 ## What's Next
 
@@ -65,7 +72,7 @@ Sprint 28 complete! Ready for v2.9.0 release.
 Next steps:
 1. Merge to main
 2. Tag v2.9.0
-3. Begin Sprint 26: EPIC-004 UX Overhaul
+3. Begin Sprint 29: Contained Autonomy (v2.9.1)
 
 
 ## Backlog (Deprioritized)

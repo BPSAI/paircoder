@@ -97,98 +97,16 @@ CLAUDE CAN'T EDIT ENFORCEMENT CODE
 
 ---
 
-## Sprint 27: Stabilization 🚨
+## Sprint 27: Stabilization - Complete
 
 **Goal:** CI green, upgrade command works, no blocking bugs
 
-**Start Date:** 2024-12-30
-**Target:** v2.8.4
-
-### Tasks
-
-| ID | Task | Issue IDs | Effort | Deps |
-|----|------|-----------|--------|------|
-| T27.1 | Fix `template check` crash | K1 | 2h | - |
-| T27.2 | Fix smoke test failure | K2 | 2h | - |
-| T27.3 | Fix Unicode errors in Trello | K3 | 2h | - |
-| T27.4 | Fix `upgrade` source file resolution | K13, K14 | 4h | - |
-| T27.5 | Fix `upgrade` to actually copy files | K13 | 3h | T27.4 |
-| T27.6 | Fix Windows hook compatibility (`|| true`) | K15 | 2h | - |
-| T27.7 | Remove `/status` slash command (conflicts) | K5, CC2 | 1h | - |
-| T27.8 | Update cookiecutter to v2.8 | A1, A2 | 2h | - |
-| T27.9 | Sync skills to cookiecutter | A3 | 2h | T27.8 |
-| T27.10 | Sync commands to cookiecutter | A5 | 1h | T27.8 |
-| T27.11 | Sync agents to cookiecutter | A4 | 1h | T27.8 |
-
-**Total Effort:** ~22 hours
-**Complexity:** 180 points
-
-### Acceptance Criteria
-
-- [ ] `bpsai-pair template check` runs without crash
-- [ ] `bpsai-pair smoke-test` passes
-- [ ] Trello operations work with Unicode characters
-- [ ] `bpsai-pair upgrade` copies skills, agents, commands, docs
-- [ ] Hooks work on Windows (no `|| true`)
-- [ ] No `/status` command in `.claude/commands/`
-- [ ] Cookiecutter template matches v2.8 features
-- [ ] CI pipeline green
-
-### Deliverables
-
-- [ ] v2.8.4 release
-- [ ] Updated cookiecutter template
-- [ ] K-Masty retest (upgrade flow)
-
----
-
-## Sprint 28: Enforcement Wiring 🔒
+## Sprint 28: Enforcement Wiring - Complete
 
 **Goal:** Make existing enforcement code actually enforce
 
-**Start Date:** After Sprint 27
-**Target:** v2.9.0
 
-### Tasks
-
-| ID | Task | Issue IDs | Effort | Deps |
-|----|------|-----------|--------|------|
-| T28.1 | Make `--strict` default for `ttask done` | B3, R1.1 | 1h | - |
-| T28.2 | Make `require_review=True` default | B1, R1.2 | 1h | - |
-| T28.3 | Block `task update --status done` on Trello projects | B1 | 2h | - |
-| T28.4 | Auto-update local task from `ttask done` | B1 | 2h | T28.3 |
-| T28.5 | Wire budget `can_proceed()` before task start | R1.3 | 3h | - |
-| T28.6 | Wire budget check into `/pc-plan` | R2.1 | 2h | T28.5 |
-| T28.7 | Load routing config in `core/config.py` | R4.1 | 2h | - |
-| T28.8 | Pass model to `HeadlessSession` | R4.3 | 2h | T28.7 |
-| T28.9 | Create `/pc-done` slash command | K8 | 3h | T28.3, T28.4 |
-| T28.10 | Add bypass audit logging | B4 | 2h | - |
-| T28.11 | Remove unnecessary `--force` flags | B4 | 2h | T28.10 |
-| T28.12 | Check `/review` conflict with Claude built-in | CC3 | 1h | - |
-| T28.13 | Check `/security-review` conflict | CC4 | 1h | - |
-
-**Total Effort:** ~24 hours
-**Complexity:** 200 points
-
-### Acceptance Criteria
-
-- [ ] `ttask done` checks AC by default (no `--strict` needed)
-- [ ] `autonomous.py` has `require_review=True` 
-- [ ] `task update --status done` fails on Trello projects without `--force`
-- [ ] `budget check` runs before task start
-- [ ] `/pc-done` enforces full completion workflow
-- [ ] All bypasses logged to `bypass_log.jsonl`
-- [ ] Model routing works (config → orchestrator → headless)
-
-### Deliverables
-
-- [ ] v2.9.0 release
-- [ ] Updated ENFORCEMENT-REMEDIATION.md (mark completed)
-- [ ] Enforcement demonstration video/doc
-
----
-
-## Sprint 29: Contained Autonomy 🎯
+## Sprint 29: Contained Autonomy - Current
 
 **Goal:** `claude666` command - safe autonomous mode with locked enforcement
 
@@ -276,6 +194,53 @@ sandbox:
 - [ ] Demo video of contained autonomy
 
 ---
+
+## Sprint 29.5: Feedback Loop Enhancements 📊
+
+**Goal:** Close the estimation feedback loop using Claude Code session data
+
+**Start Date:** After Sprint 29
+**Target:** v2.9.2
+
+### Context
+
+Claude Code stores detailed session data in `~/.claude/` including:
+- Token usage per message (input, output, cache)
+- Task IDs from history.jsonl (auto-linked via command patterns)
+- Session duration and tool usage
+
+This data enables comparing estimated vs actual token consumption, allowing PairCoder to calibrate its estimation coefficients over time.
+
+### Tasks
+
+| ID | Task | Effort | Deps |
+|----|------|--------|------|
+| T29.5.1 | Install claude_code module | 0.5h | - |
+| T29.5.2 | Add CLI `session import` command | 2h | T29.5.1 |
+| T29.5.3 | Add CLI `session list` command | 1h | T29.5.1 |
+| T29.5.4 | Add CLI `budget accuracy` command | 2h | T29.5.2 |
+| T29.5.5 | Add `import_claude_session` hook | 2h | T29.5.2 |
+| T29.5.6 | Implement calibration algorithm | 3h | T29.5.4 |
+| T29.5.7 | Add feedback_loop config schema | 1h | T29.5.6 |
+| T29.5.8 | Documentation and testing | 2h | T29.5.7 |
+
+**Total Effort:** ~14 hours
+**Complexity:** 120 points
+
+### Acceptance Criteria
+
+- [ ] `bpsai-pair session import` imports Claude Code sessions
+- [ ] Sessions auto-linked to tasks via history.jsonl patterns
+- [ ] `bpsai-pair budget accuracy` shows estimated vs actual comparison
+- [ ] Calibration adjusts coefficients in config.yaml
+- [ ] Hook auto-imports session on task complete
+- [ ] 30-day retention warning in documentation
+
+### Deliverables
+
+- [ ] v2.9.2 release
+- [ ] Feedback loop documentation
+- [ ] Calibration guide
 
 ## Sprint 30: UX + Web Wizard ✨
 
