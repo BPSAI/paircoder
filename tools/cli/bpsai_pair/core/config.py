@@ -4,11 +4,156 @@ Configuration management for PairCoder.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 import yaml
 import json
 from dataclasses import dataclass, asdict, field
+
+
+# Default network domains allowed in containment mode
+DEFAULT_CONTAINMENT_NETWORK_ALLOWLIST = [
+    "api.anthropic.com",
+    "api.trello.com",
+    "github.com",
+    "pypi.org",
+]
+
+
+def _validate_path(path: str, field_name: str) -> str:
+    """Validate a filesystem path string.
+
+    Args:
+        path: The path string to validate.
+        field_name: Name of the field for error messages.
+
+    Returns:
+        The validated path string.
+
+    Raises:
+        ValueError: If the path is invalid.
+    """
+    if not path:
+        raise ValueError(f"{field_name} cannot contain empty path strings")
+    if "\x00" in path:
+        raise ValueError(f"{field_name} cannot contain paths with null bytes")
+    return path
+
+
+def _validate_domain(domain: str) -> str:
+    """Validate a network domain string.
+
+    Args:
+        domain: The domain string to validate.
+
+    Returns:
+        The validated domain string.
+
+    Raises:
+        ValueError: If the domain is invalid.
+    """
+    if not domain:
+        raise ValueError("allow_network cannot contain empty domain strings")
+
+    # Check for protocol prefix
+    if domain.startswith(("http://", "https://", "ftp://")):
+        raise ValueError(
+            f"Domain '{domain}' should not include protocol prefix (http/https)"
+        )
+
+    # Check for path (anything after first /)
+    # Allow ports like example.com:8080 but reject paths like example.com/path
+    if "/" in domain:
+        raise ValueError(
+            f"Domain '{domain}' should not include path. Use domain only."
+        )
+
+    return domain
+
+
+@dataclass
+class ContainmentConfig:
+    """Configuration for contained autonomy mode.
+
+    This configuration controls containment mode behavior, including
+    which directories and files are locked (read-only), which network
+    domains are allowed, and checkpoint/rollback behavior.
+
+    Note: This is separate from the Docker sandbox system (security.sandbox).
+    """
+
+    enabled: bool = False
+    """Enable containment mode for contained autonomy."""
+
+    locked_directories: List[str] = field(default_factory=list)
+    """Directories mounted read-only in containment mode."""
+
+    locked_files: List[str] = field(default_factory=list)
+    """Files mounted read-only in containment mode."""
+
+    allow_network: List[str] = field(default_factory=lambda: DEFAULT_CONTAINMENT_NETWORK_ALLOWLIST.copy())
+    """Network domains allowed in containment mode."""
+
+    auto_checkpoint: bool = True
+    """Create git checkpoint on containment entry."""
+
+    rollback_on_violation: bool = False
+    """Rollback to checkpoint on containment violation attempts."""
+
+    def __post_init__(self) -> None:
+        """Validate configuration after initialization."""
+        # Validate locked_directories
+        validated_dirs = []
+        for path in self.locked_directories:
+            validated_dirs.append(_validate_path(path, "locked_directories"))
+        self.locked_directories = validated_dirs
+
+        # Validate locked_files
+        validated_files = []
+        for path in self.locked_files:
+            validated_files.append(_validate_path(path, "locked_files"))
+        self.locked_files = validated_files
+
+        # Validate allow_network
+        validated_domains = []
+        for domain in self.allow_network:
+            validated_domains.append(_validate_domain(domain))
+        self.allow_network = validated_domains
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary.
+
+        Returns:
+            Dictionary representation of the config.
+        """
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ContainmentConfig":
+        """Create ContainmentConfig from dictionary.
+
+        Args:
+            data: Dictionary with config values.
+
+        Returns:
+            ContainmentConfig instance.
+        """
+        # Only pass keys that are valid for ContainmentConfig
+        valid_keys = {
+            "enabled",
+            "locked_directories",
+            "locked_files",
+            "allow_network",
+            "auto_checkpoint",
+            "rollback_on_violation",
+        }
+        filtered_data = {k: v for k, v in data.items() if k in valid_keys}
+        return cls(**filtered_data)
+
+
+# Backwards compatibility alias
+SandboxConfig = ContainmentConfig
 
 
 # Current config version - update when schema changes
@@ -241,6 +386,9 @@ class Config:
     python_formatter: str = "ruff"
     node_formatter: str = "prettier"
 
+    # Containment settings (contained autonomy mode)
+    containment: "ContainmentConfig" = field(default_factory=lambda: ContainmentConfig())
+
     @classmethod
     def find_config_file(cls, root: Path) -> Optional[Path]:
         """Find the config file, preferring v2 .paircoder/ folder over legacy .paircoder.yml."""
@@ -302,6 +450,12 @@ class Config:
                         ci = yaml_data["ci"]
                         data["python_formatter"] = ci.get("python_formatter", "ruff")
                         data["node_formatter"] = ci.get("node_formatter", "prettier")
+
+                    # Load containment config (contained autonomy mode)
+                    if "containment" in yaml_data:
+                        containment_data = yaml_data["containment"]
+                        if isinstance(containment_data, dict):
+                            data["containment"] = ContainmentConfig.from_dict(containment_data)
                 else:
                     # Old flat structure (backwards compatibility)
                     data = yaml_data
@@ -365,7 +519,8 @@ class Config:
             "ci": {
                 "python_formatter": self.python_formatter,
                 "node_formatter": self.node_formatter,
-            }
+            },
+            "containment": self.containment.to_dict(),
         }
 
         with open(config_file, 'w') as f:

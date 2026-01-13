@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.1 Complete)
+> Last updated: 2026-01-13 (Sandbox→Containment Rename)
 
 ## Active Plan
 
@@ -13,15 +13,15 @@
 
 | ID | Title | Priority | Complexity | Status |
 |----|-------|----------|------------|--------|
-| T29.1 | Design Sandbox Config Schema | P0 | 25 | ✓ done |
-| T29.2 | Add Sandbox Section to config.yaml | P0 | 20 | pending |
-| T29.3 | Implement Directory Locking in sandbox.py | P0 | 45 | pending |
+| T29.1 | Design Containment Config Schema | P0 | 25 | ✓ done |
+| T29.2 | Add Containment Section to config.yaml | P0 | 20 | ✓ done |
+| T29.3 | Implement Directory Locking in containment.py | P0 | 45 | pending |
 | T29.4 | Create contained-auto Command | P0 | 40 | pending |
 | T29.5 | Add claude666 Alias | P1 | 10 | pending |
 | T29.6 | Implement Network Allowlist | P1 | 35 | pending |
-| T29.7 | Test Sandbox Escape Attempts | P0 | 45 | pending |
-| T29.8 | Create Auto-Checkpoint on Sandbox Entry | P1 | 25 | pending |
-| T29.9 | Add Sandbox Status to bpsai-pair status | P1 | 20 | pending |
+| T29.7 | Test Containment Escape Attempts | P0 | 45 | pending |
+| T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | pending |
+| T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
 | T29.10 | Document Contained Autonomy Mode | P1 | 30 | pending |
 | T29.11 | Create Subagent Invocation Documentation | P2 | 30 | pending |
 
@@ -127,16 +127,81 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 
 _Add entries here as work is completed._
 
-### 2026-01-13 - T29.1: Design Sandbox Config Schema
+### 2026-01-13 - Renamed Sandbox → Containment
 
-Implemented `SandboxConfig` dataclass in `tools/cli/bpsai_pair/core/config.py`:
+Renamed Sprint 29 "sandbox" feature to "containment" to avoid collision with existing Docker sandbox system:
+
+**Code Changes:**
+- `SandboxConfig` → `ContainmentConfig` (with backwards compat alias)
+- `Config.sandbox` → `Config.containment`
+- `DEFAULT_NETWORK_ALLOWLIST` → `DEFAULT_CONTAINMENT_NETWORK_ALLOWLIST`
+- Test files renamed: `test_sandbox_*.py` → `test_containment_*.py`
+- Cookiecutter template: `sandbox:` → `containment:`
+- Presets: `config["sandbox"]` → `config["containment"]`
+
+**Documentation Updates:**
+- All T29.*.task.md files updated to use containment terminology
+- state.md session logs updated
+- Sprint 29 backlog to be updated
+
+**Unchanged:**
+- `security.sandbox` section in config.yaml (Docker isolation pointer)
+- `security/sandbox.yaml` file (Docker sandbox config)
+- Any reference to "Docker sandbox" or command sandboxing
+
+All 51 config tests passing.
+
+### 2026-01-13 - T29.2: Add Containment Section to config.yaml
+
+Wired `ContainmentConfig` into the main config loading system:
+
+**Changes:**
+- Added `containment: ContainmentConfig` field to `Config` dataclass
+- Updated `Config.load()` to parse containment section from YAML
+- Updated `Config.save()` to include containment section
+- Added containment section to `Preset.to_config_dict()` in presets.py
+- Updated cookiecutter template with containment section
+
+**Default Containment Config:**
+```yaml
+containment:
+  enabled: false
+  locked_directories:
+    - .claude/agents/
+    - .claude/commands/
+    - .claude/skills/
+  locked_files:
+    - CLAUDE.md
+    - AGENTS.md
+  allow_network:
+    - api.anthropic.com
+    - api.trello.com
+    - github.com
+    - pypi.org
+  auto_checkpoint: true
+  rollback_on_violation: false
+```
+
+**Tests:**
+- 9 new tests in `tests/core/test_containment_config_integration.py`
+- All 50 config-related tests passing
+
+**Files Changed:**
+- `tools/cli/bpsai_pair/core/config.py` - Config class updates
+- `tools/cli/bpsai_pair/core/presets.py` - Added containment to presets
+- `tools/cli/bpsai_pair/data/cookiecutter-paircoder/.../config.yaml` - Template update
+- `tools/cli/tests/core/test_containment_config_integration.py` - New test file
+
+### 2026-01-13 - T29.1: Design Containment Config Schema
+
+Implemented `ContainmentConfig` dataclass in `tools/cli/bpsai_pair/core/config.py`:
 
 **Features:**
-- `enabled: bool = False` - Enable sandbox mode
+- `enabled: bool = False` - Enable containment mode
 - `locked_directories: List[str] = []` - Directories mounted read-only
 - `locked_files: List[str] = []` - Files mounted read-only
 - `allow_network: List[str]` - Allowed network domains (defaults to Anthropic, Trello, GitHub, PyPI)
-- `auto_checkpoint: bool = True` - Create git checkpoint on sandbox entry
+- `auto_checkpoint: bool = True` - Create git checkpoint on containment entry
 - `rollback_on_violation: bool = False` - Rollback on violation attempts
 
 **Validation:**
@@ -144,33 +209,33 @@ Implemented `SandboxConfig` dataclass in `tools/cli/bpsai_pair/core/config.py`:
 - Domain validation: Rejects protocol prefixes (http://) and paths
 
 **Tests:**
-- 20 new tests in `tests/core/test_sandbox_config.py`
+- 21 new tests in `tests/core/test_containment_config.py` (including backwards compat alias test)
 - All tests passing
 
 **Files Changed:**
-- `tools/cli/bpsai_pair/core/config.py` - Added `SandboxConfig` class
-- `tools/cli/tests/core/test_sandbox_config.py` - New test file
+- `tools/cli/bpsai_pair/core/config.py` - Added `ContainmentConfig` class
+- `tools/cli/tests/core/test_containment_config.py` - New test file
 
 ### 2026-01-13 - Sprint 29 Planning
 
 Created plan `plan-2026-01-sprint-29-contained-autonomy` with 11 tasks (325 complexity points):
 
 **Phase 1: Config Schema & Infrastructure**
-- T29.1: Design Sandbox Config Schema (P0, 25)
-- T29.2: Add Sandbox Section to config.yaml (P0, 20)
+- T29.1: Design Containment Config Schema (P0, 25)
+- T29.2: Add Containment Section to config.yaml (P0, 20)
 
-**Phase 2: Core Sandbox Implementation**
-- T29.3: Implement Directory Locking in sandbox.py (P0, 45)
+**Phase 2: Core Containment Implementation**
+- T29.3: Implement Directory Locking in containment.py (P0, 45)
 - T29.4: Create contained-auto Command (P0, 40)
 - T29.5: Add claude666 Alias (P1, 10)
 
 **Phase 3: Network & Security Hardening**
 - T29.6: Implement Network Allowlist (P1, 35)
-- T29.7: Test Sandbox Escape Attempts (P0, 45)
-- T29.8: Create Auto-Checkpoint on Sandbox Entry (P1, 25)
+- T29.7: Test Containment Escape Attempts (P0, 45)
+- T29.8: Create Auto-Checkpoint on Containment Entry (P1, 25)
 
 **Phase 4: Integration & Documentation**
-- T29.9: Add Sandbox Status to bpsai-pair status (P1, 20)
+- T29.9: Add Containment Status to bpsai-pair status (P1, 20)
 - T29.10: Document Contained Autonomy Mode (P1, 30)
 - T29.11: Create Subagent Invocation Documentation (P2, 30)
 

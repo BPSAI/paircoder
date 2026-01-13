@@ -185,6 +185,28 @@ class Preset:
             },
         }
 
+        # Add containment configuration (contained autonomy mode)
+        config["containment"] = {
+            "enabled": False,
+            "locked_directories": [
+                ".claude/agents/",
+                ".claude/commands/",
+                ".claude/skills/",
+            ],
+            "locked_files": [
+                "CLAUDE.md",
+                "AGENTS.md",
+            ],
+            "allow_network": [
+                "api.anthropic.com",
+                "api.trello.com",
+                "github.com",
+                "pypi.org",
+            ],
+            "auto_checkpoint": True,
+            "rollback_on_violation": False,
+        }
+
         return config
 
     def to_yaml(self, project_name: str, primary_goal: str) -> str:
