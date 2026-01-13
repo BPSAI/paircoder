@@ -1,4 +1,4 @@
-# PairCoder v2.8.4 User Guide
+# PairCoder v2.9.0 User Guide
 
 > Complete documentation for the AI-augmented pair programming framework
 
@@ -71,7 +71,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.8.4
+bpsai-pair --version  # Should show 2.9.0
 ```
 
 ### With MCP Support
@@ -191,7 +191,7 @@ sprint: sprint-1
 ---
 
 # Objective
-Implement the core business logic for the feature.
+- Implement the core business logic for the feature.
 
 # Implementation Plan
 - Create service class
@@ -312,13 +312,13 @@ bpsai-pair init my-project --preset bps
 The `bps` preset configures a full BPS AI Software workflow:
 
 **Trello 7-List Structure:**
-- Intake / Backlog
-- Planned / Ready
+- Intake/Backlog
+- Planned/Ready
 - In Progress
-- Review / Testing
-- Deployed / Done
-- Issues / Tech Debt
-- Notes / Ops Log
+- Review/Testing
+- Deployed/Done
+- Issues/Tech Debt
+- Notes/Ops Log
 
 **Label Colors:**
 - Backend (green), Frontend (yellow), Database (orange)
@@ -434,14 +434,16 @@ Skills are the primary way to define reusable workflows in PairCoder. They follo
 
 ### Available Skills
 
-| Skill | Triggers | Purpose |
-|-------|----------|---------|
-| `designing-and-implementing` | "design", "plan", "feature" | Feature development |
-| `implementing-with-tdd` | "fix", "bug", "test" | Test-driven implementation |
-| `reviewing-code` | "review", "check", "PR" | Code review workflow |
-| `finishing-branches` | "finish", "merge", "complete" | Branch completion |
-| `managing-task-lifecycle` | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
-| `planning-with-trello` | "plan feature", "create tasks" | Planning with Trello |
+| Skill                        | Triggers                                | Purpose                          |
+|------------------------------|-----------------------------------------|----------------------------------|
+| `designing-and-implementing` | "design", "plan", "feature"             | Feature development              |
+| `implementing-with-tdd`      | "fix", "bug", "test"                    | Test-driven implementation       |
+| `reviewing-code`             | "review", "check", "PR"                 | Code review workflow             |
+| `finishing-branches`         | "finish", "merge", "complete"           | Branch completion                |
+| `managing-task-lifecycle`    | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
+| `creating-skills`            | "repetitive workflow", "create skill"   | Creating new skills              |
+| `planning-with-trello`       | "plan feature", "create tasks"          | Planning with Trello             |
+| `releasing-versions`         | "bump version", "prep release"          | Preparing a new release          |
 
 ### Skill Commands
 
@@ -467,6 +469,7 @@ bpsai-pair skill generate gap-name
 # Install skill from URL or path
 bpsai-pair skill install https://example.com/skill.tar.gz
 bpsai-pair skill install ./my-skill/
+bpsai-pair skill install ./my-skill/ --overwrite  # Overwrite existing skill
 ```
 
 ---
@@ -505,8 +508,6 @@ For maximum portability:
 - Avoid platform-specific commands in skill content
 - Use generic instructions (what to do, not tool-specific how)
 - Keep skills focused on workflow, not tool invocations
-
-See [Cross-Platform Skills Guide](../CROSS_PLATFORM_SKILLS.md) for detailed documentation.
 
 ---
 
@@ -664,9 +665,9 @@ bpsai-pair intent detect "add user authentication"
 bpsai-pair intent should-plan "refactor the database layer"
 # Output: true (complex task needs planning)
 
-# Suggest appropriate flow
-bpsai-pair intent suggest-flow "review the PR for security issues"
-# Output: code-review
+# Suggest appropriate skill
+bpsai-pair intent suggest-skill "review the PR for security issues"
+# Output: reviewing-code
 ```
 
 ### Intent Types
@@ -912,11 +913,13 @@ bpsai-pair ttask list
 # Show task details
 bpsai-pair ttask show <card-id>
 
-# Start working (moves to In Progress)
+# Start working (moves to In Progress, checks budget)
 bpsai-pair ttask start <card-id>
+bpsai-pair ttask start <card-id> --budget-override  # Override budget warning (logged)
 
-# Complete task (moves to Done)
+# Complete task (moves to Done, strict AC check by default)
 bpsai-pair ttask done <card-id> --summary "Implemented feature X"
+bpsai-pair ttask done <card-id> --summary "Done" --no-strict  # Skip AC check (logged)
 
 # Mark blocked
 bpsai-pair ttask block <card-id> --reason "Waiting for API"
@@ -1132,33 +1135,31 @@ hooks:
 
 ### All Commands (120+ total)
 
-| Group | Commands | Count |
-|-------|----------|-------|
-| Core | init, feature, pack, context-sync, status, validate, ci | 7 |
-| Presets | preset list/show/preview, init --preset | 4 |
-| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
-| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
-| Skills | skill list/validate/export/install/suggest/gaps/generate | 7 |
-| Flows | flow list/show/run/validate (deprecated) | 4 |
-| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
-| Intent | intent detect/should-plan/suggest-flow | 3 |
-| GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
-| Standup | standup generate/post | 2 |
-| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens | 9 |
-| Budget | budget estimate/status/check | 3 |
-| Timer | timer start/stop/status/show/summary | 5 |
-| Benchmark | benchmark run/results/compare/list | 4 |
-| Cache | cache stats/clear/invalidate | 3 |
-| Session | session check/status | 2 |
-| Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
-| Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
-| Migrate | migrate, migrate status | 2 |
-| Upgrade | upgrade | 1 |
+| Group | Commands                                                                                             | Count |
+|-------|------------------------------------------------------------------------------------------------------|-------|
+| Core | init, feature, pack, context-sync, status, validate, ci                                              | 7 |
+| Presets | preset list/show/preview, init --preset                                                              | 4 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate                                        | 8 |
+| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview         | 11 |
+| Skills | skill list/validate/export/install/suggest/gaps/generate                                             | 7 |
+| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status                               | 6 |
+| Intent | intent detect/should-plan/suggest-skill                                                              | 3 |
+| GitHub | github status/create/list/merge/link/auto-pr/archive-merged                                          | 7 |
+| Standup | standup generate/post                                                                                | 2 |
+| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens                       | 9 |
+| Budget | budget estimate/status/check                                                                         | 3 |
+| Timer | timer start/stop/status/show/summary                                                                 | 5 |
+| Benchmark | benchmark run/results/compare/list                                                                   | 4 |
+| Cache | cache stats/clear/invalidate                                                                         | 3 |
+| Session | session check/status                                                                                 | 2 |
+| Compaction | compaction snapshot save/list, check/recover/cleanup                                                 | 5 |
+| Security | security scan-secrets/pre-commit/install-hook/scan-deps                                              | 4 |
+| Migrate | migrate, migrate status                                                                              | 2 |
+| Upgrade | upgrade                                                                                              | 1 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
-| Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
-| MCP | mcp serve/tools/test | 3 |
+| Trello Tasks | ttask list/show/start/done/block/comment/move                                                        | 7 |
+| MCP | mcp serve/tools/test                                                                                 | 3 |
 
-See [README.md](../README.md) for complete command details.
 
 ---
 
@@ -1232,13 +1233,32 @@ trello:
     in_progress: "In Progress"
     review: "In Review"
     done: "Done"
+
+enforcement:
+  state_machine: false          # Enable formal task state transitions
+  strict_ac_verification: true  # Require AC items checked before completion
+  require_budget_check: true    # Check budget before starting tasks
+  block_no_hooks: true          # Block --no-hooks in strict mode
 ```
+
+### Enforcement Settings
+
+The `enforcement` section controls workflow gates that ensure tasks are completed properly.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `state_machine` | `false` | When enabled, tasks must follow formal state transitions (NOT_STARTED → BUDGET_CHECKED → IN_PROGRESS → AC_VERIFIED → COMPLETED). Use `bpsai-pair state` commands to manage. |
+| `strict_ac_verification` | `true` | Requires all acceptance criteria items to be checked on Trello before completing a task with `ttask done`. Use `--no-strict` to bypass (logged for audit). |
+| `require_budget_check` | `true` | Runs budget estimation before starting tasks. If budget exceeds threshold, warns user. Use `--budget-override` to bypass (logged for audit). |
+| `block_no_hooks` | `true` | Prevents using `--no-hooks` flag when strict mode is enabled. Ensures hooks always run for proper tracking. |
+
+**Bypass Logging**: When enforcement gates are bypassed (using `--no-strict`, `--budget-override`, or `--local-only`), the bypass is logged to `.paircoder/history/bypass_log.jsonl` for audit purposes. Use `bpsai-pair audit bypasses` to review.
 
 ---
 
 ## Claude Code Integration
 
-PairCoder is designed to complement Claude Code's built-in features. For detailed documentation on how they work together, see [Claude Code Integration Guide](../../docs/CLAUDE_CODE_INTEGRATION.md).
+PairCoder is designed to complement Claude Code's built-in features.
 
 ### Key Points
 
@@ -1323,4 +1343,4 @@ bpsai-pair cache stats
 
 ---
 
-*PairCoder v2.8.4 - MIT License*
+*PairCoder v2.9.0 - MIT License*

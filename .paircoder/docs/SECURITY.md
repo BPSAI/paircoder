@@ -8,9 +8,8 @@ PairCoder includes security controls to enable safe autonomous execution:
 
 1. **Security Agent** - Pre-execution gatekeeper that blocks dangerous operations
 2. **Security Auditor** - Post-hoc reviewer that identifies vulnerabilities
-3. **Security Review Flow** - Structured workflow for security reviews
-4. **Command Allowlists** - Define safe vs unsafe commands (Sprint 15)
-5. **Secret Detection** - Scan for leaked credentials (Sprint 15)
+3. **Command Allowlists** - Define safe vs unsafe commands (Sprint 15)
+4. **Secret Detection** - Scan for leaked credentials (Sprint 15)
 
 ## Security Agents
 
@@ -40,35 +39,6 @@ The security auditor is a **reviewer** that identifies issues in existing code:
 - Dependency vulnerability assessment
 
 **Key difference:** The auditor reports findings; it doesn't block operations.
-
-## Security Review Flow
-
-The `security-review` flow (`.paircoder/flows/security-review.flow.md`) provides a structured approach:
-
-```
-Phase 1: Identify Review Scope
-     ↓
-Phase 2: Secret Detection
-     ↓
-Phase 3: Vulnerability Scan
-     ↓
-Phase 4: Dependency Review
-     ↓
-Phase 5: Permission/Auth Review
-     ↓
-Phase 6: Command Review
-     ↓
-Phase 7: Generate Report & Decision
-```
-
-### When to Use
-
-| Trigger | Action |
-|---------|--------|
-| Before commit | Run security-review flow |
-| Before PR | Run security-review flow |
-| New dependency | Check for vulnerabilities |
-| Auth changes | Careful manual review |
 
 ## What Gets Blocked
 
@@ -149,7 +119,6 @@ PairCoder security controls map to SOC2 Trust Service Criteria:
 2. **Pin dependencies** - Specify exact versions
 3. **Validate all input** - Never trust user data
 4. **Use parameterized queries** - Prevent SQL injection
-5. **Review before push** - Run security-review flow
 
 ### For AI Agents
 
@@ -160,13 +129,6 @@ PairCoder security controls map to SOC2 Trust Service Criteria:
 5. **Request human review** when uncertain
 
 ## Integration
-
-### Pre-commit Hook
-
-```bash
-# .git/hooks/pre-commit
-bpsai-pair flow run security-review
-```
 
 ### CI/CD Pipeline
 

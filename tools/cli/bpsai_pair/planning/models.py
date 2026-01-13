@@ -64,14 +64,14 @@ class Task:
     depends_on: list[str] = field(default_factory=list)  # Task IDs this task depends on
     source_path: Optional[Path] = None
     due_date: Optional[datetime] = None
-    
+
     @property
     def status_emoji(self) -> str:
         """Return emoji for current status."""
         return {
             TaskStatus.PENDING: "⏳",
             TaskStatus.IN_PROGRESS: "🔄",
-            TaskStatus.REVIEW: "🔍",
+            TaskStatus.REVIEW: "📝",
             TaskStatus.DONE: "✅",
             TaskStatus.BLOCKED: "🚫",
             TaskStatus.CANCELLED: "❌",
@@ -178,7 +178,7 @@ class Task:
         if self.due_date is not None:
             result["due_date"] = self.due_date.isoformat()
         return result
-    
+
     @classmethod
     def from_dict(cls, data: dict, body: str = "", source_path: Optional[Path] = None) -> "Task":
         """Create Task from dictionary (parsed YAML frontmatter)."""
@@ -226,7 +226,7 @@ class Sprint:
     title: str
     goal: str = ""
     task_ids: list[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for YAML serialization."""
         return {
@@ -235,7 +235,7 @@ class Sprint:
             "goal": self.goal,
             "tasks": self.task_ids,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "Sprint":
         """Create Sprint from dictionary."""
@@ -251,7 +251,7 @@ class Sprint:
 class Plan:
     """
     Represents a plan with goals, tasks, and sprints.
-    
+
     Plans are stored as .plan.yaml files.
     """
     id: str
@@ -261,13 +261,14 @@ class Plan:
     owner: str = ""
     created_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    flows: list[str] = field(default_factory=list)
+    skills: list[str] = field(default_factory=list)  # Associated skills (v2.9.1+)
+    flows: list[str] = field(default_factory=list)   # DEPRECATED: Use skills instead
     goals: list[str] = field(default_factory=list)
     sprints: list[Sprint] = field(default_factory=list)
     tasks: list[dict] = field(default_factory=list)  # Task summaries in plan file
     acceptance_criteria: dict = field(default_factory=dict)
     source_path: Optional[Path] = None
-    
+
     @property
     def status_emoji(self) -> str:
         """Return emoji for current status."""
@@ -277,12 +278,12 @@ class Plan:
             PlanStatus.COMPLETE: "✅",
             PlanStatus.ARCHIVED: "📦",
         }.get(self.status, "❓")
-    
+
     @property
     def task_ids(self) -> list[str]:
         """Get all task IDs from the plan."""
         return [t.get("id", "") for t in self.tasks if t.get("id")]
-    
+
     @property
     def slug(self) -> str:
         """Get plan slug from ID (e.g., 'plan-2025-01-feature' -> 'feature')."""
@@ -290,21 +291,21 @@ class Plan:
         if len(parts) > 3:
             return "-".join(parts[3:])
         return self.id
-    
+
     def get_sprint_by_id(self, sprint_id: str) -> Optional[Sprint]:
         """Get a sprint by ID."""
         for sprint in self.sprints:
             if sprint.id == sprint_id:
                 return sprint
         return None
-    
+
     def get_tasks_for_sprint(self, sprint_id: str) -> list[dict]:
         """Get task summaries for a specific sprint."""
         sprint = self.get_sprint_by_id(sprint_id)
         if not sprint:
             return []
         return [t for t in self.tasks if t.get("id") in sprint.task_ids]
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for YAML serialization."""
         result = {
@@ -313,15 +314,23 @@ class Plan:
             "type": self.type.value,
             "status": self.status.value,
         }
-        
+
         if self.owner:
             result["owner"] = self.owner
         if self.created_at:
             result["created_at"] = self.created_at.isoformat()
         if self.completed_at:
             result["completed_at"] = self.completed_at.isoformat()
-        if self.flows:
+
+        # Write skills (new field) - always write if present
+        if self.skills:
+            result["skills"] = self.skills
+
+        # DEPRECATED: Only write flows for backward compat if no skills
+        # This allows old tools to read plans created by new tools
+        if self.flows and not self.skills:
             result["flows"] = self.flows
+
         if self.goals:
             result["goals"] = self.goals
         if self.acceptance_criteria:
@@ -330,9 +339,9 @@ class Plan:
             result["sprints"] = [s.to_dict() for s in self.sprints]
         if self.tasks:
             result["tasks"] = self.tasks
-            
+
         return result
-    
+
     @classmethod
     def from_dict(cls, data: dict, source_path: Optional[Path] = None) -> "Plan":
         """Create Plan from dictionary (parsed YAML)."""
@@ -343,7 +352,7 @@ class Plan:
                 plan_type = PlanType(plan_type)
             except ValueError:
                 plan_type = PlanType.FEATURE
-        
+
         # Parse status
         status = data.get("status", "planned")
         if isinstance(status, str):
@@ -351,7 +360,7 @@ class Plan:
                 status = PlanStatus(status)
             except ValueError:
                 status = PlanStatus.PLANNED
-        
+
         # Parse dates
         created_at = data.get("created_at")
         if isinstance(created_at, str):
@@ -359,20 +368,29 @@ class Plan:
                 created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             except ValueError:
                 created_at = None
-        
+
         completed_at = data.get("completed_at")
         if isinstance(completed_at, str):
             try:
                 completed_at = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
             except ValueError:
                 completed_at = None
-        
+
         # Parse sprints
         sprints = [
-            Sprint.from_dict(s) if isinstance(s, dict) else s 
+            Sprint.from_dict(s) if isinstance(s, dict) else s
             for s in data.get("sprints", [])
         ]
-        
+
+        # Handle skills vs flows (backward compat)
+        # New plans use 'skills', old plans use 'flows'
+        skills = data.get("skills", [])
+        flows = data.get("flows", [])
+
+        # If no skills but has flows, migrate flows to skills
+        if not skills and flows:
+            skills = flows
+
         return cls(
             id=data.get("id", ""),
             title=data.get("title", "Untitled Plan"),
@@ -381,7 +399,8 @@ class Plan:
             owner=data.get("owner", ""),
             created_at=created_at,
             completed_at=completed_at,
-            flows=data.get("flows", []),
+            skills=skills,
+            flows=flows if not skills else [],  # Clear flows if skills present
             goals=data.get("goals", []),
             sprints=sprints,
             tasks=data.get("tasks", []),

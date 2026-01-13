@@ -8,7 +8,6 @@ workflow:
   default_branch_type: feature
   main_branch: main
   context_dir: .paircoder/context
-  flows_dir: .paircoder/flows # deprecated
   plans_dir: .paircoder/plans
   tasks_dir: .paircoder/tasks
 pack:
@@ -65,20 +64,7 @@ routing:
   overrides:
     security: claude-opus-4-5
     architecture: claude-opus-4-5
-flows:
-  enabled:
-  - design-plan-implement
-  - tdd-implement
-  - review
-  - finish-branch
-  triggers:
-    feature_request:
-    - design-plan-implement
-    bugfix:
-    - tdd-implement
-    pre_merge:
-    - review
-    - finish-branch
+
 metrics:
   enabled: true
   store_path: .paircoder/history/metrics.jsonl

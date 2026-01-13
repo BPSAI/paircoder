@@ -191,7 +191,7 @@ sprint: sprint-1
 ---
 
 # Objective
-Implement the core business logic for the feature.
+- Implement the core business logic for the feature.
 
 # Implementation Plan
 - Create service class
@@ -312,13 +312,13 @@ bpsai-pair init my-project --preset bps
 The `bps` preset configures a full BPS AI Software workflow:
 
 **Trello 7-List Structure:**
-- Intake / Backlog
-- Planned / Ready
+- Intake/Backlog
+- Planned/Ready
 - In Progress
-- Review / Testing
-- Deployed / Done
-- Issues / Tech Debt
-- Notes / Ops Log
+- Review/Testing
+- Deployed/Done
+- Issues/Tech Debt
+- Notes/Ops Log
 
 **Label Colors:**
 - Backend (green), Frontend (yellow), Database (orange)
@@ -434,14 +434,16 @@ Skills are the primary way to define reusable workflows in PairCoder. They follo
 
 ### Available Skills
 
-| Skill | Triggers | Purpose |
-|-------|----------|---------|
-| `designing-and-implementing` | "design", "plan", "feature" | Feature development |
-| `implementing-with-tdd` | "fix", "bug", "test" | Test-driven implementation |
-| `reviewing-code` | "review", "check", "PR" | Code review workflow |
-| `finishing-branches` | "finish", "merge", "complete" | Branch completion |
-| `managing-task-lifecycle` | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
-| `planning-with-trello` | "plan feature", "create tasks" | Planning with Trello |
+| Skill                        | Triggers                                | Purpose                          |
+|------------------------------|-----------------------------------------|----------------------------------|
+| `designing-and-implementing` | "design", "plan", "feature"             | Feature development              |
+| `implementing-with-tdd`      | "fix", "bug", "test"                    | Test-driven implementation       |
+| `reviewing-code`             | "review", "check", "PR"                 | Code review workflow             |
+| `finishing-branches`         | "finish", "merge", "complete"           | Branch completion                |
+| `managing-task-lifecycle`    | "work on task", "start task", "TRELLO-" | Task execution (includes Trello) |
+| `creating-skills`            | "repetitive workflow", "create skill"   | Creating new skills              |
+| `planning-with-trello`       | "plan feature", "create tasks"          | Planning with Trello             |
+| `releasing-versions`         | "bump version", "prep release"          | Preparing a new release          |
 
 ### Skill Commands
 
@@ -507,7 +509,6 @@ For maximum portability:
 - Use generic instructions (what to do, not tool-specific how)
 - Keep skills focused on workflow, not tool invocations
 
-See [Cross-Platform Skills Guide](../CROSS_PLATFORM_SKILLS.md) for detailed documentation.
 
 ---
 
@@ -665,9 +666,9 @@ bpsai-pair intent detect "add user authentication"
 bpsai-pair intent should-plan "refactor the database layer"
 # Output: true (complex task needs planning)
 
-# Suggest appropriate flow
-bpsai-pair intent suggest-flow "review the PR for security issues"
-# Output: code-review
+# Suggest appropriate skill
+bpsai-pair intent suggest-skill "review the PR for security issues"
+# Output: reviewing-code
 ```
 
 ### Intent Types
@@ -1135,33 +1136,30 @@ hooks:
 
 ### All Commands (120+ total)
 
-| Group | Commands | Count |
-|-------|----------|-------|
-| Core | init, feature, pack, context-sync, status, validate, ci | 7 |
-| Presets | preset list/show/preview, init --preset | 4 |
-| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
-| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
-| Skills | skill list/validate/export/install/suggest/gaps/generate | 7 |
-| Flows | flow list/show/run/validate (deprecated) | 4 |
-| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
-| Intent | intent detect/should-plan/suggest-flow | 3 |
-| GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
-| Standup | standup generate/post | 2 |
-| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens | 9 |
-| Budget | budget estimate/status/check | 3 |
-| Timer | timer start/stop/status/show/summary | 5 |
-| Benchmark | benchmark run/results/compare/list | 4 |
-| Cache | cache stats/clear/invalidate | 3 |
-| Session | session check/status | 2 |
-| Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
-| Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
-| Migrate | migrate, migrate status | 2 |
-| Upgrade | upgrade | 1 |
+| Group | Commands                                                                                             | Count |
+|-------|------------------------------------------------------------------------------------------------------|-------|
+| Core | init, feature, pack, context-sync, status, validate, ci                                              | 7 |
+| Presets | preset list/show/preview, init --preset                                                              | 4 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate                                        | 8 |
+| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview         | 11 |
+| Skills | skill list/validate/export/install/suggest/gaps/generate                                             | 7 |
+| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status                               | 6 |
+| Intent | intent detect/should-plan/suggest-skill                                                              | 3 |
+| GitHub | github status/create/list/merge/link/auto-pr/archive-merged                                          | 7 |
+| Standup | standup generate/post                                                                                | 2 |
+| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens                       | 9 |
+| Budget | budget estimate/status/check                                                                         | 3 |
+| Timer | timer start/stop/status/show/summary                                                                 | 5 |
+| Benchmark | benchmark run/results/compare/list                                                                   | 4 |
+| Cache | cache stats/clear/invalidate                                                                         | 3 |
+| Session | session check/status                                                                                 | 2 |
+| Compaction | compaction snapshot save/list, check/recover/cleanup                                                 | 5 |
+| Security | security scan-secrets/pre-commit/install-hook/scan-deps                                              | 4 |
+| Migrate | migrate, migrate status                                                                              | 2 |
+| Upgrade | upgrade                                                                                              | 1 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
-| Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
-| MCP | mcp serve/tools/test | 3 |
-
-See [README.md](../README.md) for complete command details.
+| Trello Tasks | ttask list/show/start/done/block/comment/move                                                        | 7 |
+| MCP | mcp serve/tools/test                                                                                 | 3 |
 
 ---
 

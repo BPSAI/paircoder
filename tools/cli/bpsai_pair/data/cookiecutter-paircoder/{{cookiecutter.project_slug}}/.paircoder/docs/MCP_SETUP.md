@@ -44,7 +44,6 @@ Once configured, Claude has access to these PairCoder tools:
 | `paircoder_task_list` | List tasks |
 | `paircoder_task_update` | Update task status |
 | `paircoder_plan_list` | List plans |
-| `paircoder_flow_run` | Run a workflow |
 
 ## Troubleshooting
 

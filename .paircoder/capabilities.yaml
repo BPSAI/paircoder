@@ -46,7 +46,7 @@ capabilities:
     name: "Use skills for workflows"
     description: |
       Claude Code skills in .claude/skills/ provide structured workflows.
-      Skills are auto-discovered and preferred over flows.
+      Skills are auto-discovered.
     when_to_use:
       - Starting any structured workflow
       - Design, implementation, review tasks

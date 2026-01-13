@@ -11,7 +11,6 @@
 - [Task Commands](#task-commands)
 - [Sprint Commands](#sprint-commands)
 - [Skills Commands](#skills-commands)
-- [Flow Commands (Deprecated)](#flow-commands-deprecated)
 - [Orchestration Commands](#orchestration-commands)
 - [Intent Commands](#intent-commands)
 - [GitHub Commands](#github-commands)
@@ -46,7 +45,6 @@
 | Task | Local task file management | 11 |
 | Sprint | Sprint lifecycle management | 2 |
 | Skills | Skill management and export | 7 |
-| Flow | Workflow definitions (deprecated) | 4 |
 | Orchestration | Multi-agent orchestration | 6 |
 | Intent | Natural language intent detection | 3 |
 | GitHub | GitHub PR integration | 7 |
@@ -246,20 +244,6 @@ bpsai-pair skill generate gap-name
 
 ---
 
-## Flow Commands (Deprecated)
-
-> ⚠️ **DEPRECATED:** Flows are deprecated in favor of skills. Use `bpsai-pair skill` commands instead.
-> See [Migration Guide](../../../docs/MIGRATION.md) for conversion instructions.
-
-| Command | Description |
-|---------|-------------|
-| `flow list` | List available flows |
-| `flow show <name>` | Show flow details |
-| `flow run <name>` | Run a flow |
-| `flow validate <name>` | Validate flow definition |
-
----
-
 ## Orchestration Commands
 
 | Command | Description |
@@ -290,11 +274,11 @@ bpsai-pair orchestrate auto-session --max-tasks 3
 
 ## Intent Commands
 
-| Command | Description |
-|---------|-------------|
-| `intent detect <text>` | Detect work intent from text |
-| `intent should-plan <text>` | Check if planning needed |
-| `intent suggest-flow <text>` | Suggest appropriate workflow |
+| Command                       | Description |
+|-------------------------------|-------------|
+| `intent detect <text>`        | Detect work intent from text |
+| `intent should-plan <text>`   | Check if planning needed |
+| `intent suggest-skill <text>` | Suggest appropriate workflow |
 
 ### Examples
 
@@ -305,7 +289,7 @@ bpsai-pair intent detect "fix the login bug"
 bpsai-pair intent should-plan "refactor the database layer"
 # Output: true
 
-bpsai-pair intent suggest-flow "review the PR"
+bpsai-pair intent suggest-skill "review the PR"
 # Output: reviewing-code
 ```
 

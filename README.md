@@ -151,16 +151,6 @@ my-project/
 | `skill gaps` | Detect missing skills from patterns |
 | `skill generate` | Generate skill from detected gap |
 
-### Flows (4 commands) — ⚠️ DEPRECATED
-
-> **Note:** Flows are deprecated in favor of skills. See [Migration Guide](docs/MIGRATION.md).
-
-| Command | Description |
-|---------|-------------|
-| `flow list` | List available flows |
-| `flow show <name>` | Show flow details |
-| `flow run <name>` | Run a flow |
-| `flow validate <name>` | Validate flow definition |
 
 ### Orchestration (6 commands)
 

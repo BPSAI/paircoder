@@ -45,7 +45,7 @@ try:
     from .migrate import migrate_app
     from .commands import (
         preset_app, config_app, orchestrate_app, metrics_app,
-        timer_app, benchmark_app, cache_app, mcp_app, flow_app,
+        timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
         session_app, compaction_app, upgrade_app, budget_app
     )
@@ -67,7 +67,7 @@ except ImportError:
     from bpsai_pair.migrate import migrate_app
     from bpsai_pair.commands import (
         preset_app, config_app, orchestrate_app, metrics_app,
-        timer_app, benchmark_app, cache_app, mcp_app, flow_app,
+        timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
         session_app, compaction_app, upgrade_app, budget_app
     )
@@ -103,8 +103,7 @@ app.add_typer(subagent_app, name="subagent")
 app.add_typer(gaps_app, name="gaps")
 app.add_typer(audit_app, name="audit")
 
-# Extracted command sub-apps (Sprint 22)
-app.add_typer(flow_app, name="flow")
+# Extracted command sub-apps
 app.add_typer(orchestrate_app, name="orchestrate")
 app.add_typer(metrics_app, name="metrics")
 app.add_typer(preset_app, name="preset")

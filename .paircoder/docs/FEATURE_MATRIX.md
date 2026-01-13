@@ -4,37 +4,36 @@
 
 ## CLI Commands Summary
 
-| Group | Commands | Count |
-|-------|----------|-------|
-| Core | init, feature, pack, context-sync, status, validate, ci | 7 |
-| Presets | preset list/show/preview, init --preset | 4 |
-| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate | 8 |
-| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview | 11 |
-| Skills | skill list/validate/export/install/suggest/gaps/generate | 7 |
-| Flows | flow list/show/run/validate ⚠️ DEPRECATED | 4 |
-| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status | 6 |
-| Intent | intent detect/should-plan/suggest-flow | 3 |
-| GitHub | github status/create/list/merge/link/auto-pr/archive-merged | 7 |
-| Standup | standup generate/post | 2 |
-| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens | 9 |
-| Timer | timer start/stop/status/show/summary | 5 |
-| Benchmark | benchmark run/results/compare/list | 4 |
-| Cache | cache stats/clear/invalidate | 3 |
-| Budget | budget estimate/status/check | 3 |
-| Session | session check/status | 2 |
-| Compaction | compaction snapshot save/list, check/recover/cleanup | 5 |
-| Security | security scan-secrets/pre-commit/install-hook/scan-deps | 4 |
-| Upgrade | upgrade | 1 |
-| Migrate | migrate, migrate status | 2 |
-| Template | template check/list | 2 |
-| Release | release plan/checklist/prep | 3 |
-| Sprint | sprint list/complete | 2 |
+| Group | Commands                                                                                             | Count |
+|-------|------------------------------------------------------------------------------------------------------|-------|
+| Core | init, feature, pack, context-sync, status, validate, ci                                              | 7 |
+| Presets | preset list/show/preview, init --preset                                                              | 4 |
+| Planning | plan new/list/show/tasks/status/sync-trello/add-task/estimate                                        | 8 |
+| Tasks | task list/show/update/next/auto-next/archive/restore/list-archived/cleanup/changelog-preview         | 11 |
+| Skills | skill list/validate/export/install/suggest/gaps/generate                                             | 7 |
+| Orchestration | orchestrate task/analyze/handoff/auto-run/auto-session/workflow-status                               | 6 |
+| Intent | intent detect/should-plan/suggest-skill                                                              | 3 |
+| GitHub | github status/create/list/merge/link/auto-pr/archive-merged                                          | 7 |
+| Standup | standup generate/post                                                                                | 2 |
+| Metrics | metrics summary/task/breakdown/budget/export/velocity/burndown/accuracy/tokens                       | 9 |
+| Timer | timer start/stop/status/show/summary                                                                 | 5 |
+| Benchmark | benchmark run/results/compare/list                                                                   | 4 |
+| Cache | cache stats/clear/invalidate                                                                         | 3 |
+| Budget | budget estimate/status/check                                                                         | 3 |
+| Session | session check/status                                                                                 | 2 |
+| Compaction | compaction snapshot save/list, check/recover/cleanup                                                 | 5 |
+| Security | security scan-secrets/pre-commit/install-hook/scan-deps                                              | 4 |
+| Upgrade | upgrade                                                                                              | 1 |
+| Migrate | migrate, migrate status                                                                              | 2 |
+| Template | template check/list                                                                                  | 2 |
+| Release | release plan/checklist/prep                                                                          | 3 |
+| Sprint | sprint list/complete                                                                                 | 2 |
 | Trello | trello connect/status/disconnect/boards/use-board/lists/config/progress/webhook serve/webhook status | 10 |
-| Trello Tasks | ttask list/show/start/done/block/comment/move | 7 |
-| MCP | mcp serve/tools/test | 3 |
-| Audit | audit bypasses/summary/clear | 3 |
-| State | state show/list/history/reset/advance | 5 |
-| **Total** | | **127+** |
+| Trello Tasks | ttask list/show/start/done/block/comment/move                                                        | 7 |
+| MCP | mcp serve/tools/test                                                                                 | 3 |
+| Audit | audit bypasses/summary/clear                                                                         | 3 |
+| State | state show/list/history/reset/advance                                                                | 5 |
+| **Total** |                                                                                                      | **127+** |
 
 ## Features by Sprint
 
@@ -45,7 +44,6 @@
 | LLM capability manifest | - | ✅ Exists | .paircoder/capabilities.yaml |
 | Context files | - | ✅ Exists | project.md, workflow.md, state.md |
 | ADR documentation | - | ✅ Exists | docs/architecture/ |
-| Flow parser | `flow list/show/run` | ⚠️ Deprecated | Use skills instead |
 
 ### Sprint 4: Planning System (v2.0)
 | Feature | CLI Command | Status | Notes |
@@ -119,18 +117,18 @@
 | GitHub PR integration | `github create/list/merge/link` | ✅ Works | Task-linked PRs |
 
 ### Sprint 13: Full Autonomy (v2.5)
-| Feature | CLI Command | Status | Notes |
-|---------|-------------|--------|-------|
-| Preset system | `preset list/show/preview` | ✅ Works | 8 built-in presets |
-| BPS preset | `init --preset bps` | ✅ Works | 7-list Trello workflow |
-| Intent detection | `intent detect/should-plan/suggest-flow` | ✅ Works | Natural language intent |
+| Feature | CLI Command                                         | Status | Notes |
+|---------|-----------------------------------------------------|--------|-------|
+| Preset system | `preset list/show/preview`                          | ✅ Works | 8 built-in presets |
+| BPS preset | `init --preset bps`                                 | ✅ Works | 7-list Trello workflow |
+| Intent detection | `intent detect/should-plan/suggest-skill`           | ✅ Works | Natural language intent |
 | Autonomous workflow | `orchestrate auto-session/auto-run/workflow-status` | ✅ Works | State machine |
-| Auto-task assignment | `task next --start`, `task auto-next` | ✅ Works | Pick and start next |
-| Progress comments | `trello progress` | ✅ Works | 7 report types |
-| Auto-PR creation | `github auto-pr` | ✅ Works | Detect TASK-xxx from branch |
-| PR merge archive | `github archive-merged` | ✅ Works | Archive task on merge |
-| Daily standup | `standup generate/post` | ✅ Works | markdown/slack/trello formats |
-| Hook reliability | - | ✅ Works | Always fires on status change |
+| Auto-task assignment | `task next --start`, `task auto-next`               | ✅ Works | Pick and start next |
+| Progress comments | `trello progress`                                   | ✅ Works | 7 report types |
+| Auto-PR creation | `github auto-pr`                                    | ✅ Works | Detect TASK-xxx from branch |
+| PR merge archive | `github archive-merged`                             | ✅ Works | Archive task on merge |
+| Daily standup | `standup generate/post`                             | ✅ Works | markdown/slack/trello formats |
+| Hook reliability | -                                                   | ✅ Works | Always fires on status change |
 
 ### Sprint 14: Trello Deep Integration (v2.5.1)
 | Feature | CLI Command | Status | Notes |
@@ -167,7 +165,6 @@
 | Session management | `session check/status` | ✅ Done | Session detection + context |
 | Compaction recovery | `compaction snapshot/check/recover` | ✅ Done | Context compaction handling |
 | Upgrade command | `upgrade` | ✅ Done | Version migrations |
-| Parser consolidation | `flows/parser.py` | ✅ Done | Unified v1+v2 flow parser |
 | V1 deprecation | - | ✅ Done | Deprecation warnings |
 
 ### Sprint 25: Token Budget System (v2.8.0)
@@ -334,15 +331,15 @@ my-project/
         │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
         └────────────────────────────────────────────────────────────────────────┘
                                           │
-        ┌────────────────────────────────────────────────────────────────────────┐
-        │                        DOMAIN MODULES                                  │
-        │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │
-        │  │  skills/  │ │orchestrate│ │  github/  │ │ security/ │ │  flows/  │ │
-        │  │ validator │ │  routing  │ │    PR     │ │ sandbox   │ │  parser  │ │
-        │  │  export   │ │  handoff  │ │  issues   │ │ allowlist │ │(deprec.) │ │
-        │  │  install  │ │           │ │           │ │           │ │          │ │
-        │  └───────────┘ └───────────┘ └───────────┘ └───────────┘ └──────────┘ │
-        └────────────────────────────────────────────────────────────────────────┘
+        ┌──────────────────────────────────────────────────────────┐
+        │                        DOMAIN MODULES                    │
+        │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ │
+        │  │  skills/  │ │orchestrate│ │  github/  │ │ security/ │ │
+        │  │ validator │ │  routing  │ │    PR     │ │ sandbox   │ │
+        │  │  export   │ │  handoff  │ │  issues   │ │ allowlist │ │
+        │  │  install  │ │           │ │           │ │           │ │
+        │  └───────────┘ └───────────┘ └───────────┘ └───────────┘ │
+        └──────────────────────────────────────────────────────────┘
                                           │
         ┌────────────────────────────────────────────────────────────────────────┐
         │                      EXTERNAL INTEGRATIONS                             │
@@ -383,7 +380,6 @@ bpsai_pair/
 │   ├── benchmark.py       # benchmark run/results/compare/list
 │   ├── cache.py           # cache stats/clear/invalidate
 │   ├── mcp.py             # mcp serve/tools/test
-│   ├── flow.py            # flow list/show/run/validate (deprecated)
 │   ├── security.py        # security scan-secrets/pre-commit/etc
 │   ├── session.py         # session check/status, compaction commands
 │   ├── budget.py          # budget estimate/status/check
@@ -396,10 +392,6 @@ bpsai_pair/
 │   ├── gap_detector.py    # Pattern detection
 │   ├── generator.py       # Skill generation
 │   └── cli_commands.py    # skill validate/list/export/install/suggest/gaps/generate
-├── flows/                  # Flow definitions (deprecated)
-│   ├── __init__.py        # V1/V2 exports
-│   ├── models.py          # V1 Flow, Step models (backward compat)
-│   └── parser.py          # Unified v1+v2 parser with deprecation
 ├── planning/               # Planning system
 │   ├── commands.py        # plan/task/intent/standup CLI commands
 │   ├── models.py          # Plan, Task, Sprint models

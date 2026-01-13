@@ -20,7 +20,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .models import Plan, Task, TaskStatus, PlanStatus, PlanType, Sprint
+from .models import Plan, Task, TaskStatus, PlanStatus, PlanType
 from .parser import PlanParser, TaskParser, parse_frontmatter
 from .state import StateManager
 from .token_estimator import PlanTokenEstimator, DEFAULT_THRESHOLD
@@ -57,8 +57,6 @@ plan_app = typer.Typer(
     help="Manage plans (goals, tasks, sprints)",
     context_settings={"help_option_names": ["-h", "--help"]}
 )
-
-
 @plan_app.command("new")
 def plan_new(
     slug: str = typer.Argument(..., help="Short identifier (e.g., 'workspace-filter')"),
@@ -67,7 +65,17 @@ def plan_new(
         help="Type: feature|bugfix|refactor|chore"
     ),
     title: Optional[str] = typer.Option(None, "--title", "-T", help="Plan title"),
-    flow: str = typer.Option("design-plan-implement", "--flow", "-f", help="Associated flow"),
+    skill: str = typer.Option(
+        "planning-with-trello",
+        "--skill", "-s",
+        help="Associated skill for this plan"
+    ),
+    flow: Optional[str] = typer.Option(
+        None,
+        "--flow", "-f",
+        help="[DEPRECATED] Use --skill instead",
+        hidden=True
+    ),
     goal: Optional[List[str]] = typer.Option(None, "--goal", "-g", help="Plan goals (repeatable)"),
 ):
     """Create a new plan."""
@@ -92,14 +100,20 @@ def plan_new(
         console.print("Valid types: feature, bugfix, refactor, chore")
         raise typer.Exit(1)
 
-    # Create plan
+    # Handle deprecated --flow option
+    actual_skill = skill
+    if flow:
+        console.print("[yellow]⚠ Warning: --flow is deprecated, use --skill instead[/yellow]")
+        actual_skill = flow
+
+    # Create plan with skills
     plan = Plan(
         id=plan_id,
         title=title or slug.replace("-", " ").title(),
         type=ptype,
         status=PlanStatus.PLANNED,
         created_at=datetime.now(),
-        flows=[flow],
+        skills=[actual_skill],
         goals=list(goal) if goal else [],
     )
 
@@ -109,7 +123,7 @@ def plan_new(
     console.print(f"[green]Created plan:[/green] {plan_id}")
     console.print(f"  Path: {plan_path}")
     console.print(f"  Type: {plan_type}")
-    console.print(f"  Flow: {flow}")
+    console.print(f"  Skill: {actual_skill}")
 
     if goal:
         console.print("  Goals:")
@@ -119,7 +133,7 @@ def plan_new(
     console.print("")
     console.print("[dim]Next steps:[/dim]")
     console.print(f"  1. Add tasks: bpsai-pair plan add-task {plan_id}")
-    console.print(f"  2. Or run flow: bpsai-pair flow run {flow} --plan {plan_id}")
+    console.print(f"  2. Read skill: .claude/skills/{actual_skill}/SKILL.md")
 
 
 @plan_app.command("list")
@@ -202,8 +216,10 @@ def plan_show(
     if plan.created_at:
         console.print(f"[cyan]Created:[/cyan] {plan.created_at.strftime('%Y-%m-%d')}")
 
-    if plan.flows:
-        console.print(f"\n[cyan]Flows:[/cyan] {', '.join(plan.flows)}")
+    if plan.skills:
+        console.print(f"\n[cyan]Skills:[/cyan] {', '.join(plan.skills)}")
+    elif plan.flows:
+        console.print(f"\n[cyan]Flows:[/cyan] {', '.join(plan.flows)} [dim](deprecated)[/dim]")
 
     if plan.goals:
         console.print("\n[cyan]Goals:[/cyan]")
