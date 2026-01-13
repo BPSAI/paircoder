@@ -30,7 +30,7 @@ bpsai-pair trello status
 
 Planning can start from:
 
-1. **Backlog file**: `backlog-sprint-28.md` in `.paircoder/context/` or `.paircoder/docs/`
+1. **Backlog file**: `backlog-sprint-##.md` always located in `.paircoder/context/`
 2. **Feature description**: Natural language description of the work
 
 ## Planning Workflow

@@ -1,15 +1,43 @@
 # Current State
 
-> Last updated: 2026-01-05 (Sprint 28 Complete)
+> Last updated: 2026-01-13 (Sprint 29 Planning)
 
 ## Active Plan
 
-**Plan:** plan-2026-01-sprint-28-docs
-**Sprint:** 28 - Documentation & Release
-**Status:** Complete
-**Target Release:** v2.9.0
+**Plan:** plan-2026-01-sprint-29-contained-autonomy
+**Sprint:** 29 - Contained Autonomy
+**Status:** Planning
+**Target Release:** v2.9.1
 
-## Current Sprint (Sprint 28 - v2.9.0 Documentation)
+## Current Sprint (Sprint 29 - Contained Autonomy)
+
+| ID | Title | Priority | Complexity | Status |
+|----|-------|----------|------------|--------|
+| T29.1 | Design Sandbox Config Schema | P0 | 25 | pending |
+| T29.2 | Add Sandbox Section to config.yaml | P0 | 20 | pending |
+| T29.3 | Implement Directory Locking in sandbox.py | P0 | 45 | pending |
+| T29.4 | Create contained-auto Command | P0 | 40 | pending |
+| T29.5 | Add claude666 Alias | P1 | 10 | pending |
+| T29.6 | Implement Network Allowlist | P1 | 35 | pending |
+| T29.7 | Test Sandbox Escape Attempts | P0 | 45 | pending |
+| T29.8 | Create Auto-Checkpoint on Sandbox Entry | P1 | 25 | pending |
+| T29.9 | Add Sandbox Status to bpsai-pair status | P1 | 20 | pending |
+| T29.10 | Document Contained Autonomy Mode | P1 | 30 | pending |
+| T29.11 | Create Subagent Invocation Documentation | P2 | 30 | pending |
+
+**Total:** 11 tasks, 325 complexity points
+
+### Dependency Graph
+
+```
+T29.1 → T29.2 → T29.3 → T29.4 → T29.5
+                   ↓        ↓
+                T29.6    T29.7, T29.8, T29.9
+                         T29.10 (after T29.4)
+T29.11 (no dependencies)
+```
+
+## Completed Sprint (Sprint 28 - v2.9.0 Documentation)
 
 | ID | Title | Priority | Complexity | Status |
 |----|-------|----------|------------|--------|
@@ -20,7 +48,7 @@
 | T28.16 | Update Config Documentation | P1 | 15 | ✓ done |
 | T28.17 | Final Verification and Release Prep | P0 | 20 | ✓ done |
 
-**Total:** 6 tasks, 125 complexity points
+**Result:** 6/6 tasks (125 complexity points) ✓ Sprint Complete!
 
 ## Completed Sprint (Sprint 27 - Stabilization)
 
@@ -67,12 +95,17 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-Sprint 28 complete! Ready for v2.9.0 release.
+Sprint 29 planned and ready to execute!
 
-Next steps:
-1. Merge to main
-2. Tag v2.9.0
-3. Begin Sprint 29: Contained Autonomy (v2.9.1)
+**Recommended order:**
+1. T29.1 (Schema Design) - Start here
+2. T29.2 (Config Integration)
+3. T29.3 (Directory Locking)
+4. T29.4 (contained-auto Command)
+5. Then parallel: T29.5, T29.6, T29.7, T29.8, T29.9
+6. Finally: T29.10, T29.11 (Documentation)
+
+Use `/start-task T29.1` to begin.
 
 
 ## Backlog (Deprioritized)
@@ -93,6 +126,31 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - Sprint 29 Planning
+
+Created plan `plan-2026-01-sprint-29-contained-autonomy` with 11 tasks (325 complexity points):
+
+**Phase 1: Config Schema & Infrastructure**
+- T29.1: Design Sandbox Config Schema (P0, 25)
+- T29.2: Add Sandbox Section to config.yaml (P0, 20)
+
+**Phase 2: Core Sandbox Implementation**
+- T29.3: Implement Directory Locking in sandbox.py (P0, 45)
+- T29.4: Create contained-auto Command (P0, 40)
+- T29.5: Add claude666 Alias (P1, 10)
+
+**Phase 3: Network & Security Hardening**
+- T29.6: Implement Network Allowlist (P1, 35)
+- T29.7: Test Sandbox Escape Attempts (P0, 45)
+- T29.8: Create Auto-Checkpoint on Sandbox Entry (P1, 25)
+
+**Phase 4: Integration & Documentation**
+- T29.9: Add Sandbox Status to bpsai-pair status (P1, 20)
+- T29.10: Document Contained Autonomy Mode (P1, 30)
+- T29.11: Create Subagent Invocation Documentation (P2, 30)
+
+Synced to Trello: 11 cards created in "Planned/Ready" list.
 
 ### 2026-01-05 - T28.17: Final Verification and Release Prep
 

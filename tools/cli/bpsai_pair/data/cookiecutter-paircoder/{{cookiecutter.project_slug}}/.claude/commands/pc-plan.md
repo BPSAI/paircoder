@@ -17,7 +17,10 @@ If budget >80%, warn user before proceeding.
 
 ## Execute Workflow
 
-Read and follow `.claude/skills/planning-with-trello/SKILL.md` for the complete workflow.
+If Trello connected:
+  → Use `.claude/skills/planning-with-trello/SKILL.md`
+Else:
+  → Use `.claude/skills/designing-and-implementing/SKILL.md`
 
 **Input**: $ARGUMENTS
 
