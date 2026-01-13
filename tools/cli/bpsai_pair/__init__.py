@@ -13,7 +13,6 @@ from .core import utils  # Merged utils/pyutils/jsonio to core/ in T24.7
 # Feature modules (public API)
 from . import planning
 from . import tasks
-from . import flows
 from . import trello
 from . import github
 from . import metrics
@@ -31,7 +30,6 @@ __all__ = [
     # Features
     "planning",
     "tasks",
-    "flows",
     "trello",
     "github",
     "metrics",
