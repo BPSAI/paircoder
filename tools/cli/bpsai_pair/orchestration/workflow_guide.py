@@ -45,17 +45,17 @@ STAGE_TO_LIST: Dict[WorkflowStage, str] = {
 
 # Map Trello list names to workflow stages
 LIST_TO_STAGE: Dict[str, WorkflowStage] = {
-    "Intake / Backlog": WorkflowStage.INTAKE,
+    "Intake/Backlog": WorkflowStage.INTAKE,
     "Backlog": WorkflowStage.INTAKE,
-    "Planned / Ready": WorkflowStage.PLANNED,
+    "Planned/Ready": WorkflowStage.PLANNED,
     "Ready": WorkflowStage.PLANNED,
     "In Progress": WorkflowStage.IN_PROGRESS,
-    "Review / Testing": WorkflowStage.REVIEW,
+    "Review/Testing": WorkflowStage.REVIEW,
     "Review": WorkflowStage.REVIEW,
     "Testing": WorkflowStage.REVIEW,
-    "Deployed / Done": WorkflowStage.DONE,
+    "Deployed/Done": WorkflowStage.DONE,
     "Done": WorkflowStage.DONE,
-    "Issues / Tech Debt": WorkflowStage.BLOCKED,
+    "Issues/Tech Debt": WorkflowStage.BLOCKED,
     "Blocked": WorkflowStage.BLOCKED,
 }
 
@@ -319,13 +319,13 @@ WORKFLOW_RULES = """
 
 ## Stage Definitions
 
-### 1. Intake / Backlog
+### 1. Intake/Backlog
 - **Purpose**: Collection point for new tasks, ideas, bugs
 - **Requirements**: Task ID and title only
 - **Actions**: Tasks stay here until fully planned
 - **Next**: → Planned / Ready (when planned) or → Issues (if blocked)
 
-### 2. Planned / Ready
+### 2. Planned/Ready
 - **Purpose**: Tasks that are ready to be worked on
 - **Requirements**:
   - Clear objective
@@ -340,7 +340,7 @@ WORKFLOW_RULES = """
 - **Actions**: Follow implementation plan, track progress
 - **Next**: → Review / Testing (when implementation complete)
 
-### 4. Review / Testing
+### 4. Review/Testing
 - **Purpose**: Verification before completion
 - **Requirements**:
   - Implementation complete
@@ -349,7 +349,7 @@ WORKFLOW_RULES = """
 - **Actions**: Run tests, review code, verify acceptance criteria
 - **Next**: → Deployed / Done (when verified) or → In Progress (if issues found)
 
-### 5. Deployed / Done
+### 5. Deployed/Done
 - **Purpose**: Completed work
 - **Requirements**:
   - All acceptance criteria met
@@ -357,7 +357,7 @@ WORKFLOW_RULES = """
   - PR merged (if applicable)
 - **Actions**: None - terminal state
 
-### 6. Issues / Tech Debt
+### 6. Issues/Tech Debt
 - **Purpose**: Blocked tasks or technical debt items
 - **Requirements**: Clear description of blocker
 - **Actions**: Resolve blocker, then move back to appropriate stage
