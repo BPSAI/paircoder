@@ -79,6 +79,7 @@ Next steps:
 
 See `.paircoder/tasks/backlog/`:
 - HF-001: Context sync hotfix
+- HF-002: Fix Windows encoding for file operations
 - RFE-001: Remote API Orchestration
 
 ## Future: EPIC-005 (Flows Removal)
