@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (Sprint 29 Planning)
+> Last updated: 2026-01-13 (T29.1 Complete)
 
 ## Active Plan
 
@@ -13,7 +13,7 @@
 
 | ID | Title | Priority | Complexity | Status |
 |----|-------|----------|------------|--------|
-| T29.1 | Design Sandbox Config Schema | P0 | 25 | pending |
+| T29.1 | Design Sandbox Config Schema | P0 | 25 | ✓ done |
 | T29.2 | Add Sandbox Section to config.yaml | P0 | 20 | pending |
 | T29.3 | Implement Directory Locking in sandbox.py | P0 | 45 | pending |
 | T29.4 | Create contained-auto Command | P0 | 40 | pending |
@@ -126,6 +126,30 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.1: Design Sandbox Config Schema
+
+Implemented `SandboxConfig` dataclass in `tools/cli/bpsai_pair/core/config.py`:
+
+**Features:**
+- `enabled: bool = False` - Enable sandbox mode
+- `locked_directories: List[str] = []` - Directories mounted read-only
+- `locked_files: List[str] = []` - Files mounted read-only
+- `allow_network: List[str]` - Allowed network domains (defaults to Anthropic, Trello, GitHub, PyPI)
+- `auto_checkpoint: bool = True` - Create git checkpoint on sandbox entry
+- `rollback_on_violation: bool = False` - Rollback on violation attempts
+
+**Validation:**
+- Path validation: Rejects empty strings and null bytes
+- Domain validation: Rejects protocol prefixes (http://) and paths
+
+**Tests:**
+- 20 new tests in `tests/core/test_sandbox_config.py`
+- All tests passing
+
+**Files Changed:**
+- `tools/cli/bpsai_pair/core/config.py` - Added `SandboxConfig` class
+- `tools/cli/tests/core/test_sandbox_config.py` - New test file
 
 ### 2026-01-13 - Sprint 29 Planning
 
