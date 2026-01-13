@@ -163,13 +163,13 @@ my-project/
 | `orchestrate auto-session` | Run autonomous session |
 | `orchestrate workflow-status` | Show current workflow state |
 
-### Intent Detection (3 commands)
+### Intent Detection (2 commands)
 
 | Command | Description |
 |---------|-------------|
 | `intent detect <text>` | Detect work intent from text |
 | `intent should-plan <text>` | Check if planning needed |
-| `intent suggest-flow <text>` | Suggest appropriate flow |
+
 
 ### GitHub Integration (7 commands)
 

@@ -65,10 +65,3 @@ bpsai-pair task update TASK-XXX --status in_progress
 # Complete a task (with Trello)
 bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"
 bpsai-pair task update TASK-XXX --status done
-
-# List available flows
-bpsai-pair flow list
-
-# Run a flow
-bpsai-pair flow run design-plan-implement
-```

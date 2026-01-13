@@ -185,7 +185,6 @@
 | Skill gaps | `skill gaps` | ✅ Done | Pattern detection |
 | Skill generation | `skill generate` | ✅ Done | From gaps |
 | Subagent detection | - | ✅ Done | Finds .claude/agents/*.md |
-| Flow deprecation warnings | `flow *` | ⚠️ Deprecated | Warnings on all flow commands |
 
 ### Sprint 26: Dogfooding & Documentation (v2.8.2)
 | Feature | CLI Command | Status | Notes |

@@ -26,7 +26,6 @@ from .timer import app as timer_app
 from .benchmark import app as benchmark_app
 from .cache import app as cache_app
 from .mcp import app as mcp_app
-from .flow import app as flow_app
 from .security import app as security_app
 from .security import scan_secrets, scan_deps  # For shortcut commands
 from .core import register_core_commands
@@ -45,7 +44,6 @@ __all__ = [
     "benchmark_app",
     "cache_app",
     "mcp_app",
-    "flow_app",
     "security_app",
     "scan_secrets",
     "scan_deps",

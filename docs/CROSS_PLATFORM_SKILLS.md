@@ -57,7 +57,7 @@ Avoid:
 # Code Review
 
 ## Guidelines
-Run `bpsai-pair flow run reviewing-code` to start.
+Run `bpsai-pair skill run reviewing-code` to start.
 Use `/compact` when context is full.
 ```
 

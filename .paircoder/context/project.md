@@ -6,7 +6,7 @@ PairCoder is a CLI tool and framework for AI-augmented pair programming. It prov
 
 1. **Context Management** — Structured project memory that persists across sessions
 2. **Planning System** — Goals decomposed into tasks organized into sprints
-3. **Flows** — Reusable workflows that guide AI agents through complex tasks
+3. **Skills** — Reusable workflows that guide AI agents through complex tasks
 4. **Agent Packs** — Portable context bundles for handoff between sessions/tools
 5. **Multi-Provider Support** — Works with Claude, GPT, Gemini, and others
 
@@ -18,7 +18,6 @@ paircoder/
 │   ├── config.yaml          # Project configuration
 │   ├── capabilities.yaml    # LLM capability manifest
 │   ├── context/             # Project memory
-│   ├── flows/               # Workflow definitions
 │   ├── plans/               # Active plans
 │   ├── tasks/               # Task files by plan
 │   └── docs/                # Internal docs (FEATURE_MATRIX, etc.)
@@ -48,19 +47,18 @@ bpsai_pair/
 ├── commands/                # General CLI commands (15 modules)
 ├── planning/                # plan, task, intent, standup
 ├── trello/                  # Trello integration
-├── flows/                   # Flow parser (v1/v2 unified)
 └── [other modules]          # github, security, mcp, etc.
 ```
 
 ## Key Constraints
 
-| Constraint | Requirement |
-|------------|-------------|
-| **Python Version** | 3.9+ (cross-platform compatibility) |
-| **Dependencies** | Minimal; pure Python where possible |
-| **Platform** | Windows, macOS, Linux parity |
-| **CLI Stability** | v1 commands must continue working |
-| **File Format** | YAML for config/plans, Markdown for docs/flows |
+| Constraint | Requirement                                     |
+|------------|-------------------------------------------------|
+| **Python Version** | 3.9+ (cross-platform compatibility)             |
+| **Dependencies** | Minimal; pure Python where possible             |
+| **Platform** | Windows, macOS, Linux parity                    |
+| **CLI Stability** | v1 commands must continue working               |
+| **File Format** | YAML for config/plans, Markdown for docs/skills |
 
 ## Current State (v2.8.0)
 
@@ -76,7 +74,6 @@ Key v2.8 features:
 - **EPIC-003 Complete**: CLI architecture fully refactored
 - **Token Estimation**: `budget estimate/status/check` commands
 - **Session Management**: `session check/status` with compaction recovery
-- **Unified Flow Parser**: v1/v2 format support with deprecation warnings
 
 See `.paircoder/context/state.md` for current sprint progress.
 
@@ -85,14 +82,13 @@ See `.paircoder/context/state.md` for current sprint progress.
 1. **File-Based State** — No databases; everything is human-readable files
 2. **Opt-In Complexity** — Simple projects need only `config.yaml`
 3. **LLM-First Design** — Structure files so AI agents can understand them
-4. **Composable Flows** — Small flows that chain together
-5. **Provider Agnostic** — Don't lock users into one AI provider
+4. **Provider Agnostic** — Don't lock users into one AI provider
 
 ## How to Work Here
 
 1. Read `.paircoder/context/state.md` for current plan/task status
 2. Check `.paircoder/capabilities.yaml` to understand available actions
-3. Follow the active flow for structured work
+3. Follow the active skill for structured work
 4. Update `state.md` after completing significant work
 
 ## Important Files

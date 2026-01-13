@@ -15,7 +15,6 @@ All command implementations are in the `commands/` package:
 - commands/benchmark.py: benchmark run, results, compare, list
 - commands/cache.py: cache stats, clear, invalidate
 - commands/mcp.py: mcp serve, tools, test
-- commands/flow.py: flow list, show, run, validate
 - commands/security.py: security scan-secrets, pre-commit, install-hook, scan-deps
 - commands/session.py: session check, status; compaction snapshot, check, recover, cleanup
 

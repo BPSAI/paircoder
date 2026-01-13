@@ -16,7 +16,6 @@
 │   ├── config.yaml          # Project configuration
 │   ├── capabilities.yaml    # LLM capability manifest
 │   ├── context/             # Project memory (project.md, state.md, workflow.md)
-│   ├── flows/               # Workflow definitions
 │   ├── plans/               # Active plans
 │   └── tasks/               # Task files by plan
 ├── .claude/                 # Claude Code configuration
@@ -57,7 +56,7 @@
 
 1. Read `.paircoder/context/state.md` for current plan/task status
 2. Check `.paircoder/capabilities.yaml` to understand available actions
-3. Follow the active flow for structured work
+3. Follow the active skill for structured work
 4. Update `state.md` after completing significant work
 
 ## Key Files
