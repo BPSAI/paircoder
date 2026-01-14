@@ -443,3 +443,222 @@ class TestCheckpointCLI:
         assert "3" in output  # commits to revert
         assert "file1.py" in output
         assert "file2.py" in output
+
+
+class TestContainmentCheckpoint:
+    """Tests for containment-specific checkpoint functionality."""
+
+    def test_create_containment_checkpoint(self, tmp_path):
+        """Test creating a containment checkpoint."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint, CONTAINMENT_CHECKPOINT_PREFIX
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+        tag_name, stash_ref = checkpoint.create_containment_checkpoint()
+
+        assert tag_name is not None
+        assert tag_name.startswith(CONTAINMENT_CHECKPOINT_PREFIX)
+        assert stash_ref is None  # No dirty changes, no stash
+
+    def test_containment_checkpoint_format(self, tmp_path):
+        """Test containment checkpoint uses correct format (containment-YYYYMMDD-HHMMSS)."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+        import re
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+        tag_name, _ = checkpoint.create_containment_checkpoint()
+
+        # Should match containment-YYYYMMDD-HHMMSS format
+        pattern = r"^containment-\d{8}-\d{6}$"
+        assert re.match(pattern, tag_name), f"Tag {tag_name} doesn't match expected format"
+
+    def test_containment_checkpoint_auto_stash(self, tmp_path):
+        """Test containment checkpoint auto-stashes dirty working directory."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        # Make dirty changes
+        (tmp_path / "file.txt").write_text("uncommitted changes")
+
+        checkpoint = GitCheckpoint(tmp_path)
+        tag_name, stash_ref = checkpoint.create_containment_checkpoint(auto_stash=True)
+
+        assert tag_name is not None
+        assert stash_ref is not None
+        assert "Auto-stash" in stash_ref
+
+        # Working directory should be clean after stash
+        assert checkpoint.is_dirty() is False
+
+    def test_containment_checkpoint_no_auto_stash(self, tmp_path):
+        """Test containment checkpoint without auto-stash."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        # Make dirty changes
+        (tmp_path / "file.txt").write_text("uncommitted changes")
+
+        checkpoint = GitCheckpoint(tmp_path)
+        tag_name, stash_ref = checkpoint.create_containment_checkpoint(auto_stash=False)
+
+        assert tag_name is not None
+        assert stash_ref is None  # No stash created
+        assert checkpoint.is_dirty() is True  # Still dirty
+
+    def test_list_containment_checkpoints(self, tmp_path):
+        """Test listing containment-specific checkpoints."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+
+        # Create regular checkpoint and containment checkpoint
+        regular_tag = checkpoint.create_checkpoint("regular")
+        containment_tag, _ = checkpoint.create_containment_checkpoint()
+
+        containment_checkpoints = checkpoint.list_containment_checkpoints()
+        regular_checkpoints = checkpoint.list_checkpoints()
+
+        # Containment list should only have containment checkpoint
+        assert len(containment_checkpoints) == 1
+        assert containment_checkpoints[0]["tag"] == containment_tag
+
+        # Regular list should have the regular checkpoint
+        assert any(cp["tag"] == regular_tag for cp in regular_checkpoints)
+
+    def test_get_latest_containment_checkpoint(self, tmp_path):
+        """Test getting the most recent containment checkpoint."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+        import time
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+
+        tag1, _ = checkpoint.create_containment_checkpoint()
+        time.sleep(1.1)  # Ensure different timestamps
+        tag2, _ = checkpoint.create_containment_checkpoint()
+
+        latest = checkpoint.get_latest_containment_checkpoint()
+
+        assert latest is not None
+        assert latest["tag"] == tag2  # Should be the second (most recent) checkpoint
+
+    def test_get_latest_containment_checkpoint_none(self, tmp_path):
+        """Test getting latest containment checkpoint when none exist."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+        latest = checkpoint.get_latest_containment_checkpoint()
+
+        assert latest is None
+
+
+class TestStashFunctionality:
+    """Tests for stash helper methods."""
+
+    def test_stash_if_dirty_clean_repo(self, tmp_path):
+        """Test stash_if_dirty with clean working directory."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        checkpoint = GitCheckpoint(tmp_path)
+        stash_ref = checkpoint.stash_if_dirty("test stash")
+
+        assert stash_ref is None  # No stash created for clean repo
+
+    def test_stash_if_dirty_dirty_repo(self, tmp_path):
+        """Test stash_if_dirty with dirty working directory."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        # Make dirty changes
+        (tmp_path / "file.txt").write_text("dirty changes")
+
+        checkpoint = GitCheckpoint(tmp_path)
+        stash_ref = checkpoint.stash_if_dirty("my custom stash")
+
+        assert stash_ref is not None
+        assert "my custom stash" in stash_ref
+        assert checkpoint.is_dirty() is False  # Now clean
+
+    def test_pop_stash(self, tmp_path):
+        """Test popping a stash by reference."""
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "file.txt").write_text("initial")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        # Make dirty changes and stash
+        (tmp_path / "file.txt").write_text("dirty changes")
+
+        checkpoint = GitCheckpoint(tmp_path)
+        stash_ref = checkpoint.stash_if_dirty("test stash for pop")
+
+        assert checkpoint.is_dirty() is False
+
+        # Pop the stash
+        success = checkpoint.pop_stash(stash_ref)
+
+        assert success is True
+        assert checkpoint.is_dirty() is True
+        assert (tmp_path / "file.txt").read_text() == "dirty changes"

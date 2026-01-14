@@ -20,7 +20,7 @@
 | T29.5 | Add claude666 Alias | P1 | 10 | ✓ done |
 | T29.6 | Implement Network Allowlist | P1 | 35 | ✓ done |
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | ✓ done |
-| T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | pending |
+| T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | ✓ done |
 | T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
 | T29.10 | Document Contained Autonomy Mode | P1 | 30 | pending |
 | T29.11 | Create Subagent Invocation Documentation | P2 | 30 | pending |
@@ -126,6 +126,52 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.8: Create Auto-Checkpoint on Containment Entry
+
+Implemented containment-specific checkpoint functionality with auto-stash support:
+
+**Core Changes:**
+
+1. **GitCheckpoint Enhanced** (`security/checkpoint.py`):
+   - Added `CONTAINMENT_CHECKPOINT_PREFIX = "containment-"` constant
+   - Added `create_containment_checkpoint()` - creates checkpoint with `containment-YYYYMMDD-HHMMSS` format
+   - Added `stash_if_dirty()` - auto-stash uncommitted changes
+   - Added `pop_stash()` - restore stashed changes by reference
+   - Added `list_containment_checkpoints()` - list only containment checkpoints
+   - Added `get_latest_containment_checkpoint()` - get most recent
+
+2. **contained-auto Command Updated** (`commands/session.py`):
+   - Now uses `create_containment_checkpoint()` instead of generic `create_checkpoint()`
+   - Shows warning for dirty working directory
+   - Auto-stashes uncommitted changes before checkpoint
+   - Stores stash reference in `PAIRCODER_CONTAINMENT_STASH` env var
+
+3. **New CLI Commands** (`containment` subcommand):
+   - `bpsai-pair containment rollback [CHECKPOINT]` - Rollback to checkpoint
+   - `bpsai-pair containment list` - List containment checkpoints
+   - `bpsai-pair containment cleanup --keep N` - Remove old checkpoints
+
+**Checkpoint Format:**
+```
+containment-20260113-153045
+         ^       ^      ^
+         |       |      |
+      prefix   date   time
+```
+
+**Tests Added:**
+- 10 new tests in `test_security_checkpoint.py`:
+  - `TestContainmentCheckpoint` (7 tests)
+  - `TestStashFunctionality` (3 tests)
+- All 30 checkpoint tests passing
+
+**Acceptance Criteria Completed:**
+- ✓ Checkpoint format: `containment-YYYYMMDD-HHMMSS`
+- ✓ Checkpoint ID stored in environment
+- ✓ `bpsai-pair containment rollback` command
+- ✓ Auto-stash dirty working directory
+- ✓ Warning for uncommitted changes
 
 ### 2026-01-13 - Docker Containment Implementation
 

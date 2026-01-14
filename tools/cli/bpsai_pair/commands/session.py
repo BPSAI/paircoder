@@ -6,6 +6,8 @@ Commands:
 - session check: Check session state and display context if new session
 - session status: Show current session status
 - contained-auto: Start a contained autonomous session
+- containment rollback: Rollback to a containment checkpoint
+- containment list: List containment checkpoints
 - compaction snapshot save: Save a compaction snapshot
 - compaction snapshot list: List available compaction snapshots
 - compaction check: Check if compaction recently occurred
@@ -156,13 +158,23 @@ def contained_auto(
             raise typer.Abort()
 
     checkpoint_id = None
+    stash_ref = None
 
     # Create checkpoint if enabled
     if config.containment.auto_checkpoint and not skip_checkpoint:
         try:
             checkpoint = GitCheckpoint(project_root)
-            checkpoint_id = checkpoint.create_checkpoint("containment entry")
+
+            # Warn if dirty working directory
+            if checkpoint.is_dirty():
+                console.print("[yellow]Warning: Uncommitted changes detected[/yellow]")
+                console.print("[dim]Changes will be stashed before checkpoint[/dim]")
+
+            # Create containment checkpoint with auto-stash
+            checkpoint_id, stash_ref = checkpoint.create_containment_checkpoint(auto_stash=True)
             console.print(f"[green]✓ Checkpoint created:[/green] {checkpoint_id}")
+            if stash_ref:
+                console.print(f"[dim]  Stashed changes: {stash_ref}[/dim]")
         except Exception as e:
             console.print(f"[yellow]Warning: Could not create checkpoint: {e}[/yellow]")
             if not typer.confirm("Continue without checkpoint?"):
@@ -182,6 +194,8 @@ def contained_auto(
     os.environ["PAIRCODER_CONTAINMENT"] = "1"
     if checkpoint_id:
         os.environ["PAIRCODER_CONTAINMENT_CHECKPOINT"] = checkpoint_id
+    if stash_ref:
+        os.environ["PAIRCODER_CONTAINMENT_STASH"] = stash_ref
 
     # Display status
     console.print()
@@ -704,3 +718,210 @@ def compaction_cleanup(
         console.print(f"[green]Removed {removed} old snapshot(s)[/green]")
     else:
         console.print("[dim]No snapshots to remove[/dim]")
+
+
+# --- Containment Commands ---
+
+containment_app = typer.Typer(
+    help="Containment checkpoint management",
+    context_settings={"help_option_names": ["-h", "--help"]}
+)
+
+
+@containment_app.command("rollback")
+def containment_rollback(
+    checkpoint: Optional[str] = typer.Argument(
+        None, help="Checkpoint to rollback to (default: latest containment checkpoint)"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", "-n", help="Preview rollback without executing"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Skip confirmation prompt"
+    ),
+    pop_stash: bool = typer.Option(
+        True, "--pop-stash/--no-pop-stash", help="Pop stashed changes after rollback"
+    ),
+):
+    """Rollback to a containment checkpoint.
+
+    Restores the repository to the state at the specified checkpoint.
+    If no checkpoint is specified, uses the most recent containment checkpoint.
+
+    By default, any changes stashed during checkpoint creation will be
+    restored after rollback. Use --no-pop-stash to skip this.
+
+    Examples:
+        # Preview rollback to latest checkpoint
+        bpsai-pair containment rollback --dry-run
+
+        # Rollback to latest checkpoint
+        bpsai-pair containment rollback
+
+        # Rollback to specific checkpoint
+        bpsai-pair containment rollback containment-20260113-153045
+    """
+    try:
+        from ..security.checkpoint import (
+            GitCheckpoint,
+            CheckpointNotFoundError,
+            NoCheckpointsError,
+            format_rollback_preview,
+        )
+    except ImportError:
+        from bpsai_pair.security.checkpoint import (
+            GitCheckpoint,
+            CheckpointNotFoundError,
+            NoCheckpointsError,
+            format_rollback_preview,
+        )
+
+    root = repo_root()
+    git_checkpoint = GitCheckpoint(root)
+
+    # Find checkpoint to use
+    target_checkpoint = checkpoint
+    if not target_checkpoint:
+        # Get latest containment checkpoint
+        latest = git_checkpoint.get_latest_containment_checkpoint()
+        if not latest:
+            console.print("[yellow]No containment checkpoints found[/yellow]")
+            console.print("[dim]Create one with: bpsai-pair contained-auto[/dim]")
+            raise typer.Exit(1)
+        target_checkpoint = latest["tag"]
+
+    # Preview rollback
+    try:
+        preview = git_checkpoint.preview_rollback(target_checkpoint)
+    except CheckpointNotFoundError:
+        console.print(f"[red]Checkpoint not found:[/red] {target_checkpoint}")
+        console.print("[dim]List checkpoints with: bpsai-pair containment list[/dim]")
+        raise typer.Exit(1)
+
+    console.print(format_rollback_preview(preview))
+    console.print()
+
+    if dry_run:
+        console.print("[dim]Dry run - no changes made[/dim]")
+        return
+
+    # Confirm rollback
+    if not force:
+        if preview["commits_to_revert"] > 0 or preview["files_changed"]:
+            if not typer.confirm("Proceed with rollback?"):
+                console.print("[dim]Rollback cancelled[/dim]")
+                raise typer.Abort()
+
+    # Check for stash associated with this checkpoint
+    stash_ref = None
+    if pop_stash:
+        # Check environment variable or search stash list
+        stash_ref = os.environ.get("PAIRCODER_CONTAINMENT_STASH")
+        if not stash_ref:
+            # Search for auto-stash in stash list
+            result = subprocess.run(
+                ["git", "stash", "list"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            for line in result.stdout.strip().split("\n"):
+                if "Auto-stash before containment checkpoint" in line:
+                    stash_ref = "Auto-stash before containment checkpoint"
+                    break
+
+    # Execute rollback
+    try:
+        git_checkpoint.rollback_to(target_checkpoint, stash_uncommitted=True)
+        console.print(f"[green]✓ Rolled back to:[/green] {target_checkpoint}")
+
+        # Pop stash if requested and exists
+        if pop_stash and stash_ref:
+            if git_checkpoint.pop_stash(stash_ref):
+                console.print(f"[green]✓ Restored stashed changes[/green]")
+            else:
+                console.print("[yellow]Warning: Could not restore stashed changes[/yellow]")
+
+    except Exception as e:
+        console.print(f"[red]Rollback failed:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@containment_app.command("list")
+def containment_list():
+    """List containment checkpoints.
+
+    Shows all checkpoints created by contained-auto sessions.
+
+    Example:
+        bpsai-pair containment list
+    """
+    try:
+        from ..security.checkpoint import GitCheckpoint
+    except ImportError:
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+    root = repo_root()
+    git_checkpoint = GitCheckpoint(root)
+
+    checkpoints = git_checkpoint.list_containment_checkpoints()
+
+    if not checkpoints:
+        console.print("[dim]No containment checkpoints found[/dim]")
+        console.print("[dim]Create one with: bpsai-pair contained-auto[/dim]")
+        return
+
+    console.print(f"[cyan]Containment Checkpoints ({len(checkpoints)}):[/cyan]")
+    console.print()
+
+    for cp in sorted(checkpoints, key=lambda c: c["timestamp"], reverse=True):
+        console.print(f"  [bold]{cp['tag']}[/bold]")
+        console.print(f"    Commit:  {cp['commit']}")
+        console.print(f"    Time:    {cp['timestamp']}")
+        if cp.get("message"):
+            console.print(f"    Message: {cp['message'][:50]}...")
+        console.print()
+
+
+@containment_app.command("cleanup")
+def containment_cleanup(
+    keep: int = typer.Option(5, "--keep", "-k", help="Number of checkpoints to keep"),
+):
+    """Remove old containment checkpoints.
+
+    Keeps the most recent N checkpoints and removes older ones.
+
+    Example:
+        bpsai-pair containment cleanup --keep 3
+    """
+    try:
+        from ..security.checkpoint import GitCheckpoint
+    except ImportError:
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+    root = repo_root()
+    git_checkpoint = GitCheckpoint(root)
+
+    checkpoints = git_checkpoint.list_containment_checkpoints()
+
+    if len(checkpoints) <= keep:
+        console.print(f"[dim]Only {len(checkpoints)} checkpoint(s) - nothing to remove[/dim]")
+        return
+
+    # Sort by timestamp (oldest first)
+    sorted_checkpoints = sorted(checkpoints, key=lambda c: c["timestamp"])
+    to_remove = sorted_checkpoints[:-keep]
+
+    removed = 0
+    for cp in to_remove:
+        try:
+            git_checkpoint.delete_checkpoint(cp["tag"])
+            removed += 1
+        except Exception:
+            pass
+
+    if removed > 0:
+        console.print(f"[green]Removed {removed} old checkpoint(s)[/green]")
+    else:
+        console.print("[dim]No checkpoints removed[/dim]")
