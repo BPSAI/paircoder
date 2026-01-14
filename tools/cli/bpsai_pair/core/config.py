@@ -195,6 +195,7 @@ class ContainmentConfig:
         # Only pass keys that are valid for ContainmentConfig
         valid_keys = {
             "enabled",
+            "mode",
             "blocked_directories",
             "blocked_files",
             "readonly_directories",
