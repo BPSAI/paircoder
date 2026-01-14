@@ -33,9 +33,9 @@ CLAUDE CAN'T EDIT ENFORCEMENT CODE
 | Metric | Value |
 |--------|-------|
 | CLI Commands | 127+ |
-| Passing Tests | 2,149+ |
-| Current Version | v2.9.1 |
-| Active Sprint | 29.1 (Hotfixes) |
+| Passing Tests | 2,300+ |
+| Current Version | v2.9.2 |
+| Active Sprint | 29.2 (Comprehensive Audit) |
 
 ### Sprint Overview
 
@@ -146,12 +146,23 @@ Key deliverables:
 
 ## Current Sprint
 
-### Sprint 29.1: Hotfixes ✅ 
+### Sprint 29.2: Comprehensive Audit 📋
+
+**Version:** 2.9.2 (audit only)
+**Status:** Ready to Plan
+
+See "Planned Sprints" section below for full details.
+
+---
+
+## Recently Completed
+
+### Sprint 29.1: Hotfixes ✅
 
 **Version:** 2.9.2 (patch)
-**Status:** In Progress
+**Status:** Complete
 
-Addressing items from PR review and testing:
+Addressed items from PR review and testing:
 
 | ID      | Task                                      | Status | Notes                                |
 |---------|-------------------------------------------|--------|--------------------------------------|
