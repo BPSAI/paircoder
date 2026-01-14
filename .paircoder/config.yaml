@@ -332,6 +332,7 @@ enforcement:
 
 containment:
   enabled: true
+  mode: strict
   auto_checkpoint: true
   rollback_on_violation: false
 
