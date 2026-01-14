@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T29.7",
-    "timer_id": "local-20260113204917",
-    "description": "T29.7: Test Containment Escape Attempts",
-    "start": "2026-01-13T20:49:17.813215"
+    "task_id": "T29.9",
+    "timer_id": "local-20260113214428",
+    "description": "T29.9: Add Containment Status to bpsai-pair status",
+    "start": "2026-01-13T21:44:28.558653"
   }
 }
