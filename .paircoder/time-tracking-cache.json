@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T29.6",
-    "timer_id": "local-20260113203135",
-    "description": "T29.6: Implement Network Allowlist",
-    "start": "2026-01-13T20:31:35.459330"
+    "task_id": "T29.7",
+    "timer_id": "local-20260113204917",
+    "description": "T29.7: Test Containment Escape Attempts",
+    "start": "2026-01-13T20:49:17.813215"
   }
 }

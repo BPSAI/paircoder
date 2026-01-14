@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.6 Complete)
+> Last updated: 2026-01-13 (T29.7 Complete)
 
 ## Active Plan
 
@@ -19,7 +19,7 @@
 | T29.4 | Create contained-auto Command | P0 | 40 | ✓ done |
 | T29.5 | Add claude666 Alias | P1 | 10 | ✓ done |
 | T29.6 | Implement Network Allowlist | P1 | 35 | ✓ done |
-| T29.7 | Test Containment Escape Attempts | P0 | 45 | pending |
+| T29.7 | Test Containment Escape Attempts | P0 | 45 | ✓ done |
 | T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | pending |
 | T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
 | T29.10 | Document Contained Autonomy Mode | P1 | 30 | pending |
@@ -126,6 +126,45 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.7: Test Containment Escape Attempts
+
+Comprehensive escape testing and critical gap discovery:
+
+**Critical Discovery:**
+During T29.6, Claude successfully wrote to `bpsai_pair/security/` which should have been read-only. Investigation revealed that containment is **advisory only**:
+1. `ContainmentManager._active` defaults to `False` - only `contained-auto` activates it
+2. Even when active, nothing calls `check_write_allowed()` before file operations
+3. Claude Code's Write/Edit tools bypass all containment checks
+
+**Architecture Analysis:**
+Analyzed existing systems that could provide true enforcement:
+- **Docker Sandbox** (`security/sandbox.py`): Has `MountConfig(readonly=True)` for OS-level enforcement
+- **Hook System** (`core/hooks.py`): Event-based but can't intercept tool calls
+- **State Machine** (`core/task_state.py`): Tracks task states, could track containment mode
+
+**Proposed Solutions:**
+1. **Option A (Recommended)**: Docker-based enforcement with read-only mounts
+2. **Option B**: Advisory mode with audit logging
+3. **Option C**: Hybrid - advisory for development, Docker for strict mode
+
+**New Files:**
+- `tests/security/test_containment_escapes.py` - 45 comprehensive escape tests
+
+**Test Categories (45 tests):**
+- Symlink Escapes: 5 tests (all blocked by ContainmentManager)
+- Path Traversal: 5 tests (all blocked)
+- Filesystem Tricks: 5 tests (blocked at path level)
+- Process Manipulation: 3 tests (DOCUMENT GAPS - subprocess bypasses)
+- Environment Injection: 3 tests (DOCUMENT GAPS)
+- Network Escapes: 5 tests
+- Tier Access: 6 tests
+- Audit Logging: 2 tests
+- Edge Cases: 6 tests
+- Documented Gaps: 5 tests (explicitly document known limitations)
+
+**Key Finding:**
+ContainmentManager's path checking is solid - it correctly blocks symlinks, traversal, etc. The gap is that nothing invokes these checks before operations. True containment requires Docker isolation.
 
 ### 2026-01-13 - T29.6: Implement Network Allowlist
 
