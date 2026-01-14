@@ -91,6 +91,12 @@ class ContainmentConfig:
     enabled: bool = False
     """Enable containment mode for contained autonomy."""
 
+    mode: str = "advisory"
+    """Containment enforcement mode:
+    - 'advisory': Log violations but don't block (default)
+    - 'strict': Docker-based enforcement with read-only mounts
+    """
+
     # Tier 1: Blocked (no read, no write)
     blocked_directories: List[str] = field(default_factory=list)
     """Directories that cannot be read or written (secrets, credentials)."""
@@ -116,6 +122,14 @@ class ContainmentConfig:
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
+        # Validate mode
+        valid_modes = ("advisory", "strict")
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Invalid containment mode: {self.mode!r}. "
+                f"Must be one of: {', '.join(valid_modes)}"
+            )
+
         # Validate blocked_directories
         validated = []
         for path in self.blocked_directories:

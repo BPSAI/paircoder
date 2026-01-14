@@ -20,7 +20,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import typer
 from rich.console import Console
@@ -30,6 +30,9 @@ try:
     from ..core import ops
 except ImportError:
     from bpsai_pair.core import ops
+
+if TYPE_CHECKING:
+    from ..security.sandbox import SandboxRunner
 
 # Initialize Rich console
 console = Console()
@@ -221,6 +224,26 @@ def contained_auto(
             _cleanup_containment()
             raise typer.Abort()
 
+    # Determine containment mode
+    mode = config.containment.mode  # "advisory" or "strict"
+
+    # Check if we can use strict mode
+    if mode == "strict":
+        try:
+            from ..security.sandbox import SandboxRunner
+        except ImportError:
+            from bpsai_pair.security.sandbox import SandboxRunner
+
+        if not SandboxRunner.is_docker_available():
+            console.print("[yellow]Warning: Docker not available for strict containment[/yellow]")
+            console.print("[dim]Falling back to advisory mode[/dim]")
+            mode = "advisory"
+        else:
+            console.print("[bold cyan]Mode: STRICT[/bold cyan] (Docker-enforced containment)")
+    else:
+        console.print("[bold yellow]Mode: ADVISORY[/bold yellow] (path checks only)")
+
+    console.print()
     console.print("[bold]Launching Claude Code with autonomous permissions...[/bold]")
     console.print()
 
@@ -231,7 +254,53 @@ def contained_auto(
     if task:
         claude_cmd.extend(["--prompt", f"Work on task {task}. Remember: containment mode is active - protected paths are read-only."])
 
-    # Invoke Claude Code - this blocks until Claude exits
+    # Execute based on mode
+    if mode == "strict":
+        # Docker-based containment with OS-enforced read-only mounts
+        try:
+            from ..security.sandbox import SandboxRunner, SandboxConfig, containment_config_to_mounts
+        except ImportError:
+            from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig, containment_config_to_mounts
+
+        # Create sandbox config
+        sandbox_config = SandboxConfig(
+            enabled=True,
+            image=os.environ.get("PAIRCODER_SANDBOX_IMAGE", "paircoder/sandbox:latest"),
+            network="none",  # Will be overridden if network_allowlist is set
+        )
+
+        # Convert containment config to Docker mounts
+        mounts, excluded = containment_config_to_mounts(config.containment, project_root)
+        sandbox_config.mounts = mounts[1:]  # Skip the first (base workspace) mount - runner adds it
+
+        # Get network allowlist if configured
+        network_allowlist = None
+        if hasattr(config.containment, 'allow_network') and config.containment.allow_network:
+            network_allowlist = config.containment.allow_network
+
+        # Create runner and execute
+        runner = SandboxRunner(project_root, sandbox_config)
+
+        try:
+            exit_code = runner.run_interactive(
+                claude_cmd,
+                env={
+                    "PAIRCODER_CONTAINMENT": "1",
+                    "PAIRCODER_CONTAINMENT_MODE": "strict",
+                    **({"PAIRCODER_CONTAINMENT_CHECKPOINT": checkpoint_id} if checkpoint_id else {}),
+                },
+                network_allowlist=network_allowlist,
+            )
+            sys.exit(exit_code)
+        except RuntimeError as e:
+            console.print(f"[red]Docker error: {e}[/red]")
+            console.print("[dim]Falling back to advisory mode[/dim]")
+            mode = "advisory"
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Session interrupted.[/yellow]")
+            raise typer.Exit(130)
+
+    # Advisory mode (default) - run locally with path checks (not enforced)
     try:
         result = subprocess.run(claude_cmd, cwd=project_root)
         sys.exit(result.returncode)
