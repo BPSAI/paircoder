@@ -4,7 +4,7 @@ allowed-tools: Bash(bpsai-pair:*), Bash(cat:*)
 argument-hint: [backlog-file.md] or [feature description]
 ---
 
-Enter **Navigator role** for planning.
+Enter Planning Mode and use **Navigator role** for planning.
 
 
 ## Pre-Flight (Enforcement)

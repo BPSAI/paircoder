@@ -1,4 +1,4 @@
-version: "2.8"
+version: "2.9.1"
 project:
   name: "{{ cookiecutter.project_slug }}"
   description: "{{ cookiecutter.project_name }}"
@@ -305,3 +305,45 @@ security:
   sandbox:
     enabled: false
     config_path: .paircoder/security/sandbox.yaml
+
+# Containment settings (contained autonomy mode)
+# Controls file/directory access and network during autonomous execution
+# Note: This is separate from the Docker sandbox system (security.sandbox)
+containment:
+  # Enable contained autonomy mode
+  enabled: false
+
+  # Enforcement mode: "advisory" (log only) or "strict" (Docker-enforced)
+  mode: strict
+
+  # Create git checkpoint when entering containment mode
+  auto_checkpoint: true
+
+  # Automatically rollback changes if containment violation detected
+  rollback_on_violation: false
+
+  # Tier 1: Blocked - cannot read OR write (secrets, credentials)
+  blocked_directories: []
+  blocked_files:
+    - .env
+    - .env.local
+    - .env.production
+    - credentials.json
+    - secrets.yaml
+
+  # Tier 2: Read-only - can read, cannot write (enforcement code, skills)
+  readonly_directories:
+    - .claude/agents/
+    - .claude/commands/
+    - .claude/skills/
+  readonly_files:
+    - CLAUDE.md
+    - AGENTS.md
+
+  # Network domains allowed in containment mode
+  # All other network access is blocked
+  allow_network:
+    - api.anthropic.com
+    - api.trello.com
+    - github.com
+    - pypi.org

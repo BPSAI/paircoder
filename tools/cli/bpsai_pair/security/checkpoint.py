@@ -34,6 +34,7 @@ class NoCheckpointsError(CheckpointError):
 
 
 CHECKPOINT_PREFIX = "paircoder-checkpoint-"
+CONTAINMENT_CHECKPOINT_PREFIX = "containment-"
 
 
 @dataclass
@@ -108,10 +109,20 @@ class GitCheckpoint:
         result = self._run_git("rev-parse", "HEAD")
         return result.stdout.strip()
 
-    def _generate_tag_name(self) -> str:
-        """Generate unique checkpoint tag name."""
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        return f"{CHECKPOINT_PREFIX}{timestamp}"
+    def _generate_tag_name(self, prefix: str = CHECKPOINT_PREFIX) -> str:
+        """Generate unique checkpoint tag name.
+
+        Args:
+            prefix: Tag prefix to use (default: paircoder-checkpoint-)
+
+        Returns:
+            Generated tag name
+        """
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # Add microseconds only for default prefix to ensure uniqueness
+        if prefix == CHECKPOINT_PREFIX:
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        return f"{prefix}{timestamp}"
 
     def is_dirty(self) -> bool:
         """Check if working directory has uncommitted changes.
@@ -122,6 +133,133 @@ class GitCheckpoint:
         # Check for any changes (staged or unstaged)
         result = self._run_git("status", "--porcelain")
         return len(result.stdout.strip()) > 0
+
+    def stash_if_dirty(self, message: str = "") -> Optional[str]:
+        """Stash uncommitted changes if working directory is dirty.
+
+        Args:
+            message: Stash message (auto-generated if not provided)
+
+        Returns:
+            Stash reference if changes were stashed, None otherwise
+        """
+        if not self.is_dirty():
+            return None
+
+        stash_msg = message or f"Auto-stash for checkpoint at {datetime.now().isoformat()}"
+        result = self._run_git("stash", "push", "-m", stash_msg, check=False)
+
+        if result.returncode == 0 and "Saved working directory" in result.stdout:
+            return stash_msg
+        return None
+
+    def pop_stash(self, stash_ref: Optional[str] = None) -> bool:
+        """Pop the most recent stash or a specific stash.
+
+        Args:
+            stash_ref: Stash message to find and pop (if None, pops most recent)
+
+        Returns:
+            True if stash was popped successfully
+        """
+        if stash_ref:
+            # Find the stash index with this message
+            result = self._run_git("stash", "list", check=False)
+            for line in result.stdout.strip().split("\n"):
+                if stash_ref in line:
+                    # Extract stash index (e.g., "stash@{0}")
+                    stash_idx = line.split(":")[0]
+                    pop_result = self._run_git("stash", "pop", stash_idx, check=False)
+                    return pop_result.returncode == 0
+
+        # Pop most recent stash
+        result = self._run_git("stash", "pop", check=False)
+        return result.returncode == 0
+
+    def create_containment_checkpoint(self, auto_stash: bool = True) -> tuple[str, Optional[str]]:
+        """Create a containment checkpoint with optional auto-stash.
+
+        This method creates a checkpoint specifically for containment mode:
+        - Uses containment-YYYYMMDD-HHMMSS format
+        - Optionally stashes uncommitted changes before checkpoint
+        - Returns both checkpoint ID and stash reference
+
+        Args:
+            auto_stash: Whether to stash uncommitted changes before checkpoint
+
+        Returns:
+            Tuple of (checkpoint_id, stash_ref) where stash_ref is None if no stash created
+        """
+        stash_ref = None
+
+        # Stash uncommitted changes if requested and dirty
+        if auto_stash:
+            stash_ref = self.stash_if_dirty(
+                f"Auto-stash before containment checkpoint"
+            )
+
+        # Create checkpoint with containment prefix
+        tag_name = self._generate_tag_name(CONTAINMENT_CHECKPOINT_PREFIX)
+        commit = self._get_current_commit()
+
+        timestamp = datetime.now().isoformat()
+        tag_message = f"Containment entry checkpoint at {timestamp}"
+        self._run_git("tag", "-a", tag_name, "-m", tag_message)
+
+        self.checkpoints.append(tag_name)
+
+        return tag_name, stash_ref
+
+    def list_containment_checkpoints(self) -> list[dict]:
+        """List all containment checkpoints.
+
+        Returns:
+            List of checkpoint info dicts with tag, commit, timestamp, message
+        """
+        # Get all containment checkpoint tags
+        result = self._run_git("tag", "-l", f"{CONTAINMENT_CHECKPOINT_PREFIX}*")
+        tags = result.stdout.strip().split("\n")
+        tags = [t for t in tags if t]
+
+        checkpoints = []
+        for tag in tags:
+            try:
+                commit_result = self._run_git("rev-list", "-n", "1", tag)
+                commit = commit_result.stdout.strip()[:7]
+
+                msg_result = self._run_git("tag", "-l", "-n1", tag)
+                parts = msg_result.stdout.strip().split(None, 1)
+                message = parts[1] if len(parts) > 1 else ""
+
+                # Parse timestamp from tag name (containment-YYYYMMDD-HHMMSS)
+                timestamp_part = tag.replace(CONTAINMENT_CHECKPOINT_PREFIX, "")
+                try:
+                    dt = datetime.strptime(timestamp_part, "%Y%m%d-%H%M%S")
+                    timestamp = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    timestamp = timestamp_part
+
+                checkpoints.append({
+                    "tag": tag,
+                    "commit": commit,
+                    "timestamp": timestamp,
+                    "message": message
+                })
+            except subprocess.CalledProcessError:
+                continue
+
+        return checkpoints
+
+    def get_latest_containment_checkpoint(self) -> Optional[dict]:
+        """Get the most recent containment checkpoint.
+
+        Returns:
+            Checkpoint info dict or None if no containment checkpoints exist
+        """
+        checkpoints = self.list_containment_checkpoints()
+        if not checkpoints:
+            return None
+        return sorted(checkpoints, key=lambda c: c["timestamp"], reverse=True)[0]
 
     def create_checkpoint(self, message: str = "") -> str:
         """Create a checkpoint at current HEAD.

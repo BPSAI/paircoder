@@ -111,3 +111,10 @@ __pycache__/
 
 # Prevent accidental .paircoder in wrong location
 tools/cli/.paircoder/
+.env
+.env.local
+.env.production
+.npmrc
+.pypirc
+credentials.json
+secrets.yaml

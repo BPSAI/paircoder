@@ -552,3 +552,377 @@ class TestApplyOrDiscardChanges:
         # discard_changes should just remove the container
         runner.discard_changes(result)
         # No copy should happen - changes just stay in the container which is removed
+
+
+class TestContainmentConfigToMounts:
+    """Tests for containment_config_to_mounts function."""
+
+    def test_basic_conversion(self, tmp_path):
+        """Test basic conversion of containment config to Docker mounts."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        # Create test directories
+        (tmp_path / ".claude" / "skills").mkdir(parents=True)
+        (tmp_path / "CLAUDE.md").touch()
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_directories=[".claude/skills/"],
+            readonly_files=["CLAUDE.md"],
+        )
+
+        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+
+        # Should have base workspace mount + readonly overlays
+        assert len(mounts) >= 1
+        # First mount is base workspace
+        assert mounts[0].target == "/workspace"
+        assert mounts[0].readonly is False
+
+    def test_readonly_directories(self, tmp_path):
+        """Test readonly directories are mounted as readonly."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        # Create test directories
+        (tmp_path / ".claude" / "skills").mkdir(parents=True)
+        (tmp_path / "bpsai_pair" / "security").mkdir(parents=True)
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_directories=[".claude/skills/", "bpsai_pair/security/"],
+        )
+
+        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+
+        # Check readonly mounts
+        readonly_mounts = [m for m in mounts if m.readonly]
+        assert len(readonly_mounts) == 2
+
+        # Verify targets
+        targets = [m.target for m in readonly_mounts]
+        assert "/workspace/.claude/skills" in targets
+        assert "/workspace/bpsai_pair/security" in targets
+
+    def test_readonly_files(self, tmp_path):
+        """Test readonly files are mounted as readonly."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        # Create test files
+        (tmp_path / "CLAUDE.md").touch()
+        (tmp_path / "config.yaml").touch()
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_files=["CLAUDE.md", "config.yaml"],
+        )
+
+        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+
+        readonly_mounts = [m for m in mounts if m.readonly]
+        assert len(readonly_mounts) == 2
+
+    def test_blocked_paths_excluded(self, tmp_path):
+        """Test blocked paths are overlaid with tmpfs mounts."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        # Create test paths
+        (tmp_path / ".secrets").mkdir()
+        (tmp_path / ".env").touch()
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_directories=[".secrets/"],
+            blocked_files=[".env"],
+        )
+
+        mounts, blocked = containment_config_to_mounts(config, tmp_path)
+
+        # Blocked paths should be in blocked list (for logging/reference)
+        assert ".secrets" in blocked
+        assert ".env" in blocked
+
+        # Blocked paths should have tmpfs mounts that hide original content
+        tmpfs_mounts = [m for m in mounts if m.is_tmpfs()]
+        assert len(tmpfs_mounts) == 2
+
+        tmpfs_targets = [m.target for m in tmpfs_mounts]
+        assert "/workspace/.secrets" in tmpfs_targets
+        assert "/workspace/.env" in tmpfs_targets
+
+    def test_nonexistent_paths_ignored(self, tmp_path):
+        """Test nonexistent paths are gracefully ignored."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_directories=["nonexistent/"],
+            readonly_files=["nonexistent.md"],
+        )
+
+        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+
+        # Should only have base workspace mount (nonexistent paths skipped)
+        readonly_mounts = [m for m in mounts if m.readonly]
+        assert len(readonly_mounts) == 0
+
+    def test_trailing_slashes_normalized(self, tmp_path):
+        """Test trailing slashes are handled correctly."""
+        from bpsai_pair.security.sandbox import containment_config_to_mounts
+        from bpsai_pair.core.config import ContainmentConfig
+
+        (tmp_path / "dir1").mkdir()
+        (tmp_path / "dir2").mkdir()
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_directories=["dir1/", "dir2"],  # Mixed with/without trailing slash
+        )
+
+        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+
+        # Both should be mounted correctly
+        readonly_mounts = [m for m in mounts if m.readonly]
+        assert len(readonly_mounts) == 2
+
+
+class TestRunInteractive:
+    """Tests for run_interactive method."""
+
+    @patch("bpsai_pair.security.sandbox.subprocess")
+    def test_disabled_sandbox_runs_locally(self, mock_subprocess):
+        """Test disabled sandbox runs interactive command locally."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_subprocess.run.return_value = MagicMock(returncode=0)
+
+        config = SandboxConfig(enabled=False)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        exit_code = runner.run_interactive(["echo", "test"])
+
+        assert exit_code == 0
+        mock_subprocess.run.assert_called_once()
+
+    @patch("bpsai_pair.security.sandbox.subprocess")
+    def test_local_interactive_passes_env(self, mock_subprocess):
+        """Test local interactive mode passes environment variables."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+        import os
+
+        mock_subprocess.run.return_value = MagicMock(returncode=0)
+
+        config = SandboxConfig(enabled=False)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        exit_code = runner.run_interactive(
+            ["echo", "test"],
+            env={"CUSTOM_VAR": "value"}
+        )
+
+        call_kwargs = mock_subprocess.run.call_args
+        env = call_kwargs[1].get("env", {})
+        assert "CUSTOM_VAR" in env
+        assert env["CUSTOM_VAR"] == "value"
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_docker_interactive_with_tty(self, mock_docker):
+        """Test Docker interactive mode uses TTY."""
+        import sys
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+        mock_container.attrs = {"State": {"ExitCode": 0}}
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
+
+        # Mock dockerpty in sys.modules (imported inside run_interactive)
+        mock_dockerpty = MagicMock()
+        with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
+            config = SandboxConfig(enabled=True)
+            runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+            exit_code = runner.run_interactive(["claude", "--help"])
+
+        # Verify TTY options
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
+        assert call_kwargs[1].get("stdin_open") is True
+        assert call_kwargs[1].get("tty") is True
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_docker_interactive_with_network_allowlist(self, mock_docker):
+        """Test Docker interactive mode with network allowlist."""
+        import sys
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+        mock_container.attrs = {"State": {"ExitCode": 0}}
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
+
+        mock_dockerpty = MagicMock()
+        with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
+            config = SandboxConfig(enabled=True, network="none")
+            runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+            exit_code = runner.run_interactive(
+                ["claude"],
+                network_allowlist=["api.anthropic.com", "github.com"]
+            )
+
+        # Verify network mode is bridge (for iptables) and NET_ADMIN capability
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
+        assert call_kwargs[1].get("network_mode") == "bridge"
+        assert "NET_ADMIN" in call_kwargs[1].get("cap_add", [])
+        # Verify keep-alive command is used (actual command runs via exec)
+        assert call_kwargs[1].get("command") == ["sleep", "infinity"]
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_docker_interactive_sets_env(self, mock_docker):
+        """Test Docker interactive mode sets environment variables."""
+        import sys
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+        mock_container.attrs = {"State": {"ExitCode": 0}}
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
+
+        mock_dockerpty = MagicMock()
+        with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
+            config = SandboxConfig(enabled=True)
+            runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+            exit_code = runner.run_interactive(
+                ["claude"],
+                env={"PAIRCODER_CONTAINMENT": "1"}
+            )
+
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
+        env = call_kwargs[1].get("environment", {})
+        assert env.get("PAIRCODER_CONTAINMENT") == "1"
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_docker_interactive_cleanup_on_exit(self, mock_docker):
+        """Test Docker interactive mode cleans up container on exit."""
+        import sys
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+        mock_container.attrs = {"State": {"ExitCode": 0}}
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
+
+        mock_dockerpty = MagicMock()
+        with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
+            config = SandboxConfig(enabled=True)
+            runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+            exit_code = runner.run_interactive(["claude"])
+
+        # Container should be stopped and removed
+        mock_container.stop.assert_called_once()
+        mock_container.remove.assert_called_once()
+
+
+class TestSetupNetworkAllowlist:
+    """Tests for _setup_network_allowlist method."""
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_iptables_rules_created(self, mock_docker):
+        """Test iptables rules are created for allowed domains."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+
+        config = SandboxConfig(enabled=True)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        runner._setup_network_allowlist(mock_container, ["api.anthropic.com"])
+
+        # Verify exec_run was called with iptables commands
+        mock_container.exec_run.assert_called()
+        call_args = mock_container.exec_run.call_args
+        cmd = call_args[1].get("cmd", [])
+        assert "iptables" in " ".join(cmd)
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_localhost_always_allowed(self, mock_docker):
+        """Test localhost is always allowed in network rules."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+
+        config = SandboxConfig(enabled=True)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        runner._setup_network_allowlist(mock_container, ["example.com"])
+
+        call_args = mock_container.exec_run.call_args
+        cmd_str = " ".join(call_args[1].get("cmd", []))
+        # Should include localhost rules
+        assert "127.0.0.0/8" in cmd_str or "lo" in cmd_str
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_dns_allowed(self, mock_docker):
+        """Test DNS port is allowed for domain resolution."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+
+        config = SandboxConfig(enabled=True)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        runner._setup_network_allowlist(mock_container, ["example.com"])
+
+        call_args = mock_container.exec_run.call_args
+        cmd_str = " ".join(call_args[1].get("cmd", []))
+        # Should include DNS port (53)
+        assert "53" in cmd_str
+
+    @patch("bpsai_pair.security.sandbox.docker")
+    def test_default_block_rule(self, mock_docker):
+        """Test default REJECT rule is added at the end."""
+        from bpsai_pair.security.sandbox import SandboxRunner, SandboxConfig
+
+        mock_container = MagicMock()
+
+        config = SandboxConfig(enabled=True)
+        runner = SandboxRunner(workspace=Path("/workspace"), config=config)
+
+        runner._setup_network_allowlist(mock_container, ["example.com"])
+
+        call_args = mock_container.exec_run.call_args
+        cmd_str = " ".join(call_args[1].get("cmd", []))
+        # Should include REJECT rule
+        assert "REJECT" in cmd_str
+
+
+class TestContainmentModeConfig:
+    """Tests for containment mode configuration."""
+
+    def test_advisory_mode_default(self):
+        """Test advisory mode is the default."""
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(enabled=True)
+        assert config.mode == "advisory"
+
+    def test_strict_mode(self):
+        """Test strict mode can be set."""
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(enabled=True, mode="strict")
+        assert config.mode == "strict"
+
+    def test_invalid_mode_raises(self):
+        """Test invalid mode raises ValueError."""
+        from bpsai_pair.core.config import ContainmentConfig
+
+        with pytest.raises(ValueError) as exc_info:
+            ContainmentConfig(enabled=True, mode="invalid")
+        assert "mode" in str(exc_info.value).lower()

@@ -29,7 +29,7 @@ from .mcp import app as mcp_app
 from .security import app as security_app
 from .security import scan_secrets, scan_deps  # For shortcut commands
 from .core import register_core_commands
-from .session import session_app, compaction_app
+from .session import session_app, compaction_app, containment_app, contained_auto, claude666
 from .upgrade import upgrade_app
 from .budget import app as budget_app
 from .audit import app as audit_app
@@ -50,6 +50,9 @@ __all__ = [
     "register_core_commands",
     "session_app",
     "compaction_app",
+    "containment_app",
+    "contained_auto",
+    "claude666",
     "upgrade_app",
     "budget_app",
     "audit_app",

@@ -5,6 +5,74 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.9.1] - 2026-01-14 (Sprint 29: Contained Autonomy)
+
+### Added
+
+#### Contained Autonomy Mode
+- **Docker-enforced Isolation** — True OS-level containment for autonomous sessions
+  - `bpsai-pair contained-auto` — Start contained session with protected paths
+  - `bpsai-pair containment status` — View current containment mode
+  - `bpsai-pair containment rollback [CHECKPOINT]` — Rollback to checkpoint
+  - `bpsai-pair containment list` — List containment checkpoints
+  - `mode: strict` in config for Docker enforcement (vs `advisory` for logging only)
+
+- **Three-Tier Access Control**
+  - Tier 1 (Blocked): No read/write — `.env`, `credentials.json`, `secrets.yaml`
+  - Tier 2 (Read-only): Can read, no write — `.claude/`, `CLAUDE.md`, enforcement code
+  - Tier 3 (Read-write): Full access — Source code, tests, task files
+
+- **Network Allowlist** — iptables-based domain filtering in strict mode
+  - Default domains: `api.anthropic.com`, `api.trello.com`, `github.com`, `pypi.org`
+  - Configurable via `containment.allow_network` in config.yaml
+
+- **Auto-Checkpoint** — Git checkpoint on containment entry
+  - Automatic stash of uncommitted changes
+  - Stash restoration on session exit (if working dir clean)
+  - Rollback support via checkpoint tags
+
+#### New CLI Commands
+- `contained-auto [TASK]` — Start contained autonomous session
+- `containment status` — Show containment mode and protected paths
+- `containment rollback [CHECKPOINT]` — Rollback to checkpoint
+- `containment list` — List containment checkpoints
+- `containment cleanup --keep N` — Remove old checkpoints
+
+#### Documentation
+- `docs/CONTAINED_AUTONOMY.md` — Full containment mode documentation
+- `docs/SUBAGENT_INVOCATION.md` — Subagent usage and creation guide
+- Containment section added to `CLAUDE.md` for AI awareness
+
+### Changed
+
+#### Configuration
+- New `containment:` section in config.yaml
+  - `mode: strict` — Docker-enforced containment
+  - `blocked_files/directories` — Tier 1 paths (no access)
+  - `readonly_files/directories` — Tier 2 paths (read-only)
+  - `allow_network` — Allowed domains in containment
+
+#### Docker Image
+- Updated base to `python:3.12-slim-bookworm`
+- Security patches via `apt-get upgrade`
+- npm vulnerability fixes via `npm audit fix`
+- OCI standard labels added
+
+### Fixed
+- **TTY Attachment** — Fixed interactive session not attaching properly
+  - Changed `containers.run()` to `containers.create()` for dockerpty
+- **Phantom Files** — Fixed empty files created for non-existent blocked paths
+  - Added existence check before tmpfs mount creation
+- **Stash Restoration** — Fixed stashed changes not restored after session
+  - Auto-pop stash if working directory is clean on exit
+
+### Tests
+- 54 sandbox tests (all passing)
+- 31 session tests (all passing)
+- Containment escape attempt tests documented
+
+---
+
 ## [v2.9.0] - 2025-01-05 (Sprint 28: Enforcement Gates)
 
 ### Added

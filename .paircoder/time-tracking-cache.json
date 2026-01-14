@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T28.17",
-    "timer_id": "local-20260105211120",
-    "description": "T28.17: Final Verification and Release Prep",
-    "start": "2026-01-05T21:11:20.705091"
+    "task_id": "T29.11",
+    "timer_id": "local-20260114000247",
+    "description": "T29.11: Create Subagent Invocation Documentation",
+    "start": "2026-01-14T00:02:47.627429"
   }
 }
