@@ -61,9 +61,9 @@ project:
   name: test-project
 containment:
   enabled: true
-  locked_directories:
+  readonly_directories:
     - .claude/agents/
-  locked_files:
+  readonly_files:
     - CLAUDE.md
   auto_checkpoint: true
   rollback_on_violation: false
@@ -172,8 +172,8 @@ class TestContainmentActivation:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
-            locked_files=["CLAUDE.md"],
+            readonly_directories=[".claude/agents/"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -181,20 +181,185 @@ class TestContainmentActivation:
         manager.activate()
         assert manager.is_active is True
 
-    def test_activated_manager_blocks_locked_paths(self, tmp_path):
-        """Test that activated manager blocks writes to locked paths."""
-        from bpsai_pair.security.containment import ContainmentManager, ContainmentViolationError
+    def test_activated_manager_blocks_writes_to_readonly_paths(self, tmp_path):
+        """Test that activated manager blocks writes to read-only paths."""
+        from bpsai_pair.security.containment import ContainmentManager, ContainmentWriteError
         from bpsai_pair.core.config import ContainmentConfig
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
         manager.activate()
 
-        with pytest.raises(ContainmentViolationError):
+        with pytest.raises(ContainmentWriteError):
             manager.check_write_allowed(Path("CLAUDE.md"))
+
+    def test_readonly_paths_allow_read(self, tmp_path):
+        """Test that read-only paths allow reading."""
+        from bpsai_pair.security.containment import ContainmentManager
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_files=["CLAUDE.md"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        # Should NOT raise - reading readonly paths is allowed
+        manager.check_read_allowed(Path("CLAUDE.md"))
+
+
+class TestThreeTierContainment:
+    """Tests for three-tier containment access control."""
+
+    def test_blocked_paths_block_read_and_write(self, tmp_path):
+        """Test that blocked paths block both read and write."""
+        from bpsai_pair.security.containment import (
+            ContainmentManager,
+            ContainmentReadError,
+            ContainmentWriteError,
+        )
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_files=[".env"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        with pytest.raises(ContainmentReadError):
+            manager.check_read_allowed(Path(".env"))
+
+        with pytest.raises(ContainmentWriteError):
+            manager.check_write_allowed(Path(".env"))
+
+    def test_readonly_paths_allow_read_block_write(self, tmp_path):
+        """Test that readonly paths allow read but block write."""
+        from bpsai_pair.security.containment import ContainmentManager, ContainmentWriteError
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_files=["CLAUDE.md"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        # Read should be allowed
+        manager.check_read_allowed(Path("CLAUDE.md"))
+
+        # Write should be blocked
+        with pytest.raises(ContainmentWriteError):
+            manager.check_write_allowed(Path("CLAUDE.md"))
+
+    def test_readwrite_paths_allow_all(self, tmp_path):
+        """Test that unprotected paths allow both read and write."""
+        from bpsai_pair.security.containment import ContainmentManager
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_files=[".env"],
+            readonly_files=["CLAUDE.md"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        # Unprotected file should allow both read and write
+        manager.check_read_allowed(Path("src/main.py"))
+        manager.check_write_allowed(Path("src/main.py"))
+
+    def test_get_path_tier(self, tmp_path):
+        """Test get_path_tier returns correct tier."""
+        from bpsai_pair.security.containment import ContainmentManager
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_files=[".env"],
+            readonly_files=["CLAUDE.md"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+
+        assert manager.get_path_tier(Path(".env")) == "blocked"
+        assert manager.get_path_tier(Path("CLAUDE.md")) == "readonly"
+        assert manager.get_path_tier(Path("src/main.py")) == "readwrite"
+
+    def test_blocked_directories(self, tmp_path):
+        """Test that blocked directories block all files within."""
+        from bpsai_pair.security.containment import (
+            ContainmentManager,
+            ContainmentReadError,
+        )
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_directories=["secrets/"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        with pytest.raises(ContainmentReadError):
+            manager.check_read_allowed(Path("secrets/api_key.txt"))
+
+    def test_readonly_directories(self, tmp_path):
+        """Test that readonly directories protect all files within."""
+        from bpsai_pair.security.containment import ContainmentManager, ContainmentWriteError
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            readonly_directories=[".claude/skills/"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        manager.activate()
+
+        # Read should be allowed
+        manager.check_read_allowed(Path(".claude/skills/my-skill.md"))
+
+        # Write should be blocked
+        with pytest.raises(ContainmentWriteError):
+            manager.check_write_allowed(Path(".claude/skills/my-skill.md"))
+
+    def test_backward_compatibility_locked_fields(self):
+        """Test backward compatibility with locked_* field names."""
+        from bpsai_pair.core.config import ContainmentConfig
+
+        # Old style config should map to readonly
+        config = ContainmentConfig.from_dict({
+            "enabled": True,
+            "locked_directories": [".claude/"],
+            "locked_files": ["CLAUDE.md"],
+        })
+
+        assert config.readonly_directories == [".claude/"]
+        assert config.readonly_files == ["CLAUDE.md"]
+        assert config.blocked_directories == []
+        assert config.blocked_files == []
+
+    def test_inactive_manager_allows_all(self, tmp_path):
+        """Test that inactive manager allows all operations."""
+        from bpsai_pair.security.containment import ContainmentManager
+        from bpsai_pair.core.config import ContainmentConfig
+
+        config = ContainmentConfig(
+            enabled=True,
+            blocked_files=[".env"],
+            readonly_files=["CLAUDE.md"],
+        )
+        manager = ContainmentManager(config, tmp_path)
+        # Manager is NOT activated
+
+        # Should not raise even for blocked paths
+        manager.check_read_allowed(Path(".env"))
+        manager.check_write_allowed(Path(".env"))
+        manager.check_read_allowed(Path("CLAUDE.md"))
+        manager.check_write_allowed(Path("CLAUDE.md"))
 
 
 class TestGitCheckpointIntegration:
@@ -275,9 +440,9 @@ project:
   name: test-project
 containment:
   enabled: true
-  locked_directories:
+  readonly_directories:
     - .claude/agents/
-  locked_files:
+  readonly_files:
     - CLAUDE.md
   auto_checkpoint: false
 """)

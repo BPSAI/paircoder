@@ -334,17 +334,32 @@ containment:
   enabled: true
   auto_checkpoint: true
   rollback_on_violation: false
-  locked_directories:
+
+  # Tier 1: Blocked - cannot read OR write (secrets, credentials)
+  blocked_directories: []
+  blocked_files:
+    - .env
+    - .env.local
+    - .env.production
+    - credentials.json
+    - secrets.yaml
+    - .npmrc
+    - .pypirc
+
+  # Tier 2: Read-only - can read, cannot write (enforcement code, skills)
+  readonly_directories:
     - .claude/agents
     - .claude/commands
     - .claude/skills
     - tools/cli/bpsai_pair/security
     - tools/cli/bpsai_pair/core
     - tools/cli/bpsai_pair/orchestration
-  locked_files:
+  readonly_files:
     - .paircoder/config.yaml
     - CLAUDE.md
     - AGENTS.md
+
+  # Network domains allowed in containment mode
   allow_network:
     - api.anthropic.com
     - api.trello.com
