@@ -538,4 +538,4 @@ Containment violations are logged to `.paircoder/history/containment_log.jsonl`:
 
 ---
 
-*PairCoder v2.9.1 - MIT License*
+*PairCoder v2.9.2 - MIT License*
