@@ -66,23 +66,42 @@ my-project/
 │   │   ├── project.md           # Project overview
 │   │   ├── workflow.md          # Workflow guidelines
 │   │   └── state.md             # Current state
+│   ├── docs/                     # User documentation
+│   │   ├── USER_GUIDE.md        # Full user guide
+│   │   ├── FEATURE_MATRIX.md    # Feature inventory
+│   │   ├── MCP_SETUP.md         # MCP configuration
+│   │   └── SECURITY.md          # Security features
 │   ├── plans/                    # Plan files (.plan.yaml)
 │   ├── tasks/                    # Task files (.task.md)
 │   └── history/                  # Archives, metrics
 ├── .claude/                       # Claude Code native
-│   ├── skills/                   # Model-invoked skills
-│   │   ├── design-plan-implement/
-│   │   ├── tdd-implement/
-│   │   ├── code-review/
-│   │   ├── finish-branch/
+│   ├── skills/                   # Model-invoked skills (gerund naming)
+│   │   ├── designing-and-implementing/
+│   │   ├── implementing-with-tdd/
+│   │   ├── reviewing-code/
+│   │   ├── finishing-branches/
 │   │   ├── managing-task-lifecycle/
-│   │   └── planning-with-trello/
-│   └── agents/                   # Custom subagents
-│       ├── planner.md
-│       └── reviewer.md
+│   │   ├── planning-with-trello/
+│   │   ├── creating-skills/
+│   │   ├── releasing-versions/
+│   │   └── testing-fixes/
+│   ├── agents/                   # Custom subagents
+│   │   ├── planner.md           # Planning/design specialist
+│   │   ├── reviewer.md          # Code review specialist
+│   │   ├── security.md          # Security gatekeeper
+│   │   └── security-auditor.md  # Security audit specialist
+│   └── commands/                 # Slash commands
+│       ├── pc-plan.md           # /pc-plan - Navigator role
+│       ├── start-task.md        # /start-task - Driver role
+│       ├── prep-release.md      # /prep-release - Release engineer
+│       └── update-skills.md     # /update-skills - Skill analysis
+├── docs/                          # Developer/integration docs
+│   ├── CONTAINED_AUTONOMY.md     # Contained autonomy guide
+│   ├── SUBAGENT_INVOCATION.md    # Subagent usage guide
+│   ├── CROSS_PLATFORM_SKILLS.md  # Skill export guide
+│   └── CLAUDE_CODE_INTEGRATION.md # Claude Code setup
 ├── AGENTS.md                      # Universal AI entry point
-├── CLAUDE.md                      # Claude Code pointer
-└── docs/                          # Documentation
+└── CLAUDE.md                      # Claude Code instructions
 ```
 
 ## CLI Command Reference (127+ commands)
@@ -376,7 +395,7 @@ PairCoder provides an MCP (Model Context Protocol) server with **13 tools** for 
 | `paircoder_trello_sync_plan` | Sync plan to Trello |
 | `paircoder_trello_update_card` | Update Trello card |
 
-See [MCP Setup Guide](docs/MCP_SETUP.md) for Claude Desktop configuration.
+See [MCP Setup Guide](.paircoder/docs/MCP_SETUP.md) for Claude Desktop configuration.
 
 ## Auto-Hooks
 
@@ -426,10 +445,11 @@ pytest -v  # 2050+ tests
 ## Documentation
 
 - [User Guide](.paircoder/docs/USER_GUIDE.md) — Full documentation
-- [MCP Setup](docs/MCP_SETUP.md) — Claude Desktop integration
 - [Feature Matrix](.paircoder/docs/FEATURE_MATRIX.md) — Complete feature inventory
+- [MCP Setup](.paircoder/docs/MCP_SETUP.md) — Claude Desktop integration
+- [Contained Autonomy](docs/CONTAINED_AUTONOMY.md) — Docker-enforced isolation
+- [Subagent Invocation](docs/SUBAGENT_INVOCATION.md) — Using custom subagents
 - [Cross-Platform Skills](docs/CROSS_PLATFORM_SKILLS.md) — Skill export to other tools
-- [Migration Guide](docs/MIGRATION.md) — Flows to skills migration
 - [Changelog](CHANGELOG.md) — Version history
 
 ## License
