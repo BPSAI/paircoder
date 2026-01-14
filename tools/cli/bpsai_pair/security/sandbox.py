@@ -605,18 +605,20 @@ class SandboxRunner:
                 # Configure iptables rules while container is running
                 self._setup_network_allowlist(container, network_allowlist)
                 # Now exec the actual user command interactively
+                # The exec_command returns the exit code of the executed command
                 import dockerpty
-                dockerpty.exec_command(client.api, container.id, command)
+                exit_code = dockerpty.exec_command(client.api, container.id, command)
+                return exit_code
             else:
                 # Normal case: let dockerpty start AND attach in one operation
                 # This is the correct pattern for interactive TTY sessions
                 import dockerpty
                 dockerpty.start(client.api, container.id)
 
-            # Get exit code after container finishes
-            container.reload()
-            exit_code = container.attrs.get("State", {}).get("ExitCode", 1)
-            return exit_code
+                # Get exit code after container finishes
+                container.reload()
+                exit_code = container.attrs.get("State", {}).get("ExitCode", 1)
+                return exit_code
 
         except ImportError:
             # dockerpty not available, fall back to exec_run

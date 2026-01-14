@@ -107,19 +107,42 @@ def _cleanup_containment():
                     console.print("[dim]    git stash pop[/dim]")
                 else:
                     # Safe to restore stashed changes
-                    pop_result = subprocess.run(
-                        ["git", "stash", "pop"],
+                    # Find the stash index for our specific stash message
+                    project_root = os.getcwd()
+                    list_result = subprocess.run(
+                        ["git", "stash", "list"],
                         capture_output=True,
                         text=True,
-                        check=False
+                        check=False,
+                        cwd=project_root,
                     )
-                    if pop_result.returncode == 0:
-                        console.print()
-                        console.print("[green]✓ Restored your stashed changes[/green]")
+                    stash_idx = None
+                    for line in list_result.stdout.strip().split("\n"):
+                        if stash_ref in line:
+                            # Extract stash index (e.g., "stash@{0}")
+                            stash_idx = line.split(":")[0]
+                            break
+
+                    if stash_idx:
+                        # Pop the specific stash we created
+                        pop_result = subprocess.run(
+                            ["git", "stash", "pop", stash_idx],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                            cwd=project_root,
+                        )
+                        if pop_result.returncode == 0:
+                            console.print()
+                            console.print("[green]✓ Restored your stashed changes[/green]")
+                        else:
+                            console.print()
+                            console.print("[yellow]⚠ Could not restore stashed changes[/yellow]")
+                            console.print(f"[dim]  {pop_result.stderr.strip()}[/dim]")
                     else:
                         console.print()
-                        console.print("[yellow]⚠ Could not restore stashed changes[/yellow]")
-                        console.print(f"[dim]  {pop_result.stderr.strip()}[/dim]")
+                        console.print("[yellow]⚠ Could not find stashed changes[/yellow]")
+                        console.print(f"[dim]  Stash message: {stash_ref}[/dim]")
             except Exception:
                 pass  # Don't fail cleanup on stash errors
 
