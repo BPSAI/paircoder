@@ -254,15 +254,19 @@ Use this skill when fixing bugs or implementing features with tests.
 ```
 .claude/
 ├── skills/              # Claude Code skills
-│   ├── design-plan-implement/SKILL.md
-│   ├── tdd-implement/SKILL.md
-│   ├── code-review/SKILL.md
-│   ├── finish-branch/SKILL.md
+│   ├── creating-skills/SKILL.md
+│   ├── designing-and-implementing/SKILL.md
+│   ├── finishing-branches/SKILL.md
+│   ├── implementing-with-tdd/SKILL.md
 │   ├── managing-task-lifecycle/SKILL.md
-│   └── planning-with-trello/SKILL.md
+│   ├── planning-with-trello/SKILL.md
+│   ├── releasing-versions/SKILL.md
+│   └── reviewing-code/SKILL.md
 ├── agents/              # Custom subagents
 │   ├── planner.md      # Planning specialist
-│   └── reviewer.md     # Code review specialist
+│   ├── reviewer.md      # Code review specialist
+│   ├── security.md      # Pre-execution security gatekeeper
+│   └── security-auditor.md # Proactive security review
 └── settings.json        # Claude Code settings
 ```
 
@@ -519,13 +523,13 @@ Slash commands provide quick access to common operations in Claude Code.
 
 ### Available Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/status` | Show project status, current sprint, active tasks |
-| `/pc-plan` | Show current plan details and progress |
-| `/task [ID]` | Show current or specific task details |
-| `/start-task <ID>` | Start working on a task with pre-flight checks |
+| Command          | Purpose                                           |
+|------------------|---------------------------------------------------|
+| `/status`        | Show project status, current sprint, active tasks |
+| `/pc-plan`       | Enter Navigator role and plan sprint tasks        |
+| `/start-task <ID>` | Start working on a task with pre-flight checks    |
 | `/prep-release <version>` | Prepare a release with documentation verification |
+| `/update-skills` | Analyze conversations and suggest skill improvements |
 
 ### Usage
 
@@ -557,11 +561,10 @@ Then use `/my-command` in Claude Code.
 ```
 .claude/
 └── commands/
-    ├── status.md      # /status command
     ├── pc-plan.md     # /pc-plan command
-    ├── task.md        # /task command
     ├── start-task.md  # /start-task command
     ├── prep-release.md # /prep-release command
+    ├── update-skills.md # /update-skills command
     └── custom.md      # /custom command (your own)
 ```
 

@@ -1,4 +1,4 @@
-# PairCoder v2.9.0 User Guide
+# PairCoder v2.9.1 User Guide
 
 > Complete documentation for the AI-augmented pair programming framework
 
@@ -16,20 +16,21 @@
 10. [Slash Commands](#slash-commands)
 11. [Orchestration](#orchestration)
 12. [Autonomous Workflow](#autonomous-workflow)
-13. [Intent Detection](#intent-detection)
-14. [GitHub Integration](#github-integration)
-15. [Metrics & Analytics](#metrics--analytics)
-16. [Time Tracking](#time-tracking)
-17. [Benchmarking](#benchmarking)
-18. [Caching](#caching)
-19. [Trello Integration](#trello-integration)
-20. [Standup Summaries](#standup-summaries)
-21. [MCP Server](#mcp-server)
-22. [Auto-Hooks](#auto-hooks)
-23. [CLI Reference](#cli-reference)
-24. [Configuration Reference](#configuration-reference)
-25. [Claude Code Integration](#claude-code-integration)
-26. [Troubleshooting](#troubleshooting)
+13. [Contained Autonomy](#contained-autonomy)
+14. [Intent Detection](#intent-detection)
+15. [GitHub Integration](#github-integration)
+16. [Metrics & Analytics](#metrics--analytics)
+17. [Time Tracking](#time-tracking)
+18. [Benchmarking](#benchmarking)
+19. [Caching](#caching)
+20. [Trello Integration](#trello-integration)
+21. [Standup Summaries](#standup-summaries)
+22. [MCP Server](#mcp-server)
+23. [Auto-Hooks](#auto-hooks)
+24. [CLI Reference](#cli-reference)
+25. [Configuration Reference](#configuration-reference)
+26. [Claude Code Integration](#claude-code-integration)
+27. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -71,7 +72,7 @@ PairCoder treats AI as a **pair programming partner**:
 
 ```bash
 pip install bpsai-pair
-bpsai-pair --version  # Should show 2.9.0
+bpsai-pair --version  # Should show 2.9.1
 ```
 
 ### With MCP Support
@@ -253,15 +254,19 @@ Use this skill when fixing bugs or implementing features with tests.
 ```
 .claude/
 ├── skills/              # Claude Code skills
-│   ├── design-plan-implement/SKILL.md
-│   ├── tdd-implement/SKILL.md
-│   ├── code-review/SKILL.md
-│   ├── finish-branch/SKILL.md
+│   ├── creating-skills/SKILL.md
+│   ├── designing-and-implementing/SKILL.md
+│   ├── finishing-branches/SKILL.md
+│   ├── implementing-with-tdd/SKILL.md
 │   ├── managing-task-lifecycle/SKILL.md
-│   └── planning-with-trello/SKILL.md
+│   ├── planning-with-trello/SKILL.md
+│   ├── releasing-versions/SKILL.md
+│   └── reviewing-code/SKILL.md
 ├── agents/              # Custom subagents
 │   ├── planner.md      # Planning specialist
-│   └── reviewer.md     # Code review specialist
+│   ├── reviewer.md      # Code review specialist
+│   ├── security.md      # Pre-execution security gatekeeper
+│   └── security-auditor.md # Proactive security review
 └── settings.json        # Claude Code settings
 ```
 
@@ -509,6 +514,7 @@ For maximum portability:
 - Use generic instructions (what to do, not tool-specific how)
 - Keep skills focused on workflow, not tool invocations
 
+
 ---
 
 ## Slash Commands
@@ -517,13 +523,13 @@ Slash commands provide quick access to common operations in Claude Code.
 
 ### Available Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/status` | Show project status, current sprint, active tasks |
-| `/pc-plan` | Show current plan details and progress |
-| `/task [ID]` | Show current or specific task details |
-| `/start-task <ID>` | Start working on a task with pre-flight checks |
+| Command          | Purpose                                           |
+|------------------|---------------------------------------------------|
+| `/status`        | Show project status, current sprint, active tasks |
+| `/pc-plan`       | Enter Navigator role and plan sprint tasks        |
+| `/start-task <ID>` | Start working on a task with pre-flight checks    |
 | `/prep-release <version>` | Prepare a release with documentation verification |
+| `/update-skills` | Analyze conversations and suggest skill improvements |
 
 ### Usage
 
@@ -555,11 +561,10 @@ Then use `/my-command` in Claude Code.
 ```
 .claude/
 └── commands/
-    ├── status.md      # /status command
     ├── pc-plan.md     # /pc-plan command
-    ├── task.md        # /task command
     ├── start-task.md  # /start-task command
     ├── prep-release.md # /prep-release command
+    ├── update-skills.md # /update-skills command
     └── custom.md      # /custom command (your own)
 ```
 
@@ -644,6 +649,84 @@ The autonomous workflow uses a state machine:
 IDLE → SELECTING_TASK → PREPARING → EXECUTING → REVIEWING → COMPLETING → IDLE
                                                          ↘ BLOCKED
 ```
+
+---
+
+## Contained Autonomy
+
+Contained Autonomy Mode lets you run Claude Code autonomously while protecting critical infrastructure from modification. This feature prevents the AI from editing its own enforcement code, skills, or configuration while still allowing full autonomous capabilities in the working area.
+
+### Why Use Contained Mode?
+
+When running Claude autonomously, there's a risk it might modify the rules governing its behavior. Contained mode implements **three-tier filesystem access control**:
+
+| Tier | Access | Purpose |
+|------|--------|---------|
+| **Blocked** | No read/write | Secrets (`.env`, credentials) |
+| **Read-only** | Read only | Enforcement code (`CLAUDE.md`, skills) |
+| **Read-write** | Full access | Working area (source code, tests) |
+
+### Quick Start
+
+```bash
+# Enter contained autonomy mode
+bpsai-pair contained-auto
+
+# Check containment status
+bpsai-pair containment status
+
+# Rollback to checkpoint if needed
+bpsai-pair containment rollback
+```
+
+### Configuration
+
+Configure containment in `.paircoder/config.yaml`:
+
+```yaml
+containment:
+  enabled: true
+  mode: strict                    # strict | permissive
+  auto_checkpoint: true           # Create git checkpoint on entry
+
+  # Tier 1: Blocked (no read/write)
+  blocked_files:
+    - .env
+    - credentials.json
+
+  # Tier 2: Read-only
+  readonly_directories:
+    - .claude/skills
+    - tools/cli/bpsai_pair/security
+  readonly_files:
+    - CLAUDE.md
+    - .paircoder/config.yaml
+
+  # Network allowlist
+  allow_network:
+    - api.anthropic.com
+    - github.com
+```
+
+### Checkpoints and Rollback
+
+Containment mode automatically creates git checkpoints:
+- Tagged as `containment-YYYYMMDD-HHMMSS`
+- Uncommitted changes are stashed
+- Rollback with `bpsai-pair containment rollback`
+
+### When to Use
+
+**Use contained mode for:**
+- Autonomous implementation tasks
+- Extended unattended sessions
+- Tasks that don't require modifying enforcement code
+
+**Exit containment when:**
+- Modifying skills, commands, or CLAUDE.md
+- Working on security/core infrastructure
+
+For full documentation, see [Contained Autonomy Guide](../../docs/CONTAINED_AUTONOMY.md).
 
 ---
 
@@ -1160,7 +1243,6 @@ hooks:
 | Trello Tasks | ttask list/show/start/done/block/comment/move                                                        | 7 |
 | MCP | mcp serve/tools/test                                                                                 | 3 |
 
-
 ---
 
 ## Configuration Reference
@@ -1258,7 +1340,7 @@ The `enforcement` section controls workflow gates that ensure tasks are complete
 
 ## Claude Code Integration
 
-PairCoder is designed to complement Claude Code's built-in features.
+PairCoder is designed to complement Claude Code's built-in features. For detailed documentation on how they work together, see [Claude Code Integration Guide](../../docs/CLAUDE_CODE_INTEGRATION.md).
 
 ### Key Points
 
@@ -1343,4 +1425,4 @@ bpsai-pair cache stats
 
 ---
 
-*PairCoder v2.9.0 - MIT License*
+*PairCoder v2.9.1 - MIT License*
