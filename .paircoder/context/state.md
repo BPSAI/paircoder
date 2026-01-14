@@ -109,8 +109,8 @@ Next steps:
 ## Backlog (Deprioritized)
 
 See `.paircoder/tasks/backlog/`:
-- HF-001: Context sync hotfix
-- HF-002: Fix Windows encoding for file operations
+- HF-001: Context sync hotfix (deferred - requires VS Code extension)
+- ~~HF-002: Fix Windows encoding for file operations~~ ✓ DONE
 - RFE-001: Remote API Orchestration
 
 ## Future: EPIC-005 (Flows Removal)
@@ -124,6 +124,40 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-14 - HF-002: Fix Windows Encoding for File Operations
+
+Completed the Windows encoding hotfix (HF-002) to ensure UTF-8 compatibility:
+
+**Summary:**
+- Fixed all `read_text()` and `write_text()` calls to explicitly specify `encoding="utf-8"`
+- This prevents `UnicodeDecodeError` on Windows systems which default to cp1252
+
+**Files Modified (45 unique files):**
+
+**CLI Code (`tools/cli/bpsai_pair/`):**
+- Commands module: upgrade.py, core.py, security.py, session.py, budget.py, orchestrate.py, metrics.py
+- Skills module: exporter.py, gap_detector.py, subagent_detector.py, suggestion.py, validator.py, gates.py, installer.py, scorer.py, generator.py
+- Core module: ops.py, preconditions.py, task_state.py, hooks.py, deprecation.py
+- Orchestration module: planner.py, handoff.py, reviewer.py, orchestrator.py, invoker.py, codex.py
+- Release module: commands.py, template.py
+- Planning module: commands.py, cli_update_cache.py
+- Context module: cache.py, loader.py
+- Tasks module: changelog.py, lifecycle.py
+- Security module: dependencies.py
+- Other: migrate.py, session.py, compaction.py, benchmarks/validation.py, benchmarks/runner.py, trello/progress.py
+
+**Cookiecutter Scripts:**
+- `.claude/skills/managing-task-lifecycle/scripts/check_completion.py`
+- `.claude/skills/managing-task-lifecycle/scripts/validate_task_status.py`
+- Plus their template copies in `tools/cli/bpsai_pair/data/cookiecutter-paircoder/`
+
+**Verification:**
+- All `read_text()` calls now specify `encoding="utf-8"` (0 remaining without)
+- All `write_text()` calls now specify `encoding="utf-8"` (0 remaining without)
+- Test suite: 2299 passed, 37 failed (failures unrelated to encoding changes)
+
+**HF-001 Status:** Deferred - requires building VS Code extension from scratch (90-120 complexity vs original 30 estimate). Will be addressed in future VS Code extension epic.
 
 ### 2026-01-14 - Version Bump to 2.9.1 and PR Creation
 

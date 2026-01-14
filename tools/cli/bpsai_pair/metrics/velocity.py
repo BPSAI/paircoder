@@ -105,7 +105,7 @@ class VelocityTracker:
         )
 
         try:
-            with open(self._velocity_log_path, "a") as f:
+            with open(self._velocity_log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record.to_dict()) + "\n")
         except Exception as e:
             logger.warning(f"Failed to record velocity completion: {e}")

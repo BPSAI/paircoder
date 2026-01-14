@@ -134,7 +134,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
             plan.skills_to_add.append(skill_name)
         else:
             try:
-                if project_skill.read_text() != skill_path.read_text():
+                if project_skill.read_text(encoding="utf-8") != skill_path.read_text(encoding="utf-8"):
                     plan.skills_to_update.append(skill_name)
             except Exception:
                 plan.warnings.append(f"Could not compare skill: {skill_name}")
@@ -149,7 +149,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
             plan.agents_to_add.append(agent_name)
         else:
             try:
-                if project_agent.read_text() != agent_path.read_text():
+                if project_agent.read_text(encoding="utf-8") != agent_path.read_text(encoding="utf-8"):
                     plan.agents_to_update.append(agent_name)
             except Exception:
                 plan.warnings.append(f"Could not compare agent: {agent_name}")
@@ -164,7 +164,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
             plan.commands_to_add.append(cmd_name)
         else:
             try:
-                if project_cmd.read_text() != cmd_path.read_text():
+                if project_cmd.read_text(encoding="utf-8") != cmd_path.read_text(encoding="utf-8"):
                     plan.commands_to_update.append(cmd_name)
             except Exception:
                 plan.warnings.append(f"Could not compare command: {cmd_name}")
@@ -187,7 +187,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
                 plan.docs_to_update.append(project_rel)
             else:
                 try:
-                    if project_file.read_text() != template_file.read_text():
+                    if project_file.read_text(encoding="utf-8") != template_file.read_text(encoding="utf-8"):
                         plan.docs_to_update.append(project_rel)
                 except Exception:
                     plan.warnings.append(f"Could not compare doc: {project_rel}")
@@ -197,7 +197,7 @@ def plan_upgrade(project_root: Path, template: Path) -> UpgradePlan:
     if config_path.exists():
         try:
             import yaml
-            config = yaml.safe_load(config_path.read_text()) or {}
+            config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
             required_sections = ["trello", "hooks", "estimation", "metrics"]
             for section in required_sections:
@@ -308,7 +308,7 @@ def execute_upgrade(
         if config_path.exists():
             try:
                 import yaml
-                config_data = yaml.safe_load(config_path.read_text()) or {}
+                config_data = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
                 defaults = {
                     "trello": {
@@ -341,7 +341,7 @@ def execute_upgrade(
                         config_data[section] = defaults[section]
                         results["config_sections_added"] += 1
 
-                with open(config_path, "w") as f:
+                with open(config_path, "w", encoding="utf-8") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
             except Exception as e:
                 console.print(f"[yellow]Warning: Could not update config: {e}[/yellow]")

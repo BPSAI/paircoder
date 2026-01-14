@@ -523,7 +523,7 @@ def _get_current_task_id(paircoder_dir: Path) -> Optional[str]:
 
     for task_file in tasks_dir.glob("*.task.md"):
         try:
-            content = task_file.read_text()
+            content = task_file.read_text(encoding="utf-8")
             if "status: in_progress" in content:
                 # Extract task ID
                 for line in content.split('\n'):

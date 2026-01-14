@@ -169,7 +169,7 @@ class TaskArchiver:
 
         # Save manifest
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(manifest_path, 'w') as f:
+        with open(manifest_path, 'w', encoding="utf-8") as f:
             json.dump({
                 "plan": manifest.plan,
                 "archived_at": manifest.archived_at,
@@ -226,7 +226,7 @@ class TaskArchiver:
 
         data["tasks"] = [t for t in data["tasks"] if t["id"] != task_id]
 
-        with open(manifest_path, 'w') as f:
+        with open(manifest_path, 'w', encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
     def list_archived(self, plan_slug: Optional[str] = None) -> List[ArchivedTask]:
@@ -283,7 +283,7 @@ class TaskArchiver:
 
             if not dry_run:
                 data["tasks"] = tasks_to_keep
-                with open(manifest_path, 'w') as f:
+                with open(manifest_path, 'w', encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
 
         return to_remove

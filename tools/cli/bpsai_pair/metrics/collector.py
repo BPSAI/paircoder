@@ -122,7 +122,7 @@ class MetricsCollector:
             # Ensure we're using current month's log
             self._current_log = self._get_current_log_path()
 
-            with open(self._current_log, "a") as f:
+            with open(self._current_log, "a", encoding="utf-8") as f:
                 f.write(json.dumps(event.to_dict()) + "\n")
         except Exception as e:
             # Don't block on metrics failures
@@ -316,7 +316,7 @@ class MetricsCollector:
 
         try:
             log_path = self._get_task_completions_log_path()
-            with open(log_path, "a") as f:
+            with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(data) + "\n")
             logger.info(f"Recorded task completion for {task_id}")
         except Exception as e:

@@ -115,7 +115,7 @@ class SkillValidator:
                 "name": skill_name,
             }
 
-        content = skill_file.read_text()
+        content = skill_file.read_text(encoding="utf-8")
         lines = content.split("\n")
 
         # Check file length
@@ -300,7 +300,7 @@ class SkillValidator:
         if not skill_file.exists():
             return False
 
-        content = skill_file.read_text()
+        content = skill_file.read_text(encoding="utf-8")
         original_content = content
 
         # Parse frontmatter
@@ -355,6 +355,6 @@ class SkillValidator:
                 new_yaml = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)
                 body = "\n".join(lines[end_index + 1:])
                 new_content = f"---\n{new_yaml}---\n{body}"
-                skill_file.write_text(new_content)
+                skill_file.write_text(new_content, encoding="utf-8")
 
         return fixed

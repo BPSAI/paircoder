@@ -139,7 +139,7 @@ class CompactionManager:
         filename = f"compaction_snapshot_{now.strftime('%Y%m%d_%H%M%S')}.json"
         snapshot_path = self.cache_dir / filename
 
-        with open(snapshot_path, "w") as f:
+        with open(snapshot_path, "w", encoding="utf-8") as f:
             json.dump(snapshot.to_dict(), f, indent=2)
 
         # Create compaction marker
@@ -165,7 +165,7 @@ class CompactionManager:
             return snapshot
 
         try:
-            content = state_path.read_text()
+            content = state_path.read_text(encoding="utf-8")
             snapshot = self._parse_state_for_snapshot(content, timestamp, trigger)
         except IOError as e:
             logger.warning(f"Failed to read state.md: {e}")
@@ -223,7 +223,7 @@ class CompactionManager:
             return []
 
         try:
-            lines = changes_log.read_text().strip().split("\n")
+            lines = changes_log.read_text(encoding="utf-8").strip().split("\n")
             # Get last 10 unique files
             files = []
             seen = set()
@@ -243,7 +243,7 @@ class CompactionManager:
     def _save_marker(self, marker: CompactionMarker) -> None:
         """Save compaction marker."""
         try:
-            with open(self.marker_file, "w") as f:
+            with open(self.marker_file, "w", encoding="utf-8") as f:
                 json.dump(marker.to_dict(), f, indent=2)
         except IOError as e:
             logger.warning(f"Failed to save compaction marker: {e}")
@@ -257,7 +257,7 @@ class CompactionManager:
                 log_entry += f" reason=\"{reason}\""
             log_entry += f" snapshot={snapshot_path.name}\n"
 
-            with open(self.compaction_log, "a") as f:
+            with open(self.compaction_log, "a", encoding="utf-8") as f:
                 f.write(log_entry)
         except IOError as e:
             logger.warning(f"Failed to log compaction: {e}")

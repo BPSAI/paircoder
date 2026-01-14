@@ -135,7 +135,7 @@ class BenchmarkRunner:
             "agents": agents,
             "iterations": iterations,
         }
-        (run_dir / "config.yaml").write_text(yaml.dump(config_data))
+        (run_dir / "config.yaml").write_text(yaml.dump(config_data), encoding="utf-8")
 
         for bench_id in benchmark_ids:
             if bench_id not in self.suite.benchmarks:
@@ -194,7 +194,7 @@ class BenchmarkRunner:
             if self.config.save_logs:
                 log_path = run_dir / "logs" / f"{benchmark.id}-{agent}-{iteration}.log"
                 log_path.parent.mkdir(exist_ok=True)
-                log_path.write_text(execution.get("output", ""))
+                log_path.write_text(execution.get("output", ""), encoding="utf-8")
 
             return BenchmarkResult(
                 benchmark_id=benchmark.id,
@@ -242,7 +242,7 @@ class BenchmarkRunner:
             elif "create" in setup_item:
                 path = workspace / setup_item["create"]
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(setup_item.get("content", ""))
+                path.write_text(setup_item.get("content", ""), encoding="utf-8")
 
     def _execute(self, agent: str, prompt: str, workspace: Path,
                  timeout: int) -> Dict[str, Any]:
@@ -321,13 +321,13 @@ class BenchmarkRunner:
         """Save benchmark results."""
         # JSONL format for raw results
         results_path = run_dir / "results.jsonl"
-        with open(results_path, "w") as f:
+        with open(results_path, "w", encoding="utf-8") as f:
             for result in results:
                 f.write(json.dumps(result.to_dict()) + "\n")
 
         # Summary JSON
         summary = self._compute_summary(results)
-        (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
+        (run_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     def _compute_summary(self, results: List[BenchmarkResult]) -> Dict[str, Any]:
         """Compute summary statistics from results."""

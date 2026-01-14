@@ -140,7 +140,7 @@ class SessionManager:
     def _save_session(self, state: SessionState) -> None:
         """Save session state to cache."""
         try:
-            with open(self.session_file, "w") as f:
+            with open(self.session_file, "w", encoding="utf-8") as f:
                 json.dump(state.to_dict(), f, indent=2)
         except IOError as e:
             logger.warning(f"Failed to save session cache: {e}")
@@ -161,7 +161,7 @@ class SessionManager:
     def _log_session_start(self, session: SessionState) -> None:
         """Log session start to history."""
         try:
-            with open(self.sessions_log, "a") as f:
+            with open(self.sessions_log, "a", encoding="utf-8") as f:
                 timestamp = session.last_activity.isoformat()
                 f.write(f"{timestamp} session_start id={session.session_id}\n")
         except IOError as e:
@@ -181,7 +181,7 @@ class SessionManager:
             return context
 
         try:
-            content = state_path.read_text()
+            content = state_path.read_text(encoding="utf-8")
             context = self._parse_state_md(content)
         except IOError as e:
             logger.warning(f"Failed to read state.md: {e}")

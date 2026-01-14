@@ -565,7 +565,7 @@ class TokenFeedbackTracker:
         data = comparison.to_dict()
 
         try:
-            with open(self._comparisons_path, "a") as f:
+            with open(self._comparisons_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(data) + "\n")
         except Exception as e:
             logger.warning(f"Failed to record token comparison: {e}")

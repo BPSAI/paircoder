@@ -131,7 +131,7 @@ def show_migration_hint_once(hint_id: str = "flows_to_skills") -> bool:
     # Check if already shown today
     if cache_file.exists():
         try:
-            last_shown = cache_file.read_text().strip()
+            last_shown = cache_file.read_text(encoding="utf-8").strip()
             if last_shown == today:
                 return False
         except (IOError, OSError):
@@ -156,7 +156,7 @@ def show_migration_hint_once(hint_id: str = "flows_to_skills") -> bool:
     # Record that we showed it
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        cache_file.write_text(today)
+        cache_file.write_text(today, encoding="utf-8")
     except (IOError, OSError):
         pass  # Don't fail if we can't write cache
 

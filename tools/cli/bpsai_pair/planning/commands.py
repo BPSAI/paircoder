@@ -701,7 +701,7 @@ def _update_task_with_card_id(task: Task, card_id: str, task_parser: TaskParser)
         if not task_file:
             return False
 
-        content = task_file.read_text()
+        content = task_file.read_text(encoding="utf-8")
 
         # Insert trello_card_id into frontmatter
         if "trello_card_id:" not in content:
@@ -720,7 +720,7 @@ def _update_task_with_card_id(task: Task, card_id: str, task_parser: TaskParser)
                     in_frontmatter = not in_frontmatter
                 new_lines.append(line)
 
-            task_file.write_text("\n".join(new_lines))
+            task_file.write_text("\n".join(new_lines), encoding="utf-8")
             return True
 
         return False
@@ -799,7 +799,7 @@ def _populate_files_touched(task: Task, tasks_dir: Path) -> None:
         return
 
     try:
-        content = task_file.read_text()
+        content = task_file.read_text(encoding="utf-8")
 
         # Find "Files to Modify" section
         files = []
@@ -1374,7 +1374,7 @@ def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
             "reason": reason,
         }
 
-        with open(log_path, "a") as f:
+        with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception:
         pass  # Best effort logging
@@ -2032,7 +2032,7 @@ def standup_generate(
 
     if output:
         from pathlib import Path
-        Path(output).write_text(summary)
+        Path(output).write_text(summary, encoding="utf-8")
         console.print(f"[green]Wrote standup summary to {output}[/green]")
     else:
         console.print(summary)
@@ -2058,7 +2058,7 @@ def standup_post(
         raise typer.Exit(1)
 
     import yaml
-    config = yaml.safe_load(config_file.read_text()) or {}
+    config = yaml.safe_load(config_file.read_text(encoding="utf-8")) or {}
     board_id = config.get("trello", {}).get("board_id")
 
     if not board_id:

@@ -447,7 +447,7 @@ class ReviewerAgent:
                     full_path = self.working_dir / file_path
                     if full_path.exists():
                         try:
-                            content = full_path.read_text()
+                            content = full_path.read_text(encoding="utf-8")
                             context_parts.append(
                                 f"## File: {file_path}\n\n```\n{content}\n```"
                             )

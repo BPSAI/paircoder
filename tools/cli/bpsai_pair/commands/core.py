@@ -191,7 +191,7 @@ def init_command(
 
         # Write config file
         config_file = paircoder_dir / "config.yaml"
-        with open(config_file, 'w') as f:
+        with open(config_file, 'w', encoding="utf-8") as f:
             yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
         console.print(f"[green]![/green] Applied preset: {preset}")
@@ -225,7 +225,7 @@ def init_command(
                 paircoder_dir = root / ".paircoder"
                 paircoder_dir.mkdir(exist_ok=True)
                 config_file = paircoder_dir / "config.yaml"
-                with open(config_file, 'w') as f:
+                with open(config_file, 'w', encoding="utf-8") as f:
                     yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
                 console.print(f"[green]![/green] Applied preset: {preset_choice}")
             else:
@@ -462,7 +462,7 @@ def context_sync_command(
 
     try:
         # Update context
-        content = context_file.read_text()
+        content = context_file.read_text(encoding="utf-8")
 
         if is_v2:
             # v2 state.md format - update sections
@@ -504,7 +504,7 @@ def context_sync_command(
             if blockers:
                 content = re.sub(r'Blockers(/Risks)?:.*', f'Blockers/Risks: {blockers}', content)
 
-        context_file.write_text(content)
+        context_file.write_text(content, encoding="utf-8")
 
         if json_out:
             result = {
@@ -602,7 +602,7 @@ def status_command(
     context_data = {}
 
     if state_file.exists():
-        content = state_file.read_text()
+        content = state_file.read_text(encoding="utf-8")
 
         # v2 state.md format
         plan_match = re.search(r'\*\*Plan:\*\*\s*(.*)', content)
@@ -637,7 +637,7 @@ def status_command(
             "blockers": blockers_text
         }
     elif dev_file.exists():
-        content = dev_file.read_text()
+        content = dev_file.read_text(encoding="utf-8")
 
         # Legacy development.md format
         overall_match = re.search(r'Overall goal is:\s*(.*)', content)
@@ -782,15 +782,15 @@ def validate_command(
                 # Create with minimal content at v2 path
                 full_v2.parent.mkdir(parents=True, exist_ok=True)
                 if v2_path.name == "state.md":
-                    full_v2.write_text("# Current State\n\n## Active Plan\n\nNo active plan.\n")
+                    full_v2.write_text("# Current State\n\n## Active Plan\n\nNo active plan.\n", encoding="utf-8")
                 elif v2_path.name == "config.yaml":
-                    full_v2.write_text("version: 2.1\nproject_name: unnamed\n")
+                    full_v2.write_text("version: 2.1\nproject_name: unnamed\n", encoding="utf-8")
                 elif v2_path.name == "AGENTS.md":
-                    full_v2.write_text("# AGENTS.md\n\nSee `.paircoder/` for project context.\n")
+                    full_v2.write_text("# AGENTS.md\n\nSee `.paircoder/` for project context.\n", encoding="utf-8")
                 elif v2_path.name == "CLAUDE.md":
-                    full_v2.write_text("# CLAUDE.md\n\nSee `.paircoder/context/state.md` for current state.\n")
+                    full_v2.write_text("# CLAUDE.md\n\nSee `.paircoder/context/state.md` for current state.\n", encoding="utf-8")
                 elif v2_path.name == ".agentpackignore":
-                    full_v2.write_text(".git/\n.venv/\n__pycache__/\nnode_modules/\n")
+                    full_v2.write_text(".git/\n.venv/\n__pycache__/\nnode_modules/\n", encoding="utf-8")
                 else:
                     full_v2.touch()
                 fixes.append(f"Created {v2_path}")
@@ -800,14 +800,14 @@ def validate_command(
     dev_file = root / CONTEXT_DIR / "development.md"
 
     if state_file.exists():
-        content = state_file.read_text()
+        content = state_file.read_text(encoding="utf-8")
         # v2.1 state.md uses different sections
         required_sections = ["## Active Plan", "## Current Focus"]
         for section in required_sections:
             if section not in content:
                 issues.append(f"Missing state section: {section}")
     elif dev_file.exists():
-        content = dev_file.read_text()
+        content = dev_file.read_text(encoding="utf-8")
         # Legacy development.md sections
         required_sections = [
             "Overall goal is:",
@@ -819,7 +819,7 @@ def validate_command(
                 issues.append(f"Missing context sync section: {section}")
                 if fix:
                     content += f"\n{section} (to be updated)\n"
-                    dev_file.write_text(content)
+                    dev_file.write_text(content, encoding="utf-8")
                     fixes.append(f"Added section: {section}")
 
     # Check for uncommitted context changes
@@ -938,7 +938,7 @@ def history_log_command(
         timestamp = datetime.now().isoformat(timespec="seconds")
         entry = f"{timestamp} {path_to_log}\n"
 
-        with open(log_file, "a") as f:
+        with open(log_file, "a", encoding="utf-8") as f:
             f.write(entry)
 
         if not quiet:

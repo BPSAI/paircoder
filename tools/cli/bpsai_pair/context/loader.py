@@ -54,7 +54,7 @@ class ContextLoader:
 
         # Check if cacheable
         if relative_path not in self.CACHEABLE:
-            return file_path.read_text()
+            return file_path.read_text(encoding="utf-8")
 
         # Try cache
         cached = self.cache.get(file_path)
@@ -64,7 +64,7 @@ class ContextLoader:
 
         # Cache miss - load and cache
         self.misses += 1
-        content = file_path.read_text()
+        content = file_path.read_text(encoding="utf-8")
         self.cache.set(file_path, content)
         return content
 

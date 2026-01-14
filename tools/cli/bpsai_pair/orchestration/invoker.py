@@ -80,7 +80,7 @@ class AgentDefinition:
         if not path.exists():
             raise FileNotFoundError(f"Agent file not found: {path}")
 
-        content = path.read_text()
+        content = path.read_text(encoding="utf-8")
 
         # Parse YAML frontmatter
         frontmatter_match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)$", content, re.DOTALL)

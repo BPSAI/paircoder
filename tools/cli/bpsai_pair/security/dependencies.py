@@ -255,7 +255,7 @@ class DependencyScanner:
         cache_key = self._get_cache_key(file_path)
         cache_file = self.cache_dir / f"{cache_key}.json"
 
-        with open(cache_file, "w") as f:
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump([v.to_dict() for v in vulnerabilities], f)
 
     def scan_python(
@@ -567,12 +567,12 @@ class DependencyScanner:
         try:
             if req_file.suffix == ".toml":
                 # Count from pyproject.toml
-                content = req_file.read_text()
+                content = req_file.read_text(encoding="utf-8")
                 # Simple heuristic: count lines with package specs
                 return len([l for l in content.split("\n") if "=" in l and not l.strip().startswith("#")])
             else:
                 # Count from requirements.txt
-                content = req_file.read_text()
+                content = req_file.read_text(encoding="utf-8")
                 return len([l for l in content.split("\n") if l.strip() and not l.strip().startswith("#")])
         except Exception:
             return 0
@@ -580,7 +580,7 @@ class DependencyScanner:
     def _count_npm_packages(self, pkg_file: Path) -> int:
         """Count packages in package.json."""
         try:
-            data = json.loads(pkg_file.read_text())
+            data = json.loads(pkg_file.read_text(encoding="utf-8"))
             deps = len(data.get("dependencies", {}))
             dev_deps = len(data.get("devDependencies", {}))
             return deps + dev_deps

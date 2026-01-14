@@ -582,7 +582,7 @@ class GapQualityGate:
         skill_file = self.skills_dir / skill_name / "SKILL.md"
         if skill_file.exists():
             try:
-                content = skill_file.read_text()
+                content = skill_file.read_text(encoding="utf-8")
                 self._skill_content_cache[skill_name] = content
                 return content
             except (OSError, IOError):

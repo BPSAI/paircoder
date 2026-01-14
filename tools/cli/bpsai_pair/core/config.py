@@ -410,7 +410,7 @@ def save_raw_config(root: Path, config: Dict[str, Any]) -> Path:
         config_dir.mkdir(exist_ok=True)
         config_file = config_dir / "config.yaml"
 
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w', encoding="utf-8") as f:
         yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     return config_file
@@ -579,7 +579,7 @@ class Config:
             "containment": self.containment.to_dict(),
         }
 
-        with open(config_file, 'w') as f:
+        with open(config_file, 'w', encoding="utf-8") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
         return config_file

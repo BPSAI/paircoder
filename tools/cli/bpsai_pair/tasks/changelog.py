@@ -115,7 +115,7 @@ class ChangelogGenerator:
 
         existing = ""
         if self.changelog_path.exists():
-            existing = self.changelog_path.read_text()
+            existing = self.changelog_path.read_text(encoding="utf-8")
 
         # Ensure proper header
         if existing.startswith("# Changelog"):
@@ -131,7 +131,7 @@ class ChangelogGenerator:
             header = "# Changelog\n\nAll notable changes to this project are documented in this file.\n\n"
             updated = header + new_section + "\n" + existing
 
-        self.changelog_path.write_text(updated)
+        self.changelog_path.write_text(updated, encoding="utf-8")
 
     def preview(self, tasks: List[ArchivedTask], version: str) -> str:
         """Preview changelog entry without writing."""
@@ -142,7 +142,7 @@ class ChangelogGenerator:
         if not self.changelog_path.exists():
             return None
 
-        content = self.changelog_path.read_text()
+        content = self.changelog_path.read_text(encoding="utf-8")
 
         for line in content.split("\n"):
             if line.startswith("## ["):

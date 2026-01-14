@@ -63,7 +63,7 @@ def detect_version(project_root: Path) -> LegacyVersion:
     if has_paircoder_dir and has_config_yaml:
         # Check config version
         try:
-            config = yaml.safe_load((project_root / ".paircoder" / "config.yaml").read_text())
+            config = yaml.safe_load((project_root / ".paircoder" / "config.yaml").read_text(encoding="utf-8"))
             version = str(config.get("version", "1.0"))
 
             # v2.4+ is current
@@ -165,7 +165,7 @@ def plan_migration(project_root: Path, preset: Optional[str] = None) -> Migratio
         config_path = paircoder_dir / "config.yaml"
         if config_path.exists():
             try:
-                config = yaml.safe_load(config_path.read_text()) or {}
+                config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
             except Exception:
                 config = {}
 
@@ -250,13 +250,13 @@ def execute_migration(project_root: Path, plan: MigrationPlan) -> None:
         config_path = project_root / ".paircoder" / "config.yaml"
         if config_path.exists():
             try:
-                config = yaml.safe_load(config_path.read_text()) or {}
+                config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
             except Exception:
                 config = {}
             config.update(plan.config_additions)
             config["version"] = plan.target_version
 
-            with open(config_path, "w") as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     # Delete old files (only after everything else succeeds)

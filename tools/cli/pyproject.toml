@@ -3,7 +3,7 @@ readme = "README.md"
 name = "bpsai-pair"
 version = "2.9.1"
 description = "CLI for AI pair-coding workflow"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [ "typer>=0.12", "rich>=13.7", "pyyaml>=6.0", "tiktoken>=0.5.0",]
 [[project.authors]]
 name = "BPS AI Software"

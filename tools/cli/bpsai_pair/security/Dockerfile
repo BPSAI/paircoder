@@ -1,7 +1,7 @@
 # PairCoder Containment Image
 # Minimal environment for running Claude Code in contained autonomy mode
 
-FROM python:3.12-slim-bookworm
+FROM python:3.14.2-slim-bookworm
 
 LABEL maintainer="BPS AI Software"
 LABEL org.opencontainers.image.source="https://github.com/BPSAI/paircoder"

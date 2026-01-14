@@ -135,7 +135,7 @@ class BenchmarkValidator:
             return False
 
         try:
-            content = target.read_text()
+            content = target.read_text(encoding="utf-8")
             return text.lower() in content.lower()
         except Exception:
             return False

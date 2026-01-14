@@ -57,7 +57,7 @@ def _load_task_metadata(root: Path, task_id: str) -> tuple[str, list[str]]:
         return "", []
 
     try:
-        content = task_file.read_text()
+        content = task_file.read_text(encoding="utf-8")
         if content.startswith("---"):
             parts = content.split("---", 2)
             if len(parts) >= 3:

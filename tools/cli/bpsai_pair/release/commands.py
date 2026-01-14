@@ -245,7 +245,7 @@ depends_on: []
 - [ ] Changes verified
 """
 
-        task_file.write_text(content)
+        task_file.write_text(content, encoding="utf-8")
         console.print(f"  [green]✓[/green] Created {task_id}")
 
     console.print(f"\n[green]Created {len(release_tasks)} release tasks[/green]")
@@ -364,7 +364,7 @@ def release_prep(
     package_version = None
 
     if pyproject_path and pyproject_path.exists():
-        pyproject_content = pyproject_path.read_text()
+        pyproject_content = pyproject_path.read_text(encoding="utf-8")
         version_match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', pyproject_content, re.MULTILINE)
         if version_match:
             pyproject_version = version_match.group(1)
@@ -373,7 +373,7 @@ def release_prep(
     for init_path in project_root.glob("*/__init__.py"):
         if init_path.parent.name.startswith("."):
             continue
-        init_content = init_path.read_text()
+        init_content = init_path.read_text(encoding="utf-8")
         ver_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', init_content)
         if ver_match:
             package_version = ver_match.group(1)
@@ -395,7 +395,7 @@ def release_prep(
     # Check 2: CHANGELOG entry
     changelog_path = project_root / "CHANGELOG.md"
     if changelog_path.exists() and pyproject_version:
-        changelog_content = changelog_path.read_text()
+        changelog_content = changelog_path.read_text(encoding="utf-8")
         # Look for version in changelog (formats: [2.6.0], v2.6.0, 2.6.0)
         version_patterns = [
             rf"\[{re.escape(pyproject_version)}\]",
@@ -519,7 +519,7 @@ def release_prep(
                     source = project_root / rel_path
                     template = template_project_dir / rel_path
                     if source.exists() and template.exists():
-                        if source.read_text() != template.read_text():
+                        if source.read_text(encoding="utf-8") != template.read_text(encoding="utf-8"):
                             drift_count += 1
 
                 if drift_count > 0:
@@ -600,7 +600,7 @@ tags:
 - [ ] Issue resolved
 - [ ] Changes verified
 """
-                task_file.write_text(content)
+                task_file.write_text(content, encoding="utf-8")
                 console.print(f"  [green]✓[/green] Created {task_id}")
 
             console.print(f"\n[green]Generated {len(tasks_needed)} task(s)[/green]")

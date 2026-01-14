@@ -247,7 +247,7 @@ class SubagentGapDetector:
         changes_log = history_path / "changes.log"
         if changes_log.exists():
             try:
-                content = changes_log.read_text()
+                content = changes_log.read_text(encoding="utf-8")
                 for line in content.strip().split("\n")[-200:]:  # Last 200 entries
                     if line:
                         sessions.append({
@@ -260,7 +260,7 @@ class SubagentGapDetector:
         # Try to load from session files
         for session_file in history_path.glob("session-*.jsonl"):
             try:
-                content = session_file.read_text()
+                content = session_file.read_text(encoding="utf-8")
                 for line in content.strip().split("\n"):
                     if line:
                         try:
@@ -612,7 +612,7 @@ class SubagentGapPersistence:
             existing_gaps.append(gap)
 
         # Write all gaps
-        with open(self.gap_file, "w") as f:
+        with open(self.gap_file, "w", encoding="utf-8") as f:
             for g in existing_gaps:
                 f.write(json.dumps(g.to_dict()) + "\n")
 
@@ -627,7 +627,7 @@ class SubagentGapPersistence:
 
         gaps = []
         try:
-            content = self.gap_file.read_text()
+            content = self.gap_file.read_text(encoding="utf-8")
             for line in content.strip().split("\n"):
                 if line:
                     try:
@@ -643,7 +643,7 @@ class SubagentGapPersistence:
     def clear_gaps(self) -> None:
         """Clear all gaps from history."""
         if self.gap_file and self.gap_file.exists():
-            self.gap_file.write_text("")
+            self.gap_file.write_text("", encoding="utf-8")
 
 
 def detect_subagent_gaps(
