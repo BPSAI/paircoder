@@ -138,7 +138,7 @@ def budget_estimate(
         # Get task title from file
         task_title = task_id
         try:
-            content = task_path.read_text()
+            content = task_path.read_text(encoding="utf-8")
             for line in content.split('\n'):
                 if line.startswith('title:'):
                     task_title = f"{task_id} - {line.split(':', 1)[1].strip()}"

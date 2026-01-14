@@ -722,7 +722,7 @@ def load_config(paircoder_dir: Path) -> dict:
 
     config_path = paircoder_dir / "config.yaml"
     if config_path.exists():
-        return yaml.safe_load(config_path.read_text()) or {}
+        return yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     return {}
 
 

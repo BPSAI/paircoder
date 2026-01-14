@@ -227,7 +227,7 @@ def metrics_export(
 
     if format_type.lower() == "csv":
         csv_content = reporter.export_csv()
-        Path(output).write_text(csv_content)
+        Path(output).write_text(csv_content, encoding="utf-8")
         console.print(f"[green]✓[/green] Exported metrics to {output}")
     else:
         console.print(f"[red]Unsupported format: {format_type}[/red]")

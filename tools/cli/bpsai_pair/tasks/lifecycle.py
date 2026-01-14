@@ -99,7 +99,7 @@ class TaskLifecycle:
 
     def load_task(self, task_path: Path) -> TaskMetadata:
         """Load task metadata from file."""
-        content = task_path.read_text()
+        content = task_path.read_text(encoding="utf-8")
 
         # Parse YAML frontmatter from markdown
         metadata = self._parse_metadata(content)

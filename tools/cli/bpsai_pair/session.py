@@ -181,7 +181,7 @@ class SessionManager:
             return context
 
         try:
-            content = state_path.read_text()
+            content = state_path.read_text(encoding="utf-8")
             context = self._parse_state_md(content)
         except IOError as e:
             logger.warning(f"Failed to read state.md: {e}")

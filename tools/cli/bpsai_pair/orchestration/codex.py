@@ -42,7 +42,7 @@ class Flow:
     @classmethod
     def from_file(cls, path: Path) -> "Flow":
         """Parse a .flow.md file into a Flow object."""
-        content = path.read_text()
+        content = path.read_text(encoding="utf-8")
         return parse_flow(content, path.stem)
 
 

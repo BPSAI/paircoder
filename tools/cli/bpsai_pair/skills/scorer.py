@@ -135,7 +135,7 @@ class SkillScorer:
         if not skill_path.exists():
             return None
 
-        content = skill_path.read_text()
+        content = skill_path.read_text(encoding="utf-8")
         frontmatter, body = self._parse_frontmatter(content)
 
         # Score each dimension

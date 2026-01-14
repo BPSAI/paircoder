@@ -390,7 +390,7 @@ def save_generated_skill(
 
     # Create directory and write file
     skill_dir.mkdir(parents=True, exist_ok=True)
-    skill_file.write_text(skill.content)
+    skill_file.write_text(skill.content, encoding="utf-8")
 
     # Validate the generated skill
     validator = SkillValidator(skills_dir)

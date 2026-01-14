@@ -216,7 +216,7 @@ class Orchestrator:
             logger.warning(f"Task file not found for {task_id}, using defaults")
             return TaskCharacteristics(task_id=task_id)
 
-        content = task_file.read_text().lower()
+        content = task_file.read_text(encoding="utf-8").lower()
 
         # Determine task type
         task_type = TaskType.IMPLEMENT

@@ -21,7 +21,7 @@ def validate_task_file(filepath: str) -> tuple[bool, list[str]]:
     if not path.exists():
         return False, [f"File not found: {filepath}"]
 
-    content = path.read_text()
+    content = path.read_text(encoding="utf-8")
 
     # Check frontmatter exists
     if not content.startswith("---"):
