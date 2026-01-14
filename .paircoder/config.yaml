@@ -2,7 +2,7 @@ version: '2.9.1'
 project:
   name: paircoder
   description: AI-augmented pair programming framework
-  primary_goal: 'Ship Paircoder v2.9.0: Enforcement Wiring'
+  primary_goal: 'Ship Paircoder v2.9.2'
   coverage_target: 80
 workflow:
   default_branch_type: feature
