@@ -22,7 +22,7 @@
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | ✓ done |
 | T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | ✓ done |
 | T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
-| T29.10 | Document Contained Autonomy Mode | P1 | 30 | pending |
+| T29.10 | Document Contained Autonomy Mode | P1 | 30 | ✓ done |
 | T29.11 | Create Subagent Invocation Documentation | P2 | 30 | pending |
 
 **Total:** 11 tasks, 325 complexity points
@@ -95,7 +95,8 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-1. Sprint 29 complete or next task
+1. T29.9: Add Containment Status to bpsai-pair status
+2. T29.11: Create Subagent Invocation Documentation
 
 
 ## Backlog (Deprioritized)
@@ -116,6 +117,50 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.10: Document Contained Autonomy Mode
+
+Created comprehensive documentation for the contained autonomy feature:
+
+**New Files:**
+- `docs/CONTAINED_AUTONOMY.md` - Full documentation (13,933 bytes)
+  - Overview: What it is and why it exists
+  - Quick Start: Basic usage
+  - Configuration: Full config reference with all options
+  - Protected Paths: Explanation of three-tier access (blocked/readonly/readwrite)
+  - Network Restrictions: Allowed domains and how to add more
+  - Checkpoints and Rollback: How git checkpoints work
+  - CLI Commands: All containment commands documented
+  - FAQ: When to use contained mode vs normal mode
+  - Troubleshooting: Common issues and solutions
+  - Security Considerations: Limitations and defense in depth
+
+**Files Updated:**
+- `.paircoder/docs/USER_GUIDE.md`:
+  - Added "Contained Autonomy" section after "Autonomous Workflow"
+  - Updated Table of Contents (now 27 sections)
+  - Added link to full documentation
+
+- `CLAUDE.md`:
+  - Added "Contained Autonomy Mode" section at end
+  - Explains what Claude can/cannot do in containment mode
+  - Lists protected paths and blocked paths
+  - Guidance for handling restrictions
+
+**Key Documentation Points:**
+1. Three-tier access model explained clearly
+2. All YAML configuration examples are valid
+3. All bash command examples are accurate
+4. FAQ covers common questions
+5. Troubleshooting guide for common issues
+
+**Acceptance Criteria Completed:**
+- ✓ `USER_GUIDE.md` updated with Contained Autonomy section
+- ✓ `CLAUDE.md` updated with containment instructions
+- ✓ New doc: `docs/CONTAINED_AUTONOMY.md` with full details
+- ✓ FAQ: When to use contained mode vs normal mode
+- ✓ Troubleshooting guide for common containment issues
+- ✓ All examples verified to work
 
 ### 2026-01-13 - T29.8: Create Auto-Checkpoint on Containment Entry
 

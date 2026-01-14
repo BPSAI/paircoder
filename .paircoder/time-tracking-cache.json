@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T29.9",
-    "timer_id": "local-20260113214428",
-    "description": "T29.9: Add Containment Status to bpsai-pair status",
-    "start": "2026-01-13T21:44:28.558653"
+    "task_id": "T29.10",
+    "timer_id": "local-20260113215801",
+    "description": "T29.10: Document Contained Autonomy Mode",
+    "start": "2026-01-13T21:58:01.282945"
   }
 }

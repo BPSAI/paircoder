@@ -16,20 +16,21 @@
 10. [Slash Commands](#slash-commands)
 11. [Orchestration](#orchestration)
 12. [Autonomous Workflow](#autonomous-workflow)
-13. [Intent Detection](#intent-detection)
-14. [GitHub Integration](#github-integration)
-15. [Metrics & Analytics](#metrics--analytics)
-16. [Time Tracking](#time-tracking)
-17. [Benchmarking](#benchmarking)
-18. [Caching](#caching)
-19. [Trello Integration](#trello-integration)
-20. [Standup Summaries](#standup-summaries)
-21. [MCP Server](#mcp-server)
-22. [Auto-Hooks](#auto-hooks)
-23. [CLI Reference](#cli-reference)
-24. [Configuration Reference](#configuration-reference)
-25. [Claude Code Integration](#claude-code-integration)
-26. [Troubleshooting](#troubleshooting)
+13. [Contained Autonomy](#contained-autonomy)
+14. [Intent Detection](#intent-detection)
+15. [GitHub Integration](#github-integration)
+16. [Metrics & Analytics](#metrics--analytics)
+17. [Time Tracking](#time-tracking)
+18. [Benchmarking](#benchmarking)
+19. [Caching](#caching)
+20. [Trello Integration](#trello-integration)
+21. [Standup Summaries](#standup-summaries)
+22. [MCP Server](#mcp-server)
+23. [Auto-Hooks](#auto-hooks)
+24. [CLI Reference](#cli-reference)
+25. [Configuration Reference](#configuration-reference)
+26. [Claude Code Integration](#claude-code-integration)
+27. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -645,6 +646,84 @@ The autonomous workflow uses a state machine:
 IDLE → SELECTING_TASK → PREPARING → EXECUTING → REVIEWING → COMPLETING → IDLE
                                                          ↘ BLOCKED
 ```
+
+---
+
+## Contained Autonomy
+
+Contained Autonomy Mode lets you run Claude Code autonomously while protecting critical infrastructure from modification. This feature prevents the AI from editing its own enforcement code, skills, or configuration while still allowing full autonomous capabilities in the working area.
+
+### Why Use Contained Mode?
+
+When running Claude autonomously, there's a risk it might modify the rules governing its behavior. Contained mode implements **three-tier filesystem access control**:
+
+| Tier | Access | Purpose |
+|------|--------|---------|
+| **Blocked** | No read/write | Secrets (`.env`, credentials) |
+| **Read-only** | Read only | Enforcement code (`CLAUDE.md`, skills) |
+| **Read-write** | Full access | Working area (source code, tests) |
+
+### Quick Start
+
+```bash
+# Enter contained autonomy mode
+bpsai-pair contained-auto
+
+# Check containment status
+bpsai-pair containment status
+
+# Rollback to checkpoint if needed
+bpsai-pair containment rollback
+```
+
+### Configuration
+
+Configure containment in `.paircoder/config.yaml`:
+
+```yaml
+containment:
+  enabled: true
+  mode: strict                    # strict | permissive
+  auto_checkpoint: true           # Create git checkpoint on entry
+
+  # Tier 1: Blocked (no read/write)
+  blocked_files:
+    - .env
+    - credentials.json
+
+  # Tier 2: Read-only
+  readonly_directories:
+    - .claude/skills
+    - tools/cli/bpsai_pair/security
+  readonly_files:
+    - CLAUDE.md
+    - .paircoder/config.yaml
+
+  # Network allowlist
+  allow_network:
+    - api.anthropic.com
+    - github.com
+```
+
+### Checkpoints and Rollback
+
+Containment mode automatically creates git checkpoints:
+- Tagged as `containment-YYYYMMDD-HHMMSS`
+- Uncommitted changes are stashed
+- Rollback with `bpsai-pair containment rollback`
+
+### When to Use
+
+**Use contained mode for:**
+- Autonomous implementation tasks
+- Extended unattended sessions
+- Tasks that don't require modifying enforcement code
+
+**Exit containment when:**
+- Modifying skills, commands, or CLAUDE.md
+- Working on security/core infrastructure
+
+For full documentation, see [Contained Autonomy Guide](../../docs/CONTAINED_AUTONOMY.md).
 
 ---
 
