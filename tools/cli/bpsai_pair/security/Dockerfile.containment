@@ -10,17 +10,21 @@
 # - Non-root user with appropriate permissions
 # - dig/bind-tools for DNS resolution
 
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
+# OCI image labels
+LABEL org.opencontainers.image.source="https://github.com/BPSAI/paircoder"
+LABEL org.opencontainers.image.description="Contained autonomy environment with Claude Code"
+LABEL org.opencontainers.image.version="2.9.1"
 LABEL maintainer="PairCoder"
-LABEL description="Contained autonomy environment with Claude Code"
 
 # Install required tools:
 # - nodejs/npm: Required for Claude Code
 # - iptables: For network allowlist enforcement
 # - dnsutils: For resolving domain allowlist to IPs
 # - Other dev tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Note: apt-get upgrade applies security patches to base image packages
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     git \
     curl \
     wget \
@@ -34,22 +38,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Claude Code globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude Code globally and run audit fix for npm vulnerabilities
+RUN npm install -g @anthropic-ai/claude-code && \
+    cd /usr/lib/node_modules/@anthropic-ai/claude-code && \
+    npm audit fix --force || true
 
 # Create non-root sandbox user with sudo access for iptables
 RUN useradd -m -s /bin/bash sandbox \
     && mkdir -p /workspace \
     && chown sandbox:sandbox /workspace
 
-# Install common Python packages
-RUN pip install --no-cache-dir \
-    pytest \
-    ruff \
-    black \
-    mypy \
-    requests \
-    pyyaml
+# Install common Python packages with latest versions
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir pytest ruff black mypy requests pyyaml
 
 # Switch to non-root user
 USER sandbox

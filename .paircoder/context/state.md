@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (Docker Containment Implementation)
+> Last updated: 2026-01-14 (Sprint 29 Complete)
 
 ## Active Plan
 
@@ -21,9 +21,9 @@
 | T29.6 | Implement Network Allowlist | P1 | 35 | ✓ done |
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | ✓ done |
 | T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | ✓ done |
-| T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
+| T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | ✓ done |
 | T29.10 | Document Contained Autonomy Mode | P1 | 30 | ✓ done |
-| T29.11 | Create Subagent Invocation Documentation | P2 | 30 | pending |
+| T29.11 | Create Subagent Invocation Documentation | P2 | 30 | ✓ done |
 
 **Total:** 11 tasks, 325 complexity points
 
@@ -95,8 +95,13 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-1. T29.9: Add Containment Status to bpsai-pair status
-2. T29.11: Create Subagent Invocation Documentation
+**Sprint 29 Complete!** All 11 tasks (325 complexity points) done.
+
+Next steps:
+1. Bump version to 2.9.1 in pyproject.toml
+2. Create PR with all Sprint 29 changes
+3. Merge and create v2.9.1 release tag
+4. GitHub action will auto-publish Docker image
 
 
 ## Backlog (Deprioritized)
@@ -117,6 +122,56 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-14 - T29.11: Create Subagent Invocation Documentation
+
+Created comprehensive documentation for subagent invocation:
+
+**New File:**
+- `docs/SUBAGENT_INVOCATION.md` - Full documentation for subagents
+
+**Documentation Covers:**
+1. **Overview**: What subagents are and how they work
+2. **Available Subagents**: Planner, Reviewer, Security, Security Auditor
+3. **How to Invoke**: Task tool with `subagent_type` parameter
+4. **Agent File Structure**: Frontmatter fields and markdown format
+5. **Creating Custom Subagents**: Step-by-step guide with example
+6. **Containment Considerations**: Why agents are protected in containment mode
+7. **Invocation Patterns**: Sequential and parallel workflows
+8. **Troubleshooting**: Common issues and solutions
+9. **Best Practices**: Writing and using agents effectively
+
+**Acceptance Criteria Completed:**
+- ✓ Document: `docs/SUBAGENT_INVOCATION.md` created
+- ✓ Explains subagent roles and when to use each
+- ✓ Shows how to invoke subagents from Claude Code
+- ✓ Explains subagent file locations and structure
+- ✓ Integration with containment mode documented
+
+### 2026-01-14 - Sprint 29 Bug Fixes
+
+Fixed several issues discovered during Sprint 29 testing:
+
+1. **TTY Attachment Fix** (`sandbox.py`):
+   - Changed `containers.run()` to `containers.create()` for proper dockerpty attachment
+   - Network allowlist now uses keep-alive command with `exec_command()` pattern
+
+2. **Phantom Files Fix** (`sandbox.py`):
+   - Added existence checks before creating tmpfs mounts for blocked paths
+   - Prevents Docker from creating empty directories for non-existent paths
+
+3. **Stash Restoration Fix** (`session.py`):
+   - `_cleanup_containment()` now pops stash if working directory is clean
+   - Warns user if container left changes (to avoid conflicts)
+
+4. **Docker Image Security** (`Dockerfile.containment`):
+   - Updated base to `python:3.12-slim-bookworm`
+   - Added `apt-get upgrade -y` for security patches
+   - Added `npm audit fix` for npm vulnerabilities
+   - Added OCI image labels
+
+5. **Claude Credentials Mount** (`sandbox.py`):
+   - Mount `~/.claude` to `/home/sandbox/.claude` for authentication
 
 ### 2026-01-13 - T29.10: Document Contained Autonomy Mode
 
