@@ -307,21 +307,36 @@ security:
     config_path: .paircoder/security/sandbox.yaml
 
 # Containment settings (contained autonomy mode)
-# Controls file/directory locking and network access during autonomous execution
+# Controls file/directory access and network during autonomous execution
 # Note: This is separate from the Docker sandbox system (security.sandbox)
 containment:
   # Enable contained autonomy mode
   enabled: false
 
-  # Directories that are read-only in containment mode
-  # Prevents AI from modifying critical configuration
-  locked_directories:
+  # Enforcement mode: "advisory" (log only) or "strict" (Docker-enforced)
+  mode: strict
+
+  # Create git checkpoint when entering containment mode
+  auto_checkpoint: true
+
+  # Automatically rollback changes if containment violation detected
+  rollback_on_violation: false
+
+  # Tier 1: Blocked - cannot read OR write (secrets, credentials)
+  blocked_directories: []
+  blocked_files:
+    - .env
+    - .env.local
+    - .env.production
+    - credentials.json
+    - secrets.yaml
+
+  # Tier 2: Read-only - can read, cannot write (enforcement code, skills)
+  readonly_directories:
     - .claude/agents/
     - .claude/commands/
     - .claude/skills/
-
-  # Individual files that are read-only in containment mode
-  locked_files:
+  readonly_files:
     - CLAUDE.md
     - AGENTS.md
 
@@ -332,9 +347,3 @@ containment:
     - api.trello.com
     - github.com
     - pypi.org
-
-  # Create git checkpoint when entering containment mode
-  auto_checkpoint: true
-
-  # Automatically rollback changes if containment violation detected
-  rollback_on_violation: false

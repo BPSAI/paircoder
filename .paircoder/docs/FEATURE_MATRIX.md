@@ -1,4 +1,4 @@
-# PairCoder v2.9.0 Feature Matrix
+# PairCoder v2.9.1 Feature Matrix
 
 > Updated after Sprint 28 on 2026-01-04
 

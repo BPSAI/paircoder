@@ -235,3 +235,53 @@ bpsai-pair budget check --task <id>
 bpsai-pair context-sync --last "..." --next "..."
 bpsai-pair pack
 ```
+
+---
+
+## Contained Autonomy Mode
+
+You may be running in **Contained Autonomy Mode**. This mode restricts your ability to modify certain files while allowing full autonomous operation in the working area.
+
+### Understanding Your Access Restrictions
+
+In containment mode, files are organized into three tiers:
+
+| Tier | Access | You Can |
+|------|--------|---------|
+| **Blocked** | No read/write | Not access at all |
+| **Read-only** | Read only | Read to understand context |
+| **Read-write** | Full access | Modify freely |
+
+### Protected Paths (Read-only)
+
+You **cannot modify** these paths in containment mode:
+- `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
+- `CLAUDE.md`, `AGENTS.md`
+
+### Blocked Paths (No Access)
+
+You **cannot read or write** these in containment mode:
+- `.env`, `.env.local`, `.env.production`
+- `credentials.json`, `secrets.yaml`
+
+### What You CAN Do
+
+In containment mode, you have full access to:
+- Source code in `src/`, `lib/`, etc.
+- Tests in `tests/`
+- Documentation (except protected files)
+- Task files in `.paircoder/tasks/`
+- State file `.paircoder/context/state.md`
+
+### If You Encounter Restrictions
+
+1. **For legitimate needs**: Ask the user to exit containment mode
+2. **For protected file changes**: The user can make changes manually
+3. **Don't attempt workarounds**: Violations are logged for audit
+
+### Checking Your Mode
+
+If unsure whether you're in containment mode, the user can run:
+```bash
+bpsai-pair containment status
+```
