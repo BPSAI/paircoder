@@ -9,6 +9,10 @@ on:
         description: 'Version tag for the image'
         required: true
         default: 'latest'
+      claude_version:
+        description: 'Claude Code version to install (default: latest)'
+        required: false
+        default: 'latest'
 
 env:
   REGISTRY: docker.io
@@ -42,8 +46,10 @@ jobs:
             VERSION="${{ github.event.release.tag_name }}"
             VERSION="${VERSION#v}"
             echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "claude_version=latest" >> $GITHUB_OUTPUT
           else
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "claude_version=${{ github.event.inputs.claude_version }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract metadata
@@ -63,6 +69,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            CLAUDE_VERSION=${{ steps.version.outputs.claude_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64

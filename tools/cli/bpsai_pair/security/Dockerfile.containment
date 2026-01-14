@@ -1,69 +1,62 @@
 # PairCoder Containment Image
-# Provides isolated environment for contained autonomy mode with Claude Code
-#
-# Build: docker build -t paircoder/containment:latest -f Dockerfile.containment .
-# Usage: Used by contained-auto command in strict mode
-#
-# Features:
-# - Claude Code installed and configured
-# - iptables for network allowlist enforcement
-# - Non-root user with appropriate permissions
-# - dig/bind-tools for DNS resolution
+# Minimal environment for running Claude Code in contained autonomy mode
+# Uses native Claude Code installer (npm is deprecated)
 
-FROM python:3.12-slim-bookworm
+FROM python:3.14.2-slim-bookworm
 
-# OCI image labels
+LABEL maintainer="BPS AI Software"
 LABEL org.opencontainers.image.source="https://github.com/BPSAI/paircoder"
 LABEL org.opencontainers.image.description="Contained autonomy environment with Claude Code"
-LABEL org.opencontainers.image.version="2.9.1"
-LABEL maintainer="PairCoder"
+LABEL org.opencontainers.image.version="2.9.2-native"
 
-# Install required tools:
-# - nodejs/npm: Required for Claude Code
-# - iptables: For network allowlist enforcement
-# - dnsutils: For resolving domain allowlist to IPs
-# - Other dev tools
-# Note: apt-get upgrade applies security patches to base image packages
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    git \
+# Install only what's needed:
+# - curl/ca-certificates: Required for native installer download
+# - git: Required for Claude Code operations
+# - iptables/dnsutils: Required for network allowlist
+# NOTE: nodejs/npm are NOT needed - native installer is a standalone binary
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
-    wget \
-    nodejs \
-    npm \
-    jq \
-    tree \
-    less \
-    vim-tiny \
+    git \
     iptables \
     dnsutils \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Install Claude Code globally and run audit fix for npm vulnerabilities
-RUN npm install -g @anthropic-ai/claude-code && \
-    cd /usr/lib/node_modules/@anthropic-ai/claude-code && \
-    npm audit fix --force || true
-
-# Create non-root sandbox user with sudo access for iptables
+# Create non-root user for safer execution
 RUN useradd -m -s /bin/bash sandbox \
     && mkdir -p /workspace \
     && chown sandbox:sandbox /workspace
 
-# Install common Python packages with latest versions
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir pytest ruff black mypy requests pyyaml
-
-# Switch to non-root user
+# Switch to non-root user BEFORE installing Claude Code
+# (native installer installs to user's home directory)
 USER sandbox
+WORKDIR /home/sandbox
 
-# Set working directory
-WORKDIR /workspace
+# Allow pinning Claude Code version during builds (default: latest)
+ARG CLAUDE_VERSION=latest
 
-# Environment for Claude Code
+# Install Claude Code using native installer (NOT npm)
+# The installer puts the binary at ~/.local/bin/claude or ~/.claude/bin/claude
+# Use -s to pass version argument to the installer script
+RUN curl -fsSL https://claude.ai/install.sh | bash -s -- ${CLAUDE_VERSION}
+
+# Verify installation is native (not Node-based)
+# This will fail the build if we accidentally got the npm version
+RUN CLAUDE_BIN=$(which claude || echo "") && \
+    test -n "$CLAUDE_BIN" && \
+    echo "Found claude at: $CLAUDE_BIN" && \
+    head -n 1 "$CLAUDE_BIN" | tee /tmp/claude_shebang && \
+    ! grep -q "env node" /tmp/claude_shebang && \
+    claude --version
+
+# Ensure claude is on PATH for all sessions
+# Native installer may use ~/.local/bin or ~/.claude/bin
+ENV PATH="/home/sandbox/.local/bin:/home/sandbox/.claude/bin:${PATH}"
+
+# Skip update checks inside container (we control the version via image tags)
 ENV CLAUDE_CODE_SKIP_UPDATE_CHECK=1
 
-# Network allowlist is configured via Python code (sandbox.py _setup_network_allowlist)
-# after container creation using container.exec_run() with iptables commands.
-# No shell entrypoint needed - keeps implementation pure Python.
+WORKDIR /workspace
 
-# Default command - start bash
 CMD ["bash"]

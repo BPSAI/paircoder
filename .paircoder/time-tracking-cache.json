@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T29.11",
-    "timer_id": "local-20260114000247",
-    "description": "T29.11: Create Subagent Invocation Documentation",
-    "start": "2026-01-14T00:02:47.627429"
+    "task_id": "T29.2.3",
+    "timer_id": "local-20260114134203",
+    "description": "T29.2.3: Trello Integration Audit",
+    "start": "2026-01-14T13:42:03.954544"
   }
 }
