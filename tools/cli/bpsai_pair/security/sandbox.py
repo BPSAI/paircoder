@@ -409,3 +409,234 @@ class SandboxRunner:
         # Container already removed in run_command()
         # With bind mounts, changes are already on the host
         pass
+
+    def run_interactive(
+        self,
+        command: list[str],
+        env: Optional[dict[str, str]] = None,
+        network_allowlist: Optional[list[str]] = None,
+    ) -> int:
+        """Run an interactive command in the sandbox container.
+
+        This method runs a command with TTY support for interactive sessions,
+        suitable for running Claude Code or other terminal-based tools.
+
+        Args:
+            command: Command to run as a list (e.g., ["claude", "--flag"])
+            env: Additional environment variables to set
+            network_allowlist: List of domains to allow network access to.
+                             If None, uses config.network setting.
+                             If provided, sets up iptables rules.
+
+        Returns:
+            Exit code from the command
+
+        Raises:
+            RuntimeError: If Docker is not available
+        """
+        if not self.config.enabled:
+            return self._run_interactive_local(command, env)
+
+        client = self._get_docker_client()
+
+        # Build environment
+        container_env = self._build_environment()
+        if env:
+            container_env.update(env)
+
+        # Add network allowlist to environment if specified
+        if network_allowlist:
+            container_env["PAIRCODER_NETWORK_ALLOWLIST"] = " ".join(network_allowlist)
+
+        # Build Docker run kwargs
+        run_kwargs = self.config.to_docker_kwargs()
+
+        # Determine network mode
+        if network_allowlist:
+            # Use bridge network with iptables filtering
+            run_kwargs["network_mode"] = "bridge"
+            run_kwargs["cap_add"] = ["NET_ADMIN"]  # Required for iptables
+        # else: uses config.network (default "none")
+
+        run_kwargs.update({
+            "image": self.config.image,
+            "command": command,
+            "volumes": self._build_volumes(),
+            "environment": container_env,
+            "working_dir": "/workspace",
+            "stdin_open": True,
+            "tty": True,
+            "detach": True,
+            "remove": False,
+        })
+
+        container = None
+        try:
+            # Create container
+            container = client.containers.run(**run_kwargs)
+            self._current_container = container
+
+            # If network allowlist specified, set up iptables rules
+            if network_allowlist:
+                self._setup_network_allowlist(container, network_allowlist)
+
+            # Attach to container for interactive session
+            # Use low-level API for proper TTY handling
+            import dockerpty
+            dockerpty.start(client.api, container.id)
+
+            # Get exit code after container finishes
+            container.reload()
+            exit_code = container.attrs.get("State", {}).get("ExitCode", 1)
+            return exit_code
+
+        except ImportError:
+            # dockerpty not available, fall back to exec_run
+            if container:
+                exec_result = container.exec_run(
+                    cmd=command,
+                    workdir="/workspace",
+                    tty=True,
+                    stdin=True,
+                )
+                return exec_result.exit_code
+            return 1
+
+        finally:
+            if container:
+                try:
+                    container.stop(timeout=5)
+                    container.remove(force=True)
+                except Exception:
+                    pass
+            self._current_container = None
+
+    def _run_interactive_local(
+        self,
+        command: list[str],
+        env: Optional[dict[str, str]] = None,
+    ) -> int:
+        """Run interactive command locally when sandbox is disabled.
+
+        Args:
+            command: Command to run as a list
+            env: Additional environment variables
+
+        Returns:
+            Exit code from the command
+        """
+        run_env = os.environ.copy()
+        if env:
+            run_env.update(env)
+
+        result = subprocess.run(
+            command,
+            cwd=str(self.workspace),
+            env=run_env,
+        )
+        return result.returncode
+
+    def _setup_network_allowlist(
+        self,
+        container,
+        allowed_domains: list[str],
+    ) -> None:
+        """Set up iptables rules to restrict network to allowed domains.
+
+        Args:
+            container: Docker container to configure
+            allowed_domains: List of domains to allow
+        """
+        # Build iptables commands
+        iptables_cmds = []
+
+        # Allow localhost
+        iptables_cmds.append("iptables -A OUTPUT -d 127.0.0.0/8 -j ACCEPT")
+        iptables_cmds.append("iptables -A OUTPUT -o lo -j ACCEPT")
+
+        # Allow DNS (needed to resolve domains)
+        iptables_cmds.append("iptables -A OUTPUT -p udp --dport 53 -j ACCEPT")
+        iptables_cmds.append("iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT")
+
+        # Allow established connections
+        iptables_cmds.append("iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT")
+
+        # Resolve and allow each domain
+        for domain in allowed_domains:
+            # Use dig to resolve domain to IPs
+            resolve_cmd = f"dig +short {domain} | grep -E '^[0-9]+\\.' | while read ip; do iptables -A OUTPUT -d $ip -j ACCEPT; done"
+            iptables_cmds.append(resolve_cmd)
+
+        # Block all other outbound traffic
+        iptables_cmds.append("iptables -A OUTPUT -j REJECT")
+
+        # Execute all commands
+        script = " && ".join(iptables_cmds)
+        container.exec_run(
+            cmd=["sh", "-c", script],
+            user="root",
+        )
+
+
+def containment_config_to_mounts(
+    config: "ContainmentConfig",
+    project_root: Path,
+) -> tuple[list[MountConfig], list[str]]:
+    """Convert ContainmentConfig to Docker mount configuration.
+
+    Maps the three-tier access control to Docker volumes:
+    - Blocked paths: Excluded from mounting (not accessible)
+    - Readonly paths: Mounted with readonly=True (OS-enforced)
+    - Everything else: Part of workspace mount (read-write)
+
+    Args:
+        config: ContainmentConfig with path restrictions
+        project_root: Root directory of the project
+
+    Returns:
+        Tuple of (mounts, excluded_paths):
+        - mounts: List of MountConfig for Docker volumes
+        - excluded_paths: Paths that should not be mounted (blocked tier)
+    """
+    from bpsai_pair.core.config import ContainmentConfig  # Import for type checking
+
+    mounts = []
+    excluded = []
+
+    # Collect blocked paths (Tier 1 - not mounted at all)
+    for dir_path in config.blocked_directories:
+        excluded.append(dir_path.rstrip("/"))
+    for file_path in config.blocked_files:
+        excluded.append(file_path)
+
+    # Base workspace mount (read-write for everything not specifically restricted)
+    # Note: We mount the full workspace, then overlay with readonly mounts
+    mounts.append(MountConfig(
+        source=str(project_root.resolve()),
+        target="/workspace",
+        readonly=False
+    ))
+
+    # Readonly directories (Tier 2 - mounted read-only)
+    # These overlay the base workspace mount
+    for dir_path in config.readonly_directories:
+        dir_path = dir_path.rstrip("/")
+        full_path = project_root / dir_path
+        if full_path.exists():
+            mounts.append(MountConfig(
+                source=str(full_path.resolve()),
+                target=f"/workspace/{dir_path}",
+                readonly=True  # OS-enforced read-only!
+            ))
+
+    # Readonly files (Tier 2 - mounted read-only)
+    for file_path in config.readonly_files:
+        full_path = project_root / file_path
+        if full_path.exists():
+            mounts.append(MountConfig(
+                source=str(full_path.resolve()),
+                target=f"/workspace/{file_path}",
+                readonly=True  # OS-enforced read-only!
+            ))
+
+    return mounts, excluded

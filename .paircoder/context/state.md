@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.7 Complete)
+> Last updated: 2026-01-13 (Docker Containment Implementation)
 
 ## Active Plan
 
@@ -126,6 +126,91 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - Docker Containment Implementation
+
+Implemented true Docker-based containment enforcement (addressing the advisory gap discovered in T29.7):
+
+**Core Changes:**
+
+1. **SandboxRunner Enhanced** (`security/sandbox.py`):
+   - Added `run_interactive()` for interactive Docker sessions with TTY support
+   - Added `containment_config_to_mounts()` to convert ContainmentConfig to Docker mounts
+   - Added `_setup_network_allowlist()` for iptables-based network filtering
+   - Network allowlist uses bridge networking with NET_ADMIN capability
+
+2. **ContainmentConfig Updated** (`core/config.py`):
+   - Added `mode` field: "advisory" (default) or "strict"
+   - Advisory mode: Log violations but don't block (current behavior)
+   - Strict mode: Full Docker isolation with OS-enforced read-only mounts
+   - Validation rejects invalid mode values
+
+3. **contained-auto Command Updated** (`commands/session.py`):
+   - Checks `config.containment.mode` to determine enforcement level
+   - Strict mode: Uses `SandboxRunner.run_interactive()` to run Claude in Docker
+   - Falls back to advisory if Docker not available
+   - Displays mode (STRICT/ADVISORY) during startup
+   - Passes network allowlist to Docker for iptables enforcement
+
+4. **New Docker Artifacts** (`security/`):
+   - `Dockerfile.containment` - Docker image with Claude Code and iptables
+   - `entrypoint-containment.sh` - Sets up network allowlist via iptables
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Docker Container (strict mode)                                   │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │  claude --dangerously-skip-permissions                  │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│   Mounts:                                                        │
+│   /workspace (rw) - base workspace                              │
+│   /workspace/.claude/skills (ro) - OS-ENFORCED                  │
+│   /workspace/CLAUDE.md (ro) - OS-ENFORCED                       │
+│   /workspace/.env - NOT MOUNTED (blocked)                       │
+│                                                                  │
+│   Network: bridge + iptables (allowlist enforced)               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Tests Added:**
+- 24 new tests in `test_security_sandbox.py`:
+  - `TestContainmentConfigToMounts` (6 tests)
+  - `TestRunInteractive` (6 tests)
+  - `TestSetupNetworkAllowlist` (4 tests)
+  - `TestContainmentModeConfig` (3 tests)
+- All 54 sandbox tests passing
+
+**Usage:**
+```yaml
+# config.yaml
+containment:
+  enabled: true
+  mode: strict  # "advisory" or "strict"
+  readonly_directories:
+    - .claude/skills/
+  readonly_files:
+    - CLAUDE.md
+  allow_network:
+    - api.anthropic.com
+    - github.com
+```
+
+```bash
+# Run with strict Docker enforcement
+bpsai-pair contained-auto
+
+# Build containment image
+docker build -t paircoder/containment:latest -f Dockerfile.containment .
+```
+
+**Key Files:**
+- `security/sandbox.py` - run_interactive(), containment_config_to_mounts()
+- `commands/session.py` - Updated contained_auto() with mode support
+- `core/config.py` - ContainmentConfig with mode field
+- `security/Dockerfile.containment` - Docker image for containment
+- `security/entrypoint-containment.sh` - Network allowlist setup
 
 ### 2026-01-13 - T29.7: Test Containment Escape Attempts
 

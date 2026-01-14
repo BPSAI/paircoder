@@ -1,0 +1,71 @@
+# PairCoder Containment Image
+# Provides isolated environment for contained autonomy mode with Claude Code
+#
+# Build: docker build -t paircoder/containment:latest -f Dockerfile.containment .
+# Usage: Used by contained-auto command in strict mode
+#
+# Features:
+# - Claude Code installed and configured
+# - iptables for network allowlist enforcement
+# - Non-root user with appropriate permissions
+# - dig/bind-tools for DNS resolution
+
+FROM python:3.12-slim
+
+LABEL maintainer="PairCoder"
+LABEL description="Contained autonomy environment with Claude Code"
+
+# Install required tools:
+# - nodejs/npm: Required for Claude Code
+# - iptables: For network allowlist enforcement
+# - dnsutils: For resolving domain allowlist to IPs
+# - Other dev tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    wget \
+    nodejs \
+    npm \
+    jq \
+    tree \
+    less \
+    vim-tiny \
+    iptables \
+    dnsutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code globally
+RUN npm install -g @anthropic-ai/claude-code
+
+# Create non-root sandbox user with sudo access for iptables
+RUN useradd -m -s /bin/bash sandbox \
+    && mkdir -p /workspace \
+    && chown sandbox:sandbox /workspace
+
+# Install common Python packages
+RUN pip install --no-cache-dir \
+    pytest \
+    ruff \
+    black \
+    mypy \
+    requests \
+    pyyaml
+
+# Copy entrypoint script
+COPY entrypoint-containment.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Switch to non-root user
+USER sandbox
+
+# Set working directory
+WORKDIR /workspace
+
+# Environment for Claude Code
+ENV CLAUDE_CODE_SKIP_UPDATE_CHECK=1
+
+# Default entrypoint - sets up network rules then runs command
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Default command - start bash
+CMD ["bash"]

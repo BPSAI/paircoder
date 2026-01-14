@@ -75,13 +75,13 @@ class TestContainmentManagerInit:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
-            locked_files=["CLAUDE.md"],
+            readonly_directories=[".claude/agents/"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
-        # Locked paths should be built
-        assert len(manager._locked_dirs) > 0 or len(manager._locked_paths) > 0
+        # Readonly paths should be built
+        assert len(manager._readonly_dirs) > 0 or len(manager._readonly_paths) > 0
 
 
 class TestIsPathLocked:
@@ -97,7 +97,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -110,7 +110,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -126,7 +126,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -142,7 +142,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -159,7 +159,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -178,7 +178,7 @@ class TestIsPathLocked:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -205,7 +205,7 @@ class TestSymlinkBypassPrevention:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -229,7 +229,7 @@ class TestSymlinkBypassPrevention:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -252,7 +252,7 @@ class TestSymlinkBypassPrevention:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -261,7 +261,7 @@ class TestSymlinkBypassPrevention:
 
 
 class TestGlobPatternSupport:
-    """Tests for glob pattern support in locked_directories."""
+    """Tests for glob pattern support in readonly_directories."""
 
     def test_glob_pattern_star(self, tmp_path):
         """Test that * glob pattern matches directories."""
@@ -275,7 +275,7 @@ class TestGlobPatternSupport:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/*/"],
+            readonly_directories=[".claude/*/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -295,7 +295,7 @@ class TestGlobPatternSupport:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=["protected/**/"],
+            readonly_directories=["protected/**/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -321,7 +321,7 @@ class TestCheckWriteAllowed:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
         manager.activate()
@@ -330,7 +330,7 @@ class TestCheckWriteAllowed:
             manager.check_write_allowed(Path("CLAUDE.md"))
 
         assert "CLAUDE.md" in str(exc_info.value)
-        assert "locked" in str(exc_info.value).lower()
+        assert "read-only" in str(exc_info.value).lower() or "protected" in str(exc_info.value).lower()
 
     def test_no_exception_when_inactive(self, tmp_path):
         """Test that no exception is raised when manager is inactive."""
@@ -342,7 +342,7 @@ class TestCheckWriteAllowed:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
         # Not activated
@@ -357,7 +357,7 @@ class TestCheckWriteAllowed:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
         manager.activate()
@@ -412,8 +412,8 @@ class TestActivateDeactivate:
 class TestLockedDirProperty:
     """Tests for the locked directory/path properties."""
 
-    def test_locked_directories_returns_resolved_paths(self, tmp_path):
-        """Test that locked_directories property returns resolved paths."""
+    def test_readonly_directories_returns_resolved_paths(self, tmp_path):
+        """Test that readonly_directories property returns resolved paths."""
         from bpsai_pair.security.containment import ContainmentManager
         from bpsai_pair.core.config import ContainmentConfig
 
@@ -422,18 +422,18 @@ class TestLockedDirProperty:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=[".claude/agents/"],
+            readonly_directories=[".claude/agents/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
-        locked_dirs = manager.locked_directories
+        locked_dirs = manager.readonly_directories
         assert len(locked_dirs) >= 1
         # All paths should be absolute
         for path in locked_dirs:
             assert path.is_absolute()
 
-    def test_locked_files_returns_resolved_paths(self, tmp_path):
-        """Test that locked_files property returns resolved paths."""
+    def test_readonly_files_returns_resolved_paths(self, tmp_path):
+        """Test that readonly_files property returns resolved paths."""
         from bpsai_pair.security.containment import ContainmentManager
         from bpsai_pair.core.config import ContainmentConfig
 
@@ -442,14 +442,14 @@ class TestLockedDirProperty:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
-        locked_files = manager.locked_files
-        assert len(locked_files) >= 1
+        readonly_files = manager.readonly_files
+        assert len(readonly_files) >= 1
         # All paths should be absolute
-        for path in locked_files:
+        for path in readonly_files:
             assert path.is_absolute()
 
 
@@ -475,7 +475,7 @@ class TestEdgeCases:
         # Don't create the directory
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=["nonexistent/"],
+            readonly_directories=["nonexistent/"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -490,7 +490,7 @@ class TestEdgeCases:
         # Don't create the file
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["nonexistent.md"],
+            readonly_files=["nonexistent.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -507,7 +507,7 @@ class TestEdgeCases:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 
@@ -521,7 +521,7 @@ class TestEdgeCases:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_files=["CLAUDE.md"],
+            readonly_files=["CLAUDE.md"],
         )
         manager = ContainmentManager(config, tmp_path)
 

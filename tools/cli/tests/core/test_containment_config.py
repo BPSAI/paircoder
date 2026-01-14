@@ -23,8 +23,8 @@ class TestContainmentConfigBasic:
         config = ContainmentConfig()
 
         assert config.enabled is False
-        assert config.locked_directories == []
-        assert config.locked_files == []
+        assert config.readonly_directories == []
+        assert config.readonly_files == []
         assert config.auto_checkpoint is True
         assert config.rollback_on_violation is False
 
@@ -46,16 +46,16 @@ class TestContainmentConfigBasic:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=["/etc", "/usr"],
-            locked_files=["/etc/passwd"],
+            readonly_directories=["/etc", "/usr"],
+            readonly_files=["/etc/passwd"],
             allow_network=["example.com"],
             auto_checkpoint=False,
             rollback_on_violation=True
         )
 
         assert config.enabled is True
-        assert config.locked_directories == ["/etc", "/usr"]
-        assert config.locked_files == ["/etc/passwd"]
+        assert config.readonly_directories == ["/etc", "/usr"]
+        assert config.readonly_files == ["/etc/passwd"]
         assert config.allow_network == ["example.com"]
         assert config.auto_checkpoint is False
         assert config.rollback_on_violation is True
@@ -69,9 +69,9 @@ class TestContainmentConfigPathValidation:
         from bpsai_pair.core.config import ContainmentConfig
 
         config = ContainmentConfig(
-            locked_directories=["/home/user", "/var/log", "/tmp"]
+            readonly_directories=["/home/user", "/var/log", "/tmp"]
         )
-        assert config.locked_directories == ["/home/user", "/var/log", "/tmp"]
+        assert config.readonly_directories == ["/home/user", "/var/log", "/tmp"]
 
     def test_relative_directory_converted_to_absolute(self):
         """Test that relative directory paths are handled appropriately."""
@@ -80,40 +80,40 @@ class TestContainmentConfigPathValidation:
         # Relative paths should either be converted to absolute or raise error
         # The implementation should handle this - test what happens
         config = ContainmentConfig(
-            locked_directories=["relative/path", "./another"]
+            readonly_directories=["relative/path", "./another"]
         )
         # Paths should be stored (validation is at usage time, not creation)
-        assert len(config.locked_directories) == 2
+        assert len(config.readonly_directories) == 2
 
     def test_valid_absolute_files(self):
         """Test that valid absolute file paths are accepted."""
         from bpsai_pair.core.config import ContainmentConfig
 
         config = ContainmentConfig(
-            locked_files=["/etc/passwd", "/home/user/.bashrc"]
+            readonly_files=["/etc/passwd", "/home/user/.bashrc"]
         )
-        assert config.locked_files == ["/etc/passwd", "/home/user/.bashrc"]
+        assert config.readonly_files == ["/etc/passwd", "/home/user/.bashrc"]
 
     def test_empty_path_string_rejected(self):
         """Test that empty path strings are rejected."""
         from bpsai_pair.core.config import ContainmentConfig
 
         with pytest.raises(ValueError, match="empty"):
-            ContainmentConfig(locked_directories=[""])
+            ContainmentConfig(readonly_directories=[""])
 
     def test_empty_file_path_rejected(self):
         """Test that empty file path strings are rejected."""
         from bpsai_pair.core.config import ContainmentConfig
 
         with pytest.raises(ValueError, match="empty"):
-            ContainmentConfig(locked_files=[""])
+            ContainmentConfig(readonly_files=[""])
 
     def test_path_with_null_bytes_rejected(self):
         """Test that paths with null bytes are rejected."""
         from bpsai_pair.core.config import ContainmentConfig
 
         with pytest.raises(ValueError, match="null"):
-            ContainmentConfig(locked_directories=["/path/with\x00null"])
+            ContainmentConfig(readonly_directories=["/path/with\x00null"])
 
 
 class TestContainmentConfigNetworkValidation:
@@ -179,8 +179,8 @@ class TestContainmentConfigSerialization:
 
         config = ContainmentConfig(
             enabled=True,
-            locked_directories=["/etc"],
-            locked_files=["/etc/passwd"],
+            readonly_directories=["/etc"],
+            readonly_files=["/etc/passwd"],
             allow_network=["example.com"],
             auto_checkpoint=False,
             rollback_on_violation=True
@@ -190,8 +190,8 @@ class TestContainmentConfigSerialization:
 
         assert isinstance(d, dict)
         assert d["enabled"] is True
-        assert d["locked_directories"] == ["/etc"]
-        assert d["locked_files"] == ["/etc/passwd"]
+        assert d["readonly_directories"] == ["/etc"]
+        assert d["readonly_files"] == ["/etc/passwd"]
         assert d["allow_network"] == ["example.com"]
         assert d["auto_checkpoint"] is False
         assert d["rollback_on_violation"] is True
@@ -202,8 +202,8 @@ class TestContainmentConfigSerialization:
 
         data = {
             "enabled": True,
-            "locked_directories": ["/etc"],
-            "locked_files": ["/etc/passwd"],
+            "readonly_directories": ["/etc"],
+            "readonly_files": ["/etc/passwd"],
             "allow_network": ["example.com"],
             "auto_checkpoint": False,
             "rollback_on_violation": True
@@ -212,8 +212,8 @@ class TestContainmentConfigSerialization:
         config = ContainmentConfig.from_dict(data)
 
         assert config.enabled is True
-        assert config.locked_directories == ["/etc"]
-        assert config.locked_files == ["/etc/passwd"]
+        assert config.readonly_directories == ["/etc"]
+        assert config.readonly_files == ["/etc/passwd"]
         assert config.allow_network == ["example.com"]
         assert config.auto_checkpoint is False
         assert config.rollback_on_violation is True
@@ -226,7 +226,7 @@ class TestContainmentConfigSerialization:
         config = ContainmentConfig.from_dict(data)
 
         assert config.enabled is True
-        assert config.locked_directories == []
+        assert config.readonly_directories == []
         assert config.auto_checkpoint is True  # default
 
 
