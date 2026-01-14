@@ -176,20 +176,29 @@ def contained_auto(
     console.print("[bold green]✓ Contained autonomy mode active[/bold green]")
     console.print()
 
-    # Show locked paths
-    console.print("[cyan]Protected paths (read-only):[/cyan]")
-    for locked_dir in config.containment.locked_directories:
-        console.print(f"  [dim]📁[/dim] {locked_dir}")
-    for locked_file in config.containment.locked_files:
-        console.print(f"  [dim]📄[/dim] {locked_file}")
+    # Show blocked paths (no read, no write)
+    if config.containment.blocked_directories or config.containment.blocked_files:
+        console.print("[red]Blocked paths (no read/write):[/red]")
+        for blocked_dir in config.containment.blocked_directories:
+            console.print(f"  [dim]🚫[/dim] {blocked_dir}")
+        for blocked_file in config.containment.blocked_files:
+            console.print(f"  [dim]🚫[/dim] {blocked_file}")
+        console.print()
 
-    console.print()
+    # Show read-only paths (can read, cannot write)
+    if config.containment.readonly_directories or config.containment.readonly_files:
+        console.print("[yellow]Read-only paths (can read, no write):[/yellow]")
+        for readonly_dir in config.containment.readonly_directories:
+            console.print(f"  [dim]📁[/dim] {readonly_dir}")
+        for readonly_file in config.containment.readonly_files:
+            console.print(f"  [dim]📄[/dim] {readonly_file}")
+        console.print()
 
     if task:
         console.print(f"[cyan]Task:[/cyan] {task}")
         console.print()
 
-    console.print("[dim]Protected paths cannot be modified in this session.[/dim]")
+    console.print("[dim]Blocked paths cannot be accessed. Read-only paths can be read but not modified.[/dim]")
 
     if checkpoint_id:
         console.print(f"[dim]Rollback available: git reset --hard {checkpoint_id}[/dim]")

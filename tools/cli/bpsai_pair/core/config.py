@@ -74,10 +74,15 @@ def _validate_domain(domain: str) -> str:
 
 @dataclass
 class ContainmentConfig:
-    """Configuration for contained autonomy mode.
+    """Configuration for contained autonomy mode with three-tier access control.
+
+    Access tiers:
+    - Blocked: No read, no write (secrets, credentials, .env files)
+    - Read-only: Can read, cannot write (CLAUDE.md, skills, enforcement code)
+    - Read-write: Normal access (everything else - the working area)
 
     This configuration controls containment mode behavior, including
-    which directories and files are locked (read-only), which network
+    which directories and files are in each tier, which network
     domains are allowed, and checkpoint/rollback behavior.
 
     Note: This is separate from the Docker sandbox system (security.sandbox).
@@ -86,11 +91,19 @@ class ContainmentConfig:
     enabled: bool = False
     """Enable containment mode for contained autonomy."""
 
-    locked_directories: List[str] = field(default_factory=list)
-    """Directories mounted read-only in containment mode."""
+    # Tier 1: Blocked (no read, no write)
+    blocked_directories: List[str] = field(default_factory=list)
+    """Directories that cannot be read or written (secrets, credentials)."""
 
-    locked_files: List[str] = field(default_factory=list)
-    """Files mounted read-only in containment mode."""
+    blocked_files: List[str] = field(default_factory=list)
+    """Files that cannot be read or written (e.g., .env, credentials.json)."""
+
+    # Tier 2: Read-only (can read, cannot write)
+    readonly_directories: List[str] = field(default_factory=list)
+    """Directories that can be read but not written (enforcement code, skills)."""
+
+    readonly_files: List[str] = field(default_factory=list)
+    """Files that can be read but not written (CLAUDE.md, config files)."""
 
     allow_network: List[str] = field(default_factory=lambda: DEFAULT_CONTAINMENT_NETWORK_ALLOWLIST.copy())
     """Network domains allowed in containment mode."""
@@ -103,17 +116,29 @@ class ContainmentConfig:
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
-        # Validate locked_directories
-        validated_dirs = []
-        for path in self.locked_directories:
-            validated_dirs.append(_validate_path(path, "locked_directories"))
-        self.locked_directories = validated_dirs
+        # Validate blocked_directories
+        validated = []
+        for path in self.blocked_directories:
+            validated.append(_validate_path(path, "blocked_directories"))
+        self.blocked_directories = validated
 
-        # Validate locked_files
-        validated_files = []
-        for path in self.locked_files:
-            validated_files.append(_validate_path(path, "locked_files"))
-        self.locked_files = validated_files
+        # Validate blocked_files
+        validated = []
+        for path in self.blocked_files:
+            validated.append(_validate_path(path, "blocked_files"))
+        self.blocked_files = validated
+
+        # Validate readonly_directories
+        validated = []
+        for path in self.readonly_directories:
+            validated.append(_validate_path(path, "readonly_directories"))
+        self.readonly_directories = validated
+
+        # Validate readonly_files
+        validated = []
+        for path in self.readonly_files:
+            validated.append(_validate_path(path, "readonly_files"))
+        self.readonly_files = validated
 
         # Validate allow_network
         validated_domains = []
@@ -133,17 +158,33 @@ class ContainmentConfig:
     def from_dict(cls, data: Dict[str, Any]) -> "ContainmentConfig":
         """Create ContainmentConfig from dictionary.
 
+        Supports backward compatibility with old 'locked_*' field names
+        by mapping them to 'readonly_*'.
+
         Args:
             data: Dictionary with config values.
 
         Returns:
             ContainmentConfig instance.
         """
+        # Handle backward compatibility: locked_* -> readonly_*
+        if "locked_directories" in data and "readonly_directories" not in data:
+            data["readonly_directories"] = data.pop("locked_directories")
+        elif "locked_directories" in data:
+            data.pop("locked_directories")  # Prefer new name if both present
+
+        if "locked_files" in data and "readonly_files" not in data:
+            data["readonly_files"] = data.pop("locked_files")
+        elif "locked_files" in data:
+            data.pop("locked_files")  # Prefer new name if both present
+
         # Only pass keys that are valid for ContainmentConfig
         valid_keys = {
             "enabled",
-            "locked_directories",
-            "locked_files",
+            "blocked_directories",
+            "blocked_files",
+            "readonly_directories",
+            "readonly_files",
             "allow_network",
             "auto_checkpoint",
             "rollback_on_violation",
