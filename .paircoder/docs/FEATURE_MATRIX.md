@@ -513,22 +513,21 @@ Bypasses are logged to `.paircoder/history/bypass_log.jsonl`. Use `bpsai-pair au
 | Standup | 10+ | ✅ Pass |
 | Presets | 27 | ✅ Pass |
 | MCP | 29 | ✅ Pass |
-| **Security (Sprint 15)** | **129** | ✅ Pass |
+| **Security** | **129** | ✅ Pass |
 | - Allowlist | 39 | ✅ Pass |
 | - Review | 35 | ✅ Pass |
 | - Sandbox | 35 | ✅ Pass |
 | - Checkpoint | 20 | ✅ Pass |
-| **Flows (Sprint 24)** | **33** | ✅ Pass |
-| **Tokens (Sprint 25)** | **28** | ✅ Pass |
+| **Tokens** | **28** | ✅ Pass |
 | **Budget Commands** | **15** | ✅ Pass |
 | **Session/Budget** | **4** | ✅ Pass |
 | **Hooks** | **6** | ✅ Pass |
-| **Skills (Sprint 25.5-25.6)** | **45+** | ✅ Pass |
+| **Skills** | **45+** | ✅ Pass |
 | - Validator | 15 | ✅ Pass |
 | - Exporter | 12 | ✅ Pass |
 | - Installer | 8 | ✅ Pass |
 | - Suggestion | 10 | ✅ Pass |
-| **Enforcement (Sprint 28)** | **47** | ✅ Pass |
+| **Enforcement** | **47** | ✅ Pass |
 | - ttask start budget | 9 | ✅ Pass |
 | - ttask done sync | 14 | ✅ Pass |
 | - task update enforcement | 10 | ✅ Pass |
