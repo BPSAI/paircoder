@@ -91,6 +91,9 @@ def contained_auto(
     skip_checkpoint: bool = typer.Option(
         False, "--skip-checkpoint", help="Skip git checkpoint creation"
     ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip confirmation prompt and proceed immediately"
+    ),
 ):
     """Start a contained autonomous session.
 
@@ -101,6 +104,10 @@ def contained_auto(
 
     A git checkpoint is created automatically for easy rollback.
 
+    After displaying the access control tiers, the command pauses for confirmation
+    so you can review the blocked/read-only paths before Claude is invoked.
+    Use --yes to skip this confirmation for scripted usage.
+
     Examples:
 
         bpsai-pair contained-auto              # Start contained session
@@ -108,6 +115,8 @@ def contained_auto(
         bpsai-pair contained-auto T29.4        # Start with specific task
 
         bpsai-pair contained-auto --skip-checkpoint  # Skip checkpoint
+
+        bpsai-pair contained-auto -y           # Skip confirmation prompt
     """
     global _active_containment_manager
 
@@ -131,7 +140,7 @@ def contained_auto(
 
     # Load config
     try:
-        config = Config.load(paircoder_dir / "config.yaml")
+        config = Config.load(project_root)
     except Exception as e:
         console.print(f"[red]Error loading config: {e}[/red]")
         raise typer.Exit(1)
@@ -204,6 +213,14 @@ def contained_auto(
         console.print(f"[dim]Rollback available: git reset --hard {checkpoint_id}[/dim]")
 
     console.print()
+
+    # Confirmation prompt (unless --yes flag)
+    if not yes:
+        if not typer.confirm("Proceed with these access controls?", default=True):
+            console.print("[yellow]Aborted. Adjust containment settings in config.yaml if needed.[/yellow]")
+            _cleanup_containment()
+            raise typer.Abort()
+
     console.print("[bold]Launching Claude Code with autonomous permissions...[/bold]")
     console.print()
 
@@ -248,6 +265,9 @@ def claude666(
     skip_checkpoint: bool = typer.Option(
         False, "--skip-checkpoint", help="Skip git checkpoint creation"
     ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip confirmation prompt and proceed immediately"
+    ),
 ):
     """Claude's beast mode - powerful but contained.
 
@@ -262,7 +282,7 @@ def claude666(
     console.print(ROBOT_DEVIL_ART)
 
     # Delegate to contained_auto
-    return contained_auto(task=task, skip_checkpoint=skip_checkpoint)
+    return contained_auto(task=task, skip_checkpoint=skip_checkpoint, yes=yes)
 
 
 # --- Session Commands ---
