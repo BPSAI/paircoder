@@ -41,20 +41,20 @@ CLAUDE CAN'T EDIT ENFORCEMENT CODE
 
 | Sprint | Focus | Version | Status | Outcome |
 |--------|-------|---------|--------|---------|
-| 27 | Stabilization | 2.8.4 | ✅ Complete | CI green, upgrade works |
-| 28 | Enforcement Wiring | 2.9.0 | ✅ Complete | Gates block bypass attempts |
-| 29.0 | Contained Autonomy | 2.9.1 | ✅ Complete | Docker-based containment |
-| 29.1 | Hotfixes | 2.9.1 | 🔄 Current | Bug fixes, PR review items |
-| 29.2 | Comprehensive Audit | 2.9.2 | 📋 Planned | Know what works |
-| 29.3 | EPIC-005 Refactor | 2.9.3 | 🔧 Planned | Clean architecture |
-| 29.4 | Remediation | 2.9.4 | 🩹 Planned | Fix audit findings |
-| 30 | UX Wizard | 2.10.0 | ✨ Planned | FastAPI setup wizard |
-| 30.5 | Feedback Loop | 2.10.1 | 📊 Planned | Token estimation calibration |
-| 31 | Multi-Project Workspace | 2.11.0 | 🔗 Planned | EPIC-001: Cross-repo |
-| 32 | Trello-Native P1 | 2.12.0 | 🚀 Planned | Epic→Story→Task hierarchy |
-| 33 | Trello-Native P2 | 2.13.0 | 🚀 Planned | Two-way sync |
-| 34 | Release Prep | 2.14.0 | 📦 Planned | Polish, documentation |
-| 35 | Remote Access | 3.0.0 | 🌐 Planned | "Untethered" Release |
+| 27 | Stabilization | 2.8.4   | ✅ Complete | CI green, upgrade works |
+| 28 | Enforcement Wiring | 2.9.0   | ✅ Complete | Gates block bypass attempts |
+| 29.0 | Contained Autonomy | 2.9.1   | ✅ Complete | Docker-based containment |
+| 29.1 | Hotfixes | 2.9.2   | ✅ Complete | Bug fixes, PR review items |
+| 29.2 | Comprehensive Audit | 2.9.2   | 📋 Planned | Know what works |
+| 29.3 | EPIC-005 Refactor | 2.9.3   | 🔧 Planned | Clean architecture |
+| 29.4 | Remediation | 2.9.4   | 🩹 Planned | Fix audit findings |
+| 30 | UX Wizard | 2.10.0  | ✨ Planned | FastAPI setup wizard |
+| 30.5 | Feedback Loop | 2.10.1  | 📊 Planned | Token estimation calibration |
+| 31 | Multi-Project Workspace | 2.11.0  | 🔗 Planned | EPIC-001: Cross-repo |
+| 32 | Trello-Native P1 | 2.12.0  | 🚀 Planned | Epic→Story→Task hierarchy |
+| 33 | Trello-Native P2 | 2.13.0  | 🚀 Planned | Two-way sync |
+| 34 | Release Prep | 2.14.0  | 📦 Planned | Polish, documentation |
+| 35 | Remote Access | 3.0.0   | 🌐 Planned | "Untethered" Release |
 
 ### Version Philosophy
 
@@ -63,9 +63,9 @@ CLAUDE CAN'T EDIT ENFORCEMENT CODE
 2.9.x  - Enforcement + Containment + Code Quality
   2.9.0 - Enforcement Wiring ✅
   2.9.1 - Contained Autonomy ✅
-  2.9.2 - Comprehensive Audit
+  2.9.2 - Hotfixes & Comprehensive Audit ✅
   2.9.3 - EPIC-005 Refactor  
-  2.9.4 - Remediation
+  2.9.4 - Audit Remediation
 
 --- FEATURE FREEZE: Clean codebase achieved ---
 
