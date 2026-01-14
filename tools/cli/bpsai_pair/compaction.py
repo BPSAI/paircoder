@@ -165,7 +165,7 @@ class CompactionManager:
             return snapshot
 
         try:
-            content = state_path.read_text()
+            content = state_path.read_text(encoding="utf-8")
             snapshot = self._parse_state_for_snapshot(content, timestamp, trigger)
         except IOError as e:
             logger.warning(f"Failed to read state.md: {e}")
@@ -223,7 +223,7 @@ class CompactionManager:
             return []
 
         try:
-            lines = changes_log.read_text().strip().split("\n")
+            lines = changes_log.read_text(encoding="utf-8").strip().split("\n")
             # Get last 10 unique files
             files = []
             seen = set()

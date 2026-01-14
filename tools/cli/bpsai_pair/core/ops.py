@@ -359,7 +359,7 @@ class FeatureOps:
         if state_file.exists():
             # Update v2.1 state.md
             import re
-            content = state_file.read_text()
+            content = state_file.read_text(encoding="utf-8")
 
             # Update Current Focus section
             if primary_goal or phase:
@@ -372,12 +372,12 @@ class FeatureOps:
                     content,
                     flags=re.DOTALL
                 )
-            state_file.write_text(content)
+            state_file.write_text(content, encoding="utf-8")
 
         elif legacy_dev_file.exists():
             # Update legacy development.md
             import re
-            content = legacy_dev_file.read_text()
+            content = legacy_dev_file.read_text(encoding="utf-8")
 
             if primary_goal:
                 content = re.sub(
@@ -408,7 +408,7 @@ class FeatureOps:
                 f'Last action was: Created feature branch {branch_name}',
                 content
             )
-            legacy_dev_file.write_text(content)
+            legacy_dev_file.write_text(content, encoding="utf-8")
 
         else:
             # Create new v2.1 state.md
@@ -438,7 +438,7 @@ Created feature branch `{branch_name}`.
 
 None
 """
-            state_file.write_text(state_content)
+            state_file.write_text(state_content, encoding="utf-8")
 
         # Create AGENTS.md at root if missing (v2.1)
         agents_file = root / "AGENTS.md"
@@ -476,7 +476,7 @@ Read these files to understand the project:
 
 Run `bpsai-pair pack --out agent_pack.tgz` to create context package.
 """
-            agents_file.write_text(agents_content)
+            agents_file.write_text(agents_content, encoding="utf-8")
 
         # Generate project tree
         tree_file = context_dir / "project_tree.md"
@@ -487,7 +487,7 @@ _Generated: {datetime.now(timezone.utc).isoformat()}Z_
 {ProjectTree.generate(root)}
 ```
 """
-        tree_file.write_text(tree_content)
+        tree_file.write_text(tree_content, encoding="utf-8")
 
         # Commit changes
         files_to_commit = [agents_file, tree_file]

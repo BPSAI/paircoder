@@ -406,7 +406,7 @@ class GapPersistence:
 
         gaps = []
         try:
-            content = self.gap_file.read_text()
+            content = self.gap_file.read_text(encoding="utf-8")
             for line in content.strip().split("\n"):
                 if line:
                     try:
@@ -422,7 +422,7 @@ class GapPersistence:
     def clear_gaps(self) -> None:
         """Clear all gaps from history."""
         if self.gap_file and self.gap_file.exists():
-            self.gap_file.write_text("")
+            self.gap_file.write_text("", encoding="utf-8")
 
 
 def format_gap_notification(gap: SkillGap) -> str:
@@ -481,7 +481,7 @@ def detect_gaps_from_history(
 
     if changes_log and changes_log.exists():
         try:
-            content = changes_log.read_text()
+            content = changes_log.read_text(encoding="utf-8")
             for line in content.strip().split("\n")[-100:]:  # Last 100 entries
                 if line:
                     # Parse as command-like entry

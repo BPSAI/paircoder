@@ -279,7 +279,7 @@ def check_portability(skill_dir: Path, target_format: Optional[ExportFormat] = N
     # Check SKILL.md for platform-specific content
     skill_file = skill_dir / "SKILL.md"
     if skill_file.exists():
-        content = skill_file.read_text()
+        content = skill_file.read_text(encoding="utf-8")
 
         # Check for bpsai-pair specific commands
         if "bpsai-pair" in content:
@@ -383,7 +383,7 @@ def export_skill(
         raise SkillExporterError(f"Skill not found: {skill_name}")
 
     # Read content
-    content = skill_file.read_text()
+    content = skill_file.read_text(encoding="utf-8")
 
     # Check portability with format-specific checks
     warnings = check_portability(skill_dir, target_format=format)
@@ -428,18 +428,18 @@ def export_skill(
         # Append to existing file
         output_path.parent.mkdir(parents=True, exist_ok=True)
         if output_path.exists():
-            existing = output_path.read_text()
+            existing = output_path.read_text(encoding="utf-8")
             # Check if skill already exported
             if f"BEGIN SKILL: {skill_name}" in existing:
                 # Replace existing section
                 pattern = rf"## --- BEGIN SKILL: {skill_name} ---.*?## --- END SKILL: {skill_name} ---"
                 existing = re.sub(pattern, "", existing, flags=re.DOTALL)
             formatted = existing.rstrip() + formatted
-        output_path.write_text(formatted)
+        output_path.write_text(formatted, encoding="utf-8")
     else:
         # Create new file
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(formatted)
+        output_path.write_text(formatted, encoding="utf-8")
 
     result["created"] = str(output_path)
     return result

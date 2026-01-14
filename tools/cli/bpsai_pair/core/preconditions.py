@@ -143,7 +143,7 @@ def check_task_status(task_id: str, required_status: str) -> CheckResult:
     
     # Parse frontmatter
     try:
-        content = task_file.read_text()
+        content = task_file.read_text(encoding="utf-8")
         if content.startswith("---"):
             parts = content.split("---", 2)
             if len(parts) >= 3:
@@ -203,7 +203,7 @@ def check_has_active_plan() -> CheckResult:
     
     state_file = paircoder_dir / "context" / "state.md"
     if state_file.exists():
-        content = state_file.read_text()
+        content = state_file.read_text(encoding="utf-8")
         # Look for active plan indicators
         if "Active Plan" in content or "Current Sprint" in content:
             if "(none" not in content.lower() and "no active" not in content.lower():

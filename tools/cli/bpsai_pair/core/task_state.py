@@ -86,7 +86,7 @@ class TaskStateManager:
         """Load state from file."""
         if self.state_file.exists():
             try:
-                data = json.loads(self.state_file.read_text())
+                data = json.loads(self.state_file.read_text(encoding="utf-8"))
                 self._states = data.get("states", {})
                 self._history = data.get("history", [])
             except (json.JSONDecodeError, KeyError):
@@ -101,7 +101,7 @@ class TaskStateManager:
             "history": self._history[-100:],  # Keep last 100 transitions
             "updated": datetime.now(UTC).isoformat() + "Z",
         }
-        self.state_file.write_text(json.dumps(data, indent=2))
+        self.state_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
     
     def get_state(self, task_id: str) -> TaskState:
         """Get current state of a task.

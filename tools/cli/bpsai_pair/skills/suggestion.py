@@ -53,7 +53,7 @@ class HistoryParser:
 
         sessions = []
         try:
-            content = sessions_log.read_text()
+            content = sessions_log.read_text(encoding="utf-8")
             for line in content.strip().split("\n"):
                 if not line:
                     continue
@@ -84,7 +84,7 @@ class HistoryParser:
 
         changes = []
         try:
-            content = changes_log.read_text()
+            content = changes_log.read_text(encoding="utf-8")
             for line in content.strip().split("\n"):
                 if not line:
                     continue
@@ -288,7 +288,7 @@ class SkillSuggester:
                 skill_file = skill_dir / "SKILL.md"
                 if skill_file.exists():
                     try:
-                        content = skill_file.read_text()
+                        content = skill_file.read_text(encoding="utf-8")
                         # Parse frontmatter
                         if content.startswith("---"):
                             end_idx = content.find("---", 3)
@@ -576,7 +576,7 @@ Activated when performing {activation_context}.
 
         # Create directory and file
         skill_dir.mkdir(parents=True, exist_ok=True)
-        skill_file.write_text(content)
+        skill_file.write_text(content, encoding="utf-8")
 
         # Validate
         validation = self.validator.validate_skill(skill_dir)

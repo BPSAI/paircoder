@@ -248,7 +248,7 @@ class HandoffManager:
 
             # Search recursively for task file
             for task_file in task_dir.rglob(f"{task_id}*.md"):
-                content = task_file.read_text()
+                content = task_file.read_text(encoding="utf-8")
                 return {
                     "description": self._extract_section(content, "Description", "Objective"),
                     "state": self._extract_section(content, "Current State", "Status"),
@@ -312,7 +312,7 @@ class HandoffManager:
         for file_path in files:
             try:
                 if file_path.exists() and file_path.is_file():
-                    total_chars += len(file_path.read_text())
+                    total_chars += len(file_path.read_text(encoding="utf-8"))
             except Exception:
                 pass
 
@@ -827,7 +827,7 @@ def prepare_handoff(
             full_path = working_dir / file_path
             if full_path.exists() and full_path.is_file():
                 try:
-                    content = full_path.read_text()
+                    content = full_path.read_text(encoding="utf-8")
                     # Estimate ~4 chars per token
                     token_budget += len(content) // 4
 

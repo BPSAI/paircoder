@@ -38,7 +38,7 @@ class CLIUpdateCache:
         """Load cache from disk."""
         if self.cache_path.exists():
             try:
-                self._data = json.loads(self.cache_path.read_text())
+                self._data = json.loads(self.cache_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, IOError) as e:
                 logger.warning(f"Failed to load CLI update cache: {e}")
                 self._data = {}
@@ -49,7 +49,7 @@ class CLIUpdateCache:
         """Save cache to disk."""
         try:
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-            self.cache_path.write_text(json.dumps(self._data, indent=2))
+            self.cache_path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
         except IOError as e:
             logger.warning(f"Failed to save CLI update cache: {e}")
 

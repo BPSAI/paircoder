@@ -35,14 +35,14 @@ class ContextCache:
         """Load cache index from disk."""
         if self.index_file.exists():
             try:
-                return json.loads(self.index_file.read_text())
+                return json.loads(self.index_file.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 return {}
         return {}
 
     def _save_index(self) -> None:
         """Save cache index to disk."""
-        self.index_file.write_text(json.dumps(self._index, indent=2))
+        self.index_file.write_text(json.dumps(self._index, indent=2), encoding="utf-8")
 
     def _cache_key(self, file_path: Path) -> str:
         """Generate cache key from file path."""
@@ -87,7 +87,7 @@ class ContextCache:
             size_bytes=entry_data["size_bytes"],
             content_hash=entry_data["content_hash"],
         )
-        return cache_file.read_text(), entry
+        return cache_file.read_text(encoding="utf-8"), entry
 
     def set(self, file_path: Path, content: str) -> CacheEntry:
         """Cache content for file.
@@ -99,7 +99,7 @@ class ContextCache:
 
         # Write content
         cache_file = self.cache_dir / f"{key}.txt"
-        cache_file.write_text(content)
+        cache_file.write_text(content, encoding="utf-8")
 
         # Create entry
         entry = CacheEntry(

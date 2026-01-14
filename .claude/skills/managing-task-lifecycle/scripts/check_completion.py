@@ -51,7 +51,7 @@ def check_task_file(task_id: str) -> tuple[bool, str]:
     if not found:
         return False, f"Task file not found for {task_id}"
 
-    content = found.read_text()
+    content = found.read_text(encoding="utf-8")
 
     # Check status is not already done
     if re.search(r"status:\s*done", content):

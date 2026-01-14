@@ -208,7 +208,7 @@ bpsai-pair security pre-commit
         console.print("[dim]Use --force to overwrite[/dim]")
 
         # Check if our hook is already in there
-        existing = hook_path.read_text()
+        existing = hook_path.read_text(encoding="utf-8")
         if "bpsai-pair security pre-commit" in existing:
             console.print("[green]Secret scanning already configured in hook[/green]")
             return
@@ -218,7 +218,7 @@ bpsai-pair security pre-commit
         raise typer.Exit(1)
 
     hooks_dir.mkdir(parents=True, exist_ok=True)
-    hook_path.write_text(hook_content)
+    hook_path.write_text(hook_content, encoding="utf-8")
     hook_path.chmod(0o755)
 
     console.print("[green]Installed pre-commit hook for secret scanning[/green]")

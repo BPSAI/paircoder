@@ -260,29 +260,29 @@ class PlannerAgent:
         if task_dir:
             task_file = task_dir / "tasks" / f"{task_id}.task.md"
             if task_file.exists():
-                context_parts.append(f"## Task\n\n{task_file.read_text()}")
+                context_parts.append(f"## Task\n\n{task_file.read_text(encoding='utf-8')}")
             else:
                 # Try alternate naming patterns
                 for pattern in [f"{task_id}*.md", f"*{task_id}*.md"]:
                     for f in (task_dir / "tasks").glob(pattern):
-                        context_parts.append(f"## Task\n\n{f.read_text()}")
+                        context_parts.append(f"## Task\n\n{f.read_text(encoding='utf-8')}")
                         break
 
         # Add project context
         if context_dir:
             project_file = context_dir / "project.md"
             if project_file.exists():
-                context_parts.append(f"## Project Context\n\n{project_file.read_text()}")
+                context_parts.append(f"## Project Context\n\n{project_file.read_text(encoding='utf-8')}")
 
             state_file = context_dir / "state.md"
             if state_file.exists():
-                context_parts.append(f"## Current State\n\n{state_file.read_text()}")
+                context_parts.append(f"## Current State\n\n{state_file.read_text(encoding='utf-8')}")
 
         # Add relevant source files
         if relevant_files:
             for file_path in relevant_files:
                 if file_path.exists():
-                    content = file_path.read_text()
+                    content = file_path.read_text(encoding="utf-8")
                     rel_path = file_path.relative_to(self.working_dir) if self.working_dir else file_path
                     context_parts.append(f"## Source: {rel_path}\n\n```\n{content}\n```")
 

@@ -121,8 +121,8 @@ def template_check(
             continue
 
         # Compare files
-        source_content = source_path.read_text()
-        template_content = template_file.read_text()
+        source_content = source_path.read_text(encoding="utf-8")
+        template_content = template_file.read_text(encoding="utf-8")
 
         # Skip cookiecutter variable substitution lines for comparison
         # Template might have {{ cookiecutter.xxx }} which won't match
@@ -168,8 +168,8 @@ def template_check(
             console.print("\n[bold]Syncing template from source...[/bold]")
             for source_path, template_file, rel_path in files_to_sync:
                 # Read source and write to template
-                content = source_path.read_text()
-                template_file.write_text(content)
+                content = source_path.read_text(encoding="utf-8")
+                template_file.write_text(content, encoding="utf-8")
                 console.print(f"  [green]✓[/green] Updated {rel_path}")
             console.print(f"\n[green]Synced {len(files_to_sync)} file(s) to template[/green]")
         else:

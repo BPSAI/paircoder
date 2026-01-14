@@ -272,7 +272,7 @@ def _update_skill_name(skill_file: Path, new_name: str) -> None:
         skill_file: Path to SKILL.md
         new_name: New skill name
     """
-    content = skill_file.read_text()
+    content = skill_file.read_text(encoding="utf-8")
 
     # Parse and update frontmatter
     if content.startswith("---"):
@@ -291,7 +291,7 @@ def _update_skill_name(skill_file: Path, new_name: str) -> None:
                 new_yaml = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True)
                 body = "\n".join(lines[end_idx + 1 :])
                 new_content = f"---\n{new_yaml}---\n{body}"
-                skill_file.write_text(new_content)
+                skill_file.write_text(new_content, encoding="utf-8")
             except yaml.YAMLError:
                 pass  # Skip if YAML is invalid
 
@@ -401,7 +401,7 @@ def install_from_url(
             for filename, content in files.items():
                 file_path = temp_skill_dir / filename
                 file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content)
+                file_path.write_text(content, encoding="utf-8")
 
             # Update name if needed
             if name:
