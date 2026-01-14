@@ -146,9 +146,9 @@ Key deliverables:
 
 ## Current Sprint
 
-### Sprint 29.1: Hotfixes 🔄
+### Sprint 29.1: Hotfixes ✅ 
 
-**Version:** 2.9.1 (patch)
+**Version:** 2.9.2 (patch)
 **Status:** In Progress
 
 Addressing items from PR review and testing:
@@ -159,7 +159,7 @@ Addressing items from PR review and testing:
 | T29.1.2 | Fix stash pop using specific ref          | ✅ | Pop correct stash entry              |
 | T29.1.3 | Mount ~/.claude/ for credentials          | ✅ | Persist auth in container            |
 | T29.1.4 | Simplify containment Dockerfile           | ✅ | Reduce vulnerabilities               |
-| T29.1.5 | Patch UTF encoding issues project wide    | 🔄 | Enable seamless multi-os operations  |
+| T29.1.5 | Patch UTF encoding issues project wide    | ✅ | Enable seamless multi-os operations  |
 
 ---
 
@@ -169,7 +169,7 @@ Addressing items from PR review and testing:
 
 **Goal:** Systematic audit of all functionality before building new features
 
-**Target:** v2.9.2
+**Target:** v2.9.2 (Audit Only)
 **Effort:** ~24-32 hours
 
 #### Scope
@@ -199,7 +199,7 @@ Addressing items from PR review and testing:
 
 **Goal:** Extract monolithic command files into focused, maintainable modules
 
-**Target:** v2.9.3
+**Target:** v2.9.3 (Post Audit Findings)
 **Effort:** ~26 hours
 
 #### The Problem
@@ -248,7 +248,7 @@ bpsai_pair/
 
 **Goal:** Fix issues identified in audit, apply refactor learnings
 
-**Target:** v2.9.4
+**Target:** v2.9.4 (Post Audit Findings)
 **Effort:** TBD (depends on audit findings)
 
 #### Scope
