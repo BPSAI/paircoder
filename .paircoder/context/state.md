@@ -84,7 +84,7 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 | 25.6 | Emergent Skill Discovery | v2.8.3 | Complete |
 | 27 | Stabilization | v2.8.4 | Complete |
 | 28 | v2.9.0 Documentation & Release | v2.9.0 | Complete |
-| 29 | Contained Autonomy | v2.9.1 | Planned |
+| 29 | Contained Autonomy | v2.9.1 | Complete |
 | 29.5 | Feedback Loop Enhancements | v2.9.2 | Planned |
 | 30 | UX + Web Wizard (EPIC-004) | v2.10.0 | Planned |
 | 31 | Multi-Project Workspace (EPIC-001) | v2.11.0 | Planned |
@@ -97,10 +97,12 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 **Sprint 29 Complete!** All 11 tasks (325 complexity points) done.
 
+**PR Created:** https://github.com/BPSAI/paircoder/pull/12
+
 Next steps:
-1. Bump version to 2.9.1 in pyproject.toml
-2. Create PR with all Sprint 29 changes
-3. Merge and create v2.9.1 release tag
+1. ✓ Bump version to 2.9.1 across all locations
+2. ✓ Create PR with all Sprint 29 changes
+3. Merge PR and create v2.9.1 release tag
 4. GitHub action will auto-publish Docker image
 
 
@@ -122,6 +124,32 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-14 - Version Bump to 2.9.1 and PR Creation
+
+Completed final release preparation for Sprint 29:
+
+**Version Updates (11 files):**
+- `tools/cli/pyproject.toml`: 2.9.0 → 2.9.1
+- `README.md`: v2.9.0 → v2.9.1
+- `.paircoder/config.yaml`: 2.9.0 → 2.9.1
+- `.paircoder/capabilities.yaml`: 2.9.0 → 2.9.1
+- `.paircoder/docs/USER_GUIDE.md`: 2.9.0 → 2.9.1
+- `.paircoder/docs/FEATURE_MATRIX.md`: 2.9.0 → 2.9.1
+- `docs/CONTAINED_AUTONOMY.md`: 2.9.0 → 2.9.1
+- Cookiecutter template files (3 files)
+
+**Cookiecutter Template Sync:**
+- Updated `config.yaml` with three-tier containment structure:
+  - `blocked_files/directories` (Tier 1: no access)
+  - `readonly_files/directories` (Tier 2: read-only)
+  - `mode` field for strict/permissive
+- Added Contained Autonomy Mode section to `CLAUDE.md` template
+
+**CHANGELOG Entry:**
+- Added comprehensive v2.9.1 entry documenting Sprint 29 features
+
+**PR Created:** https://github.com/BPSAI/paircoder/pull/12
 
 ### 2026-01-14 - T29.11: Create Subagent Invocation Documentation
 
