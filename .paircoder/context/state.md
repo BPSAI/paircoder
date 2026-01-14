@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.4 Complete)
+> Last updated: 2026-01-13 (T29.5 Complete)
 
 ## Active Plan
 
@@ -17,7 +17,7 @@
 | T29.2 | Add Containment Section to config.yaml | P0 | 20 | ✓ done |
 | T29.3 | Implement Directory Locking in containment.py | P0 | 45 | ✓ done |
 | T29.4 | Create contained-auto Command | P0 | 40 | ✓ done |
-| T29.5 | Add claude666 Alias | P1 | 10 | pending |
+| T29.5 | Add claude666 Alias | P1 | 10 | ✓ done |
 | T29.6 | Implement Network Allowlist | P1 | 35 | pending |
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | pending |
 | T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | pending |
@@ -126,6 +126,27 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.5: Add claude666 Alias
+
+Added the `claude666` alias command (hidden easter egg):
+
+**Files Changed:**
+- `tools/cli/bpsai_pair/commands/session.py` - Added `claude666` function with ASCII art
+- `tools/cli/bpsai_pair/commands/__init__.py` - Export `claude666`
+- `tools/cli/bpsai_pair/cli.py` - Register command with `hidden=True`
+- `tools/cli/tests/test_contained_auto.py` - Added 4 tests for the alias
+
+**Features:**
+- `bpsai-pair claude666` - Hidden alias for `contained-auto`
+- ASCII robot devil art displayed on invocation
+- Help text: "Claude's beast mode - powerful but contained"
+- Same options as `contained-auto` (--skip-checkpoint, task argument)
+- Hidden from main `--help` output (not in documentation)
+
+**Tests:**
+- 4 new tests in `TestClaude666Alias` class
+- All 15 contained-auto tests passing
 
 ### 2026-01-13 - T29.4: Create contained-auto Command
 

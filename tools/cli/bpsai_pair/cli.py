@@ -47,7 +47,7 @@ try:
         timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
         session_app, compaction_app, upgrade_app, budget_app,
-        contained_auto
+        contained_auto, claude666
     )
 except ImportError:
     # For development/testing when running as script
@@ -70,7 +70,7 @@ except ImportError:
         timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
         session_app, compaction_app, upgrade_app, budget_app,
-        contained_auto
+        contained_auto, claude666
     )
 
 # Initialize Rich console for version display
@@ -141,6 +141,9 @@ register_core_commands(app)
 
 # Register contained-auto as a top-level command
 app.command("contained-auto")(contained_auto)
+
+# Register claude666 alias (undocumented easter egg)
+app.command("claude666", hidden=True)(claude666)
 
 # =============================================================================
 # Shortcut Commands
