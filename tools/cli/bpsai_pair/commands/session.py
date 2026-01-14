@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import atexit
 import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -188,10 +190,70 @@ def contained_auto(
         console.print()
 
     console.print("[dim]Protected paths cannot be modified in this session.[/dim]")
-    console.print("[dim]Run 'bpsai-pair session status' to check containment state.[/dim]")
 
     if checkpoint_id:
         console.print(f"[dim]Rollback available: git reset --hard {checkpoint_id}[/dim]")
+
+    console.print()
+    console.print("[bold]Launching Claude Code with autonomous permissions...[/bold]")
+    console.print()
+
+    # Build the claude command
+    claude_cmd = ["claude", "--dangerously-skip-permissions"]
+
+    # Add task prompt if provided
+    if task:
+        claude_cmd.extend(["--prompt", f"Work on task {task}. Remember: containment mode is active - protected paths are read-only."])
+
+    # Invoke Claude Code - this blocks until Claude exits
+    try:
+        result = subprocess.run(claude_cmd, cwd=project_root)
+        sys.exit(result.returncode)
+    except FileNotFoundError:
+        console.print("[red]Error: 'claude' command not found.[/red]")
+        console.print("[dim]Install Claude Code: https://docs.anthropic.com/claude-code[/dim]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Session interrupted.[/yellow]")
+        raise typer.Exit(130)
+
+
+# --- claude666 Alias ---
+
+ROBOT_DEVIL_ART = """
+[red]
+    ╔══════════════════════════════════════════╗
+    ║         .---.                            ║
+    ║        /  6 6\\    CLAUDE 666             ║
+    ║        \\  ^  /    Beast Mode Activated   ║
+    ║         '-.-'                            ║
+    ║        /|   |\\    Powerful but Contained ║
+    ║       (_|   |_)                          ║
+    ╚══════════════════════════════════════════╝
+[/red]
+"""
+
+
+def claude666(
+    task: Optional[str] = typer.Argument(None, help="Task to work on"),
+    skip_checkpoint: bool = typer.Option(
+        False, "--skip-checkpoint", help="Skip git checkpoint creation"
+    ),
+):
+    """Claude's beast mode - powerful but contained.
+
+    This is an alias for 'contained-auto' with extra flair.
+
+    In beast mode, enforcement files and configs are protected from modification,
+    allowing Claude to work autonomously without accidentally bypassing its guardrails.
+
+    If you know, you know.
+    """
+    # Show the robot devil art
+    console.print(ROBOT_DEVIL_ART)
+
+    # Delegate to contained_auto
+    return contained_auto(task=task, skip_checkpoint=skip_checkpoint)
 
 
 # --- Session Commands ---

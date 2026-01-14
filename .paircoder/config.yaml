@@ -329,3 +329,24 @@ enforcement:
   state_machine: true
   strict_ac_verification: true
   require_budget_check: true
+
+containment:
+  enabled: true
+  auto_checkpoint: true
+  rollback_on_violation: false
+  locked_directories:
+    - .claude/agents
+    - .claude/commands
+    - .claude/skills
+    - tools/cli/bpsai_pair/security
+    - tools/cli/bpsai_pair/core
+    - tools/cli/bpsai_pair/orchestration
+  locked_files:
+    - .paircoder/config.yaml
+    - CLAUDE.md
+    - AGENTS.md
+  allow_network:
+    - api.anthropic.com
+    - api.trello.com
+    - github.com
+    - pypi.org

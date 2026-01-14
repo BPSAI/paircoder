@@ -257,6 +257,97 @@ class TestExitBehavior:
         assert manager.is_active is False
 
 
+class TestClaudeInvocation:
+    """Tests for Claude Code invocation."""
+
+    @pytest.fixture
+    def mock_project_with_containment(self, tmp_path):
+        """Create a mock project with containment enabled."""
+        paircoder_dir = tmp_path / ".paircoder"
+        paircoder_dir.mkdir()
+        context_dir = paircoder_dir / "context"
+        context_dir.mkdir()
+
+        config_path = paircoder_dir / "config.yaml"
+        config_path.write_text("""
+version: "2.6"
+project:
+  name: test-project
+containment:
+  enabled: true
+  locked_directories:
+    - .claude/agents/
+  locked_files:
+    - CLAUDE.md
+  auto_checkpoint: false
+""")
+
+        # Initialize git
+        subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+        (tmp_path / "test.txt").write_text("test")
+        subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+        return tmp_path
+
+    def test_invokes_claude_with_dangerously_skip_permissions(self, mock_project_with_containment):
+        """Test that claude --dangerously-skip-permissions is invoked."""
+        app = get_app()
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
+        with patch("bpsai_pair.commands.session.ops.find_project_root", return_value=mock_project_with_containment):
+            with patch("bpsai_pair.commands.session.ops.GitOps.is_repo", return_value=True):
+                with patch("bpsai_pair.commands.session.subprocess.run", return_value=mock_result) as mock_run:
+                    # Provide "y" input in case containment prompt appears
+                    result = runner.invoke(app, ["contained-auto", "--skip-checkpoint"], input="y\n")
+
+        # Verify subprocess.run was called with claude --dangerously-skip-permissions
+        if mock_run.called:
+            call_args = mock_run.call_args
+            cmd = call_args[0][0] if call_args[0] else call_args[1].get("args", [])
+            assert "claude" in cmd
+            assert "--dangerously-skip-permissions" in cmd
+
+    def test_invokes_claude_with_task_prompt(self, mock_project_with_containment):
+        """Test that task is passed to claude via --prompt."""
+        app = get_app()
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+
+        with patch("bpsai_pair.commands.session.ops.find_project_root", return_value=mock_project_with_containment):
+            with patch("bpsai_pair.commands.session.ops.GitOps.is_repo", return_value=True):
+                with patch("bpsai_pair.commands.session.subprocess.run", return_value=mock_result) as mock_run:
+                    # Provide "y" input in case containment prompt appears
+                    result = runner.invoke(app, ["contained-auto", "--skip-checkpoint", "T29.4"], input="y\n")
+
+        if mock_run.called:
+            call_args = mock_run.call_args
+            cmd = call_args[0][0] if call_args[0] else call_args[1].get("args", [])
+            assert "--prompt" in cmd
+            # Find the prompt argument value
+            prompt_idx = cmd.index("--prompt")
+            prompt_value = cmd[prompt_idx + 1]
+            assert "T29.4" in prompt_value
+
+    def test_handles_claude_not_found(self, mock_project_with_containment):
+        """Test handling when claude command is not found."""
+        app = get_app()
+
+        with patch("bpsai_pair.commands.session.ops.find_project_root", return_value=mock_project_with_containment):
+            with patch("bpsai_pair.commands.session.ops.GitOps.is_repo", return_value=True):
+                with patch("bpsai_pair.commands.session.subprocess.run", side_effect=FileNotFoundError()):
+                    # Provide "y" input in case containment prompt appears
+                    result = runner.invoke(app, ["contained-auto", "--skip-checkpoint"], input="y\n")
+
+        assert result.exit_code == 1
+        assert "not found" in result.output.lower()
+
+
 class TestClaude666Alias:
     """Tests for the claude666 alias command."""
 
