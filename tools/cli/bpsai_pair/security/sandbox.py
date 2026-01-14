@@ -555,46 +555,54 @@ class SandboxRunner:
         # Build volumes and tmpfs mounts
         volumes, tmpfs_mounts = self._build_volumes()
 
-        # Build Docker run kwargs
-        run_kwargs = self.config.to_docker_kwargs()
-
-        # Determine network mode
-        if network_allowlist:
-            # Use bridge network with iptables filtering
-            run_kwargs["network_mode"] = "bridge"
-            run_kwargs["cap_add"] = ["NET_ADMIN"]  # Required for iptables
-        # else: uses config.network (default "none")
-
-        run_kwargs.update({
+        # Build create kwargs for containers.create()
+        # Note: create() doesn't have 'detach' or 'remove' parameters
+        create_kwargs = {
             "image": image_tag,
-            "command": command,
             "volumes": volumes,
             "environment": container_env,
             "working_dir": "/workspace",
             "stdin_open": True,
             "tty": True,
-            "detach": True,
-            "remove": False,
-        })
+        }
+
+        # Add resource limits
+        create_kwargs.update(self.config.to_docker_kwargs())
+
+        # Determine network mode and command based on allowlist
+        if network_allowlist:
+            # With allowlist: use keep-alive command, configure iptables, then exec
+            create_kwargs["network_mode"] = "bridge"
+            create_kwargs["cap_add"] = ["NET_ADMIN"]
+            create_kwargs["command"] = ["sleep", "infinity"]
+        else:
+            # Without allowlist: run user command directly
+            create_kwargs["command"] = command
 
         # Add tmpfs mounts if any (for blocked paths)
         if tmpfs_mounts:
-            run_kwargs["tmpfs"] = tmpfs_mounts
+            create_kwargs["tmpfs"] = tmpfs_mounts
 
         container = None
         try:
-            # Create container
-            container = client.containers.run(**run_kwargs)
+            # Create container but DON'T start it yet
+            # dockerpty.start() will handle both starting and attaching
+            container = client.containers.create(**create_kwargs)
             self._current_container = container
 
-            # If network allowlist specified, set up iptables rules
             if network_allowlist:
+                # Start container with keep-alive command
+                container.start()
+                # Configure iptables rules while container is running
                 self._setup_network_allowlist(container, network_allowlist)
-
-            # Attach to container for interactive session
-            # Use low-level API for proper TTY handling
-            import dockerpty
-            dockerpty.start(client.api, container.id)
+                # Now exec the actual user command interactively
+                import dockerpty
+                dockerpty.exec_command(client.api, container.id, command)
+            else:
+                # Normal case: let dockerpty start AND attach in one operation
+                # This is the correct pattern for interactive TTY sessions
+                import dockerpty
+                dockerpty.start(client.api, container.id)
 
             # Get exit code after container finishes
             container.reload()

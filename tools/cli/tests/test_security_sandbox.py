@@ -737,7 +737,8 @@ class TestRunInteractive:
 
         mock_container = MagicMock()
         mock_container.attrs = {"State": {"ExitCode": 0}}
-        mock_docker.from_env.return_value.containers.run.return_value = mock_container
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
 
         # Mock dockerpty in sys.modules (imported inside run_interactive)
         mock_dockerpty = MagicMock()
@@ -748,7 +749,7 @@ class TestRunInteractive:
             exit_code = runner.run_interactive(["claude", "--help"])
 
         # Verify TTY options
-        call_kwargs = mock_docker.from_env.return_value.containers.run.call_args
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
         assert call_kwargs[1].get("stdin_open") is True
         assert call_kwargs[1].get("tty") is True
 
@@ -760,7 +761,8 @@ class TestRunInteractive:
 
         mock_container = MagicMock()
         mock_container.attrs = {"State": {"ExitCode": 0}}
-        mock_docker.from_env.return_value.containers.run.return_value = mock_container
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
 
         mock_dockerpty = MagicMock()
         with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
@@ -773,9 +775,11 @@ class TestRunInteractive:
             )
 
         # Verify network mode is bridge (for iptables) and NET_ADMIN capability
-        call_kwargs = mock_docker.from_env.return_value.containers.run.call_args
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
         assert call_kwargs[1].get("network_mode") == "bridge"
         assert "NET_ADMIN" in call_kwargs[1].get("cap_add", [])
+        # Verify keep-alive command is used (actual command runs via exec)
+        assert call_kwargs[1].get("command") == ["sleep", "infinity"]
 
     @patch("bpsai_pair.security.sandbox.docker")
     def test_docker_interactive_sets_env(self, mock_docker):
@@ -785,7 +789,8 @@ class TestRunInteractive:
 
         mock_container = MagicMock()
         mock_container.attrs = {"State": {"ExitCode": 0}}
-        mock_docker.from_env.return_value.containers.run.return_value = mock_container
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
 
         mock_dockerpty = MagicMock()
         with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
@@ -797,7 +802,7 @@ class TestRunInteractive:
                 env={"PAIRCODER_CONTAINMENT": "1"}
             )
 
-        call_kwargs = mock_docker.from_env.return_value.containers.run.call_args
+        call_kwargs = mock_docker.from_env.return_value.containers.create.call_args
         env = call_kwargs[1].get("environment", {})
         assert env.get("PAIRCODER_CONTAINMENT") == "1"
 
@@ -809,7 +814,8 @@ class TestRunInteractive:
 
         mock_container = MagicMock()
         mock_container.attrs = {"State": {"ExitCode": 0}}
-        mock_docker.from_env.return_value.containers.run.return_value = mock_container
+        # Uses containers.create() instead of containers.run()
+        mock_docker.from_env.return_value.containers.create.return_value = mock_container
 
         mock_dockerpty = MagicMock()
         with patch.dict(sys.modules, {"dockerpty": mock_dockerpty}):
