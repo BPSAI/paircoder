@@ -84,7 +84,6 @@ my-project/
 │   │   ├── planning-with-trello/
 │   │   ├── creating-skills/
 │   │   ├── releasing-versions/
-│   │   └── testing-fixes/
 │   ├── agents/                   # Custom subagents
 │   │   ├── planner.md           # Planning/design specialist
 │   │   ├── reviewer.md          # Code review specialist
