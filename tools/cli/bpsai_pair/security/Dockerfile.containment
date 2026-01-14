@@ -33,26 +33,24 @@ RUN useradd -m -s /bin/bash sandbox \
 USER sandbox
 WORKDIR /home/sandbox
 
+# Set PATH early so subsequent RUN commands can find claude
+# Native installer may use ~/.local/bin or ~/.claude/bin
+ENV PATH="/home/sandbox/.local/bin:/home/sandbox/.claude/bin:${PATH}"
+
 # Allow pinning Claude Code version during builds (default: latest)
 ARG CLAUDE_VERSION=latest
 
 # Install Claude Code using native installer (NOT npm)
 # The installer puts the binary at ~/.local/bin/claude or ~/.claude/bin/claude
-# Use -s to pass version argument to the installer script
 RUN curl -fsSL https://claude.ai/install.sh | bash -s -- ${CLAUDE_VERSION}
 
 # Verify installation is native (not Node-based)
 # This will fail the build if we accidentally got the npm version
-RUN CLAUDE_BIN=$(which claude || echo "") && \
-    test -n "$CLAUDE_BIN" && \
+RUN CLAUDE_BIN=$(which claude) && \
     echo "Found claude at: $CLAUDE_BIN" && \
     head -n 1 "$CLAUDE_BIN" | tee /tmp/claude_shebang && \
     ! grep -q "env node" /tmp/claude_shebang && \
     claude --version
-
-# Ensure claude is on PATH for all sessions
-# Native installer may use ~/.local/bin or ~/.claude/bin
-ENV PATH="/home/sandbox/.local/bin:/home/sandbox/.claude/bin:${PATH}"
 
 # Skip update checks inside container (we control the version via image tags)
 ENV CLAUDE_CODE_SKIP_UPDATE_CHECK=1
