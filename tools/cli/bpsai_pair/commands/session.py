@@ -84,9 +84,49 @@ def _cleanup_containment():
     if _active_containment_manager is not None:
         _active_containment_manager.deactivate()
         _active_containment_manager = None
+
+        # Restore stashed changes if any
+        stash_ref = os.environ.get("PAIRCODER_CONTAINMENT_STASH")
+        if stash_ref:
+            try:
+                # Check if working directory is dirty (has changes from container session)
+                result = subprocess.run(
+                    ["git", "status", "--porcelain"],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                is_dirty = len(result.stdout.strip()) > 0
+
+                if is_dirty:
+                    # Don't pop stash - would conflict with container's changes
+                    console.print()
+                    console.print("[yellow]⚠ Your stashed changes were NOT restored[/yellow]")
+                    console.print("[dim]  The container session left uncommitted changes.[/dim]")
+                    console.print("[dim]  To restore your original changes after resolving:[/dim]")
+                    console.print("[dim]    git stash pop[/dim]")
+                else:
+                    # Safe to restore stashed changes
+                    pop_result = subprocess.run(
+                        ["git", "stash", "pop"],
+                        capture_output=True,
+                        text=True,
+                        check=False
+                    )
+                    if pop_result.returncode == 0:
+                        console.print()
+                        console.print("[green]✓ Restored your stashed changes[/green]")
+                    else:
+                        console.print()
+                        console.print("[yellow]⚠ Could not restore stashed changes[/yellow]")
+                        console.print(f"[dim]  {pop_result.stderr.strip()}[/dim]")
+            except Exception:
+                pass  # Don't fail cleanup on stash errors
+
         # Clear environment variables
         os.environ.pop("PAIRCODER_CONTAINMENT", None)
         os.environ.pop("PAIRCODER_CONTAINMENT_CHECKPOINT", None)
+        os.environ.pop("PAIRCODER_CONTAINMENT_STASH", None)
 
 
 # --- Contained Autonomy Command ---

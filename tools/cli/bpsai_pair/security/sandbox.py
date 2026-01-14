@@ -555,6 +555,15 @@ class SandboxRunner:
         # Build volumes and tmpfs mounts
         volumes, tmpfs_mounts = self._build_volumes()
 
+        # Mount host's Claude credentials so Claude Code can authenticate
+        home_dir = Path.home()
+        claude_config_dir = home_dir / ".claude"
+        if claude_config_dir.exists():
+            volumes[str(claude_config_dir)] = {
+                "bind": "/home/sandbox/.claude",
+                "mode": "rw"
+            }
+
         # Build create kwargs for containers.create()
         # Note: create() doesn't have 'detach' or 'remove' parameters
         create_kwargs = {
@@ -737,27 +746,33 @@ def containment_config_to_mounts(
 
     # Blocked directories (Tier 1 - overlaid with empty tmpfs)
     # tmpfs mount hides the original directory content
+    # Only mount paths that actually exist to avoid creating phantom files
     for dir_path in config.blocked_directories:
         dir_path = dir_path.rstrip("/")
-        blocked.append(dir_path)
-        mounts.append(MountConfig(
-            source="",  # Not used for tmpfs
-            target=f"/workspace/{dir_path}",
-            readonly=False,  # tmpfs is writable but empty
-            mount_type="tmpfs"
-        ))
+        full_path = project_root / dir_path
+        if full_path.exists():
+            blocked.append(dir_path)
+            mounts.append(MountConfig(
+                source="",  # Not used for tmpfs
+                target=f"/workspace/{dir_path}",
+                readonly=False,  # tmpfs is writable but empty
+                mount_type="tmpfs"
+            ))
 
     # Blocked files (Tier 1 - overlaid with empty tmpfs)
     # Note: For files, we create an empty directory mount which effectively
     # makes the file inaccessible (it becomes a directory)
+    # Only mount paths that actually exist to avoid creating phantom files
     for file_path in config.blocked_files:
-        blocked.append(file_path)
-        mounts.append(MountConfig(
-            source="",  # Not used for tmpfs
-            target=f"/workspace/{file_path}",
-            readonly=False,
-            mount_type="tmpfs"
-        ))
+        full_path = project_root / file_path
+        if full_path.exists():
+            blocked.append(file_path)
+            mounts.append(MountConfig(
+                source="",  # Not used for tmpfs
+                target=f"/workspace/{file_path}",
+                readonly=False,
+                mount_type="tmpfs"
+            ))
 
     # Readonly directories (Tier 2 - mounted read-only)
     # These overlay the base workspace mount
