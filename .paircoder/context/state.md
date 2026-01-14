@@ -125,6 +125,42 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 
 _Add entries here as work is completed._
 
+### 2026-01-14 - Release v2.9.2
+
+Completed release preparation for v2.9.2:
+
+**Version Updates:**
+- `tools/cli/pyproject.toml`: 2.9.1 → 2.9.2
+- `.paircoder/config.yaml`: 2.9.1 → 2.9.2
+- `.paircoder/capabilities.yaml`: 2.9.1 → 2.9.2
+
+**PyPI Package Improvements:**
+- Enhanced README with full PyPI-friendly content, feature tables, command reference
+- Added project URLs: Homepage, Documentation, Repository, Issues, Changelog
+- Added keywords: ai, pair-programming, cli, claude, gpt, codex, mcp, trello, etc.
+- Added proper classifiers for PyPI categorization
+- Fixed broken relative links (`../../README.md` → absolute GitHub URLs)
+- Updated to PEP 639 license expression format (SPDX `MIT`)
+- Added LICENSE file to CLI package directory
+
+**CHANGELOG Entry:**
+- Added v2.9.2 section documenting Python compatibility, Docker updates, PyPI improvements
+
+**Git Operations:**
+- Commit: `17a026c` - Release v2.9.2
+- Tag: `v2.9.2` created
+
+**Ready to Release:**
+```bash
+git push origin main
+git push origin v2.9.2
+```
+
+Then publish to PyPI:
+```bash
+cd tools/cli && twine upload dist/*
+```
+
 ### 2026-01-14 - HF-002: Fix Windows Encoding for File Operations
 
 Completed the Windows encoding hotfix (HF-002) to ensure UTF-8 compatibility:

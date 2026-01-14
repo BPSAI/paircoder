@@ -5,6 +5,37 @@ All notable changes to the PairCoder project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.9.2] - 2026-01-14 (Maintenance Release)
+
+### Changed
+
+#### Python Compatibility
+- **Lowered Python requirement** — CLI now supports Python 3.11+ (down from 3.12)
+- **Removed Python 3.10** from CI smoke test matrix (unsupported)
+
+#### Docker & Build
+- **Updated base image** — Dockerfile now uses `python:3.14.2-slim-bookworm`
+- **SBOM support** — Added Software Bill of Materials generation to CI workflows
+
+#### PyPI Package Improvements
+- **Enhanced README** — Full PyPI-friendly README with feature tables, command reference, and absolute URLs
+- **Better metadata** — Added keywords, classifiers, and project URLs (Homepage, Docs, Issues, Changelog)
+- **Improved description** — Package now shows full feature summary on PyPI
+- **License compliance** — Updated to PEP 639 license expression format
+
+#### Documentation
+- **User guide updated** — Reflects v2.9.1 features including contained autonomy
+- **Removed deprecated skill** — `testing-fixes` skill removed from README
+
+### Fixed
+
+- **UTF-8 encoding** — Ensured UTF-8 encoding in all `open()` file writers
+- **Containment mode exit** — Fixed stash pop and exit code handling
+- **File I/O operations** — Corrected encoding in file operations across modules
+- **PyPI README links** — Fixed broken relative links in package README
+
+---
+
 ## [v2.9.1] - 2026-01-14 (Sprint 29: Contained Autonomy)
 
 ### Added
