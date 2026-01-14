@@ -19,6 +19,10 @@ from .containment import (
     ContainmentManager,
     ContainmentViolationError,
 )
+from .network import (
+    NetworkGuard,
+    NetworkRestrictionError,
+)
 from .review import (
     ReviewResult,
     SecurityReviewHook,
@@ -64,6 +68,9 @@ __all__ = [
     # Containment
     "ContainmentManager",
     "ContainmentViolationError",
+    # Network
+    "NetworkGuard",
+    "NetworkRestrictionError",
     # Review
     "ReviewResult",
     "SecurityReviewHook",

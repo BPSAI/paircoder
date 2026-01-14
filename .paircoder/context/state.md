@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.5 Complete)
+> Last updated: 2026-01-13 (T29.6 Complete)
 
 ## Active Plan
 
@@ -18,7 +18,7 @@
 | T29.3 | Implement Directory Locking in containment.py | P0 | 45 | ✓ done |
 | T29.4 | Create contained-auto Command | P0 | 40 | ✓ done |
 | T29.5 | Add claude666 Alias | P1 | 10 | ✓ done |
-| T29.6 | Implement Network Allowlist | P1 | 35 | pending |
+| T29.6 | Implement Network Allowlist | P1 | 35 | ✓ done |
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | pending |
 | T29.8 | Create Auto-Checkpoint on Containment Entry | P1 | 25 | pending |
 | T29.9 | Add Containment Status to bpsai-pair status | P1 | 20 | pending |
@@ -126,6 +126,38 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.6: Implement Network Allowlist
+
+Implemented the `NetworkGuard` class for restricting network access during containment mode:
+
+**New Files:**
+- `tools/cli/bpsai_pair/security/network.py` - NetworkGuard and NetworkRestrictionError classes
+- `tools/cli/tests/security/test_network.py` - 42 comprehensive tests
+
+**Features:**
+- `NetworkRestrictionError` exception for blocked domain access
+- `NetworkGuard` class with:
+  - `__init__(allowed_domains: list)` - Initialize with allowed domain list
+  - `check_url(url: str)` - Raises `NetworkRestrictionError` if domain not allowed
+  - `_is_allowed(domain: str) -> bool` - Check domain against allowlist (including subdomains)
+  - `_extract_domain(netloc: str) -> str` - Parse domain from URL netloc
+
+**Security Features:**
+- Subdomain matching: `api.github.com` allowed when `github.com` in allowlist
+- Localhost always allowed: `localhost`, `127.0.0.1`, `::1`
+- IPv6 address handling with bracket notation
+- Case-insensitive domain matching
+- FQDN trailing dot handling
+- Authentication info stripped from URLs
+- Port numbers correctly handled
+
+**Tests:**
+- 42 new tests in `tests/security/test_network.py`
+- All acceptance criteria verified
+
+**Exports Updated:**
+- Added `NetworkGuard`, `NetworkRestrictionError` to security module `__init__.py`
 
 ### 2026-01-13 - T29.5: Add claude666 Alias
 
