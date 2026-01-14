@@ -7,12 +7,17 @@ This module provides security controls for autonomous execution:
 - Dependency vulnerability scanning
 - Docker sandbox isolation
 - Git checkpoint/rollback
+- Containment mode for filesystem locking
 """
 
 from .allowlist import (
     AllowlistManager,
     CommandDecision,
     CheckResult,
+)
+from .containment import (
+    ContainmentManager,
+    ContainmentViolationError,
 )
 from .review import (
     ReviewResult,
@@ -56,6 +61,9 @@ __all__ = [
     "AllowlistManager",
     "CommandDecision",
     "CheckResult",
+    # Containment
+    "ContainmentManager",
+    "ContainmentViolationError",
     # Review
     "ReviewResult",
     "SecurityReviewHook",

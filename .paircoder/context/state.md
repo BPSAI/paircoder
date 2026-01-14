@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (Sandbox→Containment Rename)
+> Last updated: 2026-01-13 (T29.3 Complete)
 
 ## Active Plan
 
@@ -15,7 +15,7 @@
 |----|-------|----------|------------|--------|
 | T29.1 | Design Containment Config Schema | P0 | 25 | ✓ done |
 | T29.2 | Add Containment Section to config.yaml | P0 | 20 | ✓ done |
-| T29.3 | Implement Directory Locking in containment.py | P0 | 45 | pending |
+| T29.3 | Implement Directory Locking in containment.py | P0 | 45 | ✓ done |
 | T29.4 | Create contained-auto Command | P0 | 40 | pending |
 | T29.5 | Add claude666 Alias | P1 | 10 | pending |
 | T29.6 | Implement Network Allowlist | P1 | 35 | pending |
@@ -126,6 +126,39 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.3: Implement Directory Locking in containment.py
+
+Implemented the `ContainmentManager` class for filesystem write protection:
+
+**New Files:**
+- `tools/cli/bpsai_pair/security/containment.py` - ContainmentManager implementation
+- `tools/cli/tests/security/test_containment.py` - 29 comprehensive tests
+
+**Features:**
+- `ContainmentViolationError` exception for locked path violations
+- `ContainmentManager` class with:
+  - `__init__(config, project_root)` - Initialize with config and resolve paths
+  - `_build_locked_paths()` - Build sets of resolved locked paths
+  - `is_path_locked(path)` - Check if a path is within locked area
+  - `check_write_allowed(path)` - Raise exception if write not allowed
+  - `activate()` / `deactivate()` - Enable/disable enforcement
+  - `is_active` property - Check enforcement state
+  - `locked_directories` / `locked_files` properties - Get resolved paths
+
+**Security Features:**
+- Symlink resolution prevents bypass attacks
+- Glob pattern support (`*` and `**`) for locked_directories
+- Path traversal attempts blocked (`.../` normalized)
+- Non-existent paths still protected (prevents creation)
+- Paths outside project root handled safely
+
+**Tests:**
+- 29 new tests in `tests/security/test_containment.py`
+- All 326 security-related tests passing
+
+**Exports Updated:**
+- Added `ContainmentManager`, `ContainmentViolationError` to security module `__init__.py`
 
 ### 2026-01-13 - Renamed Sandbox → Containment
 
