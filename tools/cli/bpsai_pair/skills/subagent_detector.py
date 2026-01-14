@@ -612,7 +612,7 @@ class SubagentGapPersistence:
             existing_gaps.append(gap)
 
         # Write all gaps
-        with open(self.gap_file, "w") as f:
+        with open(self.gap_file, "w", encoding="utf-8") as f:
             for g in existing_gaps:
                 f.write(json.dumps(g.to_dict()) + "\n")
 

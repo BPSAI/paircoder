@@ -110,7 +110,7 @@ class LocalTimeCache:
     def _save(self) -> None:
         """Save cache to disk."""
         try:
-            with open(self.cache_path, 'w') as f:
+            with open(self.cache_path, 'w', encoding="utf-8") as f:
                 json.dump(self._data, f, indent=2)
         except IOError as e:
             logger.warning(f"Failed to save time cache: {e}")

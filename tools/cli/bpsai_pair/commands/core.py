@@ -191,7 +191,7 @@ def init_command(
 
         # Write config file
         config_file = paircoder_dir / "config.yaml"
-        with open(config_file, 'w') as f:
+        with open(config_file, 'w', encoding="utf-8") as f:
             yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
         console.print(f"[green]![/green] Applied preset: {preset}")
@@ -225,7 +225,7 @@ def init_command(
                 paircoder_dir = root / ".paircoder"
                 paircoder_dir.mkdir(exist_ok=True)
                 config_file = paircoder_dir / "config.yaml"
-                with open(config_file, 'w') as f:
+                with open(config_file, 'w', encoding="utf-8") as f:
                     yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
                 console.print(f"[green]![/green] Applied preset: {preset_choice}")
             else:
@@ -938,7 +938,7 @@ def history_log_command(
         timestamp = datetime.now().isoformat(timespec="seconds")
         entry = f"{timestamp} {path_to_log}\n"
 
-        with open(log_file, "a") as f:
+        with open(log_file, "a", encoding="utf-8") as f:
             f.write(entry)
 
         if not quiet:

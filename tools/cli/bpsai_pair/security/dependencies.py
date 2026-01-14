@@ -255,7 +255,7 @@ class DependencyScanner:
         cache_key = self._get_cache_key(file_path)
         cache_file = self.cache_dir / f"{cache_key}.json"
 
-        with open(cache_file, "w") as f:
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump([v.to_dict() for v in vulnerabilities], f)
 
     def scan_python(

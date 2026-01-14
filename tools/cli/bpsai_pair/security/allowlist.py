@@ -405,5 +405,5 @@ class AllowlistManager:
         }
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(save_path, "w") as f:
+        with open(save_path, "w", encoding="utf-8") as f:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)

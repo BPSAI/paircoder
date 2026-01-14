@@ -321,7 +321,7 @@ class BenchmarkRunner:
         """Save benchmark results."""
         # JSONL format for raw results
         results_path = run_dir / "results.jsonl"
-        with open(results_path, "w") as f:
+        with open(results_path, "w", encoding="utf-8") as f:
             for result in results:
                 f.write(json.dumps(result.to_dict()) + "\n")
 

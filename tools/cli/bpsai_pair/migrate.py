@@ -256,7 +256,7 @@ def execute_migration(project_root: Path, plan: MigrationPlan) -> None:
             config.update(plan.config_additions)
             config["version"] = plan.target_version
 
-            with open(config_path, "w") as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     # Delete old files (only after everything else succeeds)

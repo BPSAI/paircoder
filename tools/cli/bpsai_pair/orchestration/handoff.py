@@ -639,7 +639,7 @@ class HandoffSerializer:
         self._ensure_dir()
 
         path = self.handoffs_dir / f"{package.handoff_id}.json"
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(package.to_dict(), f, indent=2)
 
         logger.info(f"Saved handoff: {package.handoff_id} -> {path}")
@@ -703,7 +703,7 @@ class HandoffSerializer:
         self._ensure_dir()
 
         path = self.handoffs_dir / f"chain-{chain.task_id}.json"
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(chain.to_dict(), f, indent=2)
 
         logger.info(f"Saved handoff chain: {chain.task_id} -> {path}")

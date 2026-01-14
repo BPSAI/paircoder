@@ -341,7 +341,7 @@ def execute_upgrade(
                         config_data[section] = defaults[section]
                         results["config_sections_added"] += 1
 
-                with open(config_path, "w") as f:
+                with open(config_path, "w", encoding="utf-8") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
             except Exception as e:
                 console.print(f"[yellow]Warning: Could not update config: {e}[/yellow]")

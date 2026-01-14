@@ -1374,7 +1374,7 @@ def _log_bypass(command: str, task_id: str, reason: str = "forced") -> None:
             "reason": reason,
         }
 
-        with open(log_path, "a") as f:
+        with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
     except Exception:
         pass  # Best effort logging
