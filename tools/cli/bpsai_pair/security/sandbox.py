@@ -37,21 +37,27 @@ class MountConfig:
     """Configuration for a volume mount.
 
     Attributes:
-        source: Host path to mount
+        source: Host path to mount (ignored for tmpfs mounts)
         target: Container path to mount to
         readonly: Whether mount is read-only
+        mount_type: Type of mount - "bind" (default) or "tmpfs"
     """
 
     source: str
     target: str
     readonly: bool = False
+    mount_type: str = "bind"  # "bind" or "tmpfs"
 
     def to_docker_mount(self) -> dict:
-        """Convert to Docker mount configuration dict."""
+        """Convert to Docker mount configuration dict for bind mounts."""
         return {
             "bind": self.target,
             "mode": "ro" if self.readonly else "rw"
         }
+
+    def is_tmpfs(self) -> bool:
+        """Check if this is a tmpfs mount."""
+        return self.mount_type == "tmpfs"
 
 
 @dataclass
@@ -218,19 +224,31 @@ class SandboxRunner:
         except Exception as e:
             raise RuntimeError(f"Docker not available: {e}")
 
-    def _build_volumes(self) -> dict:
-        """Build volumes dict for Docker run."""
+    def _build_volumes(self) -> tuple[dict, dict]:
+        """Build volumes and tmpfs dicts for Docker run.
+
+        Returns:
+            Tuple of (volumes, tmpfs):
+            - volumes: Dict of bind mounts {source: {bind: target, mode: ro/rw}}
+            - tmpfs: Dict of tmpfs mounts {target: "size=1m"}
+        """
         volumes = {
             str(self.workspace): {
                 "bind": "/workspace",
                 "mode": "rw"
             }
         }
+        tmpfs_mounts = {}
 
         for mount in self.config.mounts:
-            volumes[mount.source] = mount.to_docker_mount()
+            if mount.is_tmpfs():
+                # tmpfs mount - hide the original content with empty filesystem
+                tmpfs_mounts[mount.target] = "size=1m"
+            else:
+                # Regular bind mount
+                volumes[mount.source] = mount.to_docker_mount()
 
-        return volumes
+        return volumes, tmpfs_mounts
 
     def _build_environment(self) -> dict:
         """Build environment dict from passthrough config."""
@@ -282,17 +300,24 @@ class SandboxRunner:
 
         client = self._get_docker_client()
 
+        # Build volumes and tmpfs mounts
+        volumes, tmpfs_mounts = self._build_volumes()
+
         # Build Docker run kwargs
         run_kwargs = self.config.to_docker_kwargs()
         run_kwargs.update({
             "image": self.config.image,
             "command": "sleep infinity",  # Keep container running
-            "volumes": self._build_volumes(),
+            "volumes": volumes,
             "environment": self._build_environment(),
             "working_dir": "/workspace",
             "detach": True,
             "remove": False,  # We'll remove manually after getting diff
         })
+
+        # Add tmpfs mounts if any (for blocked paths)
+        if tmpfs_mounts:
+            run_kwargs["tmpfs"] = tmpfs_mounts
 
         container = None
         try:
@@ -448,6 +473,9 @@ class SandboxRunner:
         if network_allowlist:
             container_env["PAIRCODER_NETWORK_ALLOWLIST"] = " ".join(network_allowlist)
 
+        # Build volumes and tmpfs mounts
+        volumes, tmpfs_mounts = self._build_volumes()
+
         # Build Docker run kwargs
         run_kwargs = self.config.to_docker_kwargs()
 
@@ -461,7 +489,7 @@ class SandboxRunner:
         run_kwargs.update({
             "image": self.config.image,
             "command": command,
-            "volumes": self._build_volumes(),
+            "volumes": volumes,
             "environment": container_env,
             "working_dir": "/workspace",
             "stdin_open": True,
@@ -469,6 +497,10 @@ class SandboxRunner:
             "detach": True,
             "remove": False,
         })
+
+        # Add tmpfs mounts if any (for blocked paths)
+        if tmpfs_mounts:
+            run_kwargs["tmpfs"] = tmpfs_mounts
 
         container = None
         try:
@@ -585,37 +617,60 @@ def containment_config_to_mounts(
     """Convert ContainmentConfig to Docker mount configuration.
 
     Maps the three-tier access control to Docker volumes:
-    - Blocked paths: Excluded from mounting (not accessible)
+    - Blocked paths: Overlaid with empty tmpfs (content hidden/inaccessible)
     - Readonly paths: Mounted with readonly=True (OS-enforced)
     - Everything else: Part of workspace mount (read-write)
+
+    The mount order matters! Docker processes mounts in order, so:
+    1. Base workspace mount (everything visible)
+    2. Blocked paths overlaid with tmpfs (hides original content)
+    3. Readonly paths overlaid with ro bind mount (protects from writes)
 
     Args:
         config: ContainmentConfig with path restrictions
         project_root: Root directory of the project
 
     Returns:
-        Tuple of (mounts, excluded_paths):
-        - mounts: List of MountConfig for Docker volumes
-        - excluded_paths: Paths that should not be mounted (blocked tier)
+        Tuple of (mounts, blocked_paths):
+        - mounts: List of MountConfig for Docker volumes (includes tmpfs for blocked)
+        - blocked_paths: List of paths that are blocked (for reference/logging)
     """
     from bpsai_pair.core.config import ContainmentConfig  # Import for type checking
 
     mounts = []
-    excluded = []
-
-    # Collect blocked paths (Tier 1 - not mounted at all)
-    for dir_path in config.blocked_directories:
-        excluded.append(dir_path.rstrip("/"))
-    for file_path in config.blocked_files:
-        excluded.append(file_path)
+    blocked = []
 
     # Base workspace mount (read-write for everything not specifically restricted)
-    # Note: We mount the full workspace, then overlay with readonly mounts
+    # Note: We mount the full workspace, then overlay with other mounts
     mounts.append(MountConfig(
         source=str(project_root.resolve()),
         target="/workspace",
         readonly=False
     ))
+
+    # Blocked directories (Tier 1 - overlaid with empty tmpfs)
+    # tmpfs mount hides the original directory content
+    for dir_path in config.blocked_directories:
+        dir_path = dir_path.rstrip("/")
+        blocked.append(dir_path)
+        mounts.append(MountConfig(
+            source="",  # Not used for tmpfs
+            target=f"/workspace/{dir_path}",
+            readonly=False,  # tmpfs is writable but empty
+            mount_type="tmpfs"
+        ))
+
+    # Blocked files (Tier 1 - overlaid with empty tmpfs)
+    # Note: For files, we create an empty directory mount which effectively
+    # makes the file inaccessible (it becomes a directory)
+    for file_path in config.blocked_files:
+        blocked.append(file_path)
+        mounts.append(MountConfig(
+            source="",  # Not used for tmpfs
+            target=f"/workspace/{file_path}",
+            readonly=False,
+            mount_type="tmpfs"
+        ))
 
     # Readonly directories (Tier 2 - mounted read-only)
     # These overlay the base workspace mount
@@ -639,4 +694,4 @@ def containment_config_to_mounts(
                 readonly=True  # OS-enforced read-only!
             ))
 
-    return mounts, excluded
+    return mounts, blocked

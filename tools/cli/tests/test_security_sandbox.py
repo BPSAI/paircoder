@@ -625,7 +625,7 @@ class TestContainmentConfigToMounts:
         assert len(readonly_mounts) == 2
 
     def test_blocked_paths_excluded(self, tmp_path):
-        """Test blocked paths are excluded from mounting."""
+        """Test blocked paths are overlaid with tmpfs mounts."""
         from bpsai_pair.security.sandbox import containment_config_to_mounts
         from bpsai_pair.core.config import ContainmentConfig
 
@@ -639,11 +639,19 @@ class TestContainmentConfigToMounts:
             blocked_files=[".env"],
         )
 
-        mounts, excluded = containment_config_to_mounts(config, tmp_path)
+        mounts, blocked = containment_config_to_mounts(config, tmp_path)
 
-        # Blocked paths should be in excluded list
-        assert ".secrets" in excluded
-        assert ".env" in excluded
+        # Blocked paths should be in blocked list (for logging/reference)
+        assert ".secrets" in blocked
+        assert ".env" in blocked
+
+        # Blocked paths should have tmpfs mounts that hide original content
+        tmpfs_mounts = [m for m in mounts if m.is_tmpfs()]
+        assert len(tmpfs_mounts) == 2
+
+        tmpfs_targets = [m.target for m in tmpfs_mounts]
+        assert "/workspace/.secrets" in tmpfs_targets
+        assert "/workspace/.env" in tmpfs_targets
 
     def test_nonexistent_paths_ignored(self, tmp_path):
         """Test nonexistent paths are gracefully ignored."""

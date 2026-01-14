@@ -39,3 +39,7 @@ docs = [
     "myst-parser>=2.0",  # For markdown support
     "sphinx-click>=5.0",  # For CLI documentation
 ]
+sandbox = [
+    "docker>=7.0.0",  # Docker SDK for Python
+    "dockerpty>=0.4.1",  # PTY support for interactive Docker sessions
+]
