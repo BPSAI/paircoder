@@ -51,10 +51,6 @@ RUN pip install --no-cache-dir \
     requests \
     pyyaml
 
-# Copy entrypoint script
-COPY entrypoint-containment.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
 # Switch to non-root user
 USER sandbox
 
@@ -64,8 +60,9 @@ WORKDIR /workspace
 # Environment for Claude Code
 ENV CLAUDE_CODE_SKIP_UPDATE_CHECK=1
 
-# Default entrypoint - sets up network rules then runs command
-ENTRYPOINT ["/entrypoint.sh"]
+# Network allowlist is configured via Python code (sandbox.py _setup_network_allowlist)
+# after container creation using container.exec_run() with iptables commands.
+# No shell entrypoint needed - keeps implementation pure Python.
 
 # Default command - start bash
 CMD ["bash"]
