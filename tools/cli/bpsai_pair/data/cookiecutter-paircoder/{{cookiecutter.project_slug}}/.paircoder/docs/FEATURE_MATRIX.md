@@ -422,7 +422,7 @@ bpsai_pair/
 ## Configuration (config.yaml)
 
 ```yaml
-version: "2.8"
+version: "2.9.2"
 
 project:
   name: "project-name"
