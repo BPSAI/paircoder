@@ -12,7 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, Optional
 
+from importlib.metadata import version as get_version
+
 import yaml
+
+CONTAINMENT_IMAGE_REPO = "bpsai/paircoder-containment"
 
 try:
     import docker
@@ -223,6 +227,83 @@ class SandboxRunner:
             return docker.from_env()
         except Exception as e:
             raise RuntimeError(f"Docker not available: {e}")
+
+    def ensure_containment_image(self) -> str:
+        """Ensure containment image is available.
+
+        Attempts to:
+        1. Use existing local image (fastest)
+        2. Pull from Docker Hub (fast for most users)
+        3. Build locally from Dockerfile (fallback for offline)
+
+        Returns:
+            Image tag string to use for container creation
+
+        Raises:
+            RuntimeError: If image cannot be obtained by any method
+        """
+        from importlib.metadata import version as get_version
+        from rich.console import Console
+
+        console = Console()
+
+        try:
+            pkg_version = get_version("bpsai-pair")
+        except Exception:
+            pkg_version = "latest"
+
+        # Image tags to try (in order of preference)
+        image_tags = [
+            f"{CONTAINMENT_IMAGE_REPO}:{pkg_version}",  # Versioned
+            f"{CONTAINMENT_IMAGE_REPO}:latest",  # Latest
+            "paircoder/containment:latest",  # Legacy local name
+        ]
+
+        # Check if any image already exists locally
+        for tag in image_tags:
+            try:
+                self._get_docker_client().images.get(tag)
+                return tag
+            except Exception:
+                continue
+
+        # Try to pull from Docker Hub
+        console.print(f"[cyan]Pulling containment image ({CONTAINMENT_IMAGE_REPO}:{pkg_version})...[/cyan]")
+        try:
+            self._get_docker_client().images.pull(CONTAINMENT_IMAGE_REPO, tag=pkg_version)
+            return f"{CONTAINMENT_IMAGE_REPO}:{pkg_version}"
+        except Exception as pull_error:
+            console.print(f"[yellow]Pull failed: {pull_error}[/yellow]")
+
+        # Try pulling latest as fallback
+        try:
+            console.print("[cyan]Trying latest tag...[/cyan]")
+            self._get_docker_client().images.pull(CONTAINMENT_IMAGE_REPO, tag="latest")
+            return f"{CONTAINMENT_IMAGE_REPO}:latest"
+        except Exception:
+            pass
+
+        # Fall back to local build
+        console.print("[yellow]Building containment image locally (this may take a few minutes)...[/yellow]")
+        try:
+            dockerfile_path = Path(__file__).parent / "Dockerfile.containment"
+            if not dockerfile_path.exists():
+                raise FileNotFoundError(f"Dockerfile not found at {dockerfile_path}")
+
+            image, logs = self._get_docker_client().images.build(
+                path=str(dockerfile_path.parent),
+                dockerfile="Dockerfile.containment",
+                tag=f"paircoder/containment:latest",
+                rm=True,  # Remove intermediate containers
+            )
+            console.print("[green]✓ Containment image built successfully[/green]")
+            return "paircoder/containment:latest"
+        except Exception as build_error:
+            raise RuntimeError(
+                f"Failed to obtain containment image.\n"
+                f"Pull failed and local build failed: {build_error}\n"
+                f"Ensure Docker is running and try: docker pull {CONTAINMENT_IMAGE_REPO}:latest"
+            )
 
     def _build_volumes(self) -> tuple[dict, dict]:
         """Build volumes and tmpfs dicts for Docker run.
@@ -435,12 +516,7 @@ class SandboxRunner:
         # With bind mounts, changes are already on the host
         pass
 
-    def run_interactive(
-        self,
-        command: list[str],
-        env: Optional[dict[str, str]] = None,
-        network_allowlist: Optional[list[str]] = None,
-    ) -> int:
+    def run_interactive(self, command: list[str], env: dict = None, network_allowlist: list[str] = None) -> int:
         """Run an interactive command in the sandbox container.
 
         This method runs a command with TTY support for interactive sessions,
@@ -463,6 +539,9 @@ class SandboxRunner:
             return self._run_interactive_local(command, env)
 
         client = self._get_docker_client()
+
+        # Get or build the containment image
+        image_tag = self.ensure_containment_image()
 
         # Build environment
         container_env = self._build_environment()
@@ -487,7 +566,7 @@ class SandboxRunner:
         # else: uses config.network (default "none")
 
         run_kwargs.update({
-            "image": self.config.image,
+            "image": image_tag,
             "command": command,
             "volumes": volumes,
             "environment": container_env,
