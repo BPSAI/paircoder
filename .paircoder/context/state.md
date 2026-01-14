@@ -95,17 +95,7 @@ Sprints 1-27 archived. See `.paircoder/history/sprint_archive.md`.
 
 ## What's Next
 
-Sprint 29 planned and ready to execute!
-
-**Recommended order:**
-1. T29.1 (Schema Design) - Start here
-2. T29.2 (Config Integration)
-3. T29.3 (Directory Locking)
-4. T29.4 (contained-auto Command)
-5. Then parallel: T29.5, T29.6, T29.7, T29.8, T29.9
-6. Finally: T29.10, T29.11 (Documentation)
-
-Use `/start-task T29.1` to begin.
+1. Sprint 29 complete or next task
 
 
 ## Backlog (Deprioritized)

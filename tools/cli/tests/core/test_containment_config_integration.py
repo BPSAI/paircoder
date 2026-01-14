@@ -46,10 +46,10 @@ workflow:
   main_branch: main
 containment:
   enabled: true
-  locked_directories:
+  readonly_directories:
     - /etc
     - /usr
-  locked_files:
+  readonly_files:
     - /etc/passwd
   allow_network:
     - example.com
@@ -60,8 +60,8 @@ containment:
         config = Config.load(tmp_path)
 
         assert config.containment.enabled is True
-        assert config.containment.locked_directories == ["/etc", "/usr"]
-        assert config.containment.locked_files == ["/etc/passwd"]
+        assert config.containment.readonly_directories == ["/etc", "/usr"]
+        assert config.containment.readonly_files == ["/etc/passwd"]
         assert config.containment.allow_network == ["example.com"]
         assert config.containment.auto_checkpoint is False
         assert config.containment.rollback_on_violation is True
@@ -84,7 +84,7 @@ containment:
         config = Config.load(tmp_path)
 
         assert config.containment.enabled is True
-        assert config.containment.locked_directories == []  # default
+        assert config.containment.readonly_directories == []  # default
         assert config.containment.auto_checkpoint is True  # default
         assert config.containment.allow_network == DEFAULT_CONTAINMENT_NETWORK_ALLOWLIST
 
@@ -121,6 +121,7 @@ class TestPresetContainmentConfig:
 
         assert "containment" in config
         assert config["containment"]["enabled"] is False
+        # Presets use locked_directories (mapped to readonly_directories on load)
         assert "locked_directories" in config["containment"]
         assert "allow_network" in config["containment"]
 
@@ -159,6 +160,7 @@ class TestCookiecutterContainmentConfig:
         # Check that containment section exists in template
         assert "containment:" in content
         assert "enabled:" in content
+        # Template uses locked_directories (mapped to readonly_directories on load)
         assert "locked_directories:" in content
         assert "allow_network:" in content
 

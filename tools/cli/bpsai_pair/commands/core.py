@@ -529,6 +529,60 @@ def context_sync_command(
         raise
 
 
+def _get_containment_status(root: Path) -> Optional[dict]:
+    """Get containment status information.
+
+    Returns:
+        Dict with containment status or None if not configured.
+    """
+    try:
+        config = Config.load(root)
+    except Exception:
+        return None
+
+    containment = config.containment
+    is_active = os.environ.get("PAIRCODER_CONTAINMENT") == "1"
+
+    # Don't return anything if containment is not enabled and not active
+    if not containment.enabled and not is_active:
+        return None
+
+    checkpoint = os.environ.get("PAIRCODER_CONTAINMENT_CHECKPOINT", "")
+
+    # Count protected paths (readonly + blocked)
+    readonly_dir_count = len(containment.readonly_directories)
+    readonly_file_count = len(containment.readonly_files)
+    blocked_dir_count = len(containment.blocked_directories)
+    blocked_file_count = len(containment.blocked_files)
+
+    total_dir_count = readonly_dir_count + blocked_dir_count
+    total_file_count = readonly_file_count + blocked_file_count
+
+    network_count = len(containment.allow_network)
+
+    # Collect paths for preview (show first few)
+    protected_paths = (
+        containment.readonly_directories[:5] +
+        containment.blocked_directories[:2]
+    )
+
+    return {
+        "enabled": containment.enabled,
+        "active": is_active,
+        "mode": containment.mode,
+        "checkpoint": checkpoint if checkpoint else None,
+        "readonly_dirs": readonly_dir_count,
+        "readonly_files": readonly_file_count,
+        "blocked_dirs": blocked_dir_count,
+        "blocked_files": blocked_file_count,
+        "total_dirs": total_dir_count,
+        "total_files": total_file_count,
+        "network_domains": network_count,
+        "protected_paths": protected_paths,
+        "allow_network": containment.allow_network,
+    }
+
+
 def status_command(
     json_out: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ):
@@ -610,6 +664,9 @@ def status_command(
     if latest_pack:
         age_hours = (datetime.now() - datetime.fromtimestamp(latest_pack.stat().st_mtime)).total_seconds() / 3600
 
+    # Get containment status
+    containment_status = _get_containment_status(root)
+
     if json_out:
         result = {
             "branch": current_branch,
@@ -618,6 +675,9 @@ def status_command(
             "latest_pack": str(latest_pack.name) if latest_pack else None,
             "pack_age": age_hours
         }
+        # Add containment status if configured
+        if containment_status:
+            result["containment"] = containment_status
         print_json(result)
     else:
         # Create a nice table
@@ -644,6 +704,40 @@ def status_command(
             table.add_row("Latest Pack", f"{latest_pack.name} ({age_str})")
 
         console.print(table)
+
+        # Containment status section
+        if containment_status:
+            console.print()
+            console.print("[bold]Containment Status[/bold]")
+
+            if containment_status["active"]:
+                mode_str = f"[green]ACTIVE[/green] (contained autonomy, mode: {containment_status['mode']})"
+            else:
+                mode_str = f"[yellow]CONFIGURED[/yellow] (not active, mode: {containment_status['mode']})"
+
+            console.print(f"   Mode: {mode_str}")
+
+            if containment_status["checkpoint"]:
+                console.print(f"   Checkpoint: {containment_status['checkpoint']}")
+
+            # Show path counts
+            total_dirs = containment_status["total_dirs"]
+            total_files = containment_status["total_files"]
+            console.print(f"   Protected Paths: {total_dirs} directories, {total_files} files")
+
+            # Show network restriction
+            net_count = containment_status["network_domains"]
+            console.print(f"   Network: Restricted ({net_count} domains allowed)")
+
+            # Show protected paths preview
+            if containment_status["protected_paths"]:
+                console.print()
+                console.print("   [dim]Protected:[/dim]")
+                for path in containment_status["protected_paths"][:5]:
+                    console.print(f"   [dim]- {path}[/dim]")
+                remaining = len(containment_status["protected_paths"]) - 5
+                if remaining > 0:
+                    console.print(f"   [dim]... and {remaining} more[/dim]")
 
         # Suggestions
         if not is_clean:
