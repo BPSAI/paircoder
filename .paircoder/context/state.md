@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-01-13 (T29.3 Complete)
+> Last updated: 2026-01-13 (T29.4 Complete)
 
 ## Active Plan
 
@@ -16,7 +16,7 @@
 | T29.1 | Design Containment Config Schema | P0 | 25 | ✓ done |
 | T29.2 | Add Containment Section to config.yaml | P0 | 20 | ✓ done |
 | T29.3 | Implement Directory Locking in containment.py | P0 | 45 | ✓ done |
-| T29.4 | Create contained-auto Command | P0 | 40 | pending |
+| T29.4 | Create contained-auto Command | P0 | 40 | ✓ done |
 | T29.5 | Add claude666 Alias | P1 | 10 | pending |
 | T29.6 | Implement Network Allowlist | P1 | 35 | pending |
 | T29.7 | Test Containment Escape Attempts | P0 | 45 | pending |
@@ -126,6 +126,36 @@ After Sprint 25.6 deprecation warnings, full removal planned for v2.11.0:
 ## Session Log
 
 _Add entries here as work is completed._
+
+### 2026-01-13 - T29.4: Create contained-auto Command
+
+Implemented the `contained-auto` command for starting contained autonomous sessions:
+
+**Files Changed:**
+- `tools/cli/bpsai_pair/commands/session.py` - Added `contained_auto` command and cleanup handler
+- `tools/cli/bpsai_pair/commands/__init__.py` - Export `contained_auto`
+- `tools/cli/bpsai_pair/cli.py` - Register command at top level
+- `tools/cli/tests/test_contained_auto.py` - New test file with 11 tests
+
+**Command Features:**
+- `bpsai-pair contained-auto [TASK]` - Start contained session
+- `--skip-checkpoint` - Skip git checkpoint creation
+- Creates git checkpoint on entry (if `auto_checkpoint` enabled)
+- Activates `ContainmentManager` with locked paths from config
+- Sets environment variables: `PAIRCODER_CONTAINMENT=1`, `PAIRCODER_CONTAINMENT_CHECKPOINT=<id>`
+- Displays protected paths and status messages
+- Exit handler cleans up containment state via `atexit.register()`
+
+**Command Flow:**
+1. Load config and verify containment is enabled
+2. Create git checkpoint (unless skipped)
+3. Initialize and activate ContainmentManager
+4. Set environment variables for detection
+5. Display status with protected paths
+
+**Tests:**
+- 11 new tests in `tests/test_contained_auto.py`
+- All 105 CLI and security tests passing
 
 ### 2026-01-13 - T29.3: Implement Directory Locking in containment.py
 

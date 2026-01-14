@@ -46,7 +46,8 @@ try:
         preset_app, config_app, orchestrate_app, metrics_app,
         timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
-        session_app, compaction_app, upgrade_app, budget_app
+        session_app, compaction_app, upgrade_app, budget_app,
+        contained_auto
     )
 except ImportError:
     # For development/testing when running as script
@@ -68,7 +69,8 @@ except ImportError:
         preset_app, config_app, orchestrate_app, metrics_app,
         timer_app, benchmark_app, cache_app, mcp_app,
         security_app, scan_secrets, scan_deps, register_core_commands,
-        session_app, compaction_app, upgrade_app, budget_app
+        session_app, compaction_app, upgrade_app, budget_app,
+        contained_auto
     )
 
 # Initialize Rich console for version display
@@ -136,6 +138,9 @@ except NameError:
 
 # Register core commands (init, feature, pack, context-sync, status, validate, ci)
 register_core_commands(app)
+
+# Register contained-auto as a top-level command
+app.command("contained-auto")(contained_auto)
 
 # =============================================================================
 # Shortcut Commands

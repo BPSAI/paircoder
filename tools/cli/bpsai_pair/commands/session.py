@@ -5,6 +5,7 @@ Extracted from cli.py as part of EPIC-003 CLI Architecture Refactor (Sprint 22).
 Commands:
 - session check: Check session state and display context if new session
 - session status: Show current session status
+- contained-auto: Start a contained autonomous session
 - compaction snapshot save: Save a compaction snapshot
 - compaction snapshot list: List available compaction snapshots
 - compaction check: Check if compaction recently occurred
@@ -14,6 +15,8 @@ Commands:
 
 from __future__ import annotations
 
+import atexit
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -28,6 +31,9 @@ except ImportError:
 
 # Initialize Rich console
 console = Console()
+
+# Global reference for cleanup
+_active_containment_manager = None
 
 
 def repo_root() -> Path:
@@ -61,6 +67,131 @@ compaction_snapshot_app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]}
 )
 compaction_app.add_typer(compaction_snapshot_app, name="snapshot")
+
+
+# --- Containment Cleanup ---
+
+def _cleanup_containment():
+    """Cleanup handler for containment on exit."""
+    global _active_containment_manager
+    if _active_containment_manager is not None:
+        _active_containment_manager.deactivate()
+        _active_containment_manager = None
+        # Clear environment variables
+        os.environ.pop("PAIRCODER_CONTAINMENT", None)
+        os.environ.pop("PAIRCODER_CONTAINMENT_CHECKPOINT", None)
+
+
+# --- Contained Autonomy Command ---
+
+def contained_auto(
+    task: Optional[str] = typer.Argument(None, help="Task to work on"),
+    skip_checkpoint: bool = typer.Option(
+        False, "--skip-checkpoint", help="Skip git checkpoint creation"
+    ),
+):
+    """Start a contained autonomous session.
+
+    In contained autonomy mode, certain paths are protected from modification:
+    - .claude/ directory (agents, commands, skills)
+    - Enforcement code (security/, core/, orchestration/)
+    - Config files (config.yaml, CLAUDE.md, AGENTS.md)
+
+    A git checkpoint is created automatically for easy rollback.
+
+    Examples:
+
+        bpsai-pair contained-auto              # Start contained session
+
+        bpsai-pair contained-auto T29.4        # Start with specific task
+
+        bpsai-pair contained-auto --skip-checkpoint  # Skip checkpoint
+    """
+    global _active_containment_manager
+
+    try:
+        from ..core.config import Config
+        from ..security.containment import ContainmentManager
+        from ..security.checkpoint import GitCheckpoint
+    except ImportError:
+        from bpsai_pair.core.config import Config
+        from bpsai_pair.security.containment import ContainmentManager
+        from bpsai_pair.security.checkpoint import GitCheckpoint
+
+    # Get project root
+    project_root = repo_root()
+    paircoder_dir = project_root / ".paircoder"
+
+    if not paircoder_dir.exists():
+        console.print("[red]No .paircoder directory found[/red]")
+        console.print("[dim]Initialize with: bpsai-pair init[/dim]")
+        raise typer.Exit(1)
+
+    # Load config
+    try:
+        config = Config.load(paircoder_dir / "config.yaml")
+    except Exception as e:
+        console.print(f"[red]Error loading config: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Check if containment is enabled
+    if not config.containment.enabled:
+        console.print("[yellow]Warning: Containment not enabled in config[/yellow]")
+        if not typer.confirm("Enable containment for this session?"):
+            console.print("[dim]Aborted. Enable in config.yaml: containment.enabled: true[/dim]")
+            raise typer.Abort()
+
+    checkpoint_id = None
+
+    # Create checkpoint if enabled
+    if config.containment.auto_checkpoint and not skip_checkpoint:
+        try:
+            checkpoint = GitCheckpoint(project_root)
+            checkpoint_id = checkpoint.create_checkpoint("containment entry")
+            console.print(f"[green]✓ Checkpoint created:[/green] {checkpoint_id}")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not create checkpoint: {e}[/yellow]")
+            if not typer.confirm("Continue without checkpoint?"):
+                raise typer.Abort()
+    elif skip_checkpoint:
+        console.print("[dim]Checkpoint skipped (--skip-checkpoint)[/dim]")
+
+    # Initialize and activate containment
+    containment = ContainmentManager(config.containment, project_root)
+    containment.activate()
+    _active_containment_manager = containment
+
+    # Register cleanup handler
+    atexit.register(_cleanup_containment)
+
+    # Set environment variables
+    os.environ["PAIRCODER_CONTAINMENT"] = "1"
+    if checkpoint_id:
+        os.environ["PAIRCODER_CONTAINMENT_CHECKPOINT"] = checkpoint_id
+
+    # Display status
+    console.print()
+    console.print("[bold green]✓ Contained autonomy mode active[/bold green]")
+    console.print()
+
+    # Show locked paths
+    console.print("[cyan]Protected paths (read-only):[/cyan]")
+    for locked_dir in config.containment.locked_directories:
+        console.print(f"  [dim]📁[/dim] {locked_dir}")
+    for locked_file in config.containment.locked_files:
+        console.print(f"  [dim]📄[/dim] {locked_file}")
+
+    console.print()
+
+    if task:
+        console.print(f"[cyan]Task:[/cyan] {task}")
+        console.print()
+
+    console.print("[dim]Protected paths cannot be modified in this session.[/dim]")
+    console.print("[dim]Run 'bpsai-pair session status' to check containment state.[/dim]")
+
+    if checkpoint_id:
+        console.print(f"[dim]Rollback available: git reset --hard {checkpoint_id}[/dim]")
 
 
 # --- Session Commands ---

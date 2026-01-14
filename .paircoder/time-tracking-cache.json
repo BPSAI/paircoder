@@ -541,9 +541,9 @@
     "total_seconds": 197.867196
   },
   "_active": {
-    "task_id": "T29.3",
-    "timer_id": "local-20260113172328",
-    "description": "T29.3: Implement Directory Locking in containment.py",
-    "start": "2026-01-13T17:23:28.456462"
+    "task_id": "T29.5",
+    "timer_id": "local-20260113193533",
+    "description": "T29.5: Add claude666 Alias",
+    "start": "2026-01-13T19:35:33.712757"
   }
 }
